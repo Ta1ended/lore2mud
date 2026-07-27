@@ -11,5 +11,13 @@
     "description": "一枚晶莹的小药丸，散发清凉草药气息。",
     "heal_amount": 10,
     "adaptation_notes": "本仓库原创演示消耗品。"
+  },
+  {
+    "id": "item_crystal_blade",
+    "name": "晶刃",
+    "description": "一片薄而透明的晶体，边缘泛着冷光，握柄处缠着细麻绳。",
+    "slot": "hand",
+    "attack_bonus": 3,
+    "adaptation_notes": "本仓库原创演示装备。"
   }
 ]

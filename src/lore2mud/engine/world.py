@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from lore2mud.combat.service import CombatRound, resolve_combat_round
 from lore2mud.content.models import ContentPack, QuestDefinition
 from lore2mud.engine.models import Monster, Player, QuestState, Room
-from lore2mud.inventory.models import Inventory, Item
+from lore2mud.inventory.models import EquippedItems, Inventory, Item
 from lore2mud.progression.service import LevelGain, grant_experience
 
 
@@ -33,6 +33,22 @@ class UseOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class EquipOutcome:
+    """Result of equipping an item."""
+    item_id: str
+    item_name: str
+    attack_bonus: int
+
+
+@dataclass(frozen=True, slots=True)
+class UnequipOutcome:
+    """Result of unequipping an item."""
+    item_id: str
+    item_name: str
+    attack_bonus: int
+
+
+@dataclass(frozen=True, slots=True)
 class AttackOutcome:
     combat: CombatRound
     level_gains: tuple[LevelGain, ...] = ()
@@ -50,6 +66,14 @@ class World:
     player: Player
     quest_defs: dict[str, QuestDefinition] = field(default_factory=dict)
     quest_states: dict[str, QuestState] = field(default_factory=dict)
+    equipped: EquippedItems = field(default_factory=EquippedItems)
+
+    @property
+    def effective_attack(self) -> int:
+        bonus = 0
+        if self.equipped.hand is not None:
+            bonus = self.items[self.equipped.hand].attack_bonus
+        return self.player.attack + bonus
 
     @classmethod
     def from_content_pack(
@@ -87,6 +111,8 @@ class World:
                 name=item.name,
                 description=item.description,
                 heal_amount=item.heal_amount,
+                slot=item.slot,
+                attack_bonus=item.attack_bonus,
             )
             for item in pack.items.values()
         }
@@ -171,6 +197,8 @@ class World:
             raise WorldRuleError("背包中没有该物品。")
 
         item = self.items[item_id]
+        if self.equipped.hand == item_id:
+            raise WorldRuleError(f"{item.name} 正在装备中，无法使用。")
         if item.heal_amount is None:
             raise WorldRuleError(f"物品 {item.name} 无法使用。")
 
@@ -190,6 +218,47 @@ class World:
             healed_amount=actual,
         )
 
+    def equip(self, item_query: str) -> EquipOutcome:
+        """Equip an item from the player's inventory into the hand slot."""
+        item_id = self._resolve_id(
+            item_query,
+            self.player.inventory.item_ids,
+            self.items,
+            kind="物品",
+        )
+        if item_id is None:
+            raise WorldRuleError("背包中没有该物品。")
+
+        item = self.items[item_id]
+        if item.slot != "hand":
+            raise WorldRuleError(f"物品 {item.name} 无法装备。")
+        if item.attack_bonus <= 0:
+            raise WorldRuleError(f"物品 {item.name} 无法装备。")
+        if self.equipped.hand is not None:
+            current = self.items[self.equipped.hand]
+            raise WorldRuleError(f"{current.name} 已经装备了。")
+
+        self.equipped.hand = item_id
+        return EquipOutcome(
+            item_id=item_id,
+            item_name=item.name,
+            attack_bonus=item.attack_bonus,
+        )
+
+    def unequip(self) -> UnequipOutcome:
+        """Unequip the item in the hand slot."""
+        if self.equipped.hand is None:
+            raise WorldRuleError("没有装备中的物品。")
+
+        item_id = self.equipped.hand
+        item = self.items[item_id]
+        self.equipped.hand = None
+        return UnequipOutcome(
+            item_id=item_id,
+            item_name=item.name,
+            attack_bonus=item.attack_bonus,
+        )
+
     def attack(self, monster_query: str) -> AttackOutcome:
         monster_id = self._resolve_id(
             monster_query,
@@ -203,7 +272,9 @@ class World:
             raise WorldRuleError("你已经无法继续战斗。")
 
         monster = self.monsters[monster_id]
-        combat = resolve_combat_round(self.player, monster)
+        combat = resolve_combat_round(
+            self.player, monster, player_attack=self.effective_attack,
+        )
         level_gains: list[LevelGain] = []
         quest_outcome: QuestOutcome | None = None
 

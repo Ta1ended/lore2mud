@@ -4,30 +4,40 @@
 
 ### Added
 
-- Added `use <item>` command for consuming usable items from inventory.
-- Added `heal_amount: int | None` field to `ItemDefinition` and `Item`; a positive
-  integer makes the item usable (heals HP and is consumed), `None` means unusable.
-- Added `UseOutcome` dataclass and `World.use()` method with deterministic healing
-  logic: `min(heal_amount, max_hp - hp)`, item removed from inventory after use.
-- Added boundary checks: full HP rejects use (no consume), HP=0 rejects use
-  (no implicit revive).
-- Added `item_linglu_pill` (灵露丸, heal_amount=10) to the original demo content
-  pack; placed in the starting room alongside `item_spark_lantern`.
-- Added 17 new tests covering content loading, normal use, partial heal, failure
-  paths (non-usable, not in inventory, full HP, dead player, empty args, display
-  name), and save round-trip (heal_amount survives load, used pill gone after
-  reload, old version save rejected).
-- Added `heal_amount` to `item.schema.json` and `docs/content_pack_format.md`.
+- Added equipment system with `slot` and `attack_bonus` fields on `ItemDefinition`
+  and `Item`; `slot="hand"` enables equipping via `equip <item>`.
+- Added `EquippedItems` model with `hand: str | None` slot.
+- Added `World.effective_attack` property: `player.attack + hand attack_bonus`.
+- Added `World.equip()` and `World.unequip()` methods that only modify
+  `equipped.hand`, never touching `player.attack`.
+- Added `EquipOutcome` and `UnequipOutcome` dataclasses.
+- Added `equip` and `unequip` commands to `CommandProcessor`.
+- Added equipped-rejected check in `World.use()` (before heal_amount check).
+- Added `player_attack` keyword argument to `resolve_combat_round` for
+  equipment-aware damage calculation.
+- Added `item_crystal_blade` (晶刃, slot=hand, attack_bonus=3) to demo content.
+- Upgraded save format to version 3 with required `equipped` field; v2 saves
+  explicitly rejected.
+- Added strict equipped validation: slot must be "hand", item must exist in
+  content pack and inventory, must have attack_bonus >= 1, must not have
+  heal_amount.
+- Added content loader validation for slot/attack_bonus cross-field rules
+  (slot requires bonus, bonus requires slot, no slot+heal_amount combo).
+- Added 49 new tests across test_equipment.py, test_save.py, test_consumable.py,
+  test_commands.py covering content loading, equip/unequip, failure paths, combat
+  integration, upgrade interaction, save round-trip, equipped validation, schema
+  rules, and CLI equipment smoke.
 
 ### Changed
 
-- Upgraded content pack version to 0.2.1 (breaking change: old 0.2.0 saves are
-  rejected by `SaveLoadService` version check).
-- Updated `World.from_content_pack()` and `SaveLoadService._validate_and_build_world()`
-  to pass `heal_amount` when constructing `Item` objects.
-- Updated `test_content_loader.py` item count assertion (1→2) and
-  `test_save.py` version assertion (0.2.0→0.2.1).
-- Updated `original_demo/README.md` with consumable in the demo flow.
+- Upgraded content pack version to 0.2.2 (breaking: old 0.2.1 saves rejected).
+- Updated `status` command to display `effective_attack` with base breakdown.
+- Updated `resolve_combat_round` to accept optional `player_attack` parameter.
+- Updated `World.from_content_pack()` and `SaveLoadService` to reconstruct
+  Item with `slot` and `attack_bonus`.
+- Updated `test_content_loader.py` item count (2→3) and `test_save.py`
+  version (0.2.1→0.2.2) + equipped field assertions.
+- Updated demo content pack, README, schemas, and docs.
 
 ### Added (previous unreleased)
 
@@ -41,7 +51,6 @@
 - Added 23 new tests covering validate success/error paths, encoding errors,
   legacy/explicit play with --player-name/--save-dir backward compatibility,
   unknown-argument rejection, OSError unified format, and argparse error handling.
-
 - Added deterministic quest flow: auto-accept in trigger room, monster-defeat
   condition, instant reward via `grant_experience`, `quests` command, quest hints
   in `look`, and quest completion text in `attack` output.
@@ -53,7 +62,6 @@
   `reward_experience`, and duplicate target monster rejection.
 - Added 21 new quest tests covering content loading, auto-accept, completion,
   reward-once, non-target monster, quests command, and save round-trip.
-
 - Added versioned local save/load with atomic writes (`save` and `load` commands).
 - Added `SaveLoadService` with strict validation of untrusted save data: format
   version, content-pack identity, room/monster key sets, reference integrity,

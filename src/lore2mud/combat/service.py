@@ -31,7 +31,12 @@ def calculate_damage(attack: int, defense: int) -> int:
     return max(1, attack - defense)
 
 
-def resolve_combat_round(player: Combatant, monster: Combatant) -> CombatRound:
+def resolve_combat_round(
+    player: Combatant,
+    monster: Combatant,
+    *,
+    player_attack: int | None = None,
+) -> CombatRound:
     if not player.is_alive:
         raise ValueError("defeated player cannot attack")
     if not monster.is_alive:
@@ -39,7 +44,8 @@ def resolve_combat_round(player: Combatant, monster: Combatant) -> CombatRound:
     assert player.hp is not None
     assert monster.hp is not None
 
-    damage_to_monster = calculate_damage(player.attack, monster.defense)
+    attack_value = player_attack if player_attack is not None else player.attack
+    damage_to_monster = calculate_damage(attack_value, monster.defense)
     monster.hp = max(0, monster.hp - damage_to_monster)
 
     damage_to_player = 0

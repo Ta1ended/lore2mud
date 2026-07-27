@@ -72,7 +72,20 @@ class CommandScenarioTests(unittest.TestCase):
 
     def test_help_and_quit(self) -> None:
         self.assertIn("attack", self.commands.execute("help").text)
+        self.assertIn("equip", self.commands.execute("help").text)
         self.assertTrue(self.commands.execute("quit").should_quit)
+
+    def test_equip_unequip_via_commands(self) -> None:
+        """CLI smoke: take → equip → status → unequip."""
+        self.commands.execute("take item_crystal_blade")
+        r = self.commands.execute("equip item_crystal_blade")
+        self.assertIn("装备了", r.text)
+        s = self.commands.execute("status")
+        self.assertIn("8", s.text)
+        r = self.commands.execute("unequip")
+        self.assertIn("卸下了", r.text)
+        s = self.commands.execute("status")
+        self.assertIn("5", s.text)
 
 
 if __name__ == "__main__":

@@ -180,8 +180,15 @@ class SaveIncludesAllMutableStateTests(unittest.TestCase):
     def test_save_includes_content_pack_identity(self) -> None:
         data = _serialize_world(self.world)
         self.assertEqual(data["content_pack"]["id"], "original_demo")
-        self.assertEqual(data["content_pack"]["version"], "0.2.1")
+        self.assertEqual(data["content_pack"]["version"], "0.2.2")
         self.assertEqual(data["save_format_version"], SAVE_FORMAT_VERSION)
+
+    def test_save_includes_equipped_field(self) -> None:
+        data = _serialize_world(self.world)
+        self.assertIn("equipped", data)
+        self.assertIsInstance(data["equipped"], dict)
+        self.assertIn("hand", data["equipped"])
+        self.assertIsNone(data["equipped"]["hand"])
 
 
 class SaveLoadServiceTests(unittest.TestCase):
@@ -458,6 +465,13 @@ class ValidationTests(unittest.TestCase):
             self._save_and_load(self.valid_data)
         self.assertIn("格式版本", str(ctx.exception))
 
+    def test_version_2_save_rejected(self) -> None:
+        """Version 2 saves (no equipped) must be cleanly rejected."""
+        self.valid_data["save_format_version"] = 2
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("格式版本", str(ctx.exception))
+
     def test_missing_quest_states_raises(self) -> None:
         del self.valid_data["quest_states"]
         with self.assertRaises(SaveLoadError) as ctx:
@@ -494,6 +508,62 @@ class ValidationTests(unittest.TestCase):
         with self.assertRaises(SaveLoadError) as ctx:
             self._save_and_load(self.valid_data)
         self.assertIn("未知字段", str(ctx.exception))
+
+    def test_missing_equipped_raises(self) -> None:
+        del self.valid_data["equipped"]
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("equipped", str(ctx.exception))
+
+    def test_equipped_not_dict_raises(self) -> None:
+        self.valid_data["equipped"] = "bad"
+        with self.assertRaises(SaveLoadError):
+            self._save_and_load(self.valid_data)
+
+    def test_equipped_unknown_slot_raises(self) -> None:
+        self.valid_data["equipped"]["head"] = "item_crystal_blade"
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("未知字段", str(ctx.exception))
+
+    def test_equipped_hand_not_in_inventory_raises(self) -> None:
+        self.valid_data["equipped"]["hand"] = "item_crystal_blade"
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("背包", str(ctx.exception))
+
+    def test_equipped_hand_not_in_content_pack_raises(self) -> None:
+        self.valid_data["equipped"]["hand"] = "nonexistent_item"
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("不存在", str(ctx.exception))
+
+    def test_equipped_missing_hand_key_raises(self) -> None:
+        """equipped dict without 'hand' key must be rejected."""
+        self.valid_data["equipped"] = {}
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("hand", str(ctx.exception))
+
+    def test_equipped_hand_type_error_raises(self) -> None:
+        """equipped.hand must be string or null, not int."""
+        self.valid_data["equipped"]["hand"] = 123
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("字符串", str(ctx.exception))
+
+    def test_equipped_hand_normal_item_raises(self) -> None:
+        """equipped.hand referencing a normal item (no slot) must be rejected."""
+        self.valid_data["equipped"]["hand"] = "item_spark_lantern"
+        self.valid_data["player"]["inventory_item_ids"] = ["item_spark_lantern"]
+        # Remove from room to avoid dual-placement validation.
+        self.valid_data["rooms"]["room_ember_wharf"]["item_ids"] = [
+            i for i in self.valid_data["rooms"]["room_ember_wharf"]["item_ids"]
+            if i != "item_spark_lantern"
+        ]
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("slot", str(ctx.exception))
 
 
 class AtomicWriteTests(unittest.TestCase):

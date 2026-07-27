@@ -158,3 +158,29 @@
   `src/lore2mud/engine/save.py`, `src/lore2mud/engine/commands.py`,
   `examples/original_demo/items.json`, `tests/test_consumable.py`.
 - Supersedes: None.
+
+## DEC-0010: Equipment system with effective_attack and save v3
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: The consumable system is complete; the next step is equippable items
+  that modify player stats. The design must avoid mutating base stats, support
+  clean save/load round-trips, and maintain backward-compatible version checks.
+- Decision: (a) `player.attack` stores base/leveled attack; never modified by
+  equipment. (b) `World.effective_attack` dynamically computes
+  `player.attack + hand attack_bonus`. (c) `equip`/`unequip` only modify
+  `equipped.hand`, never touching `player.attack`. (d) Combat uses
+  `effective_attack` via `player_attack` parameter on `resolve_combat_round`.
+  (e) Save format upgraded to v3 with required `equipped` field; v2 explicitly
+  rejected. (f) Equipment items stay in inventory (simplest model). (g) Content
+  pack version bumps to 0.2.2; old 0.2.1 saves rejected. (h) Loader rejects
+  illegal combos: slot+heal_amount, attack_bonus without slot, slot without
+  attack_bonus. (i) `World.use()` rejects equipped items at domain layer.
+- Consequences: Base stats are preserved across equip/unequip cycles. Save
+  round-trips are clean because attack includes no equipment bonus. The v3 bump
+  breaks backward compatibility with 0.2.1 saves, which is acceptable and
+  documented. Future body/head slots can extend `EquippedItems` with the same
+  pattern.
+- Evidence: `src/lore2mud/engine/world.py`, `src/lore2mud/engine/save.py`,
+  `src/lore2mud/engine/commands.py`, `src/lore2mud/combat/service.py`,
+  `src/lore2mud/inventory/models.py`, `tests/test_equipment.py`.

@@ -336,6 +336,8 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 "name",
                 "description",
                 "heal_amount",
+                "slot",
+                "attack_bonus",
                 "canon_ref",
                 "adaptation_notes",
             },
@@ -350,12 +352,47 @@ def load_content_pack(path: str | Path) -> ContentPack:
             heal_amount = validator.integer(
                 obj, "heal_amount", location, minimum=1, default=0,
             )
+        # slot: optional; must be "hand" if present.
+        slot: str | None = None
+        if "slot" in obj:
+            raw_slot = obj.get("slot")
+            if raw_slot is None:
+                validator.issues.append(
+                    f"{location}.slot 不能为 null；省略该字段表示不可装备"
+                )
+            elif not isinstance(raw_slot, str) or raw_slot != "hand":
+                validator.issues.append(
+                    f"{location}.slot 必须是 \"hand\""
+                )
+            else:
+                slot = "hand"
+        # attack_bonus: optional; only validate when present.
+        attack_bonus = 0
+        if "attack_bonus" in obj:
+            attack_bonus = validator.integer(
+                obj, "attack_bonus", location, minimum=1, default=0,
+            )
+        # Cross-field validation.
+        if slot is not None and attack_bonus < 1:
+            validator.issues.append(
+                f"{location}: slot 为 hand 时 attack_bonus 必须 >= 1"
+            )
+        if attack_bonus >= 1 and slot is None:
+            validator.issues.append(
+                f"{location}: attack_bonus >= 1 时必须指定 slot"
+            )
+        if slot is not None and heal_amount is not None:
+            validator.issues.append(
+                f"{location}: 同时指定 slot 和 heal_amount 是非法组合"
+            )
         item_defs.append(
             ItemDefinition(
                 id=entity_id,
                 name=validator.text(obj, "name", location),
                 description=validator.text(obj, "description", location),
                 heal_amount=heal_amount,
+                slot=slot,
+                attack_bonus=attack_bonus,
                 metadata=_metadata(obj, location, validator),
             )
         )

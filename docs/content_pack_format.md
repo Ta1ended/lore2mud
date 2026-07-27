@@ -93,6 +93,27 @@ null` 属于非法内容，加载器拒绝内容包。
 - 使用后恢复 `min(heal_amount, max_hp - hp)` 点生命，物品从背包移除。
 - 满血时拒绝使用（不消耗物品）；HP 为 0 时拒绝使用。
 
+### 装备
+
+物品可以带有 `slot` 和 `attack_bonus` 字段，表示可装备到指定槽位并提供属性加成：
+
+```json
+{
+  "id": "item_crystal_blade",
+  "name": "晶刃",
+  "description": "一片薄而透明的晶体。",
+  "slot": "hand",
+  "attack_bonus": 3
+}
+```
+
+- `slot` 为 `"hand"` 时，玩家可以用 `equip <物品ID或名称>` 装备该物品。
+- `attack_bonus` 为正整数，装备后玩家的有效攻击力增加该值。
+- 装备物品仍留在背包中；卸下后仍在背包。
+- hand 槽已占用时，必须先 `unequip` 才能装备新物品。
+- 装备中的物品不可被 `use` 命令使用。
+- `slot` 和 `heal_amount` 不可同时指定。
+
 ## 怪物
 
 ```json

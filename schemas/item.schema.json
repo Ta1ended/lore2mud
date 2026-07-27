@@ -25,11 +25,37 @@
       "type": "integer",
       "minimum": 1
     },
+    "slot": {
+      "type": "string",
+      "enum": ["hand"]
+    },
+    "attack_bonus": {
+      "type": "integer",
+      "minimum": 1
+    },
     "canon_ref": {
       "$ref": "common.schema.json#/$defs/canon_ref"
     },
     "adaptation_notes": {
       "type": "string"
     }
-  }
+  },
+  "allOf": [
+    {
+      "if": { "required": ["slot"] },
+      "then": { "required": ["attack_bonus"] }
+    },
+    {
+      "if": { "required": ["attack_bonus"] },
+      "then": { "required": ["slot"] }
+    },
+    {
+      "if": { "required": ["heal_amount"] },
+      "then": { "not": { "required": ["slot"] } }
+    },
+    {
+      "if": { "required": ["slot"] },
+      "then": { "not": { "required": ["heal_amount"] } }
+    }
+  ]
 }

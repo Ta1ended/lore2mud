@@ -13,6 +13,8 @@ HELP_TEXT = """可用指令：
   go <方向>             移动，例如 go north
   take <物品ID或名称>   拾取物品
   use <物品ID或名称>    使用消耗品
+  equip <物品ID或名称>  装备物品
+  unequip               卸下装备
   inventory             查看背包
   quests                查看任务
   status                查看角色状态
@@ -57,6 +59,10 @@ class CommandProcessor:
                 return self._take(arguments)
             if command == "use":
                 return self._use(arguments)
+            if command == "equip":
+                return self._equip(arguments)
+            if command == "unequip":
+                return self._unequip(arguments)
             if command in {"inventory", "inv", "i"}:
                 return CommandResult(self._inventory())
             if command == "quests":
@@ -139,6 +145,18 @@ class CommandProcessor:
             f"你服下 {outcome.item_name}，恢复了 {outcome.healed_amount} 点生命。"
         )
 
+    def _equip(self, arguments: list[str]) -> CommandResult:
+        if not arguments:
+            return CommandResult("用法：equip <物品ID或名称>")
+        outcome = self.world.equip(" ".join(arguments))
+        return CommandResult(f"你装备了 {outcome.item_name}。")
+
+    def _unequip(self, arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：unequip")
+        outcome = self.world.unequip()
+        return CommandResult(f"你卸下了 {outcome.item_name}。")
+
     def _inventory(self) -> str:
         item_ids = self.world.player.inventory.item_ids
         if not item_ids:
@@ -169,12 +187,17 @@ class CommandProcessor:
 
     def _status(self) -> str:
         player = self.world.player
+        ea = self.world.effective_attack
+        bonus = self.world.effective_attack - player.attack
+        attack_str = (
+            f"{ea}（{player.attack} 基础 + {bonus}）" if bonus else str(ea)
+        )
         return (
             f"{player.name} [{player.id}]\n"
             f"等级：{player.level}  经验：{player.experience}/"
             f"{player.level * 10}\n"
             f"生命：{player.hp}/{player.max_hp}  "
-            f"攻击：{player.attack}  防御：{player.defense}"
+            f"攻击：{attack_str}  防御：{player.defense}"
         )
 
     def _attack(self, arguments: list[str]) -> CommandResult:

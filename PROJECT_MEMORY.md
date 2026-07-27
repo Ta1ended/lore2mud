@@ -19,9 +19,11 @@ stale.
 
 - Repository: `lore2mud`
 - Branch: `main`
-- Remote: `origin/main`, 1 commit ahead of origin
+- Remote: origin/main；恢复时运行 `git status --short --branch` 和
+  `git rev-list --left-right --count HEAD...origin/main` 检查同步状态。
 - Working tree: clean
-- 功能状态：消耗品系统已完成（heal_amount + use 命令 + 边界检查 + 存档往返）
+- 功能状态：消耗品系统 + 装备系统已完成（heal_amount/use + slot/equip/unequip +
+  effective_attack/save v3）
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
 - The private novel corpus and split chapters are outside the repository under:
@@ -31,17 +33,18 @@ stale.
 
 ## Verified facts
 
-- Full project suite: 160 tests passed (2026-07-28).
+- Full project suite: 209 tests passed (2026-07-28).
 - Repository safety check: passed.
 - Compile check and CLI save/load smoke test: passed.
 - CLI validate smoke test: passed.
-- CLI play smoke test with quests and consumables: passed.
-- CLI unknown-argument rejection (validate/play/legacy): passed.
+- CLI play smoke test with quests, consumables, and equipment: passed.
 - Quest system: auto-accept, completion, reward-once, save round-trip: passed.
 - Consumable system: heal_amount field, use command, full HP / dead / non-usable
-  rejection, heal_amount: null rejection, save round-trip with heal_amount
-  preservation: passed.
-- Content pack version: 0.2.1 (old 0.2.0 saves cleanly rejected).
+  rejection, heal_amount: null rejection, save round-trip: passed.
+- Equipment system: slot/attack_bonus, equip/unequip, effective_attack, equipped
+  validation, combat integration, upgrade interaction, save v3 round-trip: passed.
+- Content pack version: 0.2.2 (old 0.2.1 saves cleanly rejected).
+- Save format version: 3 (old v2 saves explicitly rejected).
 - git diff --check: clean.
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.
@@ -52,9 +55,9 @@ stale.
 
 ## Resume rule
 
-The only active task is the one in `NEXT_TASK.md`: add one equipment slot with
-one original equipment item and one deterministic stat bonus. Do not implement
-dialogue trees, novel extraction, or multiple slots first.
+The only active task is the one in `NEXT_TASK.md`: add a body equipment slot with
+one original armor item and one deterministic defense_bonus. Do not implement
+dialogue trees, novel extraction, or multiple body items first.
 
 ## Pause rule
 

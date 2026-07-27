@@ -8,7 +8,8 @@
     },
     "item_ids": [
       "item_spark_lantern",
-      "item_linglu_pill"
+      "item_linglu_pill",
+      "item_crystal_blade"
     ],
     "monster_ids": [],
     "adaptation_notes": "本仓库原创演示地点。"

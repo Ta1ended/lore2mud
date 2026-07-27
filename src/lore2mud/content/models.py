@@ -37,6 +37,8 @@ class ItemDefinition:
     name: str
     description: str
     heal_amount: int | None = None
+    slot: str | None = None
+    attack_bonus: int = 0
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
 
 
