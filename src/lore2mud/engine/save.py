@@ -16,7 +16,7 @@ from lore2mud.engine.models import Monster, Player, QuestState, Room
 from lore2mud.engine.world import World
 from lore2mud.inventory.models import EquippedItems, Inventory, Item
 
-SAVE_FORMAT_VERSION = 3
+SAVE_FORMAT_VERSION = 4
 DEFAULT_SLOT = "default.json"
 
 
@@ -77,6 +77,7 @@ def _serialize_world(world: World) -> dict:
         },
         "equipped": {
             "hand": world.equipped.hand,
+            "body": world.equipped.body,
         },
         "rooms": rooms_data,
         "monsters": monsters_data,
@@ -349,50 +350,70 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
             completed=completed,
         )
 
-    # --- equipped ---
+    # --- equipped (symmetric hand + body) ---
     equipped_raw = data.get("equipped")
     if not isinstance(equipped_raw, dict):
         raise SaveLoadError("存档缺少 equipped 字段")
 
-    allowed_equip_keys = {"hand"}
+    allowed_equip_keys = {"hand", "body"}
     unknown_equip = set(equipped_raw.keys()) - allowed_equip_keys
     if unknown_equip:
         raise SaveLoadError(
             f"equipped 包含未知字段：{sorted(unknown_equip)}"
         )
 
-    if "hand" not in equipped_raw:
-        raise SaveLoadError("equipped 缺少 hand 字段")
+    for slot_name in ("hand", "body"):
+        if slot_name not in equipped_raw:
+            raise SaveLoadError(f"equipped 缺少 {slot_name} 字段")
 
-    hand_raw = equipped_raw["hand"]
-    equipped_hand: str | None = None
-    if hand_raw is not None:
-        if not isinstance(hand_raw, str):
-            raise SaveLoadError("equipped.hand 必须是字符串或 null")
-        if hand_raw not in pack.items:
-            raise SaveLoadError(
-                f"equipped.hand 物品 {hand_raw!r} 在内容包中不存在"
-            )
-        if hand_raw not in inv_ids:
-            raise SaveLoadError(
-                f"equipped.hand 物品 {hand_raw!r} 不在背包中"
-            )
-        hand_item_def = pack.items[hand_raw]
-        if hand_item_def.slot != "hand":
-            raise SaveLoadError(
-                f"equipped.hand 物品 {hand_raw!r} 的 slot 不是 hand"
-            )
-        if hand_item_def.attack_bonus < 1:
-            raise SaveLoadError(
-                f"equipped.hand 物品 {hand_raw!r} 的 attack_bonus 不是正整数"
-            )
-        if hand_item_def.heal_amount is not None:
-            raise SaveLoadError(
-                f"equipped.hand 物品 {hand_raw!r} 有 heal_amount，不可装备"
-            )
-        equipped_hand = hand_raw
+        slot_raw = equipped_raw[slot_name]
+        equipped_val: str | None = None
+        if slot_raw is not None:
+            if not isinstance(slot_raw, str):
+                raise SaveLoadError(f"equipped.{slot_name} 必须是字符串或 null")
+            if slot_raw not in pack.items:
+                raise SaveLoadError(
+                    f"equipped.{slot_name} 物品 {slot_raw!r} 在内容包中不存在"
+                )
+            if slot_raw not in inv_ids:
+                raise SaveLoadError(
+                    f"equipped.{slot_name} 物品 {slot_raw!r} 不在背包中"
+                )
+            item_def = pack.items[slot_raw]
+            if item_def.slot != slot_name:
+                raise SaveLoadError(
+                    f"equipped.{slot_name} 物品 {slot_raw!r} 的 slot 不是 {slot_name}"
+                )
+            if item_def.heal_amount is not None:
+                raise SaveLoadError(
+                    f"equipped.{slot_name} 物品 {slot_raw!r} 有 heal_amount，不可装备"
+                )
+            if slot_name == "hand":
+                if item_def.attack_bonus < 1:
+                    raise SaveLoadError(
+                        f"equipped.hand 物品 {slot_raw!r} 的 attack_bonus 不是正整数"
+                    )
+                if item_def.defense_bonus != 0:
+                    raise SaveLoadError(
+                        f"equipped.hand 物品 {slot_raw!r} 有 defense_bonus，不可装备"
+                    )
+            else:  # body
+                if item_def.defense_bonus < 1:
+                    raise SaveLoadError(
+                        f"equipped.body 物品 {slot_raw!r} 的 defense_bonus 不是正整数"
+                    )
+                if item_def.attack_bonus != 0:
+                    raise SaveLoadError(
+                        f"equipped.body 物品 {slot_raw!r} 有 attack_bonus，不可装备"
+                    )
+            equipped_val = slot_raw
 
-    equipped = EquippedItems(hand=equipped_hand)
+        if slot_name == "hand":
+            equipped_hand = equipped_val
+        else:
+            equipped_body = equipped_val
+
+    equipped = EquippedItems(hand=equipped_hand, body=equipped_body)
 
     # --- Build player ---
     player = Player(
@@ -422,6 +443,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
                 heal_amount=item_def.heal_amount,
                 slot=item_def.slot,
                 attack_bonus=item_def.attack_bonus,
+                defense_bonus=item_def.defense_bonus,
             )
             for item_id, item_def in pack.items.items()
         },

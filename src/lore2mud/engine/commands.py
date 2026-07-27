@@ -14,7 +14,7 @@ HELP_TEXT = """可用指令：
   take <物品ID或名称>   拾取物品
   use <物品ID或名称>    使用消耗品
   equip <物品ID或名称>  装备物品
-  unequip               卸下装备
+  unequip [hand|body]        卸下装备（默认 hand）
   inventory             查看背包
   quests                查看任务
   status                查看角色状态
@@ -152,9 +152,15 @@ class CommandProcessor:
         return CommandResult(f"你装备了 {outcome.item_name}。")
 
     def _unequip(self, arguments: list[str]) -> CommandResult:
-        if arguments:
-            return CommandResult("用法：unequip")
-        outcome = self.world.unequip()
+        if not arguments:
+            slot = "hand"
+        elif len(arguments) == 1:
+            slot = arguments[0].casefold()
+            if slot not in ("hand", "body"):
+                return CommandResult("用法：unequip [hand|body]")
+        else:
+            return CommandResult("用法：unequip [hand|body]")
+        outcome = self.world.unequip(slot)
         return CommandResult(f"你卸下了 {outcome.item_name}。")
 
     def _inventory(self) -> str:
@@ -188,16 +194,21 @@ class CommandProcessor:
     def _status(self) -> str:
         player = self.world.player
         ea = self.world.effective_attack
-        bonus = self.world.effective_attack - player.attack
+        ed = self.world.effective_defense
+        atk_bonus = ea - player.attack
+        def_bonus = ed - player.defense
         attack_str = (
-            f"{ea}（{player.attack} 基础 + {bonus}）" if bonus else str(ea)
+            f"{ea}（{player.attack} 基础 + {atk_bonus}）" if atk_bonus else str(ea)
+        )
+        defense_str = (
+            f"{ed}（{player.defense} 基础 + {def_bonus}）" if def_bonus else str(ed)
         )
         return (
             f"{player.name} [{player.id}]\n"
             f"等级：{player.level}  经验：{player.experience}/"
             f"{player.level * 10}\n"
             f"生命：{player.hp}/{player.max_hp}  "
-            f"攻击：{attack_str}  防御：{player.defense}"
+            f"攻击：{attack_str}  防御：{defense_str}"
         )
 
     def _attack(self, arguments: list[str]) -> CommandResult:

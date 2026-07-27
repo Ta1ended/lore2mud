@@ -338,6 +338,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 "heal_amount",
                 "slot",
                 "attack_bonus",
+                "defense_bonus",
                 "canon_ref",
                 "adaptation_notes",
             },
@@ -352,7 +353,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
             heal_amount = validator.integer(
                 obj, "heal_amount", location, minimum=1, default=0,
             )
-        # slot: optional; must be "hand" if present.
+        # slot: optional; must be "hand" or "body" if present.
         slot: str | None = None
         if "slot" in obj:
             raw_slot = obj.get("slot")
@@ -360,30 +361,53 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 validator.issues.append(
                     f"{location}.slot 不能为 null；省略该字段表示不可装备"
                 )
-            elif not isinstance(raw_slot, str) or raw_slot != "hand":
+            elif not isinstance(raw_slot, str) or raw_slot not in ("hand", "body"):
                 validator.issues.append(
-                    f"{location}.slot 必须是 \"hand\""
+                    f"{location}.slot 必须是 \"hand\" 或 \"body\""
                 )
             else:
-                slot = "hand"
+                slot = raw_slot
         # attack_bonus: optional; only validate when present.
         attack_bonus = 0
         if "attack_bonus" in obj:
             attack_bonus = validator.integer(
                 obj, "attack_bonus", location, minimum=1, default=0,
             )
+        # defense_bonus: optional; only validate when present.
+        defense_bonus = 0
+        if "defense_bonus" in obj:
+            defense_bonus = validator.integer(
+                obj, "defense_bonus", location, minimum=1, default=0,
+            )
         # Cross-field validation.
-        if slot is not None and attack_bonus < 1:
+        if slot is not None and attack_bonus < 1 and defense_bonus < 1:
             validator.issues.append(
-                f"{location}: slot 为 hand 时 attack_bonus 必须 >= 1"
+                f"{location}: slot 为 {slot!r} 时必须有对应的正整数 bonus"
             )
         if attack_bonus >= 1 and slot is None:
             validator.issues.append(
                 f"{location}: attack_bonus >= 1 时必须指定 slot"
             )
+        if defense_bonus >= 1 and slot is None:
+            validator.issues.append(
+                f"{location}: defense_bonus >= 1 时必须指定 slot"
+            )
         if slot is not None and heal_amount is not None:
             validator.issues.append(
                 f"{location}: 同时指定 slot 和 heal_amount 是非法组合"
+            )
+        if attack_bonus >= 1 and defense_bonus >= 1:
+            validator.issues.append(
+                f"{location}: attack_bonus 和 defense_bonus 不可同时指定"
+            )
+        # Slot-specific bonus validation.
+        if slot == "hand" and defense_bonus >= 1:
+            validator.issues.append(
+                f"{location}: hand 槽不可指定 defense_bonus"
+            )
+        if slot == "body" and attack_bonus >= 1:
+            validator.issues.append(
+                f"{location}: body 槽不可指定 attack_bonus"
             )
         item_defs.append(
             ItemDefinition(
@@ -393,6 +417,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 heal_amount=heal_amount,
                 slot=slot,
                 attack_bonus=attack_bonus,
+                defense_bonus=defense_bonus,
                 metadata=_metadata(obj, location, validator),
             )
         )

@@ -27,9 +27,13 @@
     },
     "slot": {
       "type": "string",
-      "enum": ["hand"]
+      "enum": ["hand", "body"]
     },
     "attack_bonus": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "defense_bonus": {
       "type": "integer",
       "minimum": 1
     },
@@ -43,10 +47,19 @@
   "allOf": [
     {
       "if": { "required": ["slot"] },
-      "then": { "required": ["attack_bonus"] }
+      "then": {
+        "anyOf": [
+          { "required": ["attack_bonus"] },
+          { "required": ["defense_bonus"] }
+        ]
+      }
     },
     {
       "if": { "required": ["attack_bonus"] },
+      "then": { "required": ["slot"] }
+    },
+    {
+      "if": { "required": ["defense_bonus"] },
       "then": { "required": ["slot"] }
     },
     {
@@ -56,6 +69,14 @@
     {
       "if": { "required": ["slot"] },
       "then": { "not": { "required": ["heal_amount"] } }
+    },
+    {
+      "if": { "required": ["attack_bonus"] },
+      "then": { "not": { "required": ["defense_bonus"] } }
+    },
+    {
+      "if": { "required": ["defense_bonus"] },
+      "then": { "not": { "required": ["attack_bonus"] } }
     }
   ]
 }

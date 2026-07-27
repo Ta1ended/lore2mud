@@ -10,11 +10,13 @@ class Item:
     heal_amount: int | None = None
     slot: str | None = None
     attack_bonus: int = 0
+    defense_bonus: int = 0
 
 
 @dataclass(slots=True)
 class EquippedItems:
     hand: str | None = None
+    body: str | None = None
 
 
 @dataclass(slots=True)

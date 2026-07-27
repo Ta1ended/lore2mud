@@ -36,6 +36,7 @@ def resolve_combat_round(
     monster: Combatant,
     *,
     player_attack: int | None = None,
+    player_defense: int | None = None,
 ) -> CombatRound:
     if not player.is_alive:
         raise ValueError("defeated player cannot attack")
@@ -45,12 +46,13 @@ def resolve_combat_round(
     assert monster.hp is not None
 
     attack_value = player_attack if player_attack is not None else player.attack
+    defense_value = player_defense if player_defense is not None else player.defense
     damage_to_monster = calculate_damage(attack_value, monster.defense)
     monster.hp = max(0, monster.hp - damage_to_monster)
 
     damage_to_player = 0
     if monster.is_alive:
-        damage_to_player = calculate_damage(monster.attack, player.defense)
+        damage_to_player = calculate_damage(monster.attack, defense_value)
         player.hp = max(0, player.hp - damage_to_player)
 
     return CombatRound(

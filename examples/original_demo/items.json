@@ -19,5 +19,13 @@
     "slot": "hand",
     "attack_bonus": 3,
     "adaptation_notes": "本仓库原创演示装备。"
+  },
+  {
+    "id": "item_bronze_scale_mail",
+    "name": "铜鳞甲",
+    "description": "层层叠叠的铜鳞片串在皮带上，沉甸甸的却意外灵活。",
+    "slot": "body",
+    "defense_bonus": 3,
+    "adaptation_notes": "本仓库原创演示护甲。"
   }
 ]

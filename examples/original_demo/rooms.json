@@ -9,7 +9,8 @@
     "item_ids": [
       "item_spark_lantern",
       "item_linglu_pill",
-      "item_crystal_blade"
+      "item_crystal_blade",
+      "item_bronze_scale_mail"
     ],
     "monster_ids": [],
     "adaptation_notes": "本仓库原创演示地点。"

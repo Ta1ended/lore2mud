@@ -95,7 +95,7 @@ null` 属于非法内容，加载器拒绝内容包。
 
 ### 装备
 
-物品可以带有 `slot` 和 `attack_bonus` 字段，表示可装备到指定槽位并提供属性加成：
+物品可以带有 `slot` 和对应的 bonus 字段，表示可装备到指定槽位并提供属性加成：
 
 ```json
 {
@@ -107,12 +107,12 @@ null` 属于非法内容，加载器拒绝内容包。
 }
 ```
 
-- `slot` 为 `"hand"` 时，玩家可以用 `equip <物品ID或名称>` 装备该物品。
-- `attack_bonus` 为正整数，装备后玩家的有效攻击力增加该值。
+- `slot` 为 `"hand"` 时需要 `attack_bonus` ≥ 1；为 `"body"` 时需要 `defense_bonus` ≥ 1。
+- hand 装备增加有效攻击力；body 装备增加有效防御力。
 - 装备物品仍留在背包中；卸下后仍在背包。
-- hand 槽已占用时，必须先 `unequip` 才能装备新物品。
+- hand 和 body 可同时装备；同一槽位已占用时必须先 `unequip`。
 - 装备中的物品不可被 `use` 命令使用。
-- `slot` 和 `heal_amount` 不可同时指定。
+- `slot` 与 `heal_amount` 不可同时指定；`attack_bonus` 与 `defense_bonus` 不可同时指定。
 
 ## 怪物
 

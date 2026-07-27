@@ -3,32 +3,28 @@
 _Last updated: 2026-07-28_
 
 ## Start here
-- Task: Add a second equipment slot (body) with one original armor item and a
-  deterministic defense_bonus.
-- Why now: the hand slot is complete and verified; extending to body validates the
-  multi-slot design.
+- Task: Implement dialogue system with one NPC and branching responses.
+- Why now: equipment and combat are complete; dialogue adds narrative depth.
 
 ## Inputs
 - `PROJECT_MEMORY.md`
 - `AGENTS.md`
 - `src/lore2mud/engine/world.py`
 - `src/lore2mud/engine/commands.py`
-- `src/lore2mud/inventory/models.py`
+- `src/lore2mud/content/loader.py`
 - `examples/original_demo/`
-- `DEC-0003`, `DEC-0008`, `DEC-0009`, `DEC-0010`
+- `DEC-0003`, `DEC-0008`, `DEC-0009`, `DEC-0010`, `DEC-0011`
 
 ## Steps
-1. Extend `EquippedItems` with `body: str | None`.
-2. Add `defense_bonus: int` field to `ItemDefinition` and `Item`.
-3. Add `World.effective_defense` property.
-4. Add body-slot validation in loader and save.
-5. Add one armor item to the demo content pack.
-6. Test: equip body, effective_defense, combat uses it, save round-trip.
+1. Define dialogue node structure in content models.
+2. Add `talk <character>` command to CommandProcessor.
+3. Implement dialogue traversal in World.
+4. Add one NPC with branching dialogue to demo.
+5. Test dialogue flow and edge cases.
 
 ## Acceptance criteria
-- `equip <item>` places a valid body item and applies defense_bonus.
-- `unequip` reverses the bonus.
-- `effective_defense` used in combat damage calculation.
+- `talk <character>` displays dialogue and accepts player responses.
+- Dialogue nodes support branching.
 - All tests and safety checks pass.
 
 ## If blocked

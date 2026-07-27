@@ -37,7 +37,8 @@ class EquipOutcome:
     """Result of equipping an item."""
     item_id: str
     item_name: str
-    attack_bonus: int
+    attack_bonus: int = 0
+    defense_bonus: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,7 +46,8 @@ class UnequipOutcome:
     """Result of unequipping an item."""
     item_id: str
     item_name: str
-    attack_bonus: int
+    attack_bonus: int = 0
+    defense_bonus: int = 0
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,6 +76,13 @@ class World:
         if self.equipped.hand is not None:
             bonus = self.items[self.equipped.hand].attack_bonus
         return self.player.attack + bonus
+
+    @property
+    def effective_defense(self) -> int:
+        bonus = 0
+        if self.equipped.body is not None:
+            bonus = self.items[self.equipped.body].defense_bonus
+        return self.player.defense + bonus
 
     @classmethod
     def from_content_pack(
@@ -113,6 +122,7 @@ class World:
                 heal_amount=item.heal_amount,
                 slot=item.slot,
                 attack_bonus=item.attack_bonus,
+                defense_bonus=item.defense_bonus,
             )
             for item in pack.items.values()
         }
@@ -197,7 +207,7 @@ class World:
             raise WorldRuleError("背包中没有该物品。")
 
         item = self.items[item_id]
-        if self.equipped.hand == item_id:
+        if self.equipped.hand == item_id or self.equipped.body == item_id:
             raise WorldRuleError(f"{item.name} 正在装备中，无法使用。")
         if item.heal_amount is None:
             raise WorldRuleError(f"物品 {item.name} 无法使用。")
@@ -219,7 +229,7 @@ class World:
         )
 
     def equip(self, item_query: str) -> EquipOutcome:
-        """Equip an item from the player's inventory into the hand slot."""
+        """Equip an item from the player's inventory."""
         item_id = self._resolve_id(
             item_query,
             self.player.inventory.item_ids,
@@ -230,33 +240,64 @@ class World:
             raise WorldRuleError("背包中没有该物品。")
 
         item = self.items[item_id]
-        if item.slot != "hand":
-            raise WorldRuleError(f"物品 {item.name} 无法装备。")
-        if item.attack_bonus <= 0:
-            raise WorldRuleError(f"物品 {item.name} 无法装备。")
-        if self.equipped.hand is not None:
-            current = self.items[self.equipped.hand]
-            raise WorldRuleError(f"{current.name} 已经装备了。")
 
-        self.equipped.hand = item_id
+        # Strict tagged-variant validation BEFORE any state change.
+        if item.heal_amount is not None:
+            raise WorldRuleError(f"物品 {item.name} 无法装备。")
+        if item.slot not in ("hand", "body"):
+            raise WorldRuleError(f"物品 {item.name} 无法装备。")
+
+        if item.slot == "hand":
+            if item.attack_bonus < 1:
+                raise WorldRuleError(f"物品 {item.name} 无法装备。")
+            if item.defense_bonus != 0:
+                raise WorldRuleError(f"物品 {item.name} 无法装备。")
+            if self.equipped.hand is not None:
+                current = self.items[self.equipped.hand]
+                raise WorldRuleError(f"{current.name} 已经装备了。")
+        else:  # body
+            if item.defense_bonus < 1:
+                raise WorldRuleError(f"物品 {item.name} 无法装备。")
+            if item.attack_bonus != 0:
+                raise WorldRuleError(f"物品 {item.name} 无法装备。")
+            if self.equipped.body is not None:
+                current = self.items[self.equipped.body]
+                raise WorldRuleError(f"{current.name} 已经装备了。")
+
+        # All validation passed — apply state change.
+        if item.slot == "hand":
+            self.equipped.hand = item_id
+        else:
+            self.equipped.body = item_id
+
         return EquipOutcome(
             item_id=item_id,
             item_name=item.name,
             attack_bonus=item.attack_bonus,
+            defense_bonus=item.defense_bonus,
         )
 
-    def unequip(self) -> UnequipOutcome:
-        """Unequip the item in the hand slot."""
-        if self.equipped.hand is None:
-            raise WorldRuleError("没有装备中的物品。")
+    def unequip(self, slot: str = "hand") -> UnequipOutcome:
+        """Unequip the item in the specified slot (default: hand)."""
+        if slot == "hand":
+            if self.equipped.hand is None:
+                raise WorldRuleError("hand 没有装备中的物品。")
+            item_id = self.equipped.hand
+            self.equipped.hand = None
+        elif slot == "body":
+            if self.equipped.body is None:
+                raise WorldRuleError("body 没有装备中的物品。")
+            item_id = self.equipped.body
+            self.equipped.body = None
+        else:
+            raise WorldRuleError(f"未知槽位：{slot}")
 
-        item_id = self.equipped.hand
         item = self.items[item_id]
-        self.equipped.hand = None
         return UnequipOutcome(
             item_id=item_id,
             item_name=item.name,
             attack_bonus=item.attack_bonus,
+            defense_bonus=item.defense_bonus,
         )
 
     def attack(self, monster_query: str) -> AttackOutcome:
@@ -273,7 +314,9 @@ class World:
 
         monster = self.monsters[monster_id]
         combat = resolve_combat_round(
-            self.player, monster, player_attack=self.effective_attack,
+            self.player, monster,
+            player_attack=self.effective_attack,
+            player_defense=self.effective_defense,
         )
         level_gains: list[LevelGain] = []
         quest_outcome: QuestOutcome | None = None

@@ -425,6 +425,7 @@ class EquipmentSaveRoundTripTests(unittest.TestCase):
 
 
 # -- Command integration tests ------------------------------------------------
+# -- Command integration tests ------------------------------------------------
 
 
 class EquipmentCommandTests(unittest.TestCase):
@@ -438,6 +439,269 @@ class EquipmentCommandTests(unittest.TestCase):
         self.assertIn("equip", result.text)
         self.assertIn("unequip", result.text)
 
+    def test_unequip_default_hand(self) -> None:
+        """Bare 'unequip' defaults to hand slot."""
+        pack = load_content_pack(DEMO_PATH)
+        world = World.from_content_pack(pack)
+        cmds = CommandProcessor(world)
+        cmds.execute("take item_crystal_blade")
+        cmds.execute("equip item_crystal_blade")
+        result = cmds.execute("unequip")
+        self.assertIn("晶刃", result.text)
+        self.assertIsNone(world.equipped.hand)
+
+    def test_unequip_explicit_body(self) -> None:
+        """'unequip body' unequips body slot."""
+        pack = load_content_pack(DEMO_PATH)
+        world = World.from_content_pack(pack)
+        cmds = CommandProcessor(world)
+        cmds.execute("take item_bronze_scale_mail")
+        cmds.execute("equip item_bronze_scale_mail")
+        result = cmds.execute("unequip body")
+        self.assertIn("铜鳞甲", result.text)
+        self.assertIsNone(world.equipped.body)
+
+    def test_unequip_unknown_slot(self) -> None:
+        """'unequip head' reports unknown slot."""
+        pack = load_content_pack(DEMO_PATH)
+        world = World.from_content_pack(pack)
+        cmds = CommandProcessor(world)
+        result = cmds.execute("unequip head")
+        self.assertIn("用法", result.text)
+
+    def test_unequip_extra_args(self) -> None:
+        """'unequip body extra' reports usage."""
+        pack = load_content_pack(DEMO_PATH)
+        world = World.from_content_pack(pack)
+        cmds = CommandProcessor(world)
+        result = cmds.execute("unequip body extra")
+        self.assertIn("用法", result.text)
+
+
+# -- Body equip/unequip tests -------------------------------------------------
+
+
+class BodyEquipTests(unittest.TestCase):
+    """Body slot equip, unequip, and dual-slot behavior."""
+
+    def setUp(self) -> None:
+        self.pack = load_content_pack(DEMO_PATH)
+        self.world = World.from_content_pack(self.pack, player_name="测试旅人")
+        self.commands = CommandProcessor(self.world)
+        self.commands.execute("take item_crystal_blade")
+        self.commands.execute("take item_bronze_scale_mail")
+
+    def test_equip_body_increases_defense(self) -> None:
+        self.assertEqual(self.world.effective_defense, 1)
+        result = self.commands.execute("equip item_bronze_scale_mail")
+        self.assertIn("装备了", result.text)
+        self.assertEqual(self.world.effective_defense, 4)
+
+    def test_status_shows_defense(self) -> None:
+        self.commands.execute("equip item_bronze_scale_mail")
+        result = self.commands.execute("status")
+        self.assertIn("4", result.text)
+        self.assertIn("1 基础", result.text)
+        self.assertIn("+ 3", result.text)
+
+    def test_unequip_body_restores_defense(self) -> None:
+        self.commands.execute("equip item_bronze_scale_mail")
+        self.assertEqual(self.world.effective_defense, 4)
+        result = self.commands.execute("unequip body")
+        self.assertIn("铜鳞甲", result.text)
+        self.assertEqual(self.world.effective_defense, 1)
+
+    def test_hand_and_body_simultaneously(self) -> None:
+        """Both hand and body can be equipped at the same time."""
+        self.commands.execute("equip item_crystal_blade")
+        self.commands.execute("equip item_bronze_scale_mail")
+        self.assertEqual(self.world.effective_attack, 8)
+        self.assertEqual(self.world.effective_defense, 4)
+        self.assertEqual(self.world.equipped.hand, "item_crystal_blade")
+        self.assertEqual(self.world.equipped.body, "item_bronze_scale_mail")
+
+    def test_body_occupied_rejects_second(self) -> None:
+        """Equipping another body item when body is occupied is rejected."""
+        self.commands.execute("equip item_bronze_scale_mail")
+        # Create a second body item.
+        self.world.items["item_fake_armor"] = type(
+            self.world.items["item_bronze_scale_mail"]
+        )(
+            id="item_fake_armor", name="假甲", description="测试",
+            slot="body", defense_bonus=1,
+        )
+        self.world.player.inventory.item_ids.append("item_fake_armor")
+        result = self.commands.execute("equip item_fake_armor")
+        self.assertIn("已经装备了", result.text)
+        self.assertEqual(self.world.equipped.body, "item_bronze_scale_mail")
+
+
+# -- Use double-slot rejection tests ------------------------------------------
+
+
+class UseDoubleSlotRejectionTests(unittest.TestCase):
+    """World.use() rejects items in either equipped slot."""
+
+    def setUp(self) -> None:
+        self.pack = load_content_pack(DEMO_PATH)
+        self.world = World.from_content_pack(self.pack)
+        self.world.take("item_crystal_blade")
+        self.world.take("item_bronze_scale_mail")
+        self.world.take("item_linglu_pill")
+        self.world.move("east")
+        self.world.move("east")
+        self.world.attack("monster_ash_mite")
+
+    def test_use_hand_equipped_rejected(self) -> None:
+        self.world.equip("item_crystal_blade")
+        with self.assertRaises(WorldRuleError) as ctx:
+            self.world.use("item_crystal_blade")
+        self.assertIn("正在装备中", str(ctx.exception))
+
+    def test_use_body_equipped_rejected(self) -> None:
+        self.world.equip("item_bronze_scale_mail")
+        with self.assertRaises(WorldRuleError) as ctx:
+            self.world.use("item_bronze_scale_mail")
+        self.assertIn("正在装备中", str(ctx.exception))
+
+
+# -- Combat with defense tests -----------------------------------------------
+
+
+class BodyCombatTests(unittest.TestCase):
+    """Equipment defense affects combat counter damage."""
+
+    def test_counter_damage_with_body_armor(self) -> None:
+        """Monster attack=3, player defense=1+3=4. Damage = max(1,3-4) = 1."""
+        pack = load_content_pack(DEMO_PATH)
+        world = World.from_content_pack(pack)
+        world.take("item_bronze_scale_mail")
+        world.equip("item_bronze_scale_mail")
+        world.move("east")
+        world.move("east")
+        self.assertEqual(world.effective_defense, 4)
+        world.attack("monster_ash_mite")
+        # Monster attack=3, defense=4 → max(1, 3-4) = 1
+        self.assertEqual(world.player.hp, 19)
+
+    def test_counter_damage_without_armor(self) -> None:
+        """Without armor: defense=1, damage = max(1,3-1) = 2."""
+        pack = load_content_pack(DEMO_PATH)
+        world = World.from_content_pack(pack)
+        world.move("east")
+        world.move("east")
+        self.assertEqual(world.effective_defense, 1)
+        world.attack("monster_ash_mite")
+        self.assertEqual(world.player.hp, 18)
+
+    def test_direct_world_attack_defense(self) -> None:
+        """Directly call World.attack() to verify effective_defense."""
+        pack = load_content_pack(DEMO_PATH)
+        world = World.from_content_pack(pack)
+        world.take("item_bronze_scale_mail")
+        world.equip("item_bronze_scale_mail")
+        world.move("east")
+        world.move("east")
+        outcome = world.attack("monster_ash_mite")
+        self.assertEqual(outcome.combat.damage_to_player, 1)
+
+
+# -- Upgrade with body tests --------------------------------------------------
+
+
+class BodyUpgradeTests(unittest.TestCase):
+    """Body armor and level-up interaction."""
+
+    def test_level_up_with_body(self) -> None:
+        """Level up while body equipped: defense=2, effective=5."""
+        pack = load_content_pack(DEMO_PATH)
+        world = World.from_content_pack(pack)
+        world.take("item_crystal_blade")
+        world.take("item_bronze_scale_mail")
+        world.equip("item_crystal_blade")
+        world.equip("item_bronze_scale_mail")
+        world.move("east")
+        world.move("east")
+        world.attack("monster_ash_mite")
+        world.attack("monster_ash_mite")
+        self.assertEqual(world.player.level, 2)
+        self.assertEqual(world.player.defense, 2)
+        self.assertEqual(world.effective_defense, 5)
+
+    def test_unequip_body_after_upgrade(self) -> None:
+        """After upgrade, unequip body shows base defense=2."""
+        pack = load_content_pack(DEMO_PATH)
+        world = World.from_content_pack(pack)
+        world.take("item_crystal_blade")
+        world.take("item_bronze_scale_mail")
+        world.equip("item_crystal_blade")
+        world.equip("item_bronze_scale_mail")
+        world.move("east")
+        world.move("east")
+        world.attack("monster_ash_mite")
+        world.attack("monster_ash_mite")
+        world.unequip("body")
+        self.assertEqual(world.player.defense, 2)
+        self.assertEqual(world.effective_defense, 2)
+
+
+# -- Body save round-trip tests -----------------------------------------------
+
+
+class BodySaveRoundTripTests(unittest.TestCase):
+    """Body equipment state survives save/load."""
+
+    def setUp(self) -> None:
+        self.pack = load_content_pack(DEMO_PATH)
+        self.world = World.from_content_pack(self.pack, player_name="测试旅人")
+        self.tmpdir = tempfile.mkdtemp()
+        self.service = SaveLoadService(self.pack, Path(self.tmpdir))
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def test_both_slots_survive_save_load(self) -> None:
+        self.world.take("item_crystal_blade")
+        self.world.take("item_bronze_scale_mail")
+        self.world.equip("item_crystal_blade")
+        self.world.equip("item_bronze_scale_mail")
+        self.service.save(self.world)
+        loaded = self.service.load()
+        self.assertEqual(loaded.equipped.hand, "item_crystal_blade")
+        self.assertEqual(loaded.equipped.body, "item_bronze_scale_mail")
+        self.assertEqual(loaded.effective_attack, 8)
+        self.assertEqual(loaded.effective_defense, 4)
+
+    def test_save_stores_base_stats(self) -> None:
+        """Save stores base defense (1), not effective defense (4)."""
+        from lore2mud.engine.save import _serialize_world
+        self.world.take("item_bronze_scale_mail")
+        self.world.equip("item_bronze_scale_mail")
+        data = _serialize_world(self.world)
+        self.assertEqual(data["player"]["defense"], 1)
+        self.assertEqual(data["equipped"]["body"], "item_bronze_scale_mail")
+
+    def test_v3_save_rejected(self) -> None:
+        """v3 saves (no body key) must be rejected."""
+        self.service.save(self.world)
+        txt = self.service.save_path.read_text("utf-8")
+        txt = txt.replace('"save_format_version": 4', '"save_format_version": 3')
+        self.service.save_path.write_text(txt, "utf-8")
+        with self.assertRaises(SaveLoadError) as ctx:
+            self.service.load()
+        self.assertIn("格式版本", str(ctx.exception))
+
+    def test_missing_body_key_rejected(self) -> None:
+        self.service.save(self.world)
+        data = json.loads(self.service.save_path.read_text("utf-8"))
+        del data["equipped"]["body"]
+        self.service.save_path.write_text(
+            json.dumps(data, ensure_ascii=False, indent=2), "utf-8"
+        )
+        with self.assertRaises(SaveLoadError) as ctx:
+            self.service.load()
+        self.assertIn("body", str(ctx.exception))
+
 
 # -- Schema and loader formal tests -------------------------------------------
 
@@ -450,7 +714,6 @@ class SchemaAndLoaderFormalTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             bp = Path(td) / "bad"
             shutil.copytree(DEMO_PATH, bp)
-            # Create a standalone item with explicit attack_bonus=0 and no slot.
             items = [
                 {
                     "id": "item_test_zero",
@@ -473,28 +736,45 @@ class SchemaAndLoaderFormalTests(unittest.TestCase):
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         props = schema["properties"]
 
-        # attack_bonus minimum must be 1 (not 0).
+        # attack_bonus and defense_bonus minimum must be 1.
         self.assertEqual(props["attack_bonus"]["minimum"], 1)
+        self.assertEqual(props["defense_bonus"]["minimum"], 1)
+
+        # slot enum must include hand and body.
+        self.assertIn("hand", props["slot"]["enum"])
+        self.assertIn("body", props["slot"]["enum"])
 
         # allOf must exist with combo rules.
         all_of = schema.get("allOf", [])
-        self.assertGreaterEqual(len(all_of), 4)
+        self.assertGreaterEqual(len(all_of), 7)
 
-        # Rule: slot requires attack_bonus.
+        # Rule 0: slot requires either attack_bonus or defense_bonus.
         self.assertIn("slot", all_of[0]["if"]["required"])
-        self.assertIn("attack_bonus", all_of[0]["then"]["required"])
+        self.assertIn("anyOf", all_of[0]["then"])
 
-        # Rule: attack_bonus requires slot.
+        # Rule 1: attack_bonus requires slot.
         self.assertIn("attack_bonus", all_of[1]["if"]["required"])
         self.assertIn("slot", all_of[1]["then"]["required"])
 
-        # Rule: heal_amount excludes slot.
-        self.assertIn("heal_amount", all_of[2]["if"]["required"])
-        self.assertEqual(all_of[2]["then"]["not"]["required"], ["slot"])
+        # Rule 2: defense_bonus requires slot.
+        self.assertIn("defense_bonus", all_of[2]["if"]["required"])
+        self.assertIn("slot", all_of[2]["then"]["required"])
 
-        # Rule: slot excludes heal_amount.
-        self.assertIn("slot", all_of[3]["if"]["required"])
-        self.assertEqual(all_of[3]["then"]["not"]["required"], ["heal_amount"])
+        # Rule 3: heal_amount excludes slot.
+        self.assertIn("heal_amount", all_of[3]["if"]["required"])
+        self.assertEqual(all_of[3]["then"]["not"]["required"], ["slot"])
+
+        # Rule 4: slot excludes heal_amount.
+        self.assertIn("slot", all_of[4]["if"]["required"])
+        self.assertEqual(all_of[4]["then"]["not"]["required"], ["heal_amount"])
+
+        # Rule 5: attack_bonus excludes defense_bonus.
+        self.assertIn("attack_bonus", all_of[5]["if"]["required"])
+        self.assertEqual(all_of[5]["then"]["not"]["required"], ["defense_bonus"])
+
+        # Rule 6: defense_bonus excludes attack_bonus.
+        self.assertIn("defense_bonus", all_of[6]["if"]["required"])
+        self.assertEqual(all_of[6]["then"]["not"]["required"], ["attack_bonus"])
 
 
 if __name__ == "__main__":

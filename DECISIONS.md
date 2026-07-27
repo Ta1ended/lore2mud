@@ -184,3 +184,29 @@
 - Evidence: `src/lore2mud/engine/world.py`, `src/lore2mud/engine/save.py`,
   `src/lore2mud/engine/commands.py`, `src/lore2mud/combat/service.py`,
   `src/lore2mud/inventory/models.py`, `tests/test_equipment.py`.
+
+ ## DEC-0011: Body equipment slot with defense_bonus and save v4
+
+ - Date: 2026-07-28
+ - Status: Accepted
+ - Context: The hand equipment slot is complete; extending to body validates the
+ multi-slot design and adds defensive capabilities.
+ - Decision: (a) Add `defense_bonus: int` field to `ItemDefinition` and `Item`.
+ (b) `EquippedItems` gets `body: str | None`. (c) `World.effective_defense`
+ dynamically computes `player.defense + body defense_bonus`. (d) `equip` routes
+ by `item.slot` ("hand" or "body") with strict tagged-variant validation before
+ any state change — heal_amount is None, slot matches, bonus ≥ 1, no conflicting
+ bonus. (e) `unequip` accepts optional slot parameter; bare `unequip` defaults
+ to hand for backward compatibility. (f) `resolve_combat_round` gains
+ `player_defense` parameter; counter damage uses it while writing to real
+ `Player.hp`. (g) Save format upgraded to v4 with required `equipped.hand` and
+ `equipped.body` keys; v3 explicitly rejected. (h) Loader rejects all illegal
+ combos: mixed bonuses, slot+heal, wrong slot bonus, null values. (i) Content
+ pack version bumps to 0.2.3.
+ - Consequences: `player.attack` and `player.defense` remain base values (含升级，
+ 不含装备). Equip/unequip are symmetric for both slots. The v4 bump breaks
+ backward compatibility with 0.2.2 saves. Future slots (head, ring) follow the
+ same pattern.
+ - Evidence: `src/lore2mud/engine/world.py`, `src/lore2mud/engine/save.py`,
+ `src/lore2mud/engine/commands.py`, `src/lore2mud/combat/service.py`,
+ `src/lore2mud/content/loader.py`, `tests/test_equipment.py`.
