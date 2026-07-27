@@ -16,13 +16,17 @@ _Last updated: 2026-07-28_
 - `examples/original_demo/` 提供三个原创房间、四个物品（一个消耗品、一个武器、
   一个护甲）、一个怪物和一个任务。
 - `pipeline/` 支持 UTF-8/GBK/GB18030、章卷分离、稳定顺序 ID 和 manifest v2。
+  私有拆章重建校验通过（字符数 + SHA-256 一致）。
 - `schemas/` 与 `src/lore2mud/content/` 定义并校验内容契约。
 - `scripts/check_repo_safety.py` 与 `.gitignore` 建立公开/私有内容边界。
 - `tests/` 覆盖核心玩法、消耗品、装备（hand+body）、非法内容引用、拆章和
   安全检查。
 - 私有小说已在仓库外完成一次受控拆章；原文未修改，章节重建校验通过。
+- `docs/`、`AGENTS.md`、GitHub 基础文件和项目交接文件已建立。
 - 版本化本地存档/读档：`save`/`load` 指令、`SaveLoadService`、原子写入、
   严格验证和 CLI 冒烟测试通过。
+- 内容包校验 CLI：`lore2mud validate --content <dir>`、旧命令隐式 play
+  fallback、`_read_json` UnicodeDecodeError 处理。
 - 原创确定性任务闭环：自动接取、怪物击败条件、经验奖励、`quests` 命令。
 - 消耗品系统：`heal_amount` 字段、`use` 命令、`World.use()` + `UseOutcome`、
   满血/死亡边界检查、读档往返验证、17 项新测试。
@@ -30,7 +34,7 @@ _Last updated: 2026-07-28_
   `World.effective_attack` 动态计算、存档 v3、49 项新测试。
 - 装备系统 body：`defense_bonus` 字段、`World.effective_defense` 动态计算、
   `player_defense` combat 参数、`unequip` 带槽位参数、存档 v4（双键必填）、
-  20 项新测试。
+  19 项新测试（含 World 状态不变性 + save v4 非法矩阵）。
 - 内容包版本升至 0.2.3；存档格式升至 v4。
 
 ## In progress
@@ -43,7 +47,7 @@ _Last updated: 2026-07-28_
 
 ## Verification
 
-- `python -m unittest discover -s tests -v` - 229 tests passed (2026-07-28).
+- `python -m unittest discover -s tests -v` - 248 tests passed (2026-07-28).
 - `python scripts/check_repo_safety.py` - passed (2026-07-28).
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `git diff --check` - clean (2026-07-28).
@@ -57,11 +61,19 @@ _Last updated: 2026-07-28_
   item use, and equipment logic.
 - `src/lore2mud/engine/save.py` - save/load service (format v4).
 - `src/lore2mud/content/loader.py` - schema-like and reference validation.
+- `src/lore2mud/cli.py` - CLI entry point with play/validate subcommands.
 - `src/lore2mud/combat/service.py` - deterministic combat with player_attack/defense.
+- `pipeline/split_novel.py` - private-corpus preprocessing tool.
 - `examples/original_demo/` - public, original playable fixture.
+- `D:\MUD game kaifa\小说\processing\` - private external processing output; never commit.
 
 ## Risks and unknowns
 
-- Only one quest type (monster_defeated) is implemented.
+- Only one quest type (monster_defeated) is implemented; more types need explicit
+  decisions.
+- The one-target-monster-per-quest constraint will need revisiting if shared-target
+  quests are ever needed.
 - Private corpus summaries, canon facts and game adaptation content have not been
   generated or reviewed.
+- The provider's privacy claim about model visibility is not independently verified;
+  do not send the entire corpus to a cloud model by default.

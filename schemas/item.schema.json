@@ -77,6 +77,14 @@
     {
       "if": { "required": ["defense_bonus"] },
       "then": { "not": { "required": ["attack_bonus"] } }
+    },
+    {
+      "if": { "properties": { "slot": { "const": "hand" } }, "required": ["slot"] },
+      "then": { "not": { "required": ["defense_bonus"] } }
+    },
+    {
+      "if": { "properties": { "slot": { "const": "body" } }, "required": ["slot"] },
+      "then": { "not": { "required": ["attack_bonus"] } }
     }
   ]
 }

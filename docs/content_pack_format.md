@@ -113,6 +113,8 @@ null` 属于非法内容，加载器拒绝内容包。
 - hand 和 body 可同时装备；同一槽位已占用时必须先 `unequip`。
 - 装备中的物品不可被 `use` 命令使用。
 - `slot` 与 `heal_amount` 不可同时指定；`attack_bonus` 与 `defense_bonus` 不可同时指定。
+- hand 槽不可指定 `defense_bonus`；body 槽不可指定 `attack_bonus`。
+- 所有字段（`slot`、`attack_bonus`、`defense_bonus`、`heal_amount`）显式 `null` 均被拒绝；不可用字段应省略。
 
 ## 怪物
 

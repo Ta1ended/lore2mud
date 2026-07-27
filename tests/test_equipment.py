@@ -776,6 +776,219 @@ class SchemaAndLoaderFormalTests(unittest.TestCase):
         self.assertIn("defense_bonus", all_of[6]["if"]["required"])
         self.assertEqual(all_of[6]["then"]["not"]["required"], ["attack_bonus"])
 
+        # Rule 7: hand slot excludes defense_bonus.
+        self.assertEqual(all_of[7]["if"]["properties"]["slot"]["const"], "hand")
+        self.assertEqual(all_of[7]["then"]["not"]["required"], ["defense_bonus"])
+
+        # Rule 8: body slot excludes attack_bonus.
+        self.assertEqual(all_of[8]["if"]["properties"]["slot"]["const"], "body")
+        self.assertEqual(all_of[8]["then"]["not"]["required"], ["attack_bonus"])
+
+
+# -- Body loader illegal combo tests -----------------------------------------
+
+
+class BodyLoaderIllegalComboTests(unittest.TestCase):
+    """Body slot loader rejects all illegal field combinations."""
+
+    def _make_pack(self, items):
+        with tempfile.TemporaryDirectory() as td:
+            bp = Path(td) / "bad"
+            shutil.copytree(DEMO_PATH, bp)
+            (bp / "items.json").write_text(
+                json.dumps(items, ensure_ascii=False, indent=2), "utf-8"
+            )
+            with self.assertRaises(ContentValidationError) as ctx:
+                load_content_pack(bp)
+            return str(ctx.exception)
+
+    def test_body_with_attack_bonus_rejected(self) -> None:
+        err = self._make_pack([{
+            "id": "item_bad", "name": "坏", "description": "T",
+            "slot": "body", "attack_bonus": 3,
+        }])
+        self.assertIn("attack_bonus", err)
+
+    def test_body_with_heal_amount_rejected(self) -> None:
+        err = self._make_pack([{
+            "id": "item_bad", "name": "坏", "description": "T",
+            "slot": "body", "heal_amount": 5,
+        }])
+        self.assertIn("heal_amount", err)
+
+    def test_body_with_zero_defense_rejected(self) -> None:
+        err = self._make_pack([{
+            "id": "item_bad", "name": "坏", "description": "T",
+            "slot": "body", "defense_bonus": 0,
+        }])
+        self.assertIn("defense_bonus", err)
+
+    def test_hand_with_defense_bonus_rejected(self) -> None:
+        err = self._make_pack([{
+            "id": "item_bad", "name": "坏", "description": "T",
+            "slot": "hand", "defense_bonus": 3,
+        }])
+        self.assertIn("defense_bonus", err)
+
+    def test_explicit_null_slot_rejected(self) -> None:
+        err = self._make_pack([{
+            "id": "item_bad", "name": "坏", "description": "T",
+            "slot": None,
+        }])
+        self.assertIn("slot", err)
+
+    def test_explicit_null_defense_bonus_rejected(self) -> None:
+        err = self._make_pack([{
+            "id": "item_bad", "name": "坏", "description": "T",
+            "defense_bonus": None,
+        }])
+        self.assertIn("defense_bonus", err)
+
+
+# -- World state invariance tests ---------------------------------------------
+
+
+class WorldStateInvarianceTests(unittest.TestCase):
+    """Failed equip/unequip must not change World state."""
+
+    def setUp(self) -> None:
+        self.pack = load_content_pack(DEMO_PATH)
+        self.world = World.from_content_pack(self.pack)
+        # Pre-populate inventory so room state is stable.
+        self.world.take("item_spark_lantern")
+        self.world.take("item_linglu_pill")
+        self.world.take("item_crystal_blade")
+        self.world.take("item_bronze_scale_mail")
+
+    def _snapshot(self):
+        return (
+            self.world.effective_attack,
+            self.world.effective_defense,
+            self.world.player.attack,
+            self.world.player.defense,
+            self.world.player.hp,
+            list(self.world.player.inventory.item_ids),
+            self.world.equipped.hand,
+            self.world.equipped.body,
+        )
+
+    def test_equip_non_equippable_no_change(self) -> None:
+        before = self._snapshot()
+        with self.assertRaises(WorldRuleError):
+            self.world.equip("item_spark_lantern")
+        self.assertEqual(self._snapshot(), before)
+
+    def test_equip_consumable_no_change(self) -> None:
+        before = self._snapshot()
+        with self.assertRaises(WorldRuleError):
+            self.world.equip("item_linglu_pill")
+        self.assertEqual(self._snapshot(), before)
+
+    def test_equip_occupied_hand_no_change(self) -> None:
+        self.world.equip("item_crystal_blade")
+        before = self._snapshot()
+        with self.assertRaises(WorldRuleError):
+            self.world.equip("item_spark_lantern")
+        self.assertEqual(self._snapshot(), before)
+
+    def test_unequip_empty_body_no_change(self) -> None:
+        before = self._snapshot()
+        with self.assertRaises(WorldRuleError):
+            self.world.unequip("body")
+        self.assertEqual(self._snapshot(), before)
+
+    def test_unequip_unknown_slot_no_change(self) -> None:
+        before = self._snapshot()
+        with self.assertRaises(WorldRuleError):
+            self.world.unequip("head")
+        self.assertEqual(self._snapshot(), before)
+
+
+# -- Save v4 illegal matrix tests ---------------------------------------------
+
+
+class SaveV4IllegalMatrixTests(unittest.TestCase):
+    """Save v4 rejects all illegal equipped configurations."""
+
+    def setUp(self) -> None:
+        self.pack = load_content_pack(DEMO_PATH)
+        self.world = World.from_content_pack(self.pack)
+        self.tmpdir = tempfile.mkdtemp()
+        self.service = SaveLoadService(self.pack, Path(self.tmpdir))
+
+    def tearDown(self) -> None:
+        shutil.rmtree(self.tmpdir, ignore_errors=True)
+
+    def _load_with_tamper(self, mutate):
+        self.service.save(self.world)
+        data = json.loads(self.service.save_path.read_text("utf-8"))
+        mutate(data)
+        self.service.save_path.write_text(
+            json.dumps(data, ensure_ascii=False), "utf-8"
+        )
+        return self.service.load()
+
+    def test_body_not_in_inventory_rejected(self) -> None:
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._load_with_tamper(
+                lambda d: d.__setitem__("equipped", {"hand": None, "body": "item_bronze_scale_mail"})
+            )
+        self.assertIn("背包", str(ctx.exception))
+
+    def test_body_wrong_slot_rejected(self) -> None:
+        """hand item (crystal_blade, slot=hand) in body slot → slot mismatch."""
+        self.world.take("item_crystal_blade")
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._load_with_tamper(
+                lambda d: d.__setitem__("equipped", {"hand": None, "body": "item_crystal_blade"})
+            )
+        self.assertIn("slot", str(ctx.exception))
+
+    def test_body_normal_item_rejected(self) -> None:
+        """Normal item (spark_lantern, slot=None) in body slot → slot mismatch."""
+        self.world.take("item_spark_lantern")
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._load_with_tamper(
+                lambda d: d.__setitem__("equipped", {"hand": None, "body": "item_spark_lantern"})
+            )
+        self.assertIn("slot", str(ctx.exception))
+
+    def test_hand_normal_item_rejected(self) -> None:
+        """Normal item (spark_lantern, slot=None) in hand slot → slot mismatch."""
+        self.world.take("item_spark_lantern")
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._load_with_tamper(
+                lambda d: d.__setitem__("equipped", {"hand": "item_spark_lantern", "body": None})
+            )
+        self.assertIn("slot", str(ctx.exception))
+
+    def test_body_consumable_slot_mismatch(self) -> None:
+        """Consumable (linglu_pill, slot=None) in body slot → slot mismatch."""
+        self.world.take("item_linglu_pill")
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._load_with_tamper(
+                lambda d: d.__setitem__("equipped", {"hand": None, "body": "item_linglu_pill"})
+            )
+        self.assertIn("slot", str(ctx.exception))
+
+    def test_missing_hand_key_rejected(self) -> None:
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._load_with_tamper(lambda d: d.__setitem__("equipped", {"body": None}))
+        self.assertIn("hand", str(ctx.exception))
+
+    def test_missing_body_key_rejected(self) -> None:
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._load_with_tamper(lambda d: d.__setitem__("equipped", {"hand": None}))
+        self.assertIn("body", str(ctx.exception))
+
+    def test_v3_save_rejected(self) -> None:
+        self.service.save(self.world)
+        txt = self.service.save_path.read_text("utf-8")
+        txt = txt.replace('"save_format_version": 4', '"save_format_version": 3')
+        self.service.save_path.write_text(txt, "utf-8")
+        with self.assertRaises(SaveLoadError) as ctx:
+            self.service.load()
+        self.assertIn("格式版本", str(ctx.exception))
 
 if __name__ == "__main__":
     unittest.main()
