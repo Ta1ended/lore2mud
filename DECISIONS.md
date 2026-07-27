@@ -41,3 +41,33 @@
 - Evidence: `src/lore2mud/engine/world.py`, `src/lore2mud/combat/`,
   `src/lore2mud/progression/`, `tests/test_commands.py`.
 - Supersedes: None.
+
+## DEC-0004: Versioned private preprocessing pipeline
+
+- Date: 2026-07-27
+- Status: Accepted
+- Context: The private source uses a legacy Chinese encoding, has volume headings,
+  and repeats some original chapter numbers.
+- Decision: Decode with an explicit encoding, use chapter occurrence order for stable
+  IDs, track volume labels as metadata, and verify reconstruction before any model
+  extraction.
+- Consequences: Original chapter labels remain display/source metadata; private
+  processing can be repeated safely without overwriting chapters.
+- Evidence: `pipeline/split_novel.py`, `pipeline/build_manifest.py`,
+  `tests/test_pipeline.py`, private external processing report.
+- Supersedes: None.
+
+## DEC-0005: Pause and resume through repository handoff files
+
+- Date: 2026-07-27
+- Status: Accepted
+- Context: Long-running corpus work and Agent sessions must be stoppable without
+  losing the next action or accidentally continuing expensive processing.
+- Decision: Treat `PROJECT_STATE.md`, `NEXT_TASK.md`, `DECISIONS.md`,
+  `CHANGELOG.md`, and `PROJECT_MEMORY.md` as the restart contract. A paused project
+  has no implicit background work; resumption starts only from the single task in
+  `NEXT_TASK.md`.
+- Consequences: A fresh session can resume from files and repository evidence, while
+  novel scans and model calls never restart automatically.
+- Evidence: `PROJECT_MEMORY.md`, `PROJECT_STATE.md`, `NEXT_TASK.md`.
+- Supersedes: None.
