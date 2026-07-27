@@ -26,23 +26,84 @@ novel/
 ## 第一步：拆章
 
 ```powershell
-python pipeline/split_novel.py D:\PrivateNovel\book.txt novel\chapters
+python pipeline/split_novel.py D:\PrivateNovel\book.txt novel\chapters --encoding gbk
 ```
 
-脚本：
+### 支持的编码
 
-- 以 `utf-8-sig` 读取源文件，不写回原文；
-- 默认识别“第 N 章 标题”或只有章节号的保守格式；
+| 参数值 | 说明 |
+|--------|------|
+| `utf-8-sig` | 默认，UTF-8 带 BOM |
+| `utf-8` | UTF-8 无 BOM |
+| `gbk` | 中文 GBK |
+| `gb18030` | GB18030 超集 |
+
+解码使用严格模式；遇到非法字节时立即报错，不会静默替换。
+
+### 章节与卷的识别
+
+- **"第X章"** 行作为章节分割点，每章生成一个 `chapter_NNNNNN.txt` 文件。
+- **"第X卷"** 行不创建文件，仅更新后续章节的 `volume_label` 元数据。
+- 文件名使用按出现顺序生成的稳定 ID，不使用原始章节号或标题。
+- 原始章节号和标题允许重复（如不同卷中的重号章节）。
+
+### 脚本行为
+
+- 以指定编码（默认 `utf-8-sig`）读取源文件，不写回原文；
+- 默认识别"第 N 章 标题"格式；
 - 生成 `chapter_000001.txt` 等稳定文件名；
-- 生成包含标题、字符数、前后章节和 SHA-256 的 manifest。
+- 生成包含完整元数据的 `manifest.json`。
 
-不同来源的标题格式可能是“卷一”“Chapter 1”或不含空格。不要为了提高命中
+不同来源的标题格式可能是"卷一""Chapter 1"或不含空格。不要为了提高命中
 率直接使用过宽正则；应先复制少量样本调整规则，再验证：
 
 - 拆分章节数与目录一致；
 - 全部章节按顺序拼接后与解码后的原文一致；
 - 没有把正文句子误判为标题；
 - 没有重复或空章节。
+
+## manifest 格式 (v2)
+
+```json
+{
+  "format_version": 2,
+  "source_encoding": "gbk",
+  "chapter_count": 3,
+  "chapters": [
+    {
+      "chapter_id": "chapter_000001",
+      "title": "第一章 雾岭小村",
+      "source_chapter_label": "第一章",
+      "source_title": "雾岭小村",
+      "volume_label": "第一卷 雾岭边站",
+      "source_offset": 42,
+      "source_line": 12,
+      "path": "chapter_000001.txt",
+      "character_count": 12345,
+      "sha256": "...",
+      "previous_id": null,
+      "next_id": "chapter_000002"
+    }
+  ]
+}
+```
+
+### 字段说明
+
+| 字段 | 类型 | 说明 |
+|------|------|------|
+| `chapter_id` | str | 按出现顺序的稳定 ID，如 `chapter_000001` |
+| `title` | str | 完整标题行，如 `"第一章 雾岭小村"` |
+| `source_chapter_label` | str | 仅章节号，如 `"第一章"` |
+| `source_title` | str | 仅标题文字，如 `"雾岭小村"`（可能为空） |
+| `volume_label` \| null | str | 最近的卷标题，如 `"第一卷 雾岭边站"` |
+| `source_offset` | int | 解码后文本中的字符偏移（标题行起始位置） |
+| `source_line` | int | 解码后文本中的行号（从 1 开始） |
+| `path` | str | 输出文件名 |
+| `character_count` | int | 章节字符数 |
+| `sha256` | str | 章节文本 SHA-256 |
+| `previous_id` \| null | str | 前一章 ID |
+| `next_id` \| null | str | 后一章 ID |
 
 ## 第二步：逐章提取
 
