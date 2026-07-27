@@ -36,6 +36,7 @@ class ItemDefinition:
     id: str
     name: str
     description: str
+    heal_amount: int | None = None
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
 
 

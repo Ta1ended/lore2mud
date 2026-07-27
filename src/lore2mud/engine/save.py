@@ -371,6 +371,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
                 id=item_id,
                 name=item_def.name,
                 description=item_def.description,
+                heal_amount=item_def.heal_amount,
             )
             for item_id, item_def in pack.items.items()
         },

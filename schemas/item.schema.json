@@ -21,6 +21,10 @@
       "type": "string",
       "minLength": 1
     },
+    "heal_amount": {
+      "type": "integer",
+      "minimum": 1
+    },
     "canon_ref": {
       "$ref": "common.schema.json#/$defs/canon_ref"
     },

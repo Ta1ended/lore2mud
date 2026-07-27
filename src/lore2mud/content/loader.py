@@ -327,9 +327,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
         )
 
     item_defs: list[ItemDefinition] = []
-    for index, obj in enumerate(
-        _load_entity_array(root, "items.json", validator)
-    ):
+    for index, obj in enumerate(_load_entity_array(root, "items.json", validator)):
         location = f"items.json[{index}]"
         validator.keys(
             obj,
@@ -337,20 +335,27 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 "id",
                 "name",
                 "description",
+                "heal_amount",
                 "canon_ref",
                 "adaptation_notes",
             },
             location,
         )
         entity_id = validator.stable_id(
-            validator.text(obj, "id", location),
-            f"{location}.id",
+            validator.text(obj, "id", location), f"{location}.id",
         )
+        # heal_amount: optional; only validate when present.
+        heal_amount: int | None = None
+        if "heal_amount" in obj:
+            heal_amount = validator.integer(
+                obj, "heal_amount", location, minimum=1, default=0,
+            )
         item_defs.append(
             ItemDefinition(
                 id=entity_id,
                 name=validator.text(obj, "name", location),
                 description=validator.text(obj, "description", location),
+                heal_amount=heal_amount,
                 metadata=_metadata(obj, location, validator),
             )
         )

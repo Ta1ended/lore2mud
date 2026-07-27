@@ -1,6 +1,6 @@
 # Project Memory
 
-_Checkpoint: 2026-07-28_
+_Checkpoint ref: HEAD — 恢复时运行 `git rev-parse HEAD` 获取当前提交。_
 
 This file is a compact restart guide for GPT, Hermes, or a future Codex session.
 Repository state, tests, and current files are authoritative if this file becomes
@@ -19,32 +19,29 @@ stale.
 
 - Repository: `lore2mud`
 - Branch: `main`
-- Last verified code baseline: `79aa3d5`
-- The current checkpoint is saved by the latest handoff commit shown by
-  `git log --oneline --decorate`.
-- Remote: `origin/main` (the latest handoff commit is local until GitHub
-  connectivity is restored)
-- Working tree at checkpoint: clean after the save/load checkpoint commit
+- Remote: `origin/main`, 1 commit ahead of origin
+- Working tree: clean
+- 功能状态：消耗品系统已完成（heal_amount + use 命令 + 边界检查 + 存档往返）
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
 - The private novel corpus and split chapters are outside the repository under:
   `D:\MUD game kaifa\小说\processing\`
 - The preprocessing pipeline is complete and verified.
-- The game engine now has versioned local save/load with atomic writes and strict
-  validation.
 - No Agent should start background work automatically when the project is resumed.
 
 ## Verified facts
 
-- Full project suite: 142 tests passed.
+- Full project suite: 160 tests passed (2026-07-28).
 - Repository safety check: passed.
 - Compile check and CLI save/load smoke test: passed.
 - CLI validate smoke test: passed.
-- CLI legacy play smoke test: passed.
-- CLI explicit play smoke test: passed.
+- CLI play smoke test with quests and consumables: passed.
 - CLI unknown-argument rejection (validate/play/legacy): passed.
-- CLI legacy --player-name / --save-dir backward compatibility: passed.
 - Quest system: auto-accept, completion, reward-once, save round-trip: passed.
+- Consumable system: heal_amount field, use command, full HP / dead / non-usable
+  rejection, heal_amount: null rejection, save round-trip with heal_amount
+  preservation: passed.
+- Content pack version: 0.2.1 (old 0.2.0 saves cleanly rejected).
 - git diff --check: clean.
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.
@@ -55,29 +52,27 @@ stale.
 
 ## Resume rule
 
-The only active task is the one in `NEXT_TASK.md`: add one usable original
-consumable item. Do not implement equipment, dialogue trees, or novel extraction
-first.
+The only active task is the one in `NEXT_TASK.md`: add one equipment slot with
+one original equipment item and one deterministic stat bonus. Do not implement
+dialogue trees, novel extraction, or multiple slots first.
 
 ## Pause rule
 
 To pause safely:
-
 1. Stop the current Hermes/Codex task.
 2. Do not start another model call or long-running corpus scan.
 3. Run `git status --short`.
-4. Record any verified change in the four handoff files.
+4. Sync `PROJECT_MEMORY.md` 及四个交接文件（`PROJECT_STATE.md`、
+   `NEXT_TASK.md`、`DECISIONS.md`、`CHANGELOG.md`）。
 5. Leave the working tree committed or clearly describe uncommitted changes.
 
 To resume safely:
-
-1. Check `git status --short` and `git log -3 --oneline`.
+1. Run `git rev-parse HEAD` and `git log -3 --oneline`.
 2. Read the handoff files in the order above.
 3. Restate the single active task and acceptance criteria.
 4. Ask for confirmation before making code changes or starting expensive processing.
 
 ## Hard boundaries
-
 - Never commit the private novel, split chapters, summaries, canon facts, local
   indexes, model files, database files, saves, logs, or credentials.
 - Never modify the raw private source.

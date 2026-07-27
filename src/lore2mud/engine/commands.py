@@ -12,6 +12,7 @@ HELP_TEXT = """可用指令：
   look                  查看当前房间
   go <方向>             移动，例如 go north
   take <物品ID或名称>   拾取物品
+  use <物品ID或名称>    使用消耗品
   inventory             查看背包
   quests                查看任务
   status                查看角色状态
@@ -54,6 +55,8 @@ class CommandProcessor:
                 return self._go(arguments)
             if command == "take":
                 return self._take(arguments)
+            if command == "use":
+                return self._use(arguments)
             if command in {"inventory", "inv", "i"}:
                 return CommandResult(self._inventory())
             if command == "quests":
@@ -127,6 +130,14 @@ class CommandProcessor:
             return CommandResult("用法：take <物品ID或名称>")
         item = self.world.take(" ".join(arguments))
         return CommandResult(f"你拾取了 {item.name} ({item.id})。")
+
+    def _use(self, arguments: list[str]) -> CommandResult:
+        if not arguments:
+            return CommandResult("用法：use <物品ID或名称>")
+        outcome = self.world.use(" ".join(arguments))
+        return CommandResult(
+            f"你服下 {outcome.item_name}，恢复了 {outcome.healed_amount} 点生命。"
+        )
 
     def _inventory(self) -> str:
         item_ids = self.world.player.inventory.item_ids

@@ -7,7 +7,8 @@
       "east": "room_glassgrass_path"
     },
     "item_ids": [
-      "item_spark_lantern"
+      "item_spark_lantern",
+      "item_linglu_pill"
     ],
     "monster_ids": [],
     "adaptation_notes": "本仓库原创演示地点。"

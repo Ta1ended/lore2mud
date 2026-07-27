@@ -25,6 +25,14 @@ class QuestOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class UseOutcome:
+    """Result of using a consumable item."""
+    item_id: str
+    item_name: str
+    healed_amount: int
+
+
+@dataclass(frozen=True, slots=True)
 class AttackOutcome:
     combat: CombatRound
     level_gains: tuple[LevelGain, ...] = ()
@@ -78,6 +86,7 @@ class World:
                 id=item.id,
                 name=item.name,
                 description=item.description,
+                heal_amount=item.heal_amount,
             )
             for item in pack.items.values()
         }
@@ -144,6 +153,42 @@ class World:
         self.current_room.item_ids.remove(item_id)
         self.player.inventory.add(item_id)
         return self.items[item_id]
+
+    def use(self, item_query: str) -> UseOutcome:
+        """Use a consumable item from the player's inventory.
+
+        Raises WorldRuleError for non-usable items, missing items,
+        dead player, or full HP.
+        """
+        # Resolve item from inventory.
+        item_id = self._resolve_id(
+            item_query,
+            self.player.inventory.item_ids,
+            self.items,
+            kind="物品",
+        )
+        if item_id is None:
+            raise WorldRuleError("背包中没有该物品。")
+
+        item = self.items[item_id]
+        if item.heal_amount is None:
+            raise WorldRuleError(f"物品 {item.name} 无法使用。")
+
+        if not self.player.is_alive:
+            raise WorldRuleError("你已经倒下了，无法使用。")
+
+        missing_hp = self.player.max_hp - self.player.hp
+        if missing_hp <= 0:
+            raise WorldRuleError("你已经满血了。")
+
+        actual = min(item.heal_amount, missing_hp)
+        self.player.hp += actual
+        self.player.inventory.item_ids.remove(item_id)
+        return UseOutcome(
+            item_id=item_id,
+            item_name=item.name,
+            healed_amount=actual,
+        )
 
     def attack(self, monster_query: str) -> AttackOutcome:
         monster_id = self._resolve_id(

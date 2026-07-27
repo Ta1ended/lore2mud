@@ -4,5 +4,12 @@
     "name": "微火提灯",
     "description": "一盏封着淡蓝火星的小灯，足以照亮近处的路。",
     "adaptation_notes": "本仓库原创演示物品。"
+  },
+  {
+    "id": "item_linglu_pill",
+    "name": "灵露丸",
+    "description": "一枚晶莹的小药丸，散发清凉草药气息。",
+    "heal_amount": 10,
+    "adaptation_notes": "本仓库原创演示消耗品。"
   }
 ]

@@ -131,3 +131,30 @@
 - Evidence: `src/lore2mud/engine/world.py`, `src/lore2mud/engine/save.py`,
   `src/lore2mud/engine/commands.py`, `tests/test_quest.py`.
 - Supersedes: None.
+
+## DEC-0009: Consumable items with single heal_amount field
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: The quest system is complete; the next step before equipment is a
+  simple item with a deterministic on-use effect (heal HP). The design must avoid
+  illegal field combinations and keep the `World` domain layer as the single
+  authority for state changes.
+- Decision: (a) Use a single optional `heal_amount: int | None` field on
+  `ItemDefinition` and `Item` instead of a `consumable` boolean plus separate
+  heal value — `None` means unusable, positive int means heal-and-consume.
+  (b) Implement `World.use(item_query)` returning a structured `UseOutcome`
+  (item_id, item_name, healed_amount); text rendering stays in `CommandProcessor`.
+  (c) Reject use at full HP (no consume) and at HP=0 (no implicit revive).
+  (d) Content pack version bumps to 0.2.1; old 0.2.0 saves are cleanly rejected
+  by the existing version check in `SaveLoadService`. (e) Save format stays at
+  version 2 — item properties are reconstructed from the content pack on load,
+  so no new serialization fields are needed.
+- Consequences: Items are simpler to define (one optional field). The version bump
+  breaks backward compatibility with 0.2.0 saves, which is acceptable and
+  documented. Future equipment can extend the same pattern with additional optional
+  fields on `ItemDefinition`.
+- Evidence: `src/lore2mud/content/models.py`, `src/lore2mud/engine/world.py`,
+  `src/lore2mud/engine/save.py`, `src/lore2mud/engine/commands.py`,
+  `examples/original_demo/items.json`, `tests/test_consumable.py`.
+- Supersedes: None.
