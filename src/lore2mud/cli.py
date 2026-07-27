@@ -8,6 +8,7 @@ from pathlib import Path
 
 from lore2mud.content.loader import ContentValidationError, load_content_pack
 from lore2mud.engine.commands import CommandProcessor
+from lore2mud.engine.save import SaveLoadService
 from lore2mud.engine.world import World
 
 
@@ -27,11 +28,17 @@ def build_parser() -> argparse.ArgumentParser:
         default="旅人",
         help="本地玩家显示名称（默认：旅人）",
     )
+    parser.add_argument(
+        "--save-dir",
+        type=Path,
+        default=Path("saves"),
+        help="存档目录（默认：saves）",
+    )
     return parser
 
 
-def run_game(world: World) -> int:
-    processor = CommandProcessor(world)
+def run_game(world: World, save_service: SaveLoadService) -> int:
+    processor = CommandProcessor(world, save_service=save_service)
     print(f"欢迎来到 {world.pack_name}。输入 help 查看指令。")
     print(processor.execute("look").text)
 
@@ -59,7 +66,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         parser.exit(2, f"内容包加载失败：{exc}\n")
 
     world = World.from_content_pack(pack, player_name=args.player_name)
-    return run_game(world)
+    save_service = SaveLoadService(pack, args.save_dir)
+    return run_game(world, save_service)
 
 
 if __name__ == "__main__":

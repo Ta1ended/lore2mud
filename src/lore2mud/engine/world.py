@@ -25,6 +25,7 @@ class AttackOutcome:
 class World:
     pack_id: str
     pack_name: str
+    pack_version: str
     rooms: dict[str, Room]
     items: dict[str, Item]
     monsters: dict[str, Monster]
@@ -80,6 +81,7 @@ class World:
         return cls(
             pack_id=pack.id,
             pack_name=pack.name,
+            pack_version=pack.version,
             rooms=rooms,
             items=items,
             monsters=monsters,

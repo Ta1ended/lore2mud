@@ -15,6 +15,8 @@ HELP_TEXT = """可用指令：
   inventory             查看背包
   status                查看角色状态
   attack <怪物ID或名称> 攻击怪物
+  save                  保存游戏
+  load                  读取存档
   help                  查看帮助
   quit                  退出游戏"""
 
@@ -26,8 +28,13 @@ class CommandResult:
 
 
 class CommandProcessor:
-    def __init__(self, world: World) -> None:
+    def __init__(
+        self,
+        world: World,
+        save_service: object | None = None,
+    ) -> None:
         self.world = world
+        self._save_service = save_service
 
     def execute(self, raw_command: str) -> CommandResult:
         try:
@@ -52,6 +59,10 @@ class CommandProcessor:
                 return CommandResult(self._status())
             if command == "attack":
                 return self._attack(arguments)
+            if command == "save":
+                return self._save()
+            if command == "load":
+                return self._load()
             if command == "help":
                 return CommandResult(HELP_TEXT)
             if command in {"quit", "exit"}:
@@ -136,3 +147,26 @@ class CommandProcessor:
         if combat.player_defeated:
             lines.append("你倒下了。")
         return CommandResult("\n".join(lines))
+
+    def _save(self) -> CommandResult:
+        if self._save_service is None:
+            return CommandResult("存档服务不可用。")
+        try:
+            from lore2mud.engine.save import SaveLoadError
+            msg = self._save_service.save(self.world)
+            return CommandResult(msg)
+        except SaveLoadError as exc:
+            return CommandResult(f"存档失败：{exc}")
+
+    def _load(self) -> CommandResult:
+        if self._save_service is None:
+            return CommandResult("存档服务不可用。")
+        try:
+            from lore2mud.engine.save import SaveLoadError
+            new_world = self._save_service.load()
+            self.world = new_world
+            return CommandResult(
+                f"读档成功。\n{self._look()}"
+            )
+        except SaveLoadError as exc:
+            return CommandResult(f"读档失败：{exc}")

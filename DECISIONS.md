@@ -71,3 +71,21 @@
   novel scans and model calls never restart automatically.
 - Evidence: `PROJECT_MEMORY.md`, `PROJECT_STATE.md`, `NEXT_TASK.md`.
 - Supersedes: None.
+
+## DEC-0006: Versioned local save with atomic writes and strict validation
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: The playable loop loses all mutable state on exit. Persistence is needed
+  before adding more game systems.
+- Decision: Implement a `SaveLoadService` that serializes all mutable World state
+  (player, room placements, monster HP) to a versioned JSON file. Use a temp file
+  plus `os.replace()` for atomic writes. Validate untrusted saves strictly: format
+  version, content-pack identity, key-set equality, reference integrity, duplicate
+  detection, numeric ranges, and bool-as-int rejection. Keep serialization in a
+  dedicated service layer, not in `CommandProcessor`.
+- Consequences: Players can save and load across sessions. Content-pack upgrades
+  cleanly reject incompatible saves. Future multi-slot support can reuse the service.
+- Evidence: `src/lore2mud/engine/save.py`, `tests/test_save.py`,
+  `src/lore2mud/engine/commands.py`, `src/lore2mud/cli.py`.
+- Supersedes: None.

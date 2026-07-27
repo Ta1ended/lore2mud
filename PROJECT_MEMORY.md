@@ -1,6 +1,6 @@
 # Project Memory
 
-_Checkpoint: 2026-07-27_
+_Checkpoint: 2026-07-28_
 
 This file is a compact restart guide for GPT, Hermes, or a future Codex session.
 Repository state, tests, and current files are authoritative if this file becomes
@@ -19,24 +19,26 @@ stale.
 
 - Repository: `lore2mud`
 - Branch: `main`
-- Last verified code commit: `79aa3d5`
+- Last verified code baseline: `79aa3d5`
 - The current checkpoint is saved by the latest handoff commit shown by
   `git log --oneline --decorate`.
 - Remote: `origin/main` (the latest handoff commit is local until GitHub
   connectivity is restored)
-- Working tree at checkpoint: clean
+- Working tree at checkpoint: clean after the save/load checkpoint commit
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
 - The private novel corpus and split chapters are outside the repository under:
   `D:\MUD game kaifa\小说\processing\`
 - The preprocessing pipeline is complete and verified.
-- The game engine does not yet have save/load.
+- The game engine now has versioned local save/load with atomic writes and strict
+  validation.
 - No Agent should start background work automatically when the project is resumed.
 
 ## Verified facts
 
-- Full project suite: 36 tests passed.
+- Full project suite: 90 tests passed.
 - Repository safety check: passed.
+- Compile check and CLI save/load smoke test: passed.
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.
 - Private split reconstruction matched the decoded source in character count and
@@ -46,9 +48,9 @@ stale.
 
 ## Resume rule
 
-The only active task is the one in `NEXT_TASK.md`: implement versioned local
-save/load using `examples/original_demo`. Do not begin novel summarization,
-embedding, RAG, NPC generation, or full-corpus model extraction first.
+The only active task is the one in `NEXT_TASK.md`: add the standalone content-pack
+validation CLI. Do not begin novel summarization, embedding, RAG, NPC generation,
+or full-corpus model extraction first.
 
 ## Pause rule
 

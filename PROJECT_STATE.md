@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-27_
+_Last updated: 2026-07-28_
 
 ## Objective
 
@@ -9,10 +9,8 @@ _Last updated: 2026-07-27_
 
 ## Current status
 
-项目已暂停在一个可恢复的验证检查点。公共代码基线为提交 `79aa3d5`；
-本次检查点已保存为本地 handoff 提交，待网络可用时再推送到 `origin/main`。
-游戏基底和小说拆章管线均已验证；私有小说章节及 manifest 保存在仓库外。
-存档/读档尚未实现，下一次恢复应从 `NEXT_TASK.md` 的唯一任务开始。
+版本化本地存档/读档功能已实现并通过全部验证。游戏支持 `save`/`load` 指令，
+存档包含完整可变状态快照，加载时严格校验不可信数据，写入使用原子替换。
 
 ## Completed
 
@@ -24,10 +22,12 @@ _Last updated: 2026-07-27_
 - `tests/` 覆盖核心玩法、非法内容引用、拆章和安全检查。
 - 私有小说已在仓库外完成一次受控拆章；原文未修改，章节重建校验通过。
 - `docs/`、`AGENTS.md`、GitHub 基础文件和项目交接文件已建立。
+- 版本化本地存档/读档：`save`/`load` 指令、`SaveLoadService`、原子写入、
+  严格验证、54 项新测试、CLI 冒烟测试通过。
 
 ## In progress
 
-- None. 项目当前是有意暂停，不代表存档功能已完成。
+- None.
 
 ## Blockers
 
@@ -35,13 +35,10 @@ _Last updated: 2026-07-27_
 
 ## Verification
 
-- `python -m unittest discover -s tests -v` - 36 tests passed (2026-07-27).
-- `python scripts/check_repo_safety.py` - passed (2026-07-27).
-- `python -m compileall -q src pipeline scripts tests` - passed (2026-07-27).
-- Private corpus reconstruction - decoded source and split chapters matched in
-  character count and SHA-256 (2026-07-27).
-- `git status --porcelain` - clean before this handoff; code baseline `79aa3d5`
-  was on `origin/main` (2026-07-27).
+- `python -m unittest discover -s tests -v` - 90 tests passed (2026-07-28).
+- `python scripts/check_repo_safety.py` - passed (2026-07-28).
+- `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
+- CLI save/load smoke test - passed (2026-07-28).
 
 ## Key paths
 
@@ -49,15 +46,14 @@ _Last updated: 2026-07-27_
 - `AGENTS.md` - Hermes and other Agent constraints.
 - `NEXT_TASK.md` - exactly one recommended continuation.
 - `src/lore2mud/engine/world.py` - authoritative runtime state.
+- `src/lore2mud/engine/save.py` - save/load service with atomic writes.
 - `src/lore2mud/content/loader.py` - schema-like and reference validation.
 - `pipeline/split_novel.py` - private-corpus preprocessing tool.
 - `examples/original_demo/` - public, original playable fixture.
-- `docs/hermes_workflow.md` - GPT adviser and Hermes execution loop.
 - `D:\MUD game kaifa\小说\processing\` - private external processing output; never commit.
 
 ## Risks and unknowns
 
-- Runtime state is in memory only; no save/load compatibility contract exists yet.
 - Quest and character formats are validation placeholders without gameplay behavior.
 - Private corpus summaries, canon facts and game adaptation content have not been
   generated or reviewed.
