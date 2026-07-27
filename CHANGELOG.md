@@ -4,6 +4,17 @@
 
 ### Added
 
+- Added `validate` subcommand: `lore2mud validate --content <dir>` validates a
+  content pack without starting the game, reports all issues, and exits 0/1.
+- Added implicit play fallback for legacy `lore2mud --content <dir>` (no
+  subcommand) so existing workflows remain unchanged.
+- Added `play` subcommand as the explicit way to start the game.
+- Added `UnicodeDecodeError` handling in `_read_json()` so invalid-UTF-8 content
+  pack files produce a clean `ContentValidationError` instead of a traceback.
+- Added 23 new tests covering validate success/error paths, encoding errors,
+  legacy/explicit play with --player-name/--save-dir backward compatibility,
+  unknown-argument rejection, OSError unified format, and argparse error handling.
+
 - Added versioned local save/load with atomic writes (`save` and `load` commands).
 - Added `SaveLoadService` with strict validation of untrusted save data: format
   version, content-pack identity, room/monster key sets, reference integrity,

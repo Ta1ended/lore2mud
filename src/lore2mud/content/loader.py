@@ -40,6 +40,10 @@ def _read_json(path: Path) -> Any:
         return json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         raise ContentValidationError([f"缺少文件：{path.name}"]) from None
+    except UnicodeDecodeError:
+        raise ContentValidationError(
+            [f"{path.name} 不是有效 UTF-8 编码"]
+        ) from None
     except json.JSONDecodeError as exc:
         raise ContentValidationError(
             [f"{path.name} 不是有效 JSON：第 {exc.lineno} 行 {exc.msg}"]

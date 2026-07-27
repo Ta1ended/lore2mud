@@ -4,40 +4,39 @@ _Last updated: 2026-07-28_
 
 ## Start here
 
-- Task: Add a standalone content-pack validation CLI (`lore2mud validate`).
-- Why now: save/load is complete; the next step before quest implementation is a
-  way to validate content packs without starting the game.
+- Task: Extract and review a private sample of the first 20-50 chapters.
+- Why now: validate CLI is complete; the next step before quest implementation is
+  reviewing actual novel content to inform game design.
 
 ## Inputs
 
 - `PROJECT_MEMORY.md`
 - `AGENTS.md`
-- `src/lore2mud/content/loader.py`
-- `examples/original_demo/`
-- `DEC-0001` and `DEC-0003`
+- `pipeline/split_novel.py`
+- `D:\MUD game kaifa\小说\processing\` (private, read-only)
+- `DEC-0004` and `DEC-0002`
 
 ## Steps
 
-1. Add a `validate` subcommand to the CLI that loads a content pack and reports
-   all validation issues without starting the game loop.
-2. Return exit code 0 on success, 1 on validation errors.
-3. Test with the demo pack and with intentionally malformed packs.
+1. Load the manifest from the private processing output.
+2. Read 20-50 chapter files and produce a structured summary of key entities,
+   locations, and events.
+3. Store summaries in the private processing directory (never commit).
 4. Run the full suite, repository safety check, and compile check.
 
 ## Acceptance criteria
 
-- `lore2mud validate --content examples/original_demo` prints "内容包校验通过" and
-  exits 0.
-- Malformed packs print all issues and exit 1.
-- No game loop is started.
+- A structured summary of 20-50 chapters exists in the private directory.
+- No private content is committed to the repository.
+- All tests and safety checks pass.
 
 ## If blocked
 
-- Keep validation behind a standard-library CLI and deliver only the documented
-  behavior; do not introduce a database or network.
+- Keep summaries behind the private-content boundary; do not generate game content
+  from unreviewed chapters.
 
 ## Queue
 
-1. Extract and review a private sample of the first 20-50 chapters.
-2. Implement one original, deterministic quest flow.
-3. Add one usable consumable item.
+1. Implement one original, deterministic quest flow.
+2. Add one usable consumable item.
+3. Item use and equipment system with deterministic rules.

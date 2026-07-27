@@ -9,8 +9,9 @@ _Last updated: 2026-07-28_
 
 ## Current status
 
-版本化本地存档/读档功能已实现并通过全部验证。游戏支持 `save`/`load` 指令，
-存档包含完整可变状态快照，加载时严格校验不可信数据，写入使用原子替换。
+内容包校验 CLI 已实现。`lore2mud validate --content <dir>` 可在不启动游戏的
+情况下校验内容包，报告所有结构和引用问题。旧版 `lore2mud --content <dir>`
+命令保持向后兼容。
 
 ## Completed
 
@@ -24,6 +25,8 @@ _Last updated: 2026-07-28_
 - `docs/`、`AGENTS.md`、GitHub 基础文件和项目交接文件已建立。
 - 版本化本地存档/读档：`save`/`load` 指令、`SaveLoadService`、原子写入、
   严格验证、54 项新测试、CLI 冒烟测试通过。
+- 内容包校验 CLI：`lore2mud validate --content <dir>`、旧命令隐式 play
+  fallback、`_read_json` UnicodeDecodeError 处理、23 项新测试。
 
 ## In progress
 
@@ -35,10 +38,12 @@ _Last updated: 2026-07-28_
 
 ## Verification
 
-- `python -m unittest discover -s tests -v` - 90 tests passed (2026-07-28).
+- `python -m unittest discover -s tests -v` - 113 tests passed (2026-07-28).
 - `python scripts/check_repo_safety.py` - passed (2026-07-28).
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
-- CLI save/load smoke test - passed (2026-07-28).
+- CLI validate smoke test - passed (2026-07-28).
+- CLI legacy play smoke test - passed (2026-07-28).
+- CLI explicit play smoke test - passed (2026-07-28).
 
 ## Key paths
 
@@ -48,6 +53,7 @@ _Last updated: 2026-07-28_
 - `src/lore2mud/engine/world.py` - authoritative runtime state.
 - `src/lore2mud/engine/save.py` - save/load service with atomic writes.
 - `src/lore2mud/content/loader.py` - schema-like and reference validation.
+- `src/lore2mud/cli.py` - CLI entry point with play/validate subcommands.
 - `pipeline/split_novel.py` - private-corpus preprocessing tool.
 - `examples/original_demo/` - public, original playable fixture.
 - `D:\MUD game kaifa\小说\processing\` - private external processing output; never commit.

@@ -3,41 +3,22 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from lore2mud.content.loader import ContentValidationError, load_content_pack
+from lore2mud.content.loader import (
+    ContentValidationError,
+    load_content_pack,
+    validate_content_pack,
+)
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.save import SaveLoadService
 from lore2mud.engine.world import World
 
 
-def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(
-        prog="lore2mud",
-        description="运行本地单人文字 MUD。",
-    )
-    parser.add_argument(
-        "--content",
-        type=Path,
-        required=True,
-        help="内容包目录，例如 examples/original_demo",
-    )
-    parser.add_argument(
-        "--player-name",
-        default="旅人",
-        help="本地玩家显示名称（默认：旅人）",
-    )
-    parser.add_argument(
-        "--save-dir",
-        type=Path,
-        default=Path("saves"),
-        help="存档目录（默认：saves）",
-    )
-    return parser
-
-
 def run_game(world: World, save_service: SaveLoadService) -> int:
+    """Start the interactive game loop."""
     processor = CommandProcessor(world, save_service=save_service)
     print(f"欢迎来到 {world.pack_name}。输入 help 查看指令。")
     print(processor.execute("look").text)
@@ -56,18 +37,145 @@ def run_game(world: World, save_service: SaveLoadService) -> int:
             return 0
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    parser = build_parser()
-    args = parser.parse_args(argv)
+# -- Command handlers --------------------------------------------------------
 
+
+def _cmd_play(args: argparse.Namespace) -> int:
+    """Load a content pack and start the game."""
     try:
         pack = load_content_pack(args.content)
     except (OSError, ContentValidationError) as exc:
-        parser.exit(2, f"内容包加载失败：{exc}\n")
+        raise SystemExit(2, f"内容包加载失败：{exc}\n") from None
 
     world = World.from_content_pack(pack, player_name=args.player_name)
     save_service = SaveLoadService(pack, args.save_dir)
     return run_game(world, save_service)
+
+
+def _cmd_validate(args: argparse.Namespace) -> int:
+    """Validate a content pack without starting the game."""
+    try:
+        validate_content_pack(args.content)
+    except ContentValidationError as exc:
+        print("[ERROR] 内容包校验失败:", file=sys.stderr)
+        for issue in exc.issues:
+            print(f"- {issue}", file=sys.stderr)
+        return 1
+    except OSError as exc:
+        print("[ERROR] 内容包校验失败:", file=sys.stderr)
+        print(f"- {exc}", file=sys.stderr)
+        return 1
+
+    print(f"[OK] 内容包校验通过: {args.content}")
+    return 0
+
+
+# -- Parser ------------------------------------------------------------------
+
+_COMMANDS = frozenset({"play", "validate"})
+
+
+def _inject_legacy_subcommand(argv: list[str]) -> list[str]:
+    """If *argv* has no recognised subcommand, prepend ``"play"`` and move
+    it before the first flag so that ``parse_args`` sees ``[play, --content,
+    ...]`` instead of ``[--content, dir, play, ...]`` (which fails because
+    argparse interprets ``dir`` as the positional subcommand value).
+
+    Returns a **new** list; *argv* is not mutated.
+    """
+    # Help flags should reach the top-level parser directly.
+    if argv and argv[0] in ("-h", "--help"):
+        return list(argv)
+
+    # Detect whether a recognised subcommand is already present.
+    skip_next = False
+    has_command = False
+    for token in argv:
+        if skip_next:
+            skip_next = False
+            continue
+        if token.startswith("-"):
+            if token in ("--content", "--player-name", "--save-dir"):
+                skip_next = True
+            continue
+        # First positional token.
+        if token in _COMMANDS:
+            has_command = True
+        break
+
+    if has_command or not argv:
+        return list(argv)
+
+    # Legacy invocation — put "play" at the front so it is consumed as the
+    # subcommand before any flags are processed.
+    return ["play", *argv]
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    """Build the CLI parser with play/validate subcommands."""
+    parser = argparse.ArgumentParser(
+        prog="lore2mud",
+        description="本地单人文字 MUD 引擎。",
+    )
+
+    subparsers = parser.add_subparsers(dest="command")
+
+    # -- play subcommand --
+    play_parser = subparsers.add_parser(
+        "play",
+        help="加载内容包并启动游戏",
+    )
+    play_parser.add_argument(
+        "--content",
+        type=Path,
+        required=True,
+        help="内容包目录，例如 examples/original_demo",
+    )
+    play_parser.add_argument(
+        "--player-name",
+        default="旅人",
+        help="本地玩家显示名称（默认：旅人）",
+    )
+    play_parser.add_argument(
+        "--save-dir",
+        type=Path,
+        default=Path("saves"),
+        help="存档目录（默认：saves）",
+    )
+    play_parser.set_defaults(func=_cmd_play)
+
+    # -- validate subcommand --
+    validate_parser = subparsers.add_parser(
+        "validate",
+        help="校验内容包（不启动游戏）",
+    )
+    validate_parser.add_argument(
+        "--content",
+        type=Path,
+        required=True,
+        help="要校验的内容包目录",
+    )
+    validate_parser.set_defaults(func=_cmd_validate)
+
+    return parser
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    """Entry point for the lore2mud CLI."""
+    raw = list(argv) if argv is not None else sys.argv[1:]
+    effective = _inject_legacy_subcommand(raw)
+
+    parser = _build_parser()
+
+    # parse_args (not parse_known_args) — unknown flags always fail.
+    args = parser.parse_args(effective)
+
+    if hasattr(args, "func"):
+        return args.func(args)
+
+    # ``lore2mud`` with no arguments → show help.
+    parser.print_help()
+    return 0
 
 
 if __name__ == "__main__":

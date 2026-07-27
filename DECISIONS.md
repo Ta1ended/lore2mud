@@ -89,3 +89,24 @@
 - Evidence: `src/lore2mud/engine/save.py`, `tests/test_save.py`,
   `src/lore2mud/engine/commands.py`, `src/lore2mud/cli.py`.
 - Supersedes: None.
+
+## DEC-0007: Validate CLI with backward-compatible subcommands
+
+- Date: 2026-07-28
+- Status: Accepted (revised)
+- Context: Content packs need validation without starting the game loop. The
+  existing CLI uses `lore2mud --content <dir>` with `--player-name` and
+  `--save-dir`. Breaking this would disrupt documented workflows. Additionally,
+  `parse_known_args` silently ignores unknown flags, which is unacceptable.
+- Decision: Pre-scan argv for a recognised subcommand. If none is found, inject
+  `"play"` at the front of argv, then use `parse_args` (not `parse_known_args`)
+  so unknown flags always fail. The `validate` subcommand calls
+  `validate_content_pack()` (the public validation entry point). Catch
+  `OSError` separately and use the unified `[ERROR] 内容包校验失败:` format.
+  Fix `_read_json()` to catch `UnicodeDecodeError`.
+- Consequences: Old commands (`--content`, `--player-name`, `--save-dir`) all
+  keep working. Unknown flags are always rejected. The public validation API is
+  used rather than the internal loader. Error output is uniform.
+- Evidence: `src/lore2mud/cli.py`, `tests/test_cli_validate.py`,
+  `src/lore2mud/content/loader.py`.
+- Supersedes: None.

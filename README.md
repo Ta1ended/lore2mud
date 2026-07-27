@@ -19,14 +19,34 @@
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -e .
-lore2mud --content examples/original_demo
 ```
 
-也可以直接使用模块入口：
+### 启动游戏
+
+旧版命令（仍受支持）：
 
 ```powershell
+lore2mud --content examples/original_demo
 python -m lore2mud --content examples/original_demo
 ```
+
+显式 `play` 子命令（推荐）：
+
+```powershell
+lore2mud play --content examples/original_demo
+python -m lore2mud play --content examples/original_demo
+```
+
+### 校验内容包
+
+不启动游戏，只检查内容包结构和引用：
+
+```powershell
+lore2mud validate --content examples/original_demo
+python -m lore2mud validate --content examples/original_demo
+```
+
+成功输出 `[OK] 内容包校验通过` 并退出 0；校验失败输出所有问题并退出 1。
 
 进入游戏后可执行：
 
@@ -52,6 +72,7 @@ quit
 - `attack <ID或名称>`：进行一个确定性战斗回合。
 - `status`：查看生命、等级、经验、攻击和防御。
 - JSON 内容包结构、类型、稳定 ID 与跨文件引用校验。
+- `validate` 子命令：不启动游戏即可校验内容包，报告所有问题。
 - 保守的中文小说拆章与 manifest 生成工具。
 - Git 候选文件安全检查，阻止私有原文、电子书、密钥和异常大文件进入仓库。
 
@@ -181,9 +202,9 @@ python scripts/check_repo_safety.py
 
 ## 路线图
 
-1. 存档与读取：加入版本化存档格式和原子写入。
+1. 存档与读取：加入版本化存档格式和原子写入。 ✅
 2. 物品使用与装备：继续保持确定性规则和场景测试。
-3. 内容包命令：提供独立的 `validate` 子命令和更清晰的错误定位。
+3. 内容包命令：提供独立的 `validate` 子命令和更清晰的错误定位。 ✅
 4. 小说事实层：定义候选提取、别名归并和冲突审核格式。
 5. 任务系统：先实现一个原创的确定性任务闭环。
 6. 可选检索：在核心流程稳定后，再接入本地全文或语义检索。
