@@ -1,0 +1,40 @@
+[
+  {
+    "id": "room_ember_wharf",
+    "name": "余烬渡台",
+    "description": "废弃渡台悬在浅雾之上，铜轨沿着东方伸向荒地。",
+    "exits": {
+      "east": "room_glassgrass_path"
+    },
+    "item_ids": [
+      "item_spark_lantern"
+    ],
+    "monster_ids": [],
+    "adaptation_notes": "本仓库原创演示地点。"
+  },
+  {
+    "id": "room_glassgrass_path",
+    "name": "琉草小径",
+    "description": "半透明的草叶在风中相击，发出细小而清亮的声响。",
+    "exits": {
+      "west": "room_ember_wharf",
+      "east": "room_silent_observatory"
+    },
+    "item_ids": [],
+    "monster_ids": [],
+    "adaptation_notes": "本仓库原创演示地点。"
+  },
+  {
+    "id": "room_silent_observatory",
+    "name": "静默观测站",
+    "description": "圆顶建筑只剩一圈骨架，一只灰壳兽守在破裂的仪器旁。",
+    "exits": {
+      "west": "room_glassgrass_path"
+    },
+    "item_ids": [],
+    "monster_ids": [
+      "monster_ash_mite"
+    ],
+    "adaptation_notes": "本仓库原创演示地点。"
+  }
+]

@@ -1,0 +1,13 @@
+[
+  {
+    "id": "monster_ash_mite",
+    "name": "灰壳兽",
+    "description": "拳头大小的甲壳生物，会用坚硬前肢撞击入侵者。",
+    "room_id": "room_silent_observatory",
+    "max_hp": 8,
+    "attack": 3,
+    "defense": 1,
+    "experience_reward": 12,
+    "adaptation_notes": "本仓库原创演示怪物。"
+  }
+]

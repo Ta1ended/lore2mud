@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Private novel sources and derived adaptation material
+novel/raw/
+novel/chapters/
+novel/summaries/
+novel/canon/
+novel/extractions/
+private_novels/
+private_content/
+generated_content/
+content_packs/private_*/
+
+# Ebook and document sources
+*.epub
+*.mobi
+*.azw
+*.azw3
+
+# Local databases and search indexes
+*.db
+*.sqlite
+*.sqlite3
+vector_store/
+rag_index/
+faiss_index/
+chroma/
+
+# Models, secrets, and local configuration
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+models/
+config/local.*
+
+# Saves, logs, and generated runtime data
+saves/
+logs/
+*.log

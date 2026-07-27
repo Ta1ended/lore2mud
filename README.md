@@ -1,0 +1,194 @@
+# lore2mud
+
+`lore2mud` 是一个面向本地单人文字 MUD 的现代 Python 项目基底。它把
+通用游戏引擎、小说资料处理工具、原作事实和具体游戏数值分成不同层，让 GPT
+可以担任设计与审查顾问，让 Hermes Agent 每次实现一个可测试的纵向功能。
+
+当前版本提供一个完全原创的三房间演示世界，包含移动、拾取、背包、确定性
+战斗和升级闭环。运行时只使用 Python 标准库。
+
+> 本仓库不附带任何第三方小说、角色、世界观、图片、音频或改编内容。
+> MIT 许可证仅覆盖仓库中的自有代码与原创演示内容。用户自行导入的材料及
+> 其生成内容不属于本项目的授权范围，使用者应自行确认相应权利。
+
+## 快速开始
+
+需要 Python 3.11 或更高版本。
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e .
+lore2mud --content examples/original_demo
+```
+
+也可以直接使用模块入口：
+
+```powershell
+python -m lore2mud --content examples/original_demo
+```
+
+进入游戏后可执行：
+
+```text
+look
+take item_spark_lantern
+inventory
+go east
+go east
+attack monster_ash_mite
+attack monster_ash_mite
+status
+help
+quit
+```
+
+## 当前能力
+
+- `look`：查看当前房间、出口、物品和怪物。
+- `go <方向>`：沿内容包声明的出口移动。
+- `take <ID或名称>`：拾取房间内物品。
+- `inventory`：查看背包。
+- `attack <ID或名称>`：进行一个确定性战斗回合。
+- `status`：查看生命、等级、经验、攻击和防御。
+- JSON 内容包结构、类型、稳定 ID 与跨文件引用校验。
+- 保守的中文小说拆章与 manifest 生成工具。
+- Git 候选文件安全检查，阻止私有原文、电子书、密钥和异常大文件进入仓库。
+
+## 项目结构
+
+```text
+lore2mud/
+├─ src/lore2mud/
+│  ├─ engine/          # 命令编排、世界状态、玩家、房间
+│  ├─ combat/          # 确定性战斗规则
+│  ├─ progression/     # 经验与升级
+│  ├─ inventory/       # 物品与背包
+│  └─ content/         # JSON 内容包模型、加载与引用校验
+├─ pipeline/           # 本地小说拆章与 manifest 工具
+├─ schemas/            # 内容格式的 JSON Schema 文档
+├─ examples/
+│  └─ original_demo/   # 完全原创的可玩演示内容
+├─ scripts/            # 仓库安全检查
+├─ tests/              # 单元测试与场景测试
+├─ docs/               # 架构、管线、格式和 Agent 工作流
+└─ .github/            # CI、Issue 与 PR 基础配置
+```
+
+核心数据流：
+
+```text
+玩家指令
+  → CommandProcessor
+  → World 权威状态
+  → combat / progression / inventory 领域规则
+  → 结果文本
+
+JSON 内容包
+  → Schema/类型校验
+  → 跨文件引用校验
+  → 不可变定义
+  → 可变运行时世界
+```
+
+更完整的设计见 [架构说明](docs/architecture.md)。
+
+## 公开内容与私有内容边界
+
+建议把公共仓库与私人小说资料严格分开：
+
+| 可以公开提交 | 必须留在本地 |
+|---|---|
+| 通用引擎与工具 | 小说原文与电子书 |
+| JSON Schema | 拆分后的章节 |
+| 原创演示内容 | 章节摘要与事实提取 |
+| 不含专有名称的测试 | 使用原作名称的改编内容包 |
+| Agent 工作规范 | 本地索引、数据库、模型和存档 |
+
+推荐的本地目录会被 `.gitignore` 忽略：
+
+```text
+novel/
+├─ raw/          # 只读原文
+├─ chapters/     # 拆章结果
+├─ summaries/    # 分层摘要
+├─ extractions/  # 逐章实体候选
+└─ canon/        # 经审核的原作事实
+
+private_content/ # 私人游戏改编内容
+```
+
+游戏内容中的 `canon_ref` 只是指向私有事实层的可选引用：
+
+```json
+{
+  "id": "item_example",
+  "name": "显示名称",
+  "description": "游戏内描述",
+  "canon_ref": {
+    "entity_id": "canon_item_example",
+    "source_chapters": ["chapter_000123"]
+  },
+  "adaptation_notes": "伤害和稀有度属于游戏改编，不是原作事实。"
+}
+```
+
+引擎不需要读取小说原文；没有 `canon_ref` 的原创内容包同样可以运行。
+
+## 本地小说处理入口
+
+默认拆章器针对“第一章 标题”或“第一章”这类保守格式：
+
+```powershell
+python pipeline/split_novel.py `
+  D:\PrivateNovel\book.txt `
+  novel\chapters
+```
+
+它不会修改源文件，并会生成 `manifest.json`。不同小说的标题格式差异很大，
+首次运行后必须检查章节数、异常标题和前后边界。详细流程见
+[小说资料管线](docs/novel_pipeline.md)。
+
+## GPT + Hermes 工作流
+
+建议让 GPT 负责范围、架构与验收，让 Hermes 在仓库中执行单个纵向任务：
+
+1. GPT 根据当前状态定义一个可验证目标和限制。
+2. Hermes 先阅读 `AGENTS.md`、交接文件、相关代码和测试。
+3. Hermes 先说明数据流、修改范围、风险与测试方案。
+4. Hermes 只实现当前功能，同步内容格式和文档。
+5. Hermes 运行完整测试及仓库安全检查。
+6. GPT 根据证据审查结果，再决定下一项任务。
+
+可直接复制的任务模板与检查点见
+[Hermes 工作流](docs/hermes_workflow.md)。
+
+## 开发与验证
+
+```powershell
+python -m pip install -e .
+python -m unittest discover -s tests -v
+python scripts/check_repo_safety.py
+```
+
+任何内容格式变更都应同时更新：
+
+- `src/lore2mud/content/`
+- `schemas/`
+- `examples/original_demo/`
+- `tests/`
+- `docs/content_pack_format.md`
+
+## 路线图
+
+1. 存档与读取：加入版本化存档格式和原子写入。
+2. 物品使用与装备：继续保持确定性规则和场景测试。
+3. 内容包命令：提供独立的 `validate` 子命令和更清晰的错误定位。
+4. 小说事实层：定义候选提取、别名归并和冲突审核格式。
+5. 任务系统：先实现一个原创的确定性任务闭环。
+6. 可选检索：在核心流程稳定后，再接入本地全文或语义检索。
+
+## 许可证
+
+项目中的自有代码和原创演示内容使用 [MIT License](LICENSE)。许可证不扩展到
+用户自行导入的小说、第三方资料、私人内容包或其衍生内容。

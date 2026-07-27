@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/lore2mud/monster.schema.json",
+  "title": "lore2mud monster",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "description",
+    "room_id",
+    "max_hp",
+    "attack",
+    "defense",
+    "experience_reward"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "common.schema.json#/$defs/stable_id"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "description": {
+      "type": "string",
+      "minLength": 1
+    },
+    "room_id": {
+      "$ref": "common.schema.json#/$defs/stable_id"
+    },
+    "max_hp": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "attack": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "defense": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "experience_reward": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "canon_ref": {
+      "$ref": "common.schema.json#/$defs/canon_ref"
+    },
+    "adaptation_notes": {
+      "type": "string"
+    }
+  }
+}

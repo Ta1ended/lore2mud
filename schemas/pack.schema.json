@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/lore2mud/pack.schema.json",
+  "title": "lore2mud content pack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "name",
+    "version",
+    "start_room_id",
+    "player"
+  ],
+  "properties": {
+    "id": {
+      "$ref": "common.schema.json#/$defs/stable_id"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "start_room_id": {
+      "$ref": "common.schema.json#/$defs/stable_id"
+    },
+    "player": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_hp",
+        "attack",
+        "defense",
+        "inventory_capacity"
+      ],
+      "properties": {
+        "max_hp": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "attack": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "defense": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "inventory_capacity": {
+          "type": "integer",
+          "minimum": 1
+        }
+      }
+    },
+    "extensions": {
+      "type": "object"
+    }
+  }
+}

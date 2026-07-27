@@ -1,0 +1,15 @@
+{
+  "id": "original_demo",
+  "name": "微光边站",
+  "version": "0.1.0",
+  "start_room_id": "room_ember_wharf",
+  "player": {
+    "max_hp": 20,
+    "attack": 5,
+    "defense": 1,
+    "inventory_capacity": 10
+  },
+  "extensions": {
+    "canon_provider": null
+  }
+}
