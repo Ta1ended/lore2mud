@@ -57,3 +57,15 @@ class Player:
     @property
     def is_alive(self) -> bool:
         return bool(self.hp and self.hp > 0)
+
+
+@dataclass(slots=True)
+class QuestState:
+    """Mutable quest state for one accepted quest.
+
+    Presence in World.quest_states means the quest has been accepted.
+    ``completed=True`` means the reward has already been granted.
+    """
+
+    quest_id: str
+    completed: bool = False

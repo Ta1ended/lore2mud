@@ -36,7 +36,7 @@ stale.
 
 ## Verified facts
 
-- Full project suite: 113 tests passed.
+- Full project suite: 142 tests passed.
 - Repository safety check: passed.
 - Compile check and CLI save/load smoke test: passed.
 - CLI validate smoke test: passed.
@@ -44,6 +44,8 @@ stale.
 - CLI explicit play smoke test: passed.
 - CLI unknown-argument rejection (validate/play/legacy): passed.
 - CLI legacy --player-name / --save-dir backward compatibility: passed.
+- Quest system: auto-accept, completion, reward-once, save round-trip: passed.
+- git diff --check: clean.
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.
 - Private split reconstruction matched the decoded source in character count and
@@ -53,9 +55,9 @@ stale.
 
 ## Resume rule
 
-The only active task is the one in `NEXT_TASK.md`: extract and review a private
-sample of the first 20-50 chapters. Do not begin quest implementation, NPC
-generation, or full-corpus model extraction first.
+The only active task is the one in `NEXT_TASK.md`: add one usable original
+consumable item. Do not implement equipment, dialogue trees, or novel extraction
+first.
 
 ## Pause rule
 

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from lore2mud.combat.service import CombatRound, resolve_combat_round
-from lore2mud.content.models import ContentPack
-from lore2mud.engine.models import Monster, Player, Room
+from lore2mud.content.models import ContentPack, QuestDefinition
+from lore2mud.engine.models import Monster, Player, QuestState, Room
 from lore2mud.inventory.models import Inventory, Item
 from lore2mud.progression.service import LevelGain, grant_experience
 
@@ -16,9 +16,19 @@ class WorldRuleError(ValueError):
 
 
 @dataclass(frozen=True, slots=True)
+class QuestOutcome:
+    """Result of a quest completion triggered by an attack."""
+    quest_id: str
+    quest_name: str
+    reward_experience: int
+    level_gains: tuple[LevelGain, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
 class AttackOutcome:
     combat: CombatRound
     level_gains: tuple[LevelGain, ...] = ()
+    quest_outcome: QuestOutcome | None = None
 
 
 @dataclass(slots=True)
@@ -30,6 +40,8 @@ class World:
     items: dict[str, Item]
     monsters: dict[str, Monster]
     player: Player
+    quest_defs: dict[str, QuestDefinition] = field(default_factory=dict)
+    quest_states: dict[str, QuestState] = field(default_factory=dict)
 
     @classmethod
     def from_content_pack(
@@ -78,7 +90,8 @@ class World:
             defense=pack.player.defense,
             inventory=Inventory(capacity=pack.player.inventory_capacity),
         )
-        return cls(
+        quest_defs = dict(pack.quests)
+        world = cls(
             pack_id=pack.id,
             pack_name=pack.name,
             pack_version=pack.version,
@@ -86,7 +99,22 @@ class World:
             items=items,
             monsters=monsters,
             player=player,
+            quest_defs=quest_defs,
         )
+        # Auto-accept quests triggered in the start room.
+        world._accept_quests_for_room(pack.start_room_id)
+        return world
+
+    def _accept_quests_for_room(self, room_id: str) -> None:
+        """Accept all quests whose trigger_room_id matches *room_id*."""
+        for quest_def in self.quest_defs.values():
+            if (
+                quest_def.trigger_room_id == room_id
+                and quest_def.id not in self.quest_states
+            ):
+                self.quest_states[quest_def.id] = QuestState(
+                    quest_id=quest_def.id,
+                )
 
     @property
     def current_room(self) -> Room:
@@ -98,6 +126,7 @@ class World:
         if target_id is None:
             raise WorldRuleError(f"这里不能向 {direction} 移动。")
         self.player.room_id = target_id
+        self._accept_quests_for_room(target_id)
         return self.current_room
 
     def take(self, item_query: str) -> Item:
@@ -130,13 +159,39 @@ class World:
 
         monster = self.monsters[monster_id]
         combat = resolve_combat_round(self.player, monster)
-        level_gains: tuple[LevelGain, ...] = ()
+        level_gains: list[LevelGain] = []
+        quest_outcome: QuestOutcome | None = None
+
         if combat.monster_defeated:
             self.current_room.monster_ids.remove(monster_id)
-            level_gains = tuple(
-                grant_experience(self.player, monster.experience_reward)
-            )
-        return AttackOutcome(combat=combat, level_gains=level_gains)
+            level_gains.extend(grant_experience(self.player, monster.experience_reward))
+
+            # Check if this monster completes any accepted quest.
+            for qs in self.quest_states.values():
+                if qs.completed:
+                    continue
+                qdef = self.quest_defs.get(qs.quest_id)
+                if qdef is None:
+                    continue
+                if qdef.target_monster_id == monster_id:
+                    qs.completed = True
+                    quest_level_gains = tuple(
+                        grant_experience(self.player, qdef.reward_experience)
+                    )
+                    level_gains.extend(quest_level_gains)
+                    quest_outcome = QuestOutcome(
+                        quest_id=qdef.id,
+                        quest_name=qdef.name,
+                        reward_experience=qdef.reward_experience,
+                        level_gains=quest_level_gains,
+                    )
+                    break  # Only one quest per monster.
+
+        return AttackOutcome(
+            combat=combat,
+            level_gains=tuple(level_gains),
+            quest_outcome=quest_outcome,
+        )
 
     @staticmethod
     def _resolve_id(

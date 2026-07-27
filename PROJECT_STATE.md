@@ -9,14 +9,13 @@ _Last updated: 2026-07-28_
 
 ## Current status
 
-内容包校验 CLI 已实现。`lore2mud validate --content <dir>` 可在不启动游戏的
-情况下校验内容包，报告所有结构和引用问题。旧版 `lore2mud --content <dir>`
-命令保持向后兼容。
+原创确定性任务闭环已实现。玩家在起始房间自动接取任务，击败目标怪物后即时获得
+经验奖励。存档格式升级至 v2，内容包版本升至 0.2.0。
 
 ## Completed
 
 - `src/lore2mud/` 实现标准库运行时、双 CLI 入口和领域模块。
-- `examples/original_demo/` 提供三个原创房间、一个物品和一个怪物。
+- `examples/original_demo/` 提供三个原创房间、一个物品、一个怪物和一个任务。
 - `pipeline/` 支持 UTF-8/GBK/GB18030、章卷分离、稳定顺序 ID 和 manifest v2。
 - `schemas/` 与 `src/lore2mud/content/` 定义并校验内容契约。
 - `scripts/check_repo_safety.py` 与 `.gitignore` 建立公开/私有内容边界。
@@ -27,6 +26,8 @@ _Last updated: 2026-07-28_
   严格验证、54 项新测试、CLI 冒烟测试通过。
 - 内容包校验 CLI：`lore2mud validate --content <dir>`、旧命令隐式 play
   fallback、`_read_json` UnicodeDecodeError 处理、23 项新测试。
+- 原创确定性任务闭环：自动接取、怪物击败条件、经验奖励、`quests` 命令、
+  存档 v2、内容包 0.2.0、21 项新测试。
 
 ## In progress
 
@@ -38,20 +39,20 @@ _Last updated: 2026-07-28_
 
 ## Verification
 
-- `python -m unittest discover -s tests -v` - 113 tests passed (2026-07-28).
+- `python -m unittest discover -s tests -v` - 142 tests passed (2026-07-28).
 - `python scripts/check_repo_safety.py` - passed (2026-07-28).
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - CLI validate smoke test - passed (2026-07-28).
-- CLI legacy play smoke test - passed (2026-07-28).
-- CLI explicit play smoke test - passed (2026-07-28).
+- CLI play smoke test with quests - passed (2026-07-28).
+- `git diff --check` - clean (2026-07-28).
 
 ## Key paths
 
 - `PROJECT_MEMORY.md` - fresh-session restart instructions and pause rules.
 - `AGENTS.md` - Hermes and other Agent constraints.
 - `NEXT_TASK.md` - exactly one recommended continuation.
-- `src/lore2mud/engine/world.py` - authoritative runtime state.
-- `src/lore2mud/engine/save.py` - save/load service with atomic writes.
+- `src/lore2mud/engine/world.py` - authoritative runtime state with quest logic.
+- `src/lore2mud/engine/save.py` - save/load service (format v2).
 - `src/lore2mud/content/loader.py` - schema-like and reference validation.
 - `src/lore2mud/cli.py` - CLI entry point with play/validate subcommands.
 - `pipeline/split_novel.py` - private-corpus preprocessing tool.
@@ -60,7 +61,10 @@ _Last updated: 2026-07-28_
 
 ## Risks and unknowns
 
-- Quest and character formats are validation placeholders without gameplay behavior.
+- Only one quest type (monster_defeated) is implemented; more types need explicit
+  decisions.
+- The one-target-monster-per-quest constraint will need revisiting if shared-target
+  quests are ever needed.
 - Private corpus summaries, canon facts and game adaptation content have not been
   generated or reviewed.
 - The provider's privacy claim about model visibility is not independently verified;

@@ -11,12 +11,12 @@ import os
 import tempfile
 from pathlib import Path
 
-from lore2mud.content.models import ContentPack
-from lore2mud.engine.models import Monster, Player, Room
+from lore2mud.content.models import ContentPack, QuestDefinition
+from lore2mud.engine.models import Monster, Player, QuestState, Room
 from lore2mud.engine.world import World
 from lore2mud.inventory.models import Inventory, Item
 
-SAVE_FORMAT_VERSION = 1
+SAVE_FORMAT_VERSION = 2
 DEFAULT_SLOT = "default.json"
 
 
@@ -51,6 +51,12 @@ def _serialize_world(world: World) -> dict:
             "hp": monster.hp,
         }
 
+    quest_states_data: dict[str, dict] = {}
+    for quest_id, qs in world.quest_states.items():
+        quest_states_data[quest_id] = {
+            "completed": qs.completed,
+        }
+
     return {
         "save_format_version": SAVE_FORMAT_VERSION,
         "content_pack": {
@@ -71,6 +77,7 @@ def _serialize_world(world: World) -> dict:
         },
         "rooms": rooms_data,
         "monsters": monsters_data,
+        "quest_states": quest_states_data,
     }
 
 
@@ -306,6 +313,39 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
             hp=m_hp,
         )
 
+    # --- quest_states ---
+    quest_states_raw = data.get("quest_states")
+    if not isinstance(quest_states_raw, dict):
+        raise SaveLoadError("存档缺少 quest_states 字段")
+
+    pack_quest_ids = set(pack.quests.keys())
+    quest_states: dict[str, QuestState] = {}
+    for quest_id, qs_data in quest_states_raw.items():
+        if quest_id not in pack_quest_ids:
+            raise SaveLoadError(f"任务 {quest_id!r} 在内容包中不存在")
+        if not isinstance(qs_data, dict):
+            raise SaveLoadError(f"quest_states.{quest_id} 必须是对象")
+
+        allowed_keys = {"completed"}
+        unknown = set(qs_data.keys()) - allowed_keys
+        if unknown:
+            raise SaveLoadError(
+                f"quest_states.{quest_id} 包含未知字段：{sorted(unknown)}"
+            )
+
+        completed_raw = qs_data.get("completed")
+        if isinstance(completed_raw, bool):
+            completed = completed_raw
+        else:
+            raise SaveLoadError(
+                f"quest_states.{quest_id}.completed 必须是布尔值"
+            )
+
+        quest_states[quest_id] = QuestState(
+            quest_id=quest_id,
+            completed=completed,
+        )
+
     # --- Build player ---
     player = Player(
         id="player_local",
@@ -336,6 +376,8 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         },
         monsters=monsters,
         player=player,
+        quest_defs=dict(pack.quests),
+        quest_states=quest_states,
     )
 
 

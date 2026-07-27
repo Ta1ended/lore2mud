@@ -92,7 +92,7 @@ class SaveRoundTripTests(unittest.TestCase):
 
         self.assertTrue(outcome.combat.monster_defeated)
         self.assertEqual(self.world.player.level, 2)
-        self.assertEqual(self.world.player.experience, 2)
+        self.assertEqual(self.world.player.experience, 17)
         # Level up restores HP to max
         self.assertEqual(self.world.player.hp, self.world.player.max_hp)
         # Monster removed from room
@@ -105,7 +105,7 @@ class SaveRoundTripTests(unittest.TestCase):
         loaded = self.service.load()
 
         self.assertEqual(loaded.player.level, 2)
-        self.assertEqual(loaded.player.experience, 2)
+        self.assertEqual(loaded.player.experience, 17)
         self.assertEqual(loaded.player.hp, loaded.player.max_hp)
         self.assertEqual(loaded.player.max_hp, self.world.player.max_hp)
         self.assertEqual(loaded.player.attack, self.world.player.attack)
@@ -124,6 +124,24 @@ class SaveRoundTripTests(unittest.TestCase):
         self.service.save(self.world)
         loaded = self.service.load()
         self.assertIsNot(loaded, self.world)
+
+    def test_round_trip_quest_completed(self) -> None:
+        """Quest completed state survives save+load."""
+        self.world.move("east")
+        self.world.move("east")
+        self.world.attack("monster_ash_mite")  # first hit
+        self.world.attack("monster_ash_mite")  # defeats + quest completes
+
+        self.assertIn("quest_clear_ash_mite", self.world.quest_states)
+        self.assertTrue(
+            self.world.quest_states["quest_clear_ash_mite"].completed
+        )
+
+        self.service.save(self.world)
+        loaded = self.service.load()
+
+        self.assertIn("quest_clear_ash_mite", loaded.quest_states)
+        self.assertTrue(loaded.quest_states["quest_clear_ash_mite"].completed)
 
 
 class SaveIncludesAllMutableStateTests(unittest.TestCase):
@@ -162,7 +180,7 @@ class SaveIncludesAllMutableStateTests(unittest.TestCase):
     def test_save_includes_content_pack_identity(self) -> None:
         data = _serialize_world(self.world)
         self.assertEqual(data["content_pack"]["id"], "original_demo")
-        self.assertEqual(data["content_pack"]["version"], "0.1.0")
+        self.assertEqual(data["content_pack"]["version"], "0.2.0")
         self.assertEqual(data["save_format_version"], SAVE_FORMAT_VERSION)
 
 
@@ -432,6 +450,51 @@ class ValidationTests(unittest.TestCase):
             self._save_and_load(self.valid_data)
         self.assertIn("格式版本", str(ctx.exception))
 
+    def test_version_1_save_rejected(self) -> None:
+        """Version 1 saves (no quest_states) must be cleanly rejected."""
+        self.valid_data["save_format_version"] = 1
+        del self.valid_data["quest_states"]
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("格式版本", str(ctx.exception))
+
+    def test_missing_quest_states_raises(self) -> None:
+        del self.valid_data["quest_states"]
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("quest_states", str(ctx.exception))
+
+    def test_quest_states_not_dict_raises(self) -> None:
+        self.valid_data["quest_states"] = "bad"
+        with self.assertRaises(SaveLoadError):
+            self._save_and_load(self.valid_data)
+
+    def test_unknown_quest_id_raises(self) -> None:
+        self.valid_data["quest_states"]["fake_quest"] = {"completed": False}
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("fake_quest", str(ctx.exception))
+
+    def test_quest_state_not_dict_raises(self) -> None:
+        self.valid_data["quest_states"]["quest_clear_ash_mite"] = "bad"
+        with self.assertRaises(SaveLoadError):
+            self._save_and_load(self.valid_data)
+
+    def test_quest_completed_not_bool_raises(self) -> None:
+        self.valid_data["quest_states"]["quest_clear_ash_mite"] = {"completed": 1}
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("布尔值", str(ctx.exception))
+
+    def test_quest_unknown_field_raises(self) -> None:
+        self.valid_data["quest_states"]["quest_clear_ash_mite"] = {
+            "completed": False,
+            "extra": True,
+        }
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("未知字段", str(ctx.exception))
+
 
 class AtomicWriteTests(unittest.TestCase):
     """Test atomic write behavior."""
@@ -540,7 +603,7 @@ class CommandIntegrationTests(unittest.TestCase):
 
         # Verify pre-save state
         self.assertEqual(self.world.player.level, 2)
-        self.assertEqual(self.world.player.experience, 2)
+        self.assertEqual(self.world.player.experience, 17)
         self.assertEqual(self.world.player.hp, self.world.player.max_hp)
         self.assertNotIn(
             "monster_ash_mite",
@@ -557,7 +620,7 @@ class CommandIntegrationTests(unittest.TestCase):
 
         w = fresh_commands.world
         self.assertEqual(w.player.level, 2)
-        self.assertEqual(w.player.experience, 2)
+        self.assertEqual(w.player.experience, 17)
         self.assertEqual(w.player.hp, w.player.max_hp)
         self.assertEqual(w.player.max_hp, self.world.player.max_hp)
         self.assertEqual(w.player.attack, self.world.player.attack)

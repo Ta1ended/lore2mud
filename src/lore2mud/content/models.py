@@ -66,6 +66,9 @@ class QuestDefinition:
     id: str
     name: str
     description: str
+    trigger_room_id: str
+    target_monster_id: str
+    reward_experience: int
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
 
 

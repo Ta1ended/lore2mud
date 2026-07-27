@@ -60,8 +60,10 @@ class CommandScenarioTests(unittest.TestCase):
         second = self.commands.execute("attack monster_ash_mite")
         self.assertIn("被击败", second.text)
         self.assertIn("升到了 2 级", second.text)
+        self.assertIn("任务完成", second.text)
+        self.assertIn("清除灰壳兽", second.text)
         self.assertEqual(self.world.player.level, 2)
-        self.assertEqual(self.world.player.experience, 2)
+        self.assertEqual(self.world.player.experience, 17)
         self.assertEqual(self.world.player.hp, self.world.player.max_hp)
         self.assertNotIn(
             "monster_ash_mite",

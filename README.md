@@ -54,10 +54,12 @@ python -m lore2mud validate --content examples/original_demo
 look
 take item_spark_lantern
 inventory
+quests
 go east
 go east
 attack monster_ash_mite
 attack monster_ash_mite
+quests
 status
 help
 quit
@@ -71,8 +73,10 @@ quit
 - `inventory`：查看背包。
 - `attack <ID或名称>`：进行一个确定性战斗回合。
 - `status`：查看生命、等级、经验、攻击和防御。
+- `quests`：查看已接取任务及进度。
 - JSON 内容包结构、类型、稳定 ID 与跨文件引用校验。
 - `validate` 子命令：不启动游戏即可校验内容包，报告所有问题。
+- 原创确定性任务闭环：自动接取、条件推进、经验奖励、存档持久化。
 - 保守的中文小说拆章与 manifest 生成工具。
 - Git 候选文件安全检查，阻止私有原文、电子书、密钥和异常大文件进入仓库。
 
@@ -206,7 +210,7 @@ python scripts/check_repo_safety.py
 2. 物品使用与装备：继续保持确定性规则和场景测试。
 3. 内容包命令：提供独立的 `validate` 子命令和更清晰的错误定位。 ✅
 4. 小说事实层：定义候选提取、别名归并和冲突审核格式。
-5. 任务系统：先实现一个原创的确定性任务闭环。
+5. 任务系统：先实现一个原创的确定性任务闭环。 ✅
 6. 可选检索：在核心流程稳定后，再接入本地全文或语义检索。
 
 ## 许可证

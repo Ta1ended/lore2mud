@@ -15,6 +15,18 @@
   legacy/explicit play with --player-name/--save-dir backward compatibility,
   unknown-argument rejection, OSError unified format, and argparse error handling.
 
+- Added deterministic quest flow: auto-accept in trigger room, monster-defeat
+  condition, instant reward via `grant_experience`, `quests` command, quest hints
+  in `look`, and quest completion text in `attack` output.
+- Added `QuestState` runtime model and `QuestOutcome` carried by `AttackOutcome`.
+- Upgraded save format to version 2 with required `quest_states` field; version 1
+  saves are cleanly rejected.
+- Upgraded content pack version to 0.2.0.
+- Added content loader validation for quest `trigger_room_id`, `target_monster_id`,
+  `reward_experience`, and duplicate target monster rejection.
+- Added 21 new quest tests covering content loading, auto-accept, completion,
+  reward-once, non-target monster, quests command, and save round-trip.
+
 - Added versioned local save/load with atomic writes (`save` and `load` commands).
 - Added `SaveLoadService` with strict validation of untrusted save data: format
   version, content-pack identity, room/monster key sets, reference integrity,

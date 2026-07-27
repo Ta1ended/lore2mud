@@ -456,6 +456,9 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 "id",
                 "name",
                 "description",
+                "trigger_room_id",
+                "target_monster_id",
+                "reward_experience",
                 "canon_ref",
                 "adaptation_notes",
             },
@@ -465,11 +468,29 @@ def load_content_pack(path: str | Path) -> ContentPack:
             validator.text(obj, "id", location),
             f"{location}.id",
         )
+        trigger_room_id = validator.stable_id(
+            validator.text(obj, "trigger_room_id", location),
+            f"{location}.trigger_room_id",
+        )
+        target_monster_id = validator.stable_id(
+            validator.text(obj, "target_monster_id", location),
+            f"{location}.target_monster_id",
+        )
+        reward_experience = validator.integer(
+            obj,
+            "reward_experience",
+            location,
+            minimum=0,
+            default=0,
+        )
         quest_defs.append(
             QuestDefinition(
                 id=entity_id,
                 name=validator.text(obj, "name", location),
                 description=validator.text(obj, "description", location),
+                trigger_room_id=trigger_room_id,
+                target_monster_id=target_monster_id,
+                reward_experience=reward_experience,
                 metadata=_metadata(obj, location, validator),
             )
         )
@@ -534,6 +555,25 @@ def load_content_pack(path: str | Path) -> ContentPack:
             validator.issues.append(
                 f"角色 {character.id} 的 room_id 引用了不存在的房间："
                 f"{character.room_id}"
+            )
+    # Track quest→monster mapping for duplicate target check
+    quest_target_map: dict[str, list[str]] = {}
+    for quest in quests.values():
+        if quest.trigger_room_id not in rooms:
+            validator.issues.append(
+                f"任务 {quest.id} 的 trigger_room_id 引用了不存在的房间："
+                f"{quest.trigger_room_id}"
+            )
+        if quest.target_monster_id not in monsters:
+            validator.issues.append(
+                f"任务 {quest.id} 的 target_monster_id 引用了不存在的怪物："
+                f"{quest.target_monster_id}"
+            )
+        quest_target_map.setdefault(quest.target_monster_id, []).append(quest.id)
+    for monster_id, quest_ids in quest_target_map.items():
+        if len(quest_ids) > 1:
+            validator.issues.append(
+                f"怪物 {monster_id} 被多个任务作为目标：{sorted(quest_ids)}"
             )
 
     if validator.issues:

@@ -106,17 +106,25 @@ JSON。稳定 ID 必须匹配：
 }
 ```
 
-任务格式目前是扩展占位：
+任务定义触发房间、目标怪物和经验奖励：
 
 ```json
 {
-  "id": "quest_first_step",
-  "name": "第一步",
-  "description": "原创任务说明。"
+  "id": "quest_clear_mite",
+  "name": "清除灰壳兽",
+  "description": "前往静默观测站，击败那只灰壳兽。",
+  "trigger_room_id": "room_ember_wharf",
+  "target_monster_id": "monster_ash_mite",
+  "reward_experience": 15
 }
 ```
 
-在任务运行规则实现前，不要向格式中加入未经测试的复杂条件。
+- `trigger_room_id` 引用现有房间。玩家进入该房间或在该房间开始游戏时自动
+  接取任务。
+- `target_monster_id` 引用现有怪物。击败该怪物时任务完成，奖励经验即时发放。
+  当前每个目标怪物最多对应一个任务；内容加载器会拒绝重复的目标怪物引用。
+- `reward_experience` 是非负整数。
+- 玩家使用 `quests` 指令查看已接取任务及进度。
 
 ## 原作来源扩展
 

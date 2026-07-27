@@ -1,13 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/lore2mud/quest.schema.json",
-  "title": "lore2mud quest placeholder",
+  "title": "lore2mud quest definition",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "id",
     "name",
-    "description"
+    "description",
+    "trigger_room_id",
+    "target_monster_id",
+    "reward_experience"
   ],
   "properties": {
     "id": {
@@ -20,6 +23,16 @@
     "description": {
       "type": "string",
       "minLength": 1
+    },
+    "trigger_room_id": {
+      "$ref": "common.schema.json#/$defs/stable_id"
+    },
+    "target_monster_id": {
+      "$ref": "common.schema.json#/$defs/stable_id"
+    },
+    "reward_experience": {
+      "type": "integer",
+      "minimum": 0
     },
     "canon_ref": {
       "$ref": "common.schema.json#/$defs/canon_ref"

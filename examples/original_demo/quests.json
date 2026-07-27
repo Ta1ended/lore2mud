@@ -1,1 +1,11 @@
-[]
+[
+  {
+    "id": "quest_clear_ash_mite",
+    "name": "清除灰壳兽",
+    "description": "静默观测站里盘踞着一只灰壳兽，它挡住了通往仪器的路。击败它。",
+    "trigger_room_id": "room_ember_wharf",
+    "target_monster_id": "monster_ash_mite",
+    "reward_experience": 15,
+    "adaptation_notes": "本仓库原创演示任务。"
+  }
+]

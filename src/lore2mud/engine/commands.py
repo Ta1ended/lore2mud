@@ -13,6 +13,7 @@ HELP_TEXT = """可用指令：
   go <方向>             移动，例如 go north
   take <物品ID或名称>   拾取物品
   inventory             查看背包
+  quests                查看任务
   status                查看角色状态
   attack <怪物ID或名称> 攻击怪物
   save                  保存游戏
@@ -55,6 +56,8 @@ class CommandProcessor:
                 return self._take(arguments)
             if command in {"inventory", "inv", "i"}:
                 return CommandResult(self._inventory())
+            if command == "quests":
+                return CommandResult(self._quests())
             if command == "status":
                 return CommandResult(self._status())
             if command == "attack":
@@ -89,7 +92,29 @@ class CommandProcessor:
                 for monster_id in room.monster_ids
             )
             lines.append(f"怪物：{monsters}")
+
+        # Show active quest hints (read-only, no state change).
+        hints = self._active_quest_hints()
+        if hints:
+            lines.append(hints)
+
         return "\n".join(lines)
+
+    def _active_quest_hints(self) -> str:
+        """Return a hint line for incomplete quests triggered in this room."""
+        room_id = self.world.player.room_id
+        hints: list[str] = []
+        for qs in self.world.quest_states.values():
+            if qs.completed:
+                continue
+            qdef = self.world.quest_defs.get(qs.quest_id)
+            if qdef is None:
+                continue
+            if qdef.trigger_room_id == room_id:
+                hints.append(
+                    f"任务提示：{qdef.name} — {qdef.description}"
+                )
+        return "\n".join(hints)
 
     def _go(self, arguments: list[str]) -> CommandResult:
         if len(arguments) != 1:
@@ -112,6 +137,23 @@ class CommandProcessor:
             f"- {self.world.items[item_id].name} ({item_id})"
             for item_id in item_ids
         )
+        return "\n".join(lines)
+
+    def _quests(self) -> str:
+        if not self.world.quest_states:
+            return "当前没有已接取的任务。"
+        lines: list[str] = []
+        for qs in self.world.quest_states.values():
+            qdef = self.world.quest_defs.get(qs.quest_id)
+            if qdef is None:
+                continue
+            status = "已完成" if qs.completed else "进行中"
+            lines.append(f"[{status}] {qdef.name}")
+            lines.append(f"  目标：击败 {self.world.monsters[qdef.target_monster_id].name}")
+            if qs.completed:
+                lines.append(f"  奖励：{qdef.reward_experience} 经验（已领取）")
+            else:
+                lines.append(f"  奖励：{qdef.reward_experience} 经验")
         return "\n".join(lines)
 
     def _status(self) -> str:
@@ -141,6 +183,11 @@ class CommandProcessor:
             lines.append(
                 f"{combat.monster_name} 反击，造成 "
                 f"{combat.damage_to_player} 点伤害。"
+            )
+        if outcome.quest_outcome is not None:
+            qo = outcome.quest_outcome
+            lines.append(
+                f"任务完成：{qo.quest_name}！获得 {qo.reward_experience} 经验。"
             )
         for gain in outcome.level_gains:
             lines.append(f"你升到了 {gain.new_level} 级！")

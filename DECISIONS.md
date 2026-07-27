@@ -110,3 +110,24 @@
 - Evidence: `src/lore2mud/cli.py`, `tests/test_cli_validate.py`,
   `src/lore2mud/content/loader.py`.
 - Supersedes: None.
+
+## DEC-0008: Deterministic quest flow with auto-accept
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: The engine needs a quest system before implementing items, equipment,
+  or dialogue. The demo world has one room, one monster, and one item — ideal for
+  a single vertical-slice quest.
+- Decision: (a) Auto-accept quests when the player enters the trigger room (no
+  explicit `accept` command). (b) Let `World.attack()` evaluate quest conditions
+  and grant rewards — `CommandProcessor` only renders outcomes. (c) Limit each
+  `target_monster_id` to one quest (enforced by the content loader) to avoid
+  ambiguity about which quest completes first. (d) Upgrade save format to version
+  2 with a required `quest_states` field; cleanly reject version 1 saves.
+- Consequences: Quest state is authoritative in `World`, serializable, and
+  validated on load. Adding more quests requires only content JSON changes. The
+  one-target-one-quest constraint simplifies completion logic but will need
+  revisiting if shared-target quests are ever needed.
+- Evidence: `src/lore2mud/engine/world.py`, `src/lore2mud/engine/save.py`,
+  `src/lore2mud/engine/commands.py`, `tests/test_quest.py`.
+- Supersedes: None.
