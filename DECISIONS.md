@@ -421,3 +421,22 @@
   verification that routing methods are not called.
 - Evidence: `src/lore2mud/engine/commands.py`, `tests/test_recover.py`.
 - Supersedes: DEC-0019's placement of the death gate after dialogue routing.
+
+## DEC-0021: M1 independent acceptance — GO
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: M1 (death/recovery) was implemented by Hermes agent across two commits
+  (`6a50fdf` initial, `c329546` gate-ordering fix). GPT-5.6-sol performed an
+  independent verification of `c329546` covering code correctness, test coverage,
+  and real CLI behavior.
+- Decision: Record M1 as independently accepted. Evidence: 59 recover tests,
+  474 full unittest, compileall, original_demo content validation,
+  `check_repo_safety.py --history`, `git diff --check`, and real CLI smoke
+  (defeat → move rejected → dead save → recover → 20/20 → resume). Git state:
+  main, ahead 2 / behind 0, clean, not pushed.
+- Consequences: M1 is complete. The project may proceed to M2 (typed stacks)
+  proposal. The engine is still in development; this does not certify engine
+  feature-completeness.
+- Evidence: `c329546`, `tests/test_recover.py`, `src/lore2mud/engine/commands.py`.
+- Supersedes: None.

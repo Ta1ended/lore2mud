@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-28（M1 验收返工）_
+_Last updated: 2026-07-28（M1 独立验收封板）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -27,8 +27,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 `d81310c08ada7d2950dbfbcd1c431d42773c056e` 为基线，确认工作树干净、远端仍为
 `1936e913348d3d46278ffaae2cfabf6502020835`、ahead/behind 为 `2/0`，结论为
 `CONDITIONAL GO`：可以继续扩展完全原创的公共可玩内容，但这不等于引擎功能已全部完成，
-更不授权小说事实层访问。M1 死亡/失败处理已由 Hermes 实现并完成执行者自测，等待
-GPT-5.6-sol 独立验收。命令层死亡门禁顺序已修正（门禁位于裸对话选项和 bye 路由之前）。
+更不授权小说事实层访问。M1 死亡/失败处理已由 GPT-5.6-sol 于 2026-07-28 对
+`c329546` 完成独立验收，结论 GO。公共引擎仍在开发中。
 
 ## Completed
 
@@ -98,8 +98,8 @@ GPT-5.6-sol 独立验收。命令层死亡门禁顺序已修正（门禁位于�
   `World.attack()` 在击败时把战利品置入当前房间并返回 `LootOutcome`，存活怪物战利品若已在
   保存的房间/背包状态中出现则拒绝读档。save v5 格式未变。
 - M1 死亡/失败处理（`World.recover()` + `_require_alive()` 统一门禁 + 命令层门禁 +
-  55 项测试）已由 Hermes 实现并完成执行者自测，等待 GPT-5.6-sol 独立验收。
-  命令层死亡门禁顺序已修正：门禁位于裸对话选项和 `bye` 路由之前。
+  59 项测试）已由 GPT-5.6-sol 于 2026-07-28 对 `c329546` 独立验收，结论 GO。
+  验收证据：59 项专项 + 474 项全量测试通过、编译、内容校验、安全扫描、真实 CLI 通过。
 
 ## In progress
 
@@ -116,7 +116,7 @@ GPT-5.6-sol 独立验收。命令层死亡门禁顺序已修正（门禁位于�
   `check_repo_safety.py --history`、`git diff --check`、`git fsck --full --no-dangling`
   与真实 CLI 主循环均通过。CLI 覆盖装备、对话奖励、持有物品门禁、消耗、战斗、掉落、
   拾取和丢弃；没有读取私有小说目录。
-- `python -m unittest discover -s tests -v` - 470 tests passed (2026-07-28).
+- `python -m unittest discover -s tests -v` - 474 tests passed (2026-07-28).
 - `python -m unittest tests.test_loot -v` - 15 tests passed (2026-07-28), covering
   loader contracts, one-time placement, state invariance, CLI, and save/load.
 - `python -m unittest tests.test_drop -v` - 11 tests passed (2026-07-28), covering
@@ -133,9 +133,11 @@ GPT-5.6-sol 独立验收。命令层死亡门禁顺序已修正（门禁位于�
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `python -m lore2mud validate --content examples/original_demo` - passed (2026-07-28).
 - `git diff --check` - clean (2026-07-28).
-- 本次 Hermes 自审验证：完整 470+ 项测试、历史安全扫描、编译、内容包校验和真实
-  CLI 试玩（倒下 → 移动拒绝 → 死亡存档 → recover → 满 HP → 可继续游戏）均通过
-  （2026-07-28）；这不是独立 Sol 验收。
+- M1 独立验收（2026-07-28，`c329546`）：59 项 recover 专项测试通过；474 项全量
+  unittest 通过；compileall、original_demo 内容校验、`check_repo_safety.py --history`、
+  `git diff --check` 均通过；真实 CLI（倒下 → 移动拒绝 → 死亡存档 → recover → 20/20 →
+  可继续游戏）通过；Git main、ahead 2 / behind 0、工作树干净、未 push。
+  GPT-5.6-sol 独立验收结论 GO。
 
 ## Key paths
 

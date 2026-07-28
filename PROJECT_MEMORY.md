@@ -36,13 +36,14 @@ stale.
   error contract, `drop` for unequipped inventory items, deterministic
   single-item monster loot, and deterministic defeat recovery (`World.recover()`
   + `_require_alive()` unified death gate + command-layer gate before dialogue
-  routing) are implemented; M1 awaiting independent verification;
+  routing) are implemented; M1 independently accepted by GPT-5.6-sol on
+  2026-07-28 (`c329546`);
   always inspect the live working tree before relying on this checkpoint.
 - 2026-07-28 public-history cleanup baseline: `96de7b2`（现为 `eafe70e`
   的祖先）；任何后续历史操作前仍须重新检查实时远端。
 - 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励 + 可见物品查看 + 命名存档槽位 +
   写入错误契约 + 丢弃物品 + 确定性怪物战利品 + 死亡/失败处理(M1) 已实现；
-  M1 等待 GPT-5.6-sol 独立验收
+  M1 已由 GPT-5.6-sol 独立验收 GO（`c329546`）；公共引擎仍在开发中
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
 - The private novel corpus and split chapters are outside the repository under:
@@ -56,14 +57,14 @@ stale.
 
 ## Verified facts
 
-- Full project suite: 470 tests passed (2026-07-28) after M1 recovery.
+- Full project suite: 474 tests passed (2026-07-28); M1 independently accepted.
 - Focused readiness suite: 248 tests covering content loading, save/load and
   slots, dialogue, locked exits, drop, inspect, loot, and repository safety
   passed (2026-07-28). Compile, original-demo validation, history safety scan,
   and a real public CLI loop also passed.
-- `tests/test_recover.py`: 55 tests cover recover success (12), recover
+- `tests/test_recover.py`: 59 tests cover recover success (12), recover
   failure/alive rejection (7), World death gate invariance (12), command-layer
-  gate (15), and save/load round-trip (6).
+  gate (19), and save/load round-trip (6). M1 independently accepted.
 - `tests/test_loot.py`: 15 tests cover optional-field parsing, invalid and
   duplicate references, dialogue conflicts, one-time room placement, attack
   failure invariance, CLI rendering, and save/load validation.
@@ -131,8 +132,10 @@ stale.
 - Under the project owner's temporary GPT-5.6-terra exception, Terra self-audited
   and executed the `drop` and deterministic monster-loot slices.
 - Under the project owner's direction, Hermes agent executed the M1 defeat-recovery
-  slice and the M1 acceptance-rework fix. This is not an independent GPT-5.6-sol
-  acceptance.
+  slice and the M1 acceptance-rework fix.
+- GPT-5.6-sol independently accepted M1 on 2026-07-28 (`c329546`): 59 recover
+  tests, 474 full tests, compileall, content validation, safety scan, real CLI,
+  and git status all passed. Conclusion: GO.
 - The project owner provided a completed GPT-5.6-sol public-repository audit for
   baseline `2ecead1`, with a `CONDITIONAL GO`. It identified this write-I/O gap;
   the current slice closes it. The audit reported 43 dangling blobs without reading
