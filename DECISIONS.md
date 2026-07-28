@@ -440,3 +440,40 @@
   feature-completeness.
 - Evidence: `c329546`, `tests/test_recover.py`, `src/lore2mud/engine/commands.py`.
 - Supersedes: None.
+
+## DEC-0022: Typed item stacks, save v6, and M2 data contracts
+
+- Date: 2026-07-29
+- Status: Accepted
+- Context: M1 introduced basic item IDs as flat lists. M2 requires items with
+  quantities to support stackable consumables, room loot drops, and dialogue
+  rewards. The save format must encode quantities, and the content schema must
+  declare stack limits.
+- Decision:
+  (a) Content layer uses frozen `ItemStackDefinition(item_id, quantity)`.
+  Runtime uses mutable `ItemStack(item_id, quantity)`. No shared instances.
+  (b) `ItemDefinition.stack_limit` (default 1) governs max quantity per stack.
+  Equipment items must have `stack_limit == 1`.
+  (c) Room `item_ids` → `item_stacks: list[ItemStack]`.
+  Inventory `item_ids` → `stacks: list[ItemStack]`. Capacity = stack slots.
+  (d) `Monster.loot_item: ItemStackDefinition | None` replaces `loot_item_id`.
+  `DialogueOption.grant_item: ItemStackDefinition | None` replaces `grant_item_id`.
+  (e) `stack_limit > 1` items may exist in multiple containers simultaneously.
+  `stack_limit == 1` items remain globally unique across rooms, inventory,
+  loot sources, and dialogue grants.
+  (f) `take/drop/use` accept optional suffix quantity (default 1).
+  `_parse_quantity` uses ASCII regex classification rejecting 0, signed, float,
+  hex, binary, octal, inf/nan.
+  (g) Loot preflight in `World.attack()` checks before combat; failure rejects
+  the entire attack.
+  (h) Save format v6: `inventory_stacks` and `item_stacks` as arrays of
+  `{item_id, quantity}` objects. v5 explicitly rejected.
+  (i) Content pack version 0.3.0.
+- Consequences: All item containers use typed stacks. Old flat ID lists are
+  fully removed from runtime and save format. Equipment remains slot-based
+  with item_id string reference (stack_limit=1 guarantees quantity=1).
+- Evidence: `src/lore2mud/content/models.py`, `src/lore2mud/inventory/models.py`,
+  `src/lore2mud/engine/world.py`, `src/lore2mud/engine/save.py`,
+  `src/lore2mud/engine/commands.py`, `src/lore2mud/content/loader.py`,
+  `tests/test_item_stacks.py`, `schemas/`.
+- Supersedes: None.

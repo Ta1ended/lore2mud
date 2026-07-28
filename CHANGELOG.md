@@ -19,9 +19,10 @@
 - Added loot preflight in `World.attack()`: combat fails entirely if loot
   cannot be placed (stack overflow or non-stackable duplicate).
 - Upgraded save format to version 6 with `inventory_stacks` and `item_stacks`
-  fields (list of `{item_id, quantity}` objects). v5 saves explicitly rejected.
-- Upgraded content pack to version 0.3.0. Old 0.2.7 saves rejected by
-  content-pack version check.
+  fields (list of `{item_id, quantity}` objects). v5 saves rejected by save
+  format version check (not by content-pack version check).
+- Upgraded content pack to version 0.3.0. Saves referencing content pack
+  0.2.7 rejected by content-pack version check (independent of format version).
 - Added `docs/engine_completion_milestones.md` M2 status.
 - Added 51 new M2 tests in `tests/test_item_stacks.py` covering content
   definition immutability, quantity parsing, take/drop/use with quantities,

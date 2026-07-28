@@ -9,7 +9,7 @@
     "name",
     "description",
     "exits",
-    "item_ids",
+    "item_stacks",
     "monster_ids"
   ],
   "properties": {
@@ -49,11 +49,10 @@
         ]
       }
     },
-    "item_ids": {
+    "item_stacks": {
       "type": "array",
-      "uniqueItems": true,
       "items": {
-        "$ref": "common.schema.json#/$defs/stable_id"
+        "$ref": "common.schema.json#/$defs/item_stack"
       }
     },
     "monster_ids": {

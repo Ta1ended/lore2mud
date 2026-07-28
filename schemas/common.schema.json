@@ -7,6 +7,23 @@
       "type": "string",
       "pattern": "^[a-z][a-z0-9_]*$"
     },
+    "positive_integer": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "item_stack": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["item_id", "quantity"],
+      "properties": {
+        "item_id": {
+          "$ref": "#/$defs/stable_id"
+        },
+        "quantity": {
+          "$ref": "#/$defs/positive_integer"
+        }
+      }
+    },
     "canon_ref": {
       "type": "object",
       "additionalProperties": false,

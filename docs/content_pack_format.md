@@ -61,7 +61,7 @@ JSON。稳定 ID 必须匹配：
       "required_item_id": "item_gate_token"
     }
   },
-  "item_ids": ["item_lantern"],
+  "item_stacks": [{"item_id": "item_lantern", "quantity": 1}],
   "monster_ids": []
 }
 ```
@@ -144,14 +144,14 @@ null` 属于非法内容，加载器拒绝内容包。
   "attack": 3,
   "defense": 1,
   "experience_reward": 12,
-  "loot_item_id": "item_training_core"
+  "loot_item": {"item_id": "item_training_core", "quantity": 1}
 }
 ```
 
 `room_id` 必须与对应房间的 `monster_ids` 一致。所有数值必须是非负整数，
 `max_hp` 与 `attack` 至少为 1。
 
-`loot_item_id` 是可选稳定 ID。指定时必须引用存在、初始未放置在房间中的物品，且该物品
+`loot_item` 是可选的 typed stack 对象（`{item_id, quantity}`）。指定时必须引用存在、初始未放置在房间中的物品，且该物品
 不能同时作为对话奖励或另一个怪物的战利品。怪物首次被击败时，战利品会放入当前房间；
 它可以是消耗品，玩家仍通过现有 `take` / `use` 指令处理。
 
@@ -245,7 +245,7 @@ null` 属于非法内容，加载器拒绝内容包。
 - `next_node_id`：目标节点 ID，或 `null`（结束对话）。
   - 省略 `next_node_id` 等价于 `null`。
   - 非 null 时必须引用同对话内的节点。
-- `grant_item_id`：可省略的奖励物品稳定 ID。省略表示不奖励；若出现，必须是
+- `grant_item`：可省略的奖励物品 typed stack 对象（`{item_id, quantity}`）。省略表示不奖励；若出现，必须是
   非空稳定 ID，`null` 和其他类型均非法。
   - 必须引用 `items.json` 中存在的非消耗品，且该物品不能放置在任何房间。
   - 同一物品最多只能被一个对话选项奖励。
@@ -256,7 +256,7 @@ null` 属于非法内容，加载器拒绝内容包。
 - `<正整数>`：选择第 N 个选项（仅对话中有效，匹配 `^[1-9][0-9]{0,4}$`，最大99999）。
 - `bye`：主动结束对话（仅对话中有效）。
 - 移动房间自动结束对话。
-- 对话不改变 HP、经验、装备、任务或房间布局；带 `grant_item_id` 的选项会在
+- 对话不改变 HP、经验、装备、任务或房间布局；带 `grant_item` 的选项会在
   背包有空位且尚未拥有该物品时，原子性地加入一个奖励物品。失败时对话状态和
   其他游戏状态均不变。
 

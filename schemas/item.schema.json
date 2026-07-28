@@ -37,6 +37,11 @@
       "type": "integer",
       "minimum": 1
     },
+    "stack_limit": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Maximum quantity per stack. Default 1. Equipment items must be 1."
+    },
     "canon_ref": {
       "$ref": "common.schema.json#/$defs/canon_ref"
     },

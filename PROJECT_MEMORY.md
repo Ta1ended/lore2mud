@@ -57,7 +57,8 @@ stale.
 
 ## Verified facts
 
-- Full project suite: 474 tests passed (2026-07-28); M1 independently accepted.
+- Full project suite: 527 tests passed (2026-07-29); M2 typed stacks
+  implemented and contract-synchronized.
 - Focused readiness suite: 248 tests covering content loading, save/load and
   slots, dialogue, locked exits, drop, inspect, loot, and repository safety
   passed (2026-07-28). Compile, original-demo validation, history safety scan,
@@ -65,6 +66,12 @@ stale.
 - `tests/test_recover.py`: 59 tests cover recover success (12), recover
   failure/alive rejection (7), World death gate invariance (12), command-layer
   gate (19), and save/load round-trip (6). M1 independently accepted.
+- `tests/test_item_stacks.py`: 57 tests cover content definition immutability
+  (3), loader stack_limit validation (3), quantity parsing (12), World.take
+  with quantities (7), World.drop with quantities (6), World.use with
+  quantities (6), equipment quantity (2), loot preflight (1), save v6
+  round-trip (5), death gate regression (5), locked exit (1), and Schema
+  contract validation (6).
 - `tests/test_loot.py`: 15 tests cover optional-field parsing, invalid and
   duplicate references, dialogue conflicts, one-time room placement, attack
   failure invariance, CLI rendering, and save/load validation.
@@ -141,8 +148,10 @@ stale.
   the current slice closes it. The audit reported 43 dangling blobs without reading
   their contents; reachable-history scanning does not cover such objects. It also
   did not refresh the live GitHub server state.
-- Content pack version: 0.2.7; save format version: 5; M1 recovery does not
-  change either version (start_room_id is reconstructed from ContentPack).
+- Content pack version: 0.3.0; save format version: 6; M2 typed stacks
+  implemented with ItemStackDefinition/ItemStack, stack_limit, item_stacks,
+  Inventory.stacks, loot_item/grant_item typed stacks, take/drop/use quantity,
+  loot preflight, and save v6. 527 tests passing.
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.
 - Private split reconstruction matched the decoded source in character count and

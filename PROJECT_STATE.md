@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-28（M1 独立验收封板）_
+_Last updated: 2026-07-29（M2 契约同步返工）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -100,10 +100,15 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - M1 死亡/失败处理（`World.recover()` + `_require_alive()` 统一门禁 + 命令层门禁 +
   59 项测试）已由 GPT-5.6-sol 于 2026-07-28 对 `c329546` 独立验收，结论 GO。
   验收证据：59 项专项 + 474 项全量测试通过、编译、内容校验、安全扫描、真实 CLI 通过。
+- M2 typed stacks（`ItemStackDefinition`/`ItemStack` + `stack_limit` + `item_stacks` +
+  `Inventory.stacks` + `loot_item`/`grant_item` typed stacks + `take/drop/use` 数量 +
+  loot 预检 + save v6 + content pack 0.3.0 + 51 项新测试 + 474 项旧测试迁移）
+  已由 Hermes 实现并自测（527 项测试通过），Schema 和文档已同步，等待 GPT-5.6-sol
+  独立验收。
 
 ## In progress
 
-- None.
+- M2 等待 GPT-5.6-sol 独立验收。
 
 ## Blockers
 

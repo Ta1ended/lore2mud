@@ -159,15 +159,15 @@ class MonsterLootContentTests(unittest.TestCase):
 
         self.assertIn("多个怪物作为战利品", str(caught.exception))
 
-    def test_schema_documents_optional_loot_item_id(self) -> None:
+    def test_schema_documents_optional_loot_item(self) -> None:
         schema = json.loads(
             (PROJECT_ROOT / "schemas" / "monster.schema.json").read_text("utf-8")
         )
 
-        self.assertNotIn("loot_item_id", schema["required"])
+        self.assertNotIn("loot_item", schema["required"])
         self.assertEqual(
-            schema["properties"]["loot_item_id"]["$ref"],
-            "common.schema.json#/$defs/stable_id",
+            schema["properties"]["loot_item"]["$ref"],
+            "common.schema.json#/$defs/item_stack",
         )
 
 

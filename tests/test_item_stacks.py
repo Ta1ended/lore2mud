@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -411,6 +412,65 @@ class LockedExitTests(unittest.TestCase):
         world.move("east")
         with self.assertRaises(WorldRuleError):
             world.move("west")
+
+
+SCHEMA_DIR = PROJECT_ROOT / "schemas"
+
+
+class SchemaContractTests(unittest.TestCase):
+    """Verify JSON schemas match the M2 typed-stack contracts."""
+
+    def _load(self, name: str) -> dict:
+        return json.loads((SCHEMA_DIR / name).read_text("utf-8"))
+
+    def test_item_schema_has_stack_limit(self) -> None:
+        schema = self._load("item.schema.json")
+        prop = schema["properties"]["stack_limit"]
+        self.assertEqual(prop["type"], "integer")
+        self.assertEqual(prop["minimum"], 1)
+
+    def test_location_schema_uses_item_stacks(self) -> None:
+        schema = self._load("location.schema.json")
+        self.assertIn("item_stacks", schema["required"])
+        self.assertIn("item_stacks", schema["properties"])
+        self.assertNotIn("item_ids", schema["required"])
+        self.assertNotIn("item_ids", schema["properties"])
+        ref = schema["properties"]["item_stacks"]["items"]["$ref"]
+        self.assertEqual(ref, "common.schema.json#/$defs/item_stack")
+
+    def test_monster_schema_uses_loot_item(self) -> None:
+        schema = self._load("monster.schema.json")
+        self.assertNotIn("loot_item_id", schema["properties"])
+        self.assertIn("loot_item", schema["properties"])
+        ref = schema["properties"]["loot_item"]["$ref"]
+        self.assertEqual(ref, "common.schema.json#/$defs/item_stack")
+
+    def test_dialogue_schema_uses_grant_item(self) -> None:
+        schema = self._load("dialogue.schema.json")
+        opt_schema = (
+            schema["properties"]["nodes"]["items"]
+            ["properties"]["options"]["items"]
+        )
+        self.assertNotIn("grant_item_id", opt_schema["properties"])
+        self.assertIn("grant_item", opt_schema["properties"])
+        ref = opt_schema["properties"]["grant_item"]["$ref"]
+        self.assertEqual(ref, "common.schema.json#/$defs/item_stack")
+
+    def test_common_schema_item_stack_definition(self) -> None:
+        schema = self._load("common.schema.json")
+        stack = schema["$defs"]["item_stack"]
+        self.assertEqual(stack["type"], "object")
+        self.assertIn("item_id", stack["required"])
+        self.assertIn("quantity", stack["required"])
+        self.assertFalse(stack["additionalProperties"])
+        self.assertEqual(
+            stack["properties"]["item_id"]["$ref"], "#/$defs/stable_id"
+        )
+        # quantity references positive_integer which has minimum 1
+        qty = stack["properties"]["quantity"]
+        self.assertEqual(qty["$ref"], "#/$defs/positive_integer")
+        pos_int = schema["$defs"]["positive_integer"]
+        self.assertEqual(pos_int["minimum"], 1)
 
 
 if __name__ == "__main__":
