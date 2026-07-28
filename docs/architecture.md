@@ -34,6 +34,8 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
 - 必填字段与基本类型；
 - 稳定 ID 格式和重复 ID；
 - 起始房间、出口、物品、怪物、角色和对话引用；
+- `pack.json`、`rooms.json`、`items.json`、`monsters.json`、`characters.json`、
+  `quests.json` 和 `dialogues.json` 七个必需内容文件；
 - 同一实体的重复放置；
 - 怪物 `room_id` 与房间 `monster_ids` 一致性；
 - 对话节点/选项的交叉引用与唯一性；

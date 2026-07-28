@@ -1,9 +1,12 @@
 # lore2mud Agent 规则
-本文件约束所有参与本仓库开发的 Agent，尤其是 Hermes。仓库目标是提供通用
+本文件约束所有参与本仓库开发的 Agent。仓库目标是提供通用
 MUD 引擎、小说资料处理工具和完全原创的公开示例；第三方小说及其改编内容只能
 保存在仓库之外或被明确忽略的本地目录。
 
 ## 工作方式
+- GPT-5.6-sol 是顾问：先审查范围、数据契约、风险和验收证据。
+- Codex（GPT-5.6-terra）是执行者：只在顾问确认后的单一纵向切片内实现、测试
+  和更新交接文件。
 - 修改前先阅读相关代码、测试、文档和最近的项目交接文件。
 - 先输出当前数据流、拟修改文件、风险和验证方案，再开始修改。
 - 一次只完成一个可测试的纵向功能。
@@ -16,8 +19,8 @@ MUD 引擎、小说资料处理工具和完全原创的公开示例；第三方�
 - 该代码块必须自包含，便于直接转交另一会话，无需翻找历史消息。
 - 代码块内容：基线提交（hash 或 HEAD）、唯一任务、文件范围、风险、验证结果、
   下一动作。
-- 完成任务时同步 `PROJECT_MEMORY.md` 及四个交接文件（`PROJECT_STATE.md`、
-  `NEXT_TASK.md`、`DECISIONS.md`、`CHANGELOG.md`）。
+- 完成任务时同步 `PROJECT_MEMORY.md`、`PROJECT_STATE.md`、`NEXT_TASK.md` 和
+  `CHANGELOG.md`。
 
 ## 架构边界
 - `src/lore2mud/engine` 负责编排，不在 CLI 中实现游戏规则。
@@ -29,7 +32,8 @@ MUD 引擎、小说资料处理工具和完全原创的公开示例；第三方�
 
 ## 小说与模型安全
 - `novel/raw` 与 `novel/chapters` 是只读输入目录，禁止覆盖、改写或提交。
-- `private_content`、`generated_content` 和私有内容包不得提交。
+- `novel/summaries`、`novel/canon`、`novel/extractions`、`private_content`、
+  `generated_content`、本地索引、模型、数据库、存档、日志和私有内容包不得提交。
 - 不把整本小说放入单次模型上下文，不依赖 Agent 记忆保存小说正文。
 - 玩家输入、模型输出和外部内容包均视为不可信输入。
 - 所有生成内容必须先通过 Schema、类型和跨文件引用校验，才能进入游戏。
@@ -43,8 +47,8 @@ MUD 引擎、小说资料处理工具和完全原创的公开示例；第三方�
 - 数据结构变更必须同步 Schema、原创示例和格式文档。
 - 提交前运行：
   - `python -m unittest discover -s tests -v`
-  - `python scripts/check_repo_safety.py`
-- 完成后同步 `PROJECT_MEMORY.md` 及四个交接文件（`PROJECT_STATE.md`、
-  `NEXT_TASK.md`、`DECISIONS.md`、`CHANGELOG.md`），只记录已验证的事实。
+  - `python scripts/check_repo_safety.py --history`
+- 完成后同步 `PROJECT_MEMORY.md`、`PROJECT_STATE.md`、`NEXT_TASK.md` 和
+  `CHANGELOG.md`，只记录已验证的事实。
 - 完成报告以一个自包含的 `text` fenced code block 结尾。
 - 不得提交小说原文、第三方专有名称、密钥、数据库、索引、模型、存档或日志。

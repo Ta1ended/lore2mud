@@ -2,7 +2,8 @@
 
 `lore2mud` 是一个面向本地单人文字 MUD 的现代 Python 项目基底。它把
 通用游戏引擎、小说资料处理工具、原作事实和具体游戏数值分成不同层，让 GPT
-可以担任设计与审查顾问，让 Hermes Agent 每次实现一个可测试的纵向功能。
+可以让 GPT-5.6-sol 担任设计与审查顾问，并由 Codex（GPT-5.6-terra）每次实现
+一个可测试的纵向功能。
 
 当前版本提供一个完全原创的三房间演示世界，包含移动、拾取、背包、确定性
 战斗、装备、消耗品、任务和对话系统。运行时只使用 Python 标准库。
@@ -54,6 +55,9 @@ python -m lore2mud validate --content examples/original_demo
 look
 take item_spark_lantern
 inventory
+use item_linglu_pill
+equip item_crystal_blade
+unequip hand
 quests
 go east
 go east
@@ -71,6 +75,9 @@ quit
 - `go <方向>`：沿内容包声明的出口移动。
 - `take <ID或名称>`：拾取房间内物品。
 - `inventory`：查看背包。
+- `use <ID或名称>`：使用背包内的消耗品。
+- `equip <ID或名称>`：装备 hand 或 body 槽物品。
+- `unequip [hand|body]`：卸下指定槽位；省略时默认为 hand。
 - `attack <ID或名称>`：进行一个确定性战斗回合。
 - `talk <ID或名称>`：与角色对话，显示台词和编号选项。
 - `<数字>`：选择对话选项（对话中可用）。
@@ -81,7 +88,8 @@ quit
 - `validate` 子命令：不启动游戏即可校验内容包，报告所有问题。
 - 原创确定性任务闭环：自动接取、条件推进、经验奖励、存档持久化。
 - 保守的中文小说拆章与 manifest 生成工具。
-- Git 候选文件安全检查，阻止私有原文、电子书、密钥和异常大文件进入仓库。
+- Git 候选与可达历史安全检查，阻止私有资料、电子书、常见凭据、数据库、索引、
+  存档、日志和异常大文件进入仓库。
 
 ## 项目结构
 
@@ -177,26 +185,28 @@ python pipeline/split_novel.py `
 首次运行后必须检查章节数、异常标题和前后边界。详细流程见
 [小说资料管线](docs/novel_pipeline.md)。
 
-## GPT + Hermes 工作流
+## 生产工作流
 
-建议让 GPT 负责范围、架构与验收，让 Hermes 在仓库中执行单个纵向任务：
+2026-07-28 的已验证基线为 `96de7b2`，当时 `main` 与 `origin/main` 同步；执行
+任何发布或历史操作前必须重新检查实时远端状态。建议让 GPT-5.6-sol 负责范围、
+架构与验收，让 Codex（GPT-5.6-terra）在仓库中执行单个纵向任务：
 
-1. GPT 根据当前状态定义一个可验证目标和限制。
-2. Hermes 先阅读 `AGENTS.md`、交接文件、相关代码和测试。
-3. Hermes 先说明数据流、修改范围、风险与测试方案。
-4. Hermes 只实现当前功能，同步内容格式和文档。
-5. Hermes 运行完整测试及仓库安全检查。
-6. GPT 根据证据审查结果，再决定下一项任务。
+1. 顾问根据当前状态定义一个可验证目标、数据契约和限制。
+2. 执行者先阅读 `AGENTS.md`、交接文件、相关代码和测试，并报告数据流、范围、
+   风险和测试方案。
+3. 执行者只实现当前纵向切片，同步内容格式、文档和四个交接文件。
+4. 执行者运行完整测试与 `python scripts/check_repo_safety.py --history`。
+5. 顾问按测试、差异和试玩证据验收，再决定下一项任务。
 
 可直接复制的任务模板与检查点见
-[Hermes 工作流](docs/hermes_workflow.md)。
+[生产工作流](docs/production_workflow.md)。
 
 ## 开发与验证
 
 ```powershell
 python -m pip install -e .
 python -m unittest discover -s tests -v
-python scripts/check_repo_safety.py
+python scripts/check_repo_safety.py --history
 ```
 
 任何内容格式变更都应同时更新：

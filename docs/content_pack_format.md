@@ -11,10 +11,11 @@ content_pack/
 ├─ items.json
 ├─ monsters.json
 ├─ characters.json
-└─ quests.json
+├─ quests.json
+└─ dialogues.json
 ```
 
-首版要求六个实体文件都存在；没有角色或任务时使用空数组。所有文本为 UTF-8
+首版要求七个文件都存在；没有角色、任务或对话时使用空数组。所有文本为 UTF-8
 JSON。稳定 ID 必须匹配：
 
 ```text

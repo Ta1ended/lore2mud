@@ -25,4 +25,4 @@ jobs:
       - name: Run tests
         run: python -m unittest discover -s tests -v
       - name: Check repository safety
-        run: python scripts/check_repo_safety.py
+        run: python scripts/check_repo_safety.py --history

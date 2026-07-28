@@ -3,21 +3,16 @@
 _Last updated: 2026-07-28_
 
 ## Status
-Waiting for project owner to decide the next task.
+等待项目负责人复核今日三段交付的公开安全与原创试玩证据，再选择下一项纵向功能。
 
-## Current state
-- Dialogue system complete: talk, bare integer selection, bye, terminal nodes,
-  save v5, 77 dialogue tests.
-- All 325 tests pass. Repo safety, compileall, validate all green.
-- main ahead of origin/main.
+## Single next action
+在任何新功能开始前，独立复核公共历史安全扫描、完整测试、内容包校验和原创演示
+试玩证据；确认远端 `main` 与本地预期提交一致，并记录 Git 托管缓存和旧 clone 仍可能
+保留被清理对象的残余风险。
 
-## Completed milestones
-1. Consumable items (heal_amount). ✅
-2. Equipment hand+body (attack_bonus, defense_bonus). ✅
-3. Deterministic quest flow. ✅
-4. Branching NPC dialogue system. ✅
+## Acceptance criteria
 
-## Candidate next tasks (pending owner decision)
-- Dialogue effects (grant items, trigger quests from nodes).
-- Multi-type quest system.
-- Extract and review a private sample of the first 20-50 chapters.
+- `python scripts/check_repo_safety.py --history` 无违规；
+- 完整测试、编译、`lore2mud validate` 与原创 CLI 冒烟均通过；
+- `git diff --check` 与 `git status --short --branch` 无意外差异；
+- 四个交接文件只陈述已验证事实，且本文件仍只有上述一个下一动作。

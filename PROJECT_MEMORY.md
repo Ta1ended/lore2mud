@@ -2,7 +2,8 @@
 
 _Checkpoint ref: HEAD — 恢复时运行 `git rev-parse HEAD` 获取当前提交。_
 
-This file is a compact restart guide for GPT, Hermes, or a future Codex session.
+This file is a compact restart guide for GPT-5.6-sol, Codex (GPT-5.6-terra), or a
+future Codex session.
 Repository state, tests, and current files are authoritative if this file becomes
 stale.
 
@@ -21,7 +22,10 @@ stale.
 - Branch: `main`
 - Remote: origin/main；恢复时运行 `git status --short --branch` 和
   `git rev-list --left-right --count HEAD...origin/main` 检查同步状态。
-- Working tree: clean
+- Working tree: clean at the `96de7b2` public-history-cleanup baseline; always
+  inspect the live status before relying on this checkpoint.
+- 2026-07-28 public-history cleanup baseline: `96de7b2`; always re-check
+  `git status --short --branch` and the live remote before a release operation.
 - 功能状态：消耗品 + 装备(hand+body) + 对话系统 已完成
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
@@ -35,10 +39,14 @@ stale.
 
 ## Verified facts
 
-- Full project suite: 325 tests passed (2026-07-28).
+- Full project suite: 328 tests passed (2026-07-28).
 - tests/test_dialogue.py: 77 tests (18 loading, 8 normal, 7 failure, 8 invariance,
   11 save/load, 3 save-time, 6 failure-invariance, 16 command integration).
 - Repository safety check: passed.
+- The production safety gate scans current Git candidates (including force-added
+  ignored files) and, with `--history`, all reachable Git tree paths and blobs.
+  It blocks the private directories and local artifacts declared in `.gitignore` /
+  `AGENTS.md`, plus limited private-key, GitHub, AWS, and Slack credential patterns.
 - Compile check and CLI save/load smoke test: passed.
 - CLI validate smoke test: passed.
 - CLI play smoke test with quests, consumables, equipment, and dialogue: passed.
@@ -69,7 +77,7 @@ or background processing.
 ## Pause rule
 
 To pause safely:
-1. Stop the current Hermes/Codex task.
+1. Stop the current Codex task.
 2. Do not start another model call or long-running corpus scan.
 3. Run `git status --short`.
 4. Sync `PROJECT_MEMORY.md` 及四个交接文件（`PROJECT_STATE.md`、
@@ -85,6 +93,9 @@ To resume safely:
 ## Hard boundaries
 - Never commit the private novel, split chapters, summaries, canon facts, local
   indexes, model files, database files, saves, logs, or credentials.
+- Run `python scripts/check_repo_safety.py --history` before CI/release-sensitive
+  work; this is a limited detector, not a replacement for secret management or
+  a rights review.
 - Never modify the raw private source.
 - Never load the entire novel into one model context.
 - Treat all player input, model output, and generated content as untrusted.

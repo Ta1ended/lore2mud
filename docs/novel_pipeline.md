@@ -167,5 +167,13 @@ canon。
 python scripts/check_repo_safety.py
 ```
 
-脚本检查 Git 已跟踪文件和未忽略的候选文件。`.gitignore` 是第一道边界，安全
-脚本是第二道边界，两者都不能替代提交前人工查看 `git status`。
+发布、历史重写或 CI 使用：
+
+```powershell
+python scripts/check_repo_safety.py --history
+```
+
+脚本检查 Git 已跟踪文件（包括以 `git add -f` 强制加入的忽略文件）和未忽略的
+候选文件；`--history` 还检查所有可达 Git 历史树和 blob。它仅检测有限的常见私钥、
+GitHub/AWS/Slack 凭据模式，不能替代密钥管理、权利审核或提交前人工查看
+`git status`。`.gitignore` 是第一道边界，安全脚本是第二道边界。

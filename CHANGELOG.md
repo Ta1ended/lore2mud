@@ -4,6 +4,15 @@
 
 ### Added
 
+- Added a two-layer repository safety gate: current Git candidates (including
+  force-added ignored files) plus optional reachable-history path/blob scanning.
+- Added limited private-key, GitHub, AWS, and Slack credential-pattern detection;
+  this is intentionally not presented as a complete secret scanner.
+- Added CI history safety checking and tests for blocked ignored paths, local
+  artifacts, credential patterns, and historic blobs.
+- Added `docs/production_workflow.md` for the GPT-5.6-sol advisor and Codex
+  (GPT-5.6-terra) execution/acceptance workflow.
+
 - Added dialogue system with branching NPC conversations (`dialogues.json`).
 - Added `DialogueDefinition`, `DialogueNode`, `DialogueOption` content models.
 - Added `Character` and `DialogueState` runtime models.
@@ -41,6 +50,9 @@
   validation (3), failure invariance (6), and command integration (16).
 
 ### Changed
+
+- Replaced the former agent-specific workflow reference with the production workflow and
+  documented `dialogues.json` as a required content-pack file.
 
 - `equip` now routes by `item.slot` ("hand" or "body") with strict tagged-variant
   validation before any state change.

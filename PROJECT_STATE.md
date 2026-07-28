@@ -8,7 +8,8 @@ _Last updated: 2026-07-28_
 
 ## Current status
 装备系统已实现 hand 和 body 双槽位，存档格式升级至 v5。对话系统已实现——
-原创 NPC 老陈带有确定性分支对话，内容包版本升至 0.2.4。
+原创 NPC 老陈带有确定性分支对话，内容包版本升至 0.2.4。生产安全门已扩展为
+当前 Git 候选与可达历史的双层检查。
 
 ## Completed
 
@@ -19,6 +20,11 @@ _Last updated: 2026-07-28_
   私有拆章重建校验通过（字符数 + SHA-256 一致）。
 - `schemas/` 与 `src/lore2mud/content/` 定义并校验内容契约。
 - `scripts/check_repo_safety.py` 与 `.gitignore` 建立公开/私有内容边界。
+- 安全门覆盖 private novel 的 raw/chapters/summaries/canon/extractions、私有/
+  生成内容、存档、模型、索引、数据库、日志、本地配置和有限常见凭据模式；CI 使用
+  `--history` 扫描所有可达历史树和 blob。
+- 生产工作流明确 GPT-5.6-sol 为顾问、Codex（GPT-5.6-terra）为执行者，要求先审
+  数据契约和验收方案，再完成单一纵向切片。
 - `tests/` 覆盖核心玩法、消耗品、装备（hand+body）、对话系统（77 项）、
   非法内容引用、拆章和安全检查。
 - 私有小说已在仓库外完成一次受控拆章；原文未修改，章节重建校验通过。
@@ -52,10 +58,12 @@ _Last updated: 2026-07-28_
 
 ## Verification
 
-- `python -m pytest tests/ -v` - 325 tests passed (2026-07-28).
+- `python -m unittest discover -s tests -v` - 328 tests passed (2026-07-28).
 - tests/test_dialogue.py: 77 tests (18 loading, 8 normal, 7 failure, 8 invariance,
   11 save/load, 3 save-time, 6 failure invariance, 16 command integration).
 - `python scripts/check_repo_safety.py` - passed (2026-07-28).
+- `python scripts/check_repo_safety.py --history` - required for CI/release;
+  records only limited path and credential pattern detection, not a complete secret audit.
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `python -m lore2mud validate --content examples/original_demo` - passed (2026-07-28).
 - `git diff --check` - clean (2026-07-28).
@@ -63,7 +71,8 @@ _Last updated: 2026-07-28_
 ## Key paths
 
 - `PROJECT_MEMORY.md` - fresh-session restart instructions and pause rules.
-- `AGENTS.md` - Hermes and other Agent constraints.
+- `AGENTS.md` - GPT-5.6-sol 顾问与 Codex 执行约束。
+- `docs/production_workflow.md` - GPT-5.6-sol 顾问与 Codex 执行的生产流程。
 - `NEXT_TASK.md` - exactly one recommended continuation.
 - `src/lore2mud/engine/world.py` - authoritative runtime state with quest,
   item use, equipment, and dialogue logic.
@@ -86,3 +95,5 @@ _Last updated: 2026-07-28_
   generated or reviewed.
 - The provider's privacy claim about model visibility is not independently verified;
   do not send the entire corpus to a cloud model by default.
+- History rewriting can leave Git hosting caches and pre-existing external clones with
+  old objects; repository checks only cover currently reachable refs.
