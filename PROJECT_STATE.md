@@ -11,10 +11,11 @@ _Last updated: 2026-07-28_
 确定性分支对话和一次性普通物品奖励；琉草小径西向出口要求持有该铜牌，`look` 会只读显示
 门禁所需物品与持有状态。`inspect` 仅查看当前房间或背包内物品的稳定 ID 和描述，不改变
 任何运行时状态；新增 `save [槽位]` / `load [槽位]`，在默认 `default.json` 之外支持安全的
-命名本地存档槽位，内容包仍为 v0.2.6、存档格式仍为 v5。生产安全门已扩展为当前 Git 候选
-与可达历史的双层检查。开始本切片前 `main` 的 `5ea42c7` 已比本地 `origin/main` 引用
-`6c13fca` 领先一个提交；本地后续提交按项目负责人指示不自动推送。恢复时必须重新检查
-实时远端同步状态。
+命名本地存档槽位。写入端文件系统 `OSError` 现在会被 `SaveLoadService` 转换为带 cause 的
+`SaveLoadError`，CLI 能稳定返回失败文本；内容包仍为 v0.2.6、存档格式仍为 v5。生产安全门
+已扩展为当前 Git 候选与可达历史的双层检查。Sol 审计基线 `2ecead1` 已比本地
+`origin/main` 引用 `6c13fca` 领先两个提交；本地后续提交按项目负责人指示不自动推送。
+恢复时必须重新检查实时远端同步状态。
 
 ## Completed
 
@@ -70,9 +71,12 @@ _Last updated: 2026-07-28_
   命令只渲染 ID 和描述，且不会改变房间、背包、装备、任务、活动对话或怪物状态。
   内容包版本与 save v5 格式均未变更。
 - 命名存档槽位：`SaveLoadService.save/load` 可选一个受限槽位名，`save` / `load` 无参数仍
-  使用 `default.json`。槽位名仅允许 1–32 位小写 ASCII 字母、数字、`-`、`_`，并拒绝路径、
-  扩展名和 Windows 保留设备名；它只选择保存目录内的文件，失败不会写入文件或替换当前
-  `World`。save v5 JSON 格式保持不变。
+  使用 `default.json`。槽位名仅允许 1–32 位小写 ASCII 字母、数字、`-`、`_`，且必须以
+  字母或数字开头，并拒绝路径、扩展名和 Windows 保留设备名；它只选择保存目录内的文件，
+  失败不会写入文件或替换当前 `World`。save v5 JSON 格式保持不变。
+- 写入错误契约：`SaveLoadService.save()` 仅把 `_atomic_write()` 产生的文件系统 `OSError`
+  转为带原始 cause 的 `SaveLoadError`；命令层据此返回“存档失败”文本。既有原子写入、
+  临时文件清理和非 I/O 编程错误传播语义不变。
 
 ## In progress
 
@@ -84,10 +88,10 @@ _Last updated: 2026-07-28_
 
 ## Verification
 
-- `python -m unittest discover -s tests -q` - 386 tests passed (2026-07-28).
-- `python -m unittest tests.test_save_slots tests.test_save -v` - 87 tests
+- `python -m unittest discover -s tests -q` - 389 tests passed (2026-07-28).
+- `python -m unittest tests.test_save_slots tests.test_save -v` - 90 tests
   passed (2026-07-28), including named-slot isolation, input safety, default
-  compatibility, CLI text, and load-failure invariance.
+  compatibility, write-I/O translation, CLI text, and failure invariance.
 - tests/test_dialogue.py: 91 tests, including typed item reward loading, state
   invariance, save/load and CLI rendering.
 - `python scripts/check_repo_safety.py` - passed (2026-07-28).
@@ -96,8 +100,8 @@ _Last updated: 2026-07-28_
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `python -m lore2mud validate --content examples/original_demo` - passed (2026-07-28).
 - `git diff --check` - clean (2026-07-28).
-- 本次根级验证：87 项 save/save-slot 测试、完整 386 项测试、历史安全扫描、编译和
-  内容包校验均通过（2026-07-28）。
+- 本次根级验证：90 项 save/save-slot 测试、完整 389 项测试、历史安全扫描、编译、
+  内容包校验和真实双槽位 CLI 试玩均通过（2026-07-28）。
 
 ## Key paths
 
@@ -131,6 +135,7 @@ _Last updated: 2026-07-28_
   do not send the entire corpus to a cloud model by default.
 - History rewriting can leave Git hosting caches and pre-existing external clones with
   old objects; repository checks only cover currently reachable refs.
-- GPT-5.6-sol 目前仍受模型容量阻断。项目负责人已明确延期独立审计并授权继续本次
-  公开、本地持久化切片；这不是 GPT-5.6-sol 已验收的声明。容量恢复后，先完成独立审计，
-  再选择下一项规则或数据契约功能。
+- 项目负责人提供的 GPT-5.6-sol 审计已在 `2ecead1` 上完成，结论为 `CONDITIONAL GO`：
+  当前写入 I/O 错误契约已补齐；审计报告的 43 个 dangling blob 未读取内容，也不受可达
+  历史安全扫描覆盖。GitHub 服务器状态尚未刷新，发布前必须重新核对远端；若远端变动，
+  停止发布并重新审查。

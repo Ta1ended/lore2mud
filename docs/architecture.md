@@ -150,6 +150,11 @@ bye。结束选项（`next_node_id=null`）则立即结束对话。
 Windows 保留设备名。路径验证发生在序列化、读取或替换世界之前；槽位只选择文件，不改变
 save v5 的 JSON 契约。
 
+`SaveLoadService.save()` 在服务边界把文件系统 `OSError` 转换为带原始异常链的
+`SaveLoadError`，因此 `CommandProcessor` 能将写入失败渲染为正常的“存档失败”文本，
+而不会让 I/O 异常逃出游戏循环。`_atomic_write()` 的原子写入和临时文件清理职责不变；
+非 I/O 编程错误不会被重新标记为存档 I/O 错误。
+
 ## 扩展原则
 
 - 存档应序列化运行时状态，而不是覆盖内容包。

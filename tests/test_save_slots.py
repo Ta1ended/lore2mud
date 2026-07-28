@@ -5,6 +5,7 @@ from __future__ import annotations
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from lore2mud.content.loader import load_content_pack
 from lore2mud.engine.commands import CommandProcessor
@@ -112,6 +113,32 @@ class NamedSaveSlotServiceTests(unittest.TestCase):
 
         self.assertIn("missing_slot.json", str(caught.exception))
 
+    def test_write_os_error_is_translated_with_its_cause(self) -> None:
+        write_error = OSError("device full")
+
+        with patch(
+            "lore2mud.engine.save._atomic_write",
+            side_effect=write_error,
+        ):
+            with self.assertRaises(SaveLoadError) as caught:
+                self.service.save(self.world, "start")
+
+        self.assertIn("写入存档失败", str(caught.exception))
+        self.assertIs(caught.exception.__cause__, write_error)
+        self.assertFalse(self.service.slot_path("start").exists())
+
+    def test_non_io_write_error_is_not_relabelled(self) -> None:
+        write_error = TypeError("unexpected serialization failure")
+
+        with patch(
+            "lore2mud.engine.save._atomic_write",
+            side_effect=write_error,
+        ):
+            with self.assertRaises(TypeError) as caught:
+                self.service.save(self.world, "start")
+
+        self.assertIs(caught.exception, write_error)
+
 
 class NamedSaveSlotCommandTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -155,6 +182,25 @@ class NamedSaveSlotCommandTests(unittest.TestCase):
         self.assertIn("存档槽位", result.text)
         self.assertIs(self.commands.world, before_world)
         self.assertEqual(_runtime_snapshot(self.commands.world), before)
+
+    def test_write_os_error_renders_without_overwriting_or_mutating(self) -> None:
+        self.service.save(self.world)
+        existing_content = self.service.save_path.read_text(encoding="utf-8")
+        before = _runtime_snapshot(self.commands.world)
+
+        with patch(
+            "lore2mud.engine.save._atomic_write",
+            side_effect=PermissionError("access denied"),
+        ):
+            result = self.commands.execute("save")
+
+        self.assertIn("存档失败", result.text)
+        self.assertIn("写入存档失败", result.text)
+        self.assertEqual(_runtime_snapshot(self.commands.world), before)
+        self.assertEqual(
+            self.service.save_path.read_text(encoding="utf-8"),
+            existing_content,
+        )
 
     def test_command_rejects_multiple_slot_arguments(self) -> None:
         self.assertEqual(

@@ -20,17 +20,18 @@ stale.
 
 - Repository: `lore2mud`
 - Branch: `main`
-- Remote: `origin/main` 当前本地跟踪引用仍为 `6c13fca`；本次命名存档槽位切片开始前，
-  `main` 的 `5ea42c7` 已比它领先一个提交。后续本地提交按项目负责人指示不自动推送，
+- Remote: `origin/main` 当前本地跟踪引用仍为 `6c13fca`；本次写入错误契约切片开始前，
+  Sol 审计基线 `2ecead1` 已比它领先两个提交。后续本地提交按项目负责人指示不自动推送，
   恢复时仍须运行
   `git status --short --branch` 和 `git rev-list --left-right --count
   HEAD...origin/main` 检查实时状态。
 - Functional checkpoint: held-item exit gates, read-only `look` gate status, and
-  read-only visible-item inspection plus safe named local save slots are
-  implemented; always inspect the live working tree before relying on this checkpoint.
+  read-only visible-item inspection plus safe named local save slots and a
+  write-I/O error contract are implemented; always inspect the live working tree
+  before relying on this checkpoint.
 - 2026-07-28 public-history cleanup baseline: `96de7b2`（现为 `eafe70e`
   的祖先）；任何后续历史操作前仍须重新检查实时远端。
-- 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励 + 可见物品查看 + 命名存档槽位 已完成
+- 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励 + 可见物品查看 + 命名存档槽位 + 写入错误契约 已完成
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
 - The private novel corpus and split chapters are outside the repository under:
@@ -44,10 +45,10 @@ stale.
 
 ## Verified facts
 
-- Full project suite: 386 tests passed (2026-07-28).
-- `tests/test_save_slots.py`: 9 tests cover default compatibility, isolated named
-  saves, invalid/path-like names, Windows device names, command grammar, and load
-  failure invariance.
+- Full project suite: 389 tests passed (2026-07-28).
+- `tests/test_save_slots.py`: 12 tests cover default compatibility, isolated named
+  saves, invalid/path-like names, Windows device names, command grammar, load
+  failure invariance, write-I/O translation, and non-I/O propagation.
 - `tests/test_inspect.py`: 9 tests cover room/inventory visibility, hidden reward
   rejection, duplicate-name handling, dialogue invariance, CLI text, and save/load.
 - tests/test_dialogue.py: 91 tests, including reward loading, atomic success and
@@ -92,12 +93,17 @@ stale.
   `default.json`; named calls are constrained to the save directory and reject
   traversal, extensions, invalid characters, and Windows device names. Save v5
   data and atomic write behavior are unchanged.
-- Root independently reran 87 focused save/save-slot tests, the full 386-test
-  suite, history safety scan, compile, and content validation on 2026-07-28.
-- Process exception (2026-07-28): GPT-5.6-sol advisory calls remained blocked by
-  model capacity. The project owner explicitly deferred the independent audit and
-  authorized this public local-persistence slice to continue. No GPT-5.6-sol
-  approval is claimed; the deferred audit is the sole next task when capacity returns.
+- `SaveLoadService.save()` now converts filesystem `OSError` from its write path
+  into a chained `SaveLoadError`; `CommandProcessor.save` reports it normally.
+  It does not catch non-I/O programming errors, and save v5 data remains unchanged.
+- Root independently reran 90 focused save/save-slot tests, the full 389-test
+  suite, history safety scan, compile, content validation, and real two-slot CLI
+  save/load smoke on 2026-07-28.
+- The project owner provided a completed GPT-5.6-sol public-repository audit for
+  baseline `2ecead1`, with a `CONDITIONAL GO`. It identified this write-I/O gap;
+  the current slice closes it. The audit reported 43 dangling blobs without reading
+  their contents; reachable-history scanning does not cover such objects. It also
+  did not refresh the live GitHub server state.
 - Content pack version: 0.2.6; save format version: 5.
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.

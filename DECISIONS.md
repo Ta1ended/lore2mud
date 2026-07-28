@@ -261,3 +261,22 @@
 - Evidence: `src/lore2mud/engine/save.py`, `src/lore2mud/engine/commands.py`,
   `tests/test_save_slots.py`, `tests/test_save.py`.
 - Supersedes: None.
+
+## DEC-0014: Normalize save-write I/O failures at the service boundary
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: The completed GPT-5.6-sol public-repository audit of `2ecead1` found
+  that filesystem `OSError` from `_atomic_write()` escaped `SaveLoadService.save()`.
+  `CommandProcessor` only handles `SaveLoadError`, so an ordinary disk or permission
+  failure could terminate the game loop instead of returning a save failure.
+- Decision: Keep `_atomic_write()` responsible for atomic replacement and temporary
+  file cleanup. At `SaveLoadService.save()`, catch only `OSError`, re-raise a
+  `SaveLoadError` with `raise ... from exc`, and leave non-I/O errors unchanged.
+  Do not change slot validation, content-pack data, or save format v5.
+- Consequences: Both default and named saves render write failures through the
+  existing CLI error path while retaining the original cause for diagnostics.
+  Existing save files and the active `World` remain unchanged on a write failure.
+- Evidence: `src/lore2mud/engine/save.py`, `tests/test_save_slots.py`,
+  `tests/test_save.py`, GPT-5.6-sol audit report supplied on 2026-07-28.
+- Supersedes: None.

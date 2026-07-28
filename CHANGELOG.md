@@ -9,6 +9,8 @@
   traverse paths or address Windows reserved device names, and save format remains v5.
 - Added nine focused save-slot tests for default compatibility, isolation, invalid
   names, command syntax, world invariance, and named save/load round trips.
+- Added focused write-failure tests for `OSError` translation, CLI rendering,
+  existing-save preservation, world invariance, and non-I/O error propagation.
 - Added read-only `inspect <item ID or name>` with `World.inspect_item()` and
   typed `InspectItemOutcome`.  It exposes only current-room or inventory items,
   preserves all runtime state, and adds no content-pack or save-v5 contract.
@@ -75,6 +77,9 @@
 
 ### Changed
 
+- `SaveLoadService.save()` now translates filesystem `OSError` into a chained
+  `SaveLoadError`, so the `save` command reports a normal failure instead of
+  leaking a write exception. Save format v5 and atomic-write behavior are unchanged.
 - `World.move()` now checks a required inventory item before changing room,
   quest, or dialogue state; passing a gate does not consume the item.
 - Dialogue selection now atomically awards a validated item before advancing or

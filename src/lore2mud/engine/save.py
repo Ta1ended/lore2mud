@@ -638,7 +638,10 @@ class SaveLoadService:
         """Save current world state. Returns success message."""
         save_path = self._path_for_slot(slot)
         data = _serialize_world(world)
-        _atomic_write(save_path, data)
+        try:
+            _atomic_write(save_path, data)
+        except OSError as exc:
+            raise SaveLoadError(f"写入存档失败：{exc}") from exc
         return f"存档成功：{save_path}"
 
     def load(self, slot: str | None = None) -> World:
