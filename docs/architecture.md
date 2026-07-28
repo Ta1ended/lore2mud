@@ -116,6 +116,7 @@ bye。结束选项（`next_node_id=null`）则立即结束对话。
 ### 存档
 
 `active_dialogue` 是 save v5 的必填字段。加载时严格验证：
+- 顶层、`content_pack`、`player`、每个房间和每个怪物对象的键集合必须精确匹配；
 - 对话 ID 和节点 ID 必须存在
 - 指向的节点不能是终端节点
 - 角色的 `room_id` 必须与玩家房间一致

@@ -278,6 +278,24 @@ class ValidationTests(unittest.TestCase):
             self._save_and_load(self.valid_data)
         self.assertIn("版本", str(ctx.exception))
 
+    def test_top_level_unknown_field_raises(self) -> None:
+        self.valid_data["unexpected"] = True
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("未知字段", str(ctx.exception))
+
+    def test_content_pack_unknown_field_raises(self) -> None:
+        self.valid_data["content_pack"]["unexpected"] = True
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("未知字段", str(ctx.exception))
+
+    def test_player_unknown_field_raises(self) -> None:
+        self.valid_data["player"]["unexpected"] = True
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("未知字段", str(ctx.exception))
+
     def test_missing_player_field_raises(self) -> None:
         del self.valid_data["player"]
         with self.assertRaises(SaveLoadError):
@@ -324,6 +342,18 @@ class ValidationTests(unittest.TestCase):
         with self.assertRaises(SaveLoadError) as ctx:
             self._save_and_load(self.valid_data)
         self.assertIn("缺少", str(ctx.exception))
+
+    def test_room_unknown_field_raises(self) -> None:
+        self.valid_data["rooms"]["room_ember_wharf"]["unexpected"] = True
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("未知字段", str(ctx.exception))
+
+    def test_monster_unknown_field_raises(self) -> None:
+        self.valid_data["monsters"]["monster_ash_mite"]["unexpected"] = True
+        with self.assertRaises(SaveLoadError) as ctx:
+            self._save_and_load(self.valid_data)
+        self.assertIn("未知字段", str(ctx.exception))
 
     def test_duplicate_item_in_rooms_raises(self) -> None:
         """Same item in two rooms must be rejected."""
@@ -715,6 +745,17 @@ class CommandIntegrationTests(unittest.TestCase):
         self.assertIs(self.commands.world, self.world)
         self.assertEqual(self.commands.world.player.room_id, original_room)
         self.assertEqual(self.commands.world.player.hp, original_hp)
+
+    def test_unknown_save_field_preserves_command_processor_world(self) -> None:
+        """A structurally invalid save must not replace the active World."""
+        invalid_data = _serialize_world(self.world)
+        invalid_data["unexpected"] = True
+        _atomic_write(self.service.save_path, invalid_data)
+
+        result = self.commands.execute("load")
+
+        self.assertIn("读档失败", result.text)
+        self.assertIs(self.commands.world, self.world)
 
     def test_help_includes_save_load(self) -> None:
         result = self.commands.execute("help")

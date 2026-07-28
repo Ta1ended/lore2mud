@@ -51,6 +51,8 @@
 
 ### Changed
 
+- Tightened save format v5 loading: top-level, `content_pack`, `player`, room, and
+  monster objects now reject unknown fields before a replacement `World` is built.
 - Replaced the former agent-specific workflow reference with the production workflow and
   documented `dialogues.json` as a required content-pack file.
 

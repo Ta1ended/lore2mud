@@ -25,6 +25,35 @@ from lore2mud.inventory.models import EquippedItems, Inventory, Item
 
 SAVE_FORMAT_VERSION = 5
 DEFAULT_SLOT = "default.json"
+_SAVE_TOP_LEVEL_KEYS = frozenset(
+    {
+        "save_format_version",
+        "content_pack",
+        "player",
+        "equipped",
+        "rooms",
+        "monsters",
+        "quest_states",
+        "active_dialogue",
+    }
+)
+_CONTENT_PACK_KEYS = frozenset({"id", "version"})
+_PLAYER_KEYS = frozenset(
+    {
+        "id",
+        "name",
+        "room_id",
+        "max_hp",
+        "hp",
+        "attack",
+        "defense",
+        "level",
+        "experience",
+        "inventory_item_ids",
+    }
+)
+_ROOM_KEYS = frozenset({"item_ids", "monster_ids"})
+_MONSTER_KEYS = frozenset({"hp"})
 
 
 class SaveLoadError(Exception):
@@ -40,6 +69,14 @@ def _validate_int(value: object, name: str, *, minimum: int | None = None) -> in
     if minimum is not None and value < minimum:
         raise SaveLoadError(f"{name} 必须 >= {minimum}")
     return value
+
+
+def _reject_unknown_fields(
+    value: dict, allowed_keys: frozenset[str], location: str
+) -> None:
+    unknown = set(value) - allowed_keys
+    if unknown:
+        raise SaveLoadError(f"{location} 包含未知字段：{sorted(unknown)}")
 
 
 def _serialize_world(world: World) -> dict:
@@ -153,6 +190,8 @@ def _atomic_write(path: Path, data: dict) -> None:
 
 def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
     """Validate save data and build a new World. Raises SaveLoadError on any issue."""
+    _reject_unknown_fields(data, _SAVE_TOP_LEVEL_KEYS, "存档顶层")
+
     # --- save_format_version ---
     fmt = data.get("save_format_version")
     if isinstance(fmt, bool) or not isinstance(fmt, int) or fmt != SAVE_FORMAT_VERSION:
@@ -164,6 +203,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
     cp = data.get("content_pack")
     if not isinstance(cp, dict):
         raise SaveLoadError("存档缺少 content_pack 字段")
+    _reject_unknown_fields(cp, _CONTENT_PACK_KEYS, "content_pack")
     if cp.get("id") != pack.id:
         raise SaveLoadError(
             f"内容包 ID 不匹配：期望 {pack.id!r}，实际 {cp.get('id')!r}"
@@ -177,6 +217,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
     player_data = data.get("player")
     if not isinstance(player_data, dict):
         raise SaveLoadError("存档缺少 player 字段")
+    _reject_unknown_fields(player_data, _PLAYER_KEYS, "player")
 
     player_id = player_data.get("id")
     if player_id != "player_local":
@@ -236,6 +277,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
     for room_id, room_data in rooms_data.items():
         if not isinstance(room_data, dict):
             raise SaveLoadError(f"rooms.{room_id} 必须是对象")
+        _reject_unknown_fields(room_data, _ROOM_KEYS, f"rooms.{room_id}")
         if "item_ids" not in room_data:
             raise SaveLoadError(f"rooms.{room_id} 缺少 item_ids 字段")
         if "monster_ids" not in room_data:
@@ -343,6 +385,9 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
     for monster_id, monster_data in monsters_data.items():
         if not isinstance(monster_data, dict):
             raise SaveLoadError(f"monsters.{monster_id} 必须是对象")
+        _reject_unknown_fields(
+            monster_data, _MONSTER_KEYS, f"monsters.{monster_id}"
+        )
         m_hp = _validate_int(monster_data.get("hp"), f"monsters.{monster_id}.hp")
         m_def = pack.monsters[monster_id]
         if m_hp < 0 or m_hp > m_def.max_hp:

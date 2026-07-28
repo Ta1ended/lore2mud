@@ -31,6 +31,8 @@ _Last updated: 2026-07-28_
 - `docs/`、`AGENTS.md`、GitHub 基础文件和项目交接文件已建立。
 - 版本化本地存档/读档：`save`/`load` 指令、`SaveLoadService`、原子写入、
   严格验证和 CLI 冒烟测试通过。
+- 存档 v5 进一步收紧：顶层、`content_pack`、`player`、每个房间和每个怪物对象
+  均拒绝未知字段；校验失败在构造替换 `World` 前返回错误。
 - 内容包校验 CLI：`lore2mud validate --content <dir>`、旧命令隐式 play
   fallback、`_read_json` UnicodeDecodeError 处理。
 - 原创确定性任务闭环：自动接取、怪物击败条件、经验奖励、`quests` 命令。
@@ -58,7 +60,7 @@ _Last updated: 2026-07-28_
 
 ## Verification
 
-- `python -m unittest discover -s tests -v` - 328 tests passed (2026-07-28).
+- `python -m unittest discover -s tests -v` - 334 tests passed (2026-07-28).
 - tests/test_dialogue.py: 77 tests (18 loading, 8 normal, 7 failure, 8 invariance,
   11 save/load, 3 save-time, 6 failure invariance, 16 command integration).
 - `python scripts/check_repo_safety.py` - passed (2026-07-28).
