@@ -77,6 +77,29 @@ class QuestDefinition:
 
 
 @dataclass(frozen=True, slots=True)
+class DialogueOption:
+    id: str
+    text: str
+    next_node_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DialogueNode:
+    id: str
+    text: str
+    options: tuple[DialogueOption, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class DialogueDefinition:
+    id: str
+    character_id: str
+    start_node_id: str
+    nodes: dict[str, DialogueNode]
+    metadata: ContentMetadata = field(default_factory=ContentMetadata)
+
+
+@dataclass(frozen=True, slots=True)
 class PlayerDefaults:
     max_hp: int = 20
     attack: int = 5
@@ -96,4 +119,5 @@ class ContentPack:
     monsters: dict[str, MonsterDefinition]
     characters: dict[str, CharacterDefinition]
     quests: dict[str, QuestDefinition]
+    dialogues: dict[str, DialogueDefinition] = field(default_factory=dict)
     extensions: dict[str, Any] = field(default_factory=dict)

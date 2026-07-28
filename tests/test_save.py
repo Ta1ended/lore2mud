@@ -180,7 +180,7 @@ class SaveIncludesAllMutableStateTests(unittest.TestCase):
     def test_save_includes_content_pack_identity(self) -> None:
         data = _serialize_world(self.world)
         self.assertEqual(data["content_pack"]["id"], "original_demo")
-        self.assertEqual(data["content_pack"]["version"], "0.2.3")
+        self.assertEqual(data["content_pack"]["version"], "0.2.4")
         self.assertEqual(data["save_format_version"], SAVE_FORMAT_VERSION)
 
     def test_save_includes_equipped_field(self) -> None:

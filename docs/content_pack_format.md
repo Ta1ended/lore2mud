@@ -147,6 +147,9 @@ null` 属于非法内容，加载器拒绝内容包。
 }
 ```
 
+角色位置由 `CharacterDefinition.room_id` 唯一决定。`look` 命令自动显示当前
+房间的角色列表。
+
 任务定义触发房间、目标怪物和经验奖励：
 
 ```json
@@ -166,6 +169,69 @@ null` 属于非法内容，加载器拒绝内容包。
   当前每个目标怪物最多对应一个任务；内容加载器会拒绝重复的目标怪物引用。
 - `reward_experience` 是非负整数。
 - 玩家使用 `quests` 指令查看已接取任务及进度。
+
+## 对话
+
+`dialogues.json` 是对话树数组。每个对话引用一个角色，包含节点和选项：
+
+```json
+[
+  {
+    "id": "dialogue_guide",
+    "character_id": "character_guide",
+    "start_node_id": "node_greeting",
+    "nodes": [
+      {
+        "id": "node_greeting",
+        "text": "你好，旅人。",
+        "options": [
+          {"id": "opt_who", "text": "你是谁？", "next_node_id": "node_intro"},
+          {"id": "opt_bye", "text": "告辞。", "next_node_id": null}
+        ]
+      },
+      {
+        "id": "node_intro",
+        "text": "我是这里的向导。",
+        "options": [
+          {"id": "opt_back", "text": "（换个话题）", "next_node_id": "node_greeting"},
+          {"id": "opt_bye2", "text": "告辞。", "next_node_id": null}
+        ]
+      }
+    ]
+  }
+]
+```
+
+### 对话字段
+
+- `id`：稳定 ID，全局唯一。
+- `character_id`：引用 `characters.json` 中的角色。每个角色最多一个对话。
+- `start_node_id`：起始节点 ID，必须存在于 `nodes` 中。
+- `nodes`：节点数组，至少一个。
+
+### 节点字段
+
+- `id`：稳定 ID，对话内唯一。
+- `text`：NPC 台词，非空字符串。
+- `options`：选项数组。**必须存在**（省略 `options` 键会被拒绝）。
+  - 空数组 `[]` = 终端节点：显示台词后对话自动结束。
+  - 非空数组 = 显示台词和选项，等待玩家选择。
+
+### 选项字段
+
+- `id`：稳定 ID，节点内唯一。
+- `text`：选项显示文本，非空字符串。
+- `next_node_id`：目标节点 ID，或 `null`（结束对话）。
+  - 省略 `next_node_id` 等价于 `null`。
+  - 非 null 时必须引用同对话内的节点。
+
+### 对话交互
+
+- `talk <角色>`：开始对话（已在对话中则重显当前节点）。
+- `<正整数>`：选择第 N 个选项（仅对话中有效，匹配 `^[1-9][0-9]*$`）。
+- `bye`：主动结束对话（仅对话中有效）。
+- 移动房间自动结束对话。
+- 对话无数值副作用（不改变 HP、经验、物品等）。
 
 ## 原作来源扩展
 

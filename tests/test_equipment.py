@@ -393,7 +393,7 @@ class EquipmentSaveRoundTripTests(unittest.TestCase):
         """v2 saves (no equipped field) must be rejected."""
         self.service.save(self.world)
         txt = self.service.save_path.read_text("utf-8")
-        txt = txt.replace(f'"version": "0.2.2"', '"version": "0.2.1"')
+        txt = txt.replace(f'"version": "0.2.4"', '"version": "0.2.3"')
         txt = txt.replace(f'"save_format_version": {SAVE_FORMAT_VERSION}',
                           '"save_format_version": 2')
         self.service.save_path.write_text(txt, "utf-8")
@@ -685,7 +685,7 @@ class BodySaveRoundTripTests(unittest.TestCase):
         """v3 saves (no body key) must be rejected."""
         self.service.save(self.world)
         txt = self.service.save_path.read_text("utf-8")
-        txt = txt.replace('"save_format_version": 4', '"save_format_version": 3')
+        txt = txt.replace('"save_format_version": 5', '"save_format_version": 4')
         self.service.save_path.write_text(txt, "utf-8")
         with self.assertRaises(SaveLoadError) as ctx:
             self.service.load()
@@ -984,7 +984,7 @@ class SaveV4IllegalMatrixTests(unittest.TestCase):
     def test_v3_save_rejected(self) -> None:
         self.service.save(self.world)
         txt = self.service.save_path.read_text("utf-8")
-        txt = txt.replace('"save_format_version": 4', '"save_format_version": 3')
+        txt = txt.replace('"save_format_version": 5', '"save_format_version": 4')
         self.service.save_path.write_text(txt, "utf-8")
         with self.assertRaises(SaveLoadError) as ctx:
             self.service.load()

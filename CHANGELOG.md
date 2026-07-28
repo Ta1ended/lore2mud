@@ -4,8 +4,25 @@
 
 ### Added
 
-- Added body equipment slot with `defense_bonus` field on `ItemDefinition` and `Item`.
-- Added `item_bronze_scale_mail` (铜鳞甲, slot=body, defense_bonus=3) to demo content.
+- Added dialogue system with branching NPC conversations (`dialogues.json`).
+- Added `DialogueDefinition`, `DialogueNode`, `DialogueOption` content models.
+- Added `Character` and `DialogueState` runtime models.
+- Added `World.start_dialogue()`, `World.select_option()`, `World.end_dialogue()`
+  domain API.
+- Added `TalkOutcome`, `DialogueOptionSummary`, `DialogueEndOutcome` structured
+  outcomes.
+- Added `talk <character>`, bare integer option selection (ASCII
+  `^[1-9][0-9]*$`), and `bye` commands.
+- Added `look` command displays characters in current room.
+- Added `dialogues.json` to required content pack files.
+- Added `dialogues` field to `ContentPack` and `DialogueDefinition` validation
+  in content loader.
+- Added one original NPC (老陈, `character_elder_chen`) with 4-node branching
+  dialogue to demo content.
+- Added `schemas/dialogue.schema.json` (documentation only, not loaded at
+  runtime).
+- Added body equipment slot with `defense_bonus` field on `ItemDefinition` and
+  `Item`.
 - Added `World.effective_defense` property: `player.defense + body defense_bonus`.
 - Added `player_defense` keyword argument to `resolve_combat_round`.
 - Added body validation in content loader: defense_bonus ≥ 1 required for body slot,
@@ -16,6 +33,11 @@
   invariance (5), and save v4 illegal matrix (8).
 - Upgraded save format to version 4 with required `equipped.hand` and
   `equipped.body` keys; v3 saves explicitly rejected.
+- Upgraded save format to version 5 with required `active_dialogue` field;
+  v4 saves explicitly rejected.
+- Upgraded content pack version to 0.2.4 (breaking: old 0.2.3 saves rejected).
+- Added 66 new tests covering dialogue loading (18), World dialogue domain (15),
+  state invariance (8), save/load (11), and command integration (14).
 
 ### Changed
 

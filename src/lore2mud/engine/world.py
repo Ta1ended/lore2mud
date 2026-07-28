@@ -5,8 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from lore2mud.combat.service import CombatRound, resolve_combat_round
-from lore2mud.content.models import ContentPack, QuestDefinition
-from lore2mud.engine.models import Monster, Player, QuestState, Room
+from lore2mud.content.models import ContentPack, DialogueDefinition, QuestDefinition
+from lore2mud.engine.models import (
+    Character,
+    DialogueState,
+    Monster,
+    Player,
+    QuestState,
+    Room,
+)
 from lore2mud.inventory.models import EquippedItems, Inventory, Item
 from lore2mud.progression.service import LevelGain, grant_experience
 
@@ -57,6 +64,33 @@ class AttackOutcome:
     quest_outcome: QuestOutcome | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class DialogueOptionSummary:
+    """One selectable option in a dialogue node."""
+    option_id: str
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
+class TalkOutcome:
+    """Result of starting or advancing a dialogue."""
+    character_id: str
+    character_name: str
+    dialogue_id: str
+    node_id: str | None = None
+    node_text: str | None = None
+    options: tuple[DialogueOptionSummary, ...] = ()
+    ended: bool = False
+
+
+@dataclass(frozen=True, slots=True)
+class DialogueEndOutcome:
+    """Result of explicitly ending a dialogue via bye."""
+    character_id: str
+    character_name: str
+    dialogue_id: str
+
+
 @dataclass(slots=True)
 class World:
     pack_id: str
@@ -69,6 +103,9 @@ class World:
     quest_defs: dict[str, QuestDefinition] = field(default_factory=dict)
     quest_states: dict[str, QuestState] = field(default_factory=dict)
     equipped: EquippedItems = field(default_factory=EquippedItems)
+    characters: dict[str, Character] = field(default_factory=dict)
+    dialogue_defs: dict[str, DialogueDefinition] = field(default_factory=dict)
+    active_dialogue: DialogueState | None = None
 
     @property
     def effective_attack(self) -> int:
@@ -136,6 +173,16 @@ class World:
             inventory=Inventory(capacity=pack.player.inventory_capacity),
         )
         quest_defs = dict(pack.quests)
+        characters = {
+            char_def.id: Character(
+                id=char_def.id,
+                name=char_def.name,
+                description=char_def.description,
+                room_id=char_def.room_id,
+            )
+            for char_def in pack.characters.values()
+        }
+        dialogue_defs = dict(pack.dialogues)
         world = cls(
             pack_id=pack.id,
             pack_name=pack.name,
@@ -145,6 +192,8 @@ class World:
             monsters=monsters,
             player=player,
             quest_defs=quest_defs,
+            characters=characters,
+            dialogue_defs=dialogue_defs,
         )
         # Auto-accept quests triggered in the start room.
         world._accept_quests_for_room(pack.start_room_id)
@@ -172,6 +221,7 @@ class World:
             raise WorldRuleError(f"这里不能向 {direction} 移动。")
         self.player.room_id = target_id
         self._accept_quests_for_room(target_id)
+        self.active_dialogue = None
         return self.current_room
 
     def take(self, item_query: str) -> Item:
@@ -351,6 +401,150 @@ class World:
             level_gains=tuple(level_gains),
             quest_outcome=quest_outcome,
         )
+
+    def start_dialogue(self, character_query: str) -> TalkOutcome:
+        """Start dialogue with a character in the current room."""
+        room_char_ids = [
+            c.id for c in self.characters.values()
+            if c.room_id == self.player.room_id
+        ]
+        character_id = self._resolve_id(
+            character_query, room_char_ids, self.characters, kind="角色"
+        )
+        if character_id is None:
+            raise WorldRuleError(f"这里没有 {character_query}。")
+        character = self.characters[character_id]
+
+        dialogue = self._find_dialogue_for_character(character_id)
+        if dialogue is None:
+            raise WorldRuleError(f"{character.name} 无话可说。")
+
+        # Re-display if already in this dialogue
+        if (
+            self.active_dialogue is not None
+            and self.active_dialogue.dialogue_id == dialogue.id
+        ):
+            node = dialogue.nodes[self.active_dialogue.current_node_id]
+            return TalkOutcome(
+                character_id=character.id,
+                character_name=character.name,
+                dialogue_id=dialogue.id,
+                node_id=node.id,
+                node_text=node.text,
+                options=tuple(
+                    DialogueOptionSummary(opt.id, opt.text)
+                    for opt in node.options
+                ),
+                ended=False,
+            )
+
+        # End old dialogue if switching
+        self.active_dialogue = None
+
+        start_node = dialogue.nodes[dialogue.start_node_id]
+        if start_node.options:
+            self.active_dialogue = DialogueState(
+                dialogue_id=dialogue.id,
+                current_node_id=start_node.id,
+            )
+            return TalkOutcome(
+                character_id=character.id,
+                character_name=character.name,
+                dialogue_id=dialogue.id,
+                node_id=start_node.id,
+                node_text=start_node.text,
+                options=tuple(
+                    DialogueOptionSummary(opt.id, opt.text)
+                    for opt in start_node.options
+                ),
+                ended=False,
+            )
+        else:
+            return TalkOutcome(
+                character_id=character.id,
+                character_name=character.name,
+                dialogue_id=dialogue.id,
+                node_id=start_node.id,
+                node_text=start_node.text,
+                options=(),
+                ended=True,
+            )
+
+    def select_option(self, index: int) -> TalkOutcome:
+        """Select a dialogue option (1-indexed)."""
+        if self.active_dialogue is None:
+            raise WorldRuleError("你没有在和任何人对话。")
+
+        dialogue = self.dialogue_defs[self.active_dialogue.dialogue_id]
+        node = dialogue.nodes[self.active_dialogue.current_node_id]
+
+        if index < 1 or index > len(node.options):
+            raise WorldRuleError(f"无效的选项：{index}。")
+
+        option = node.options[index - 1]
+        character = self.characters[dialogue.character_id]
+
+        if option.next_node_id is None:
+            self.active_dialogue = None
+            return TalkOutcome(
+                character_id=character.id,
+                character_name=character.name,
+                dialogue_id=dialogue.id,
+                ended=True,
+            )
+
+        next_node = dialogue.nodes[option.next_node_id]
+        if next_node.options:
+            self.active_dialogue = DialogueState(
+                dialogue_id=dialogue.id,
+                current_node_id=next_node.id,
+            )
+            return TalkOutcome(
+                character_id=character.id,
+                character_name=character.name,
+                dialogue_id=dialogue.id,
+                node_id=next_node.id,
+                node_text=next_node.text,
+                options=tuple(
+                    DialogueOptionSummary(opt.id, opt.text)
+                    for opt in next_node.options
+                ),
+                ended=False,
+            )
+        else:
+            self.active_dialogue = None
+            return TalkOutcome(
+                character_id=character.id,
+                character_name=character.name,
+                dialogue_id=dialogue.id,
+                node_id=next_node.id,
+                node_text=next_node.text,
+                options=(),
+                ended=True,
+            )
+
+    def end_dialogue(self) -> DialogueEndOutcome:
+        """Explicitly end the current dialogue."""
+        if self.active_dialogue is None:
+            raise WorldRuleError("你没有在和任何人对话。")
+        dialogue_id = self.active_dialogue.dialogue_id
+        character = self.characters[
+            self.dialogue_defs[dialogue_id].character_id
+        ]
+        self.active_dialogue = None
+        return DialogueEndOutcome(
+            character_id=character.id,
+            character_name=character.name,
+            dialogue_id=dialogue_id,
+        )
+
+    def _find_dialogue_for_character(
+        self, character_id: str
+    ) -> DialogueDefinition | None:
+        for dialogue in self.dialogue_defs.values():
+            if dialogue.character_id == character_id:
+                return dialogue
+        return None
 
     @staticmethod
     def _resolve_id(

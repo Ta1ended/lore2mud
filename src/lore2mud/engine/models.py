@@ -69,3 +69,19 @@ class QuestState:
 
     quest_id: str
     completed: bool = False
+
+
+@dataclass(slots=True)
+class Character:
+    """Runtime character in the world."""
+    id: str
+    name: str
+    description: str
+    room_id: str
+
+
+@dataclass(slots=True)
+class DialogueState:
+    """Mutable dialogue state for one active conversation."""
+    dialogue_id: str
+    current_node_id: str

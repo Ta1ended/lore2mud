@@ -1,7 +1,7 @@
 {
   "id": "original_demo",
   "name": "微光边站",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "start_room_id": "room_ember_wharf",
   "player": {
     "max_hp": 20,

@@ -208,5 +208,36 @@
  backward compatibility with 0.2.2 saves. Future slots (head, ring) follow the
  same pattern.
  - Evidence: `src/lore2mud/engine/world.py`, `src/lore2mud/engine/save.py`,
- `src/lore2mud/engine/commands.py`, `src/lore2mud/combat/service.py`,
- `src/lore2mud/content/loader.py`, `tests/test_equipment.py`.
+   `src/lore2mud/engine/commands.py`, `src/lore2mud/combat/service.py`,
+   `src/lore2mud/content/loader.py`, `tests/test_equipment.py`.
+
+ ## DEC-0012: Dialogue system with stateful World.active_dialogue
+
+ - Date: 2026-07-28
+ - Status: Accepted
+ - Context: Equipment and combat are complete; the engine needs narrative depth
+   through NPC dialogue before adding more complex content. The design must
+   follow the existing pattern of World-as-authority and CommandProcessor-as-
+   renderer.
+ - Decision: (a) Content models: `DialogueDefinition` with nested `DialogueNode`
+   and `DialogueOption` in `dialogues.json`. `CharacterDefinition.room_id` is
+   the sole location source (no `Room.character_ids`). (b) Runtime state:
+   `World.active_dialogue: DialogueState | None` holds the current position.
+   `World.characters` and `World.dialogue_defs` hold content-derived runtime
+   objects. (c) Domain API: `World.start_dialogue()`, `World.select_option()`,
+   `World.end_dialogue()` return structured outcomes (`TalkOutcome`,
+   `DialogueEndOutcome`). Terminal nodes auto-end; ending options set `ended=True`
+   with `None` for `node_id`/`node_text`. (d) Commands: `talk <character>`,
+   bare integer `[1-9][0-9]*` selection (only when `active_dialogue` is not
+   None), `bye` (only when in dialogue). `look` displays characters. (e) Save
+   format v5 with required `active_dialogue` field; strictly rejects invalid
+   references, terminal node pointers, and room mismatches. (f) Content pack
+   version 0.2.4. (g) Dialogue operations produce no numeric side effects.
+ - Consequences: Dialogue adds narrative layer without touching combat, inventory,
+   or progression. The strict save validation prevents impossible states. Future
+   dialogue effects (items, quests) can extend the pattern by adding optional
+   fields to nodes.
+ - Evidence: `src/lore2mud/content/models.py`, `src/lore2mud/content/loader.py`,
+   `src/lore2mud/engine/models.py`, `src/lore2mud/engine/world.py`,
+   `src/lore2mud/engine/commands.py`, `src/lore2mud/engine/save.py`,
+   `examples/original_demo/dialogues.json`, `tests/test_dialogue.py`.

@@ -22,32 +22,35 @@ stale.
 - Remote: origin/main；恢复时运行 `git status --short --branch` 和
   `git rev-list --left-right --count HEAD...origin/main` 检查同步状态。
 - Working tree: clean
-- 功能状态：消耗品 + 装备(hand+body) 已完成
+- 功能状态：消耗品 + 装备(hand+body) + 对话系统 已完成
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
 - The private novel corpus and split chapters are outside the repository under:
   `D:\MUD game kaifa\小说\processing\`
 - The preprocessing pipeline is complete and verified; original source
   reconstruction matched in character count and SHA-256.
-- The game engine has versioned local save/load (v4), deterministic quest flow,
-  consumable items, and hand+body equipment.
+- The game engine has versioned local save/load (v5), deterministic quest flow,
+  consumable items, hand+body equipment, and branching NPC dialogue.
 - No Agent should start background work automatically when the project is resumed.
 
 ## Verified facts
 
-- Full project suite: 248 tests passed (2026-07-28).
+- Full project suite: 314 tests passed (2026-07-28).
 - Repository safety check: passed.
 - Compile check and CLI save/load smoke test: passed.
 - CLI validate smoke test: passed.
-- CLI play smoke test with quests, consumables, and equipment: passed.
+- CLI play smoke test with quests, consumables, equipment, and dialogue: passed.
 - Quest system: auto-accept, completion, reward-once, save round-trip: passed.
 - Consumable system: heal_amount field, use command, full HP/dead/non-usable
   rejection, heal_amount: null rejection, save round-trip: passed.
 - Equipment hand: attack_bonus, equip/unequip, effective_attack, save v3: passed.
 - Equipment body: defense_bonus, effective_defense, player_defense, save v4,
   World state invariance, save v4 illegal matrix: passed.
+- Dialogue system: talk command, bare integer selection, bye, terminal node
+  auto-end, character lookup, World state invariance, save v5 round-trip,
+  v4 save rejection: passed.
 - Schema: 9 allOf rules including hand→no defense, body→no attack: passed.
-- Content pack version: 0.2.3; save format version: 4.
+- Content pack version: 0.2.4; save format version: 5.
 - git diff --check: clean.
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.

@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
+import re
 import shlex
 from dataclasses import dataclass
 
 from lore2mud.engine.world import World, WorldRuleError
-
 
 HELP_TEXT = """可用指令：
   look                  查看当前房间
@@ -14,15 +14,20 @@ HELP_TEXT = """可用指令：
   take <物品ID或名称>   拾取物品
   use <物品ID或名称>    使用消耗品
   equip <物品ID或名称>  装备物品
-  unequip [hand|body]        卸下装备（默认 hand）
+  unequip [hand|body]   卸下装备（默认 hand）
   inventory             查看背包
   quests                查看任务
   status                查看角色状态
   attack <怪物ID或名称> 攻击怪物
+  talk <角色ID或名称>   与角色对话
+  <数字>                选择对话选项（对话中）
+  bye                   结束当前对话（对话中）
   save                  保存游戏
   load                  读取存档
   help                  查看帮助
   quit                  退出游戏"""
+
+_BARE_SELECTION = re.compile(r'^[1-9][0-9]*$')
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,6 +56,13 @@ class CommandProcessor:
         command = parts[0].casefold()
         arguments = parts[1:]
         try:
+            # Bare integer selection in active dialogue
+            if self.world.active_dialogue is not None and len(parts) == 1:
+                if _BARE_SELECTION.fullmatch(parts[0]):
+                    return self._select_option(int(parts[0]))
+                if command == "bye":
+                    return self._bye()
+
             if command == "look":
                 return CommandResult(self._look())
             if command == "go":
@@ -71,6 +83,8 @@ class CommandProcessor:
                 return CommandResult(self._status())
             if command == "attack":
                 return self._attack(arguments)
+            if command == "talk":
+                return self._talk(arguments)
             if command == "save":
                 return self._save()
             if command == "load":
@@ -101,6 +115,16 @@ class CommandProcessor:
                 for monster_id in room.monster_ids
             )
             lines.append(f"怪物：{monsters}")
+
+        room_characters = [
+            c for c in self.world.characters.values()
+            if c.room_id == self.world.player.room_id
+        ]
+        if room_characters:
+            chars = "、".join(
+                f"{c.name} ({c.id})" for c in room_characters
+            )
+            lines.append(f"角色：{chars}")
 
         # Show active quest hints (read-only, no state change).
         hints = self._active_quest_hints()
@@ -239,6 +263,34 @@ class CommandProcessor:
         if combat.player_defeated:
             lines.append("你倒下了。")
         return CommandResult("\n".join(lines))
+
+    def _talk(self, arguments: list[str]) -> CommandResult:
+        if not arguments:
+            return CommandResult("用法：talk <角色ID或名称>")
+        outcome = self.world.start_dialogue(" ".join(arguments))
+        return CommandResult(self._render_talk(outcome))
+
+    def _select_option(self, index: int) -> CommandResult:
+        outcome = self.world.select_option(index)
+        return CommandResult(self._render_talk(outcome))
+
+    def _bye(self) -> CommandResult:
+        outcome = self.world.end_dialogue()
+        return CommandResult(
+            f"你与{outcome.character_name}的对话结束了。"
+        )
+
+    @staticmethod
+    def _render_talk(outcome: "TalkOutcome") -> str:
+        lines: list[str] = []
+        if outcome.node_text is not None:
+            lines.append(f"[{outcome.character_name}] {outcome.node_text}")
+        if outcome.options:
+            for i, opt in enumerate(outcome.options, 1):
+                lines.append(f"  {i}. {opt.text}")
+        if outcome.ended:
+            lines.append("对话结束了。")
+        return "\n".join(lines)
 
     def _save(self) -> CommandResult:
         if self._save_service is None:

@@ -12,11 +12,18 @@ import tempfile
 from pathlib import Path
 
 from lore2mud.content.models import ContentPack, QuestDefinition
-from lore2mud.engine.models import Monster, Player, QuestState, Room
+from lore2mud.engine.models import (
+    Character,
+    DialogueState,
+    Monster,
+    Player,
+    QuestState,
+    Room,
+)
 from lore2mud.engine.world import World
 from lore2mud.inventory.models import EquippedItems, Inventory, Item
 
-SAVE_FORMAT_VERSION = 4
+SAVE_FORMAT_VERSION = 5
 DEFAULT_SLOT = "default.json"
 
 
@@ -82,6 +89,14 @@ def _serialize_world(world: World) -> dict:
         "rooms": rooms_data,
         "monsters": monsters_data,
         "quest_states": quest_states_data,
+        "active_dialogue": (
+            {
+                "dialogue_id": world.active_dialogue.dialogue_id,
+                "current_node_id": world.active_dialogue.current_node_id,
+            }
+            if world.active_dialogue is not None
+            else None
+        ),
     }
 
 
@@ -415,6 +430,58 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
 
     equipped = EquippedItems(hand=equipped_hand, body=equipped_body)
 
+    # --- active_dialogue (required in v5) ---
+    if "active_dialogue" not in data:
+        raise SaveLoadError("存档缺少 active_dialogue 字段")
+    active_dialogue_raw = data["active_dialogue"]
+    active_dialogue: DialogueState | None = None
+    if active_dialogue_raw is not None:
+        if not isinstance(active_dialogue_raw, dict):
+            raise SaveLoadError("active_dialogue 必须是对象或 null")
+        allowed_dlg_keys = {"dialogue_id", "current_node_id"}
+        unknown_dlg = set(active_dialogue_raw.keys()) - allowed_dlg_keys
+        if unknown_dlg:
+            raise SaveLoadError(
+                f"active_dialogue 包含未知字段：{sorted(unknown_dlg)}"
+            )
+        dlg_id = active_dialogue_raw.get("dialogue_id")
+        if not isinstance(dlg_id, str) or not dlg_id:
+            raise SaveLoadError(
+                "active_dialogue.dialogue_id 必须是非空字符串"
+            )
+        dlg_node_id = active_dialogue_raw.get("current_node_id")
+        if not isinstance(dlg_node_id, str) or not dlg_node_id:
+            raise SaveLoadError(
+                "active_dialogue.current_node_id 必须是非空字符串"
+            )
+        if dlg_id not in pack.dialogues:
+            raise SaveLoadError(
+                f"active_dialogue.dialogue_id {dlg_id!r} 在内容包中不存在"
+            )
+        ddef = pack.dialogues[dlg_id]
+        if dlg_node_id not in ddef.nodes:
+            raise SaveLoadError(
+                f"active_dialogue.current_node_id {dlg_node_id!r} "
+                f"在对话 {dlg_id!r} 中不存在"
+            )
+        if not ddef.nodes[dlg_node_id].options:
+            raise SaveLoadError(
+                f"active_dialogue 指向终端节点 {dlg_node_id!r}，应为 null"
+            )
+        dlg_char = pack.characters.get(ddef.character_id)
+        if dlg_char is None:
+            raise SaveLoadError(
+                f"对话 {dlg_id!r} 引用的角色 {ddef.character_id!r} 不存在"
+            )
+        if dlg_char.room_id != player_room_id:
+            raise SaveLoadError(
+                f"active_dialogue 角色 {ddef.character_id!r} 在房间 "
+                f"{dlg_char.room_id!r}，与玩家房间 {player_room_id!r} 不一致"
+            )
+        active_dialogue = DialogueState(
+            dialogue_id=dlg_id, current_node_id=dlg_node_id
+        )
+
     # --- Build player ---
     player = Player(
         id="player_local",
@@ -428,6 +495,17 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         hp=hp,
         inventory=Inventory(capacity=capacity, item_ids=inv_ids),
     )
+
+    # --- Build characters ---
+    characters = {
+        char_id: Character(
+            id=char_def.id,
+            name=char_def.name,
+            description=char_def.description,
+            room_id=char_def.room_id,
+        )
+        for char_id, char_def in pack.characters.items()
+    }
 
     # --- Build World ---
     return World(
@@ -452,6 +530,9 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         quest_defs=dict(pack.quests),
         quest_states=quest_states,
         equipped=equipped,
+        characters=characters,
+        dialogue_defs=dict(pack.dialogues),
+        active_dialogue=active_dialogue,
     )
 
 

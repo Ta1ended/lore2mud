@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/lore2mud/dialogue.schema.json",
+  "title": "lore2mud dialogue definition",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "character_id", "start_node_id", "nodes"],
+  "properties": {
+    "id": {
+      "$ref": "common.schema.json#/$defs/stable_id"
+    },
+    "character_id": {
+      "$ref": "common.schema.json#/$defs/stable_id"
+    },
+    "start_node_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nodes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "text", "options"],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9_]*$"
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["id", "text"],
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "pattern": "^[a-z][a-z0-9_]*$"
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "next_node_id": {
+                  "type": ["string", "null"]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "canon_ref": {
+      "$ref": "common.schema.json#/$defs/canon_ref"
+    },
+    "adaptation_notes": {
+      "type": "string"
+    }
+  }
+}

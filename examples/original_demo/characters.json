@@ -1,1 +1,9 @@
-[]
+[
+  {
+    "id": "character_elder_chen",
+    "name": "老陈",
+    "description": "一位年迈的行商，皮肤被风沙磨得粗糙，腰间挂着一串铜铃。",
+    "room_id": "room_glassgrass_path",
+    "adaptation_notes": "本仓库原创演示角色。"
+  }
+]

@@ -33,9 +33,10 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
 
 - 必填字段与基本类型；
 - 稳定 ID 格式和重复 ID；
-- 起始房间、出口、物品、怪物和角色引用；
+- 起始房间、出口、物品、怪物、角色和对话引用；
 - 同一实体的重复放置；
 - 怪物 `room_id` 与房间 `monster_ids` 一致性；
+- 对话节点/选项的交叉引用与唯一性；
 - 可选 `canon_ref` 的来源章节。
 
 仓库中的 JSON Schema 是格式契约和编辑器提示；运行时使用标准库实现等价的
@@ -80,6 +81,43 @@ take item_spark_lantern
 游戏实体可通过 `canon_ref.entity_id` 引用私有事实实体，并用
 `source_chapters` 提供追溯证据。`adaptation_notes` 解释游戏化选择。运行引擎
 只依赖游戏内容层，因此公共仓库和原创内容包不需要任何小说资料。
+
+## 对话系统
+
+对话由内容定义和运行时状态两层构成：
+
+```text
+内容定义（不可变）
+  DialogueDefinition（对话树）
+  → DialogueNode（节点 + 台词）
+  → DialogueOption（选项 + next_node_id）
+
+运行时状态（World 持有）
+  characters: dict[str, Character]          # 角色位置由 room_id 决定
+  dialogue_defs: dict[str, DialogueDefinition]  # 对话树
+  active_dialogue: DialogueState | None     # 当前对话位置
+```
+
+对话状态所有权在 `World`。`CommandProcessor` 只负责解析裸整数 / bye / talk
+指令，将意图转给 World，再将 `TalkOutcome` 渲染为文本。
+
+### 终端节点
+
+终端节点（`options` 为空元组的节点）在到达时自动结束对话，无需玩家输入
+bye。结束选项（`next_node_id=null`）则立即结束对话。
+
+### 状态不变性
+
+对话操作不修改玩家 HP、经验、物品、装备、任务状态或房间布局。
+唯一可变状态是 `World.active_dialogue`。
+
+### 存档
+
+`active_dialogue` 是 save v5 的必填字段。加载时严格验证：
+- 对话 ID 和节点 ID 必须存在
+- 指向的节点不能是终端节点
+- 角色的 `room_id` 必须与玩家房间一致
+任何不一致都以 `SaveLoadError` 拒绝，不静默清除。
 
 ## 扩展原则
 

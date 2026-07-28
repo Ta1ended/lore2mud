@@ -12,6 +12,9 @@ from lore2mud.content.models import (
     CharacterDefinition,
     ContentMetadata,
     ContentPack,
+    DialogueDefinition,
+    DialogueNode,
+    DialogueOption,
     ItemDefinition,
     MonsterDefinition,
     PlayerDefaults,
@@ -26,6 +29,7 @@ ENTITY_FILES = (
     "monsters.json",
     "characters.json",
     "quests.json",
+    "dialogues.json",
 )
 
 
@@ -568,6 +572,120 @@ def load_content_pack(path: str | Path) -> ContentPack:
     characters = _unique_map(character_defs, "characters.json", validator)
     quests = _unique_map(quest_defs, "quests.json", validator)
 
+    # --- dialogues ---
+    dialogue_defs_list: list[DialogueDefinition] = []
+    dialogue_character_ids: set[str] = set()
+    for index, obj in enumerate(
+        _load_entity_array(root, "dialogues.json", validator)
+    ):
+        location = f"dialogues.json[{index}]"
+        validator.keys(
+            obj,
+            {
+                "id",
+                "character_id",
+                "start_node_id",
+                "nodes",
+                "canon_ref",
+                "adaptation_notes",
+            },
+            location,
+        )
+        dlg_id = validator.stable_id(
+            validator.text(obj, "id", location), f"{location}.id"
+        )
+        char_id = validator.stable_id(
+            validator.text(obj, "character_id", location),
+            f"{location}.character_id",
+        )
+        start_nid = validator.text(obj, "start_node_id", location)
+
+        nodes_raw = validator.array(obj.get("nodes"), f"{location}.nodes")
+        if not nodes_raw:
+            validator.issues.append(f"{location}.nodes 不能为空")
+
+        node_map: dict[str, DialogueNode] = {}
+        for ni, node_obj in enumerate(nodes_raw):
+            nloc = f"{location}.nodes[{ni}]"
+            node_obj = validator.object(node_obj, nloc)
+            validator.keys(node_obj, {"id", "text", "options"}, nloc)
+            nid = validator.stable_id(
+                validator.text(node_obj, "id", nloc), f"{nloc}.id"
+            )
+            ntext = validator.text(node_obj, "text", nloc)
+
+            if "options" not in node_obj:
+                validator.issues.append(f"{nloc} 缺少 options 字段")
+                opts_raw_list: list = []
+            else:
+                opts_raw_list = validator.array(
+                    node_obj["options"], f"{nloc}.options"
+                )
+
+            opts: list[DialogueOption] = []
+            opt_ids_seen: set[str] = set()
+            for oi, opt_obj in enumerate(opts_raw_list):
+                oloc = f"{nloc}.options[{oi}]"
+                opt_obj = validator.object(opt_obj, oloc)
+                validator.keys(
+                    opt_obj, {"id", "text", "next_node_id"}, oloc
+                )
+                oid = validator.stable_id(
+                    validator.text(opt_obj, "id", oloc), f"{oloc}.id"
+                )
+                otxt = validator.text(opt_obj, "text", oloc)
+                next_raw = opt_obj.get("next_node_id")
+                if next_raw is None:
+                    next_id: str | None = None
+                elif isinstance(next_raw, str) and next_raw.strip():
+                    next_id = next_raw
+                else:
+                    validator.issues.append(
+                        f"{oloc}.next_node_id 必须是非空字符串或 null"
+                    )
+                    next_id = None
+                if oid in opt_ids_seen:
+                    validator.issues.append(f"{nloc} 选项 ID 重复：{oid}")
+                opt_ids_seen.add(oid)
+                opts.append(
+                    DialogueOption(id=oid, text=otxt, next_node_id=next_id)
+                )
+
+            if nid in node_map:
+                validator.issues.append(f"{location} 节点 ID 重复：{nid}")
+            node_map[nid] = DialogueNode(
+                id=nid, text=ntext, options=tuple(opts)
+            )
+
+        if start_nid and start_nid not in node_map:
+            validator.issues.append(
+                f"{location}.start_node_id {start_nid!r} 在 nodes 中不存在"
+            )
+        for node in node_map.values():
+            for opt in node.options:
+                if (
+                    opt.next_node_id is not None
+                    and opt.next_node_id not in node_map
+                ):
+                    validator.issues.append(
+                        f"{location} 节点 {node.id} 选项 {opt.id} "
+                        f"引用了不存在的节点：{opt.next_node_id}"
+                    )
+        if char_id in dialogue_character_ids:
+            validator.issues.append(f"角色 {char_id} 有多个对话定义")
+        dialogue_character_ids.add(char_id)
+        dialogue_defs_list.append(
+            DialogueDefinition(
+                id=dlg_id,
+                character_id=char_id,
+                start_node_id=start_nid,
+                nodes=node_map,
+                metadata=_metadata(obj, location, validator),
+            )
+        )
+
+    dialogues = _unique_map(dialogue_defs_list, "dialogues.json", validator)
+
     if start_room_id and start_room_id not in rooms:
         validator.issues.append(
             f"pack.json.start_room_id 引用了不存在的房间：{start_room_id}"
@@ -623,6 +741,12 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 f"角色 {character.id} 的 room_id 引用了不存在的房间："
                 f"{character.room_id}"
             )
+    for dialogue in dialogues.values():
+        if dialogue.character_id not in characters:
+            validator.issues.append(
+                f"对话 {dialogue.id} 的 character_id 引用了不存在的角色："
+                f"{dialogue.character_id}"
+            )
     # Track quest→monster mapping for duplicate target check
     quest_target_map: dict[str, list[str]] = {}
     for quest in quests.values():
@@ -661,6 +785,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
         monsters=monsters,
         characters=characters,
         quests=quests,
+        dialogues=dialogues,
         extensions=extensions,
     )
 

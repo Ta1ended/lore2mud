@@ -244,11 +244,11 @@ class ConsumableSaveRoundTripTests(unittest.TestCase):
         self.assertNotIn("item_linglu_pill", loaded.player.inventory.item_ids)
 
     def test_old_version_save_rejected(self) -> None:
-        """A save from pack version 0.2.2 must be rejected by 0.2.3."""
+        """A save from pack version 0.2.3 must be rejected by 0.2.4."""
         self.service.save(self.world)
         # Tamper the version in the save file.
         save_text = self.service.save_path.read_text("utf-8")
-        save_text = save_text.replace('"version": "0.2.3"', '"version": "0.2.2"')
+        save_text = save_text.replace('"version": "0.2.4"', '"version": "0.2.3"')
         self.service.save_path.write_text(save_text, "utf-8")
         from lore2mud.engine.save import SaveLoadError
         with self.assertRaises(SaveLoadError) as ctx:
