@@ -7,12 +7,12 @@ _Last updated: 2026-07-28_
 改编内容始终与通用代码、原创示例分离。
 
 ## Current status
-装备系统已实现 hand 和 body 双槽位，存档格式升级至 v5。对话系统已实现——
-原创 NPC 老陈带有确定性分支对话和一次性普通物品奖励；琉草小径西向出口要求持有该铜牌，`look` 会只读显示该门禁所需物品与持有状态，内容包版本保持 0.2.6。生产安全门已扩展为
-当前 Git 候选与可达历史的双层检查。此前功能交付 `eafe70e` 及其发布交接记录
-`8d71ed7` 已在远端；持有物品门禁及其 `look` 状态展示的提交栈仅保留在本地，
-按项目负责人指示未自动推送。
-恢复时必须重新检查实时远端同步状态。
+装备系统已实现 hand 和 body 双槽位，存档格式为 v5。对话系统已实现——原创 NPC 老陈带有
+确定性分支对话和一次性普通物品奖励；琉草小径西向出口要求持有该铜牌，`look` 会只读显示
+门禁所需物品与持有状态。新增 `inspect`：仅查看当前房间或背包内物品的稳定 ID 和描述，
+不改变任何运行时状态，内容包仍为 v0.2.6。生产安全门已扩展为当前 Git 候选与可达历史的
+双层检查。开始本切片前已确认 `main` 与 `origin/main` 同步于 `6c13fca`；本地后续提交按
+项目负责人指示不自动推送。恢复时必须重新检查实时远端同步状态。
 
 ## Completed
 
@@ -63,6 +63,10 @@ _Last updated: 2026-07-28_
 - `look` 的出口行现在只读显示门禁所需物品的名称、稳定 ID 和“未持有”/“已持有”状态；
   普通出口仍只显示方向。展示层不复刻门禁规则，`World.move()` 仍是唯一规则权威；内容包
   版本与 save v5 格式均未变更。
+- 可见物品查看：`World.inspect_item()` 只从当前房间和背包解析物品，返回结构化
+  `InspectItemOutcome`；同名时要求稳定 ID，其他房间与未发放对话奖励不可见。`inspect`
+  命令只渲染 ID 和描述，且不会改变房间、背包、装备、任务、活动对话或怪物状态。
+  内容包版本与 save v5 格式均未变更。
 
 ## In progress
 
@@ -74,9 +78,10 @@ _Last updated: 2026-07-28_
 
 ## Verification
 
-- `python -m unittest discover -s tests -v` - 368 tests passed (2026-07-28).
-- `python -m unittest tests.test_locked_exit tests.test_commands -v` - 26 tests
-  passed (2026-07-28), including `look` gate rendering and state invariance.
+- `python -m unittest discover -s tests -q` - 377 tests passed (2026-07-28).
+- `python -m unittest tests.test_inspect tests.test_commands -v` - 15 tests
+  passed (2026-07-28), including visible/inventory inspection, state invariance,
+  CLI text, and save/load.
 - tests/test_dialogue.py: 91 tests, including typed item reward loading, state
   invariance, save/load and CLI rendering.
 - `python scripts/check_repo_safety.py` - passed (2026-07-28).
@@ -85,8 +90,8 @@ _Last updated: 2026-07-28_
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `python -m lore2mud validate --content examples/original_demo` - passed (2026-07-28).
 - `git diff --check` - clean (2026-07-28).
-- 本次根级独立验收：26 项门禁/命令测试、完整 368 项测试、历史安全扫描、编译、内容包
-  校验、真实 CLI 门禁状态流程和 Git 对象检查均通过（2026-07-28）。
+- 本次根级验证：15 项 inspect/command 测试、完整 377 项测试、历史安全扫描、编译和
+  内容包校验均通过（2026-07-28）。
 
 ## Key paths
 
@@ -95,9 +100,10 @@ _Last updated: 2026-07-28_
 - `docs/production_workflow.md` - GPT-5.6-sol 顾问与 Codex 执行的生产流程。
 - `NEXT_TASK.md` - exactly one recommended continuation.
 - `src/lore2mud/engine/world.py` - authoritative runtime state with quest,
-  item use, equipment, and dialogue logic.
+  item inspection/use, equipment, and dialogue logic.
 - `src/lore2mud/engine/save.py` - save/load service (format v5).
 - `src/lore2mud/engine/commands.py` - command processor with dialogue rendering.
+- `tests/test_inspect.py` - visible-item inspection state-invariance and round-trip coverage.
 - `src/lore2mud/content/loader.py` - schema-like and reference validation.
 - `src/lore2mud/cli.py` - CLI entry point with play/validate subcommands.
 - `src/lore2mud/combat/service.py` - deterministic combat with player_attack/defense.
@@ -118,6 +124,6 @@ _Last updated: 2026-07-28_
   do not send the entire corpus to a cloud model by default.
 - History rewriting can leave Git hosting caches and pre-existing external clones with
   old objects; repository checks only cover currently reachable refs.
-- 本次仅展示层切片的 GPT-5.6-sol 顾问调用连续三次受模型容量阻断；根级范围审查和
-  GPT-5.6-terra 只读勘查是一次透明的临时例外，不改变后续规则或数据契约切片必须先经
-  GPT-5.6-sol 审查的流程。
+- GPT-5.6-sol 目前仍受模型容量阻断。项目负责人已明确延期独立审计并授权继续本次
+  公开、只读切片；这不是 GPT-5.6-sol 已验收的声明。容量恢复后，先完成独立审计，
+  再选择下一项规则或数据契约功能。

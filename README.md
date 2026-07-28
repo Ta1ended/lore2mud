@@ -53,6 +53,7 @@ python -m lore2mud validate --content examples/original_demo
 
 ```text
 look
+inspect item_spark_lantern
 take item_spark_lantern
 inventory
 use item_linglu_pill
@@ -72,6 +73,7 @@ quit
 ## 当前能力
 
 - `look`：查看当前房间、出口、物品、怪物和角色；门禁出口会显示所需物品的名称、稳定 ID 与当前是否持有，普通出口保持只显示方向。
+- `inspect <ID或名称>`：只读查看当前房间或背包中物品的稳定 ID 与描述；不能查看其他房间或尚未获得的奖励物品。
 - `go <方向>`：沿内容包声明的出口移动；门禁出口要求背包持有指定物品，不消耗该物品。
 - `take <ID或名称>`：拾取房间内物品。
 - `inventory`：查看背包。
@@ -188,9 +190,9 @@ python pipeline/split_novel.py `
 
 ## 生产工作流
 
-2026-07-28 的已验证发布检查点为 `eafe70e`，当时 `main` 与 `origin/main` 同步；其
-公共历史清理祖先为 `96de7b2`。执行任何后续发布或历史操作前必须重新检查实时
-远端状态。建议让 GPT-5.6-sol 负责范围、
+2026-07-28 的最新已验证同步远端检查点为 `6c13fca`，当时 `main` 与 `origin/main`
+同步；公共历史清理祖先为 `96de7b2`。后续本地提交不会自动推送，执行任何发布或
+历史操作前必须重新检查实时远端状态。建议让 GPT-5.6-sol 负责范围、
 架构与验收，让 Codex（GPT-5.6-terra）在仓库中执行单个纵向任务：
 
 1. 顾问根据当前状态定义一个可验证目标、数据契约和限制。

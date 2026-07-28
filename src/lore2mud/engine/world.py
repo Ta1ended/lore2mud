@@ -40,6 +40,14 @@ class UseOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class InspectItemOutcome:
+    """Read-only details for an item visible to the player."""
+    item_id: str
+    item_name: str
+    description: str
+
+
+@dataclass(frozen=True, slots=True)
 class EquipOutcome:
     """Result of equipping an item."""
     item_id: str
@@ -256,6 +264,33 @@ class World:
         self.current_room.item_ids.remove(item_id)
         self.player.inventory.add(item_id)
         return self.items[item_id]
+
+    def inspect_item(self, item_query: str) -> InspectItemOutcome:
+        """Return details for an item in the current room or inventory.
+
+        This query is deliberately read-only.  Items elsewhere in the world,
+        including unawarded dialogue rewards, are not visible through it.
+        """
+        available_item_ids = list(self.current_room.item_ids)
+        for item_id in self.player.inventory.item_ids:
+            if item_id not in available_item_ids:
+                available_item_ids.append(item_id)
+
+        item_id = self._resolve_id(
+            item_query,
+            available_item_ids,
+            self.items,
+            kind="物品",
+        )
+        if item_id is None:
+            raise WorldRuleError(f"这里或背包中没有 {item_query}。")
+
+        item = self.items[item_id]
+        return InspectItemOutcome(
+            item_id=item_id,
+            item_name=item.name,
+            description=item.description,
+        )
 
     def use(self, item_query: str) -> UseOutcome:
         """Use a consumable item from the player's inventory.

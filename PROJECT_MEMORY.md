@@ -20,16 +20,16 @@ stale.
 
 - Repository: `lore2mud`
 - Branch: `main`
-- Remote: origin/main 仍为 `8d71ed7`；持有物品门禁及其 `look` 只读状态展示的本地
-  提交栈尚未推送，按项目负责人指示保留给 GitHub Desktop 发布。恢复时仍须运行
+- Remote: 本次 `inspect` 切片开始前已确认 `main` 与 `origin/main` 同步于
+  `6c13fca`。本切片后的本地提交按项目负责人指示不自动推送，恢复时仍须运行
   `git status --short --branch` 和 `git rev-list --left-right --count
   HEAD...origin/main` 检查实时状态。
-- Functional checkpoint: held-item exit-gate plus read-only `look` status delivery
-  is implemented through `f70f7d7`; always inspect the live working tree before
-  relying on this checkpoint.
+- Functional checkpoint: held-item exit gates, read-only `look` gate status, and
+  read-only visible-item inspection are implemented; always inspect the live
+  working tree before relying on this checkpoint.
 - 2026-07-28 public-history cleanup baseline: `96de7b2`（现为 `eafe70e`
   的祖先）；任何后续历史操作前仍须重新检查实时远端。
-- 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励系统 已完成
+- 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励 + 可见物品查看 已完成
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
 - The private novel corpus and split chapters are outside the repository under:
@@ -43,7 +43,9 @@ stale.
 
 ## Verified facts
 
-- Full project suite: 368 tests passed (2026-07-28).
+- Full project suite: 377 tests passed (2026-07-28).
+- `tests/test_inspect.py`: 9 tests cover room/inventory visibility, hidden reward
+  rejection, duplicate-name handling, dialogue invariance, CLI text, and save/load.
 - tests/test_dialogue.py: 91 tests, including reward loading, atomic success and
   failure paths, terminal/end behavior, save/load, and command rendering.
 - Repository safety check: passed.
@@ -79,14 +81,15 @@ stale.
   stable ID, and `未持有`/`已持有` status; ordinary exits remain bare directions.
   `World.move()` remains the sole gate-rule authority, and the display adds no
   content or save contract.
-- Root independently reran the 26 focused gate/command tests, full 368-test suite,
-  history safety scan, compile, validation, original CLI gate-status flow, and Git
-  object check on 2026-07-28.
-- Process exception (2026-07-28): three GPT-5.6-sol advisory attempts were blocked
-  by model capacity before this display-only slice. Root performed the documented
-  scope review and a GPT-5.6-terra read-only code scout; this is not a permanent
-  role change. The next rule or data-contract slice must obtain the normal
-  GPT-5.6-sol review when capacity is available.
+- `World.inspect_item()` resolves only the current room plus backpack, returns
+  `InspectItemOutcome`, and is fully read-only. It does not expose items elsewhere
+  or unawarded dialogue rewards, and does not change any content or save contract.
+- Root independently reran 15 focused inspect/command tests, the full 377-test
+  suite, history safety scan, compile, and content validation on 2026-07-28.
+- Process exception (2026-07-28): GPT-5.6-sol advisory calls remained blocked by
+  model capacity. The project owner explicitly deferred the independent audit and
+  authorized this public, read-only slice to continue. No GPT-5.6-sol approval is
+  claimed; the deferred audit is the sole next task when capacity returns.
 - Content pack version: 0.2.6; save format version: 5.
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.

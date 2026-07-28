@@ -4,6 +4,11 @@
 
 ### Added
 
+- Added read-only `inspect <item ID or name>` with `World.inspect_item()` and
+  typed `InspectItemOutcome`.  It exposes only current-room or inventory items,
+  preserves all runtime state, and adds no content-pack or save-v5 contract.
+- Added nine focused inspection tests for visible/inventory items, inaccessible
+  rewards, duplicate names, dialogue invariance, command rendering, and save/load.
 - Added read-only `look` rendering for held-item exit gates: gated exits show the
   direction, required item name, stable ID, and held/missing status, while
   ordinary exits remain bare directions.

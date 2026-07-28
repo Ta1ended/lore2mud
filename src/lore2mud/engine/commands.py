@@ -10,6 +10,7 @@ from lore2mud.engine.world import World, WorldRuleError
 
 HELP_TEXT = """可用指令：
   look                  查看当前房间
+  inspect <物品ID或名称> 查看当前房间或背包中的物品详情
   go <方向>             移动，例如 go north
   take <物品ID或名称>   拾取物品
   use <物品ID或名称>    使用消耗品
@@ -65,6 +66,8 @@ class CommandProcessor:
 
             if command == "look":
                 return CommandResult(self._look())
+            if command == "inspect":
+                return self._inspect(arguments)
             if command == "go":
                 return self._go(arguments)
             if command == "take":
@@ -178,6 +181,14 @@ class CommandProcessor:
             return CommandResult("用法：take <物品ID或名称>")
         item = self.world.take(" ".join(arguments))
         return CommandResult(f"你拾取了 {item.name} ({item.id})。")
+
+    def _inspect(self, arguments: list[str]) -> CommandResult:
+        if not arguments:
+            return CommandResult("用法：inspect <物品ID或名称>")
+        outcome = self.world.inspect_item(" ".join(arguments))
+        return CommandResult(
+            f"{outcome.item_name} [{outcome.item_id}]\n{outcome.description}"
+        )
 
     def _use(self, arguments: list[str]) -> CommandResult:
         if not arguments:
