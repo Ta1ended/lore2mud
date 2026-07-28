@@ -20,12 +20,13 @@ stale.
 
 - Repository: `lore2mud`
 - Branch: `main`
-- Remote: origin/main；恢复时运行 `git status --short --branch` 和
-  `git rev-list --left-right --count HEAD...origin/main` 检查同步状态。
-- Working tree: clean at the `96de7b2` public-history-cleanup baseline; always
-  inspect the live status before relying on this checkpoint.
-- 2026-07-28 public-history cleanup baseline: `96de7b2`; always re-check
-  `git status --short --branch` and the live remote before a release operation.
+- Remote: origin/main；2026-07-28 的功能交付已以精确租约推送到
+  `eafe70e`；恢复时仍须运行 `git status --short --branch` 和
+  `git rev-list --left-right --count HEAD...origin/main` 检查实时状态。
+- Functional checkpoint: `eafe70e` dialogue-reward delivery; always inspect
+  the live working tree before relying on this checkpoint.
+- 2026-07-28 public-history cleanup baseline: `96de7b2`（现为 `eafe70e`
+  的祖先）；任何后续历史操作前仍须重新检查实时远端。
 - 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励系统 已完成
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.

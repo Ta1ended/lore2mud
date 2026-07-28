@@ -9,7 +9,8 @@ _Last updated: 2026-07-28_
 ## Current status
 装备系统已实现 hand 和 body 双槽位，存档格式升级至 v5。对话系统已实现——
 原创 NPC 老陈带有确定性分支对话和一次性普通物品奖励，内容包版本升至 0.2.5。生产安全门已扩展为
-当前 Git 候选与可达历史的双层检查。
+当前 Git 候选与可达历史的双层检查。2026-07-28 的功能交付已以精确租约发布至
+`eafe70e`；恢复时必须重新检查实时远端同步状态。
 
 ## Completed
 
@@ -25,7 +26,7 @@ _Last updated: 2026-07-28_
   `--history` 扫描所有可达历史树和 blob。
 - 生产工作流明确 GPT-5.6-sol 为顾问、Codex（GPT-5.6-terra）为执行者，要求先审
   数据契约和验收方案，再完成单一纵向切片。
-- `tests/` 覆盖核心玩法、消耗品、装备（hand+body）、对话系统（77 项）、
+- `tests/` 覆盖核心玩法、消耗品、装备（hand+body）、对话系统（91 项）、
   非法内容引用、拆章和安全检查。
 - 私有小说已在仓库外完成一次受控拆章；原文未修改，章节重建校验通过。
 - `docs/`、`AGENTS.md`、GitHub 基础文件和项目交接文件已建立。
@@ -47,7 +48,7 @@ _Last updated: 2026-07-28_
   `World.start_dialogue()`/`select_option()`/`end_dialogue()` 域 API、
   `TalkOutcome`/`DialogueEndOutcome` 结构化结果、终端节点自动结束、
   `look` 显示角色、save v5（`active_dialogue` 必填 + 严格拒绝）、
-  内容包 v0.2.4、77 项新测试。
+  内容包已从 v0.2.4 扩展至 v0.2.5、91 项相关测试。
 - 对话物品奖励：`DialogueOption.grant_item_id`、`DialogueItemGrant` 和
   `TalkOutcome.granted_item`；加载器拒绝未知、空、非稳定、消耗品、房间摆放和重复
   奖励引用。`World.select_option()` 使用背包契约原子发放，失败不改变任何游戏状态；
