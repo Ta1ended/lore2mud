@@ -19,7 +19,7 @@ _Last updated: 2026-07-28_
   私有拆章重建校验通过（字符数 + SHA-256 一致）。
 - `schemas/` 与 `src/lore2mud/content/` 定义并校验内容契约。
 - `scripts/check_repo_safety.py` 与 `.gitignore` 建立公开/私有内容边界。
-- `tests/` 覆盖核心玩法、消耗品、装备（hand+body）、对话系统（66 项）、
+- `tests/` 覆盖核心玩法、消耗品、装备（hand+body）、对话系统（77 项）、
   非法内容引用、拆章和安全检查。
 - 私有小说已在仓库外完成一次受控拆章；原文未修改，章节重建校验通过。
 - `docs/`、`AGENTS.md`、GitHub 基础文件和项目交接文件已建立。
@@ -35,11 +35,11 @@ _Last updated: 2026-07-28_
 - 装备系统 body：`defense_bonus` 字段、`World.effective_defense` 动态计算、
   `player_defense` combat 参数、`unequip` 带槽位参数、存档 v4（双键必填）、
   19 项新测试（含 World 状态不变性 + save v4 非法矩阵）。
-- 对话系统：`talk` 命令、裸整数选项选择（`^[1-9][0-9]*$`）、`bye` 命令、
+- 对话系统：`talk` 命令、裸整数选项选择（`^[1-9][0-9]{0,4}$`）、`bye` 命令、
   `World.start_dialogue()`/`select_option()`/`end_dialogue()` 域 API、
   `TalkOutcome`/`DialogueEndOutcome` 结构化结果、终端节点自动结束、
   `look` 显示角色、save v5（`active_dialogue` 必填 + 严格拒绝）、
-  内容包 v0.2.4、66 项新测试。
+  内容包 v0.2.4、77 项新测试。
 - 内容包版本升至 0.2.4；存档格式升至 v5。
 
 ## In progress
@@ -52,7 +52,9 @@ _Last updated: 2026-07-28_
 
 ## Verification
 
-- `python -m pytest tests/ -v` - 314 tests passed (2026-07-28).
+- `python -m pytest tests/ -v` - 325 tests passed (2026-07-28).
+- tests/test_dialogue.py: 77 tests (18 loading, 8 normal, 7 failure, 8 invariance,
+  11 save/load, 3 save-time, 6 failure invariance, 16 command integration).
 - `python scripts/check_repo_safety.py` - passed (2026-07-28).
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `python -m lore2mud validate --content examples/original_demo` - passed (2026-07-28).

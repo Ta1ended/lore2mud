@@ -64,7 +64,7 @@ def _serialize_world(world: World) -> dict:
             "completed": qs.completed,
         }
 
-    return {
+    result = {
         "save_format_version": SAVE_FORMAT_VERSION,
         "content_pack": {
             "id": world.pack_id,
@@ -98,6 +98,35 @@ def _serialize_world(world: World) -> dict:
             else None
         ),
     }
+    # --- Validate active_dialogue before serializing ---
+    if world.active_dialogue is not None:
+        dlg_id = world.active_dialogue.dialogue_id
+        dlg = world.dialogue_defs.get(dlg_id)
+        if dlg is None:
+            raise SaveLoadError(
+                f"active_dialogue.dialogue_id {dlg_id!r} 不存在"
+            )
+        node_id = world.active_dialogue.current_node_id
+        node = dlg.nodes.get(node_id)
+        if node is None:
+            raise SaveLoadError(
+                f"active_dialogue.current_node_id {node_id!r} 在对话中不存在"
+            )
+        if not node.options:
+            raise SaveLoadError(
+                f"active_dialogue 指向终端节点 {node_id!r}"
+            )
+        char = world.characters.get(dlg.character_id)
+        if char is None:
+            raise SaveLoadError(
+                f"对话 {dlg.id!r} 引用的角色 {dlg.character_id!r} 不存在"
+            )
+        if char.room_id != world.player.room_id:
+            raise SaveLoadError(
+                f"active_dialogue 角色 {dlg.character_id!r} 在房间 "
+                f"{char.room_id!r}，与玩家房间 {world.player.room_id!r} 不一致"
+            )
+    return result
 
 
 def _atomic_write(path: Path, data: dict) -> None:

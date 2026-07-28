@@ -568,20 +568,62 @@ class SaveLoadDialogueTests(unittest.TestCase):
             svc.load()
         self.assertIn("node_bogus", str(ctx.exception))
 
-    def test_load_rejects_terminal_node(self) -> None:
-        svc = self._service()
-        svc.save(self.world)
-        txt = svc.save_path.read_text("utf-8")
-        # Point to a terminal node (node with no options in our demo)
-        # Our demo doesn't have terminal nodes in the normal flow,
-        # so tamper the options to be empty
-        data = json.loads(txt)
-        dlg_id = data["active_dialogue"]["dialogue_id"]
-        node_id = data["active_dialogue"]["current_node_id"]
-        # Find the node in the content pack and check it has options
-        # Then tamper to point to a node we force-emptied
-        # Since we can't easily do that, just check the field is required
-        self.assertIn("active_dialogue", data)
+    def test_load_rejects_terminal_node_via_custom_pack(self) -> None:
+        """Load rejects a save whose active_dialogue points to a terminal node."""
+        with tempfile.TemporaryDirectory() as td:
+            pack_path = Path(td) / "pack"
+            shutil.copytree(DEMO_PATH, pack_path)
+            dlg = [{
+                "id": "d_term",
+                "character_id": "character_elder_chen",
+                "start_node_id": "n1",
+                "nodes": [
+                    {"id": "n1", "text": "Hello", "options": [
+                        {"id": "o1", "text": "Go", "next_node_id": "n2"}
+                    ]},
+                    {"id": "n2", "text": "Goodbye.", "options": []},
+                ]
+            }]
+            (pack_path / "dialogues.json").write_text(
+                json.dumps(dlg, ensure_ascii=False), "utf-8"
+            )
+            pack = load_content_pack(pack_path)
+            # Build a manual JSON save pointing to terminal node n2
+            save_data = {
+                "save_format_version": SAVE_FORMAT_VERSION,
+                "content_pack": {"id": pack.id, "version": pack.version},
+                "player": {
+                    "id": "player_local", "name": "test",
+                    "room_id": "room_glassgrass_path",
+                    "max_hp": 20, "hp": 20, "attack": 5, "defense": 1,
+                    "level": 1, "experience": 0,
+                    "inventory_item_ids": [],
+                },
+                "equipped": {"hand": None, "body": None},
+                "rooms": {
+                    rid: {"item_ids": list(r.item_ids),
+                          "monster_ids": list(r.monster_ids)}
+                    for rid, r in pack.rooms.items()
+                },
+                "monsters": {
+                    mid: {"hp": m.max_hp}
+                    for mid, m in pack.monsters.items()
+                },
+                "quest_states": {},
+                "active_dialogue": {
+                    "dialogue_id": "d_term",
+                    "current_node_id": "n2",
+                },
+            }
+            svc2 = SaveLoadService(pack, Path(td))
+            svc2.save_path.write_text(
+                json.dumps(save_data, ensure_ascii=False), "utf-8"
+            )
+            with self.assertRaises(SaveLoadError) as ctx:
+                svc2.load()
+            self.assertIn("终端节点", str(ctx.exception))
+
+
 
     def test_load_rejects_missing_active_dialogue_field(self) -> None:
         svc = self._service()
@@ -640,6 +682,146 @@ class SaveLoadDialogueTests(unittest.TestCase):
             loaded.active_dialogue.current_node_id, node_before
         )
 
+class SaveTimeValidationTests(unittest.TestCase):
+    """Tests that invalid active_dialogue is rejected at save time."""
+
+    def setUp(self) -> None:
+        self.pack = load_content_pack(DEMO_PATH)
+        with tempfile.TemporaryDirectory() as td:
+            self.save_dir = Path(td)
+
+    def _service(self) -> SaveLoadService:
+        return SaveLoadService(self.pack, self.save_dir)
+
+    def test_save_rejects_terminal_node_pointer(self) -> None:
+        """Saving with active_dialogue pointing to a terminal node fails."""
+        w = _world_at_chen()
+        w.start_dialogue("character_elder_chen")
+        # Manually set to a terminal state
+        from lore2mud.engine.models import DialogueState
+        w.active_dialogue = DialogueState(
+            dialogue_id="dialogue_elder_chen",
+            current_node_id="node_area",  # has options, so OK
+        )
+        svc = self._service()
+        svc.save(w)  # should succeed
+        # Now force a terminal-like state: add a dialogue with empty options
+        from lore2mud.content.models import DialogueDefinition, DialogueNode
+        w.dialogue_defs["d_term"] = DialogueDefinition(
+            "d_term", "character_elder_chen", "n1",
+            {"n1": DialogueNode("n1", "Terminal.", ())}
+        )
+        w.active_dialogue = DialogueState("d_term", "n1")
+        with self.assertRaises(SaveLoadError) as ctx:
+            svc.save(w)
+        self.assertIn("终端节点", str(ctx.exception))
+
+    def test_save_rejects_dialogue_not_in_room(self) -> None:
+        """Saving with active_dialogue character not in player room fails."""
+        w = _world_at_chen()
+        w.start_dialogue("character_elder_chen")
+        svc = self._service()
+        svc.save(w)  # OK
+        # Move player away (dialogue should be cleared by move,
+        # but manually set it to simulate a bug)
+        from lore2mud.engine.models import DialogueState
+        w.move("west")  # clears active_dialogue
+        w.active_dialogue = DialogueState(
+            dialogue_id="dialogue_elder_chen",
+            current_node_id="node_greeting",
+        )
+        with self.assertRaises(SaveLoadError) as ctx:
+            svc.save(w)
+        self.assertIn("不一致", str(ctx.exception))
+
+    def test_save_failure_preserves_original_file(self) -> None:
+        """Failed save does not overwrite the existing save file."""
+        w = _world_at_chen()
+        w.start_dialogue("character_elder_chen")
+        svc = self._service()
+        svc.save(w)  # Create initial valid save
+        original_content = svc.save_path.read_text("utf-8")
+        # Now make the World invalid and try to save
+        from lore2mud.engine.models import DialogueState
+        w.move("west")
+        w.active_dialogue = DialogueState(
+            dialogue_id="dialogue_elder_chen",
+            current_node_id="node_greeting",
+        )
+        with self.assertRaises(SaveLoadError):
+            svc.save(w)
+        # Verify the original save file is unchanged
+        current_content = svc.save_path.read_text("utf-8")
+        self.assertEqual(original_content, current_content)
+
+
+class FailureInvarianceTests(unittest.TestCase):
+    """Failed operations must not change World state."""
+
+    def setUp(self) -> None:
+        self.w = _world_at_chen()
+        self.hp = self.w.player.hp
+        self.atk = self.w.player.attack
+        self.dfn = self.w.player.defense
+        self.inv = list(self.w.player.inventory.item_ids)
+        self.eq_hand = self.w.equipped.hand
+        self.eq_body = self.w.equipped.body
+        self.quests = dict(self.w.quest_states)
+
+    def _assert_state_unchanged(self) -> None:
+        self.assertEqual(self.w.player.hp, self.hp)
+        self.assertEqual(self.w.player.attack, self.atk)
+        self.assertEqual(self.w.player.defense, self.dfn)
+        self.assertEqual(self.w.player.inventory.item_ids, self.inv)
+        self.assertEqual(self.w.equipped.hand, self.eq_hand)
+        self.assertEqual(self.w.equipped.body, self.eq_body)
+        self.assertEqual(dict(self.w.quest_states), self.quests)
+
+    def test_start_dialogue_unknown_char_unchanged(self) -> None:
+        with self.assertRaises(WorldRuleError):
+            self.w.start_dialogue("nobody")
+        self._assert_state_unchanged()
+        self.assertIsNone(self.w.active_dialogue)
+
+    def test_start_dialogue_wrong_room_unchanged(self) -> None:
+        """Player in room_ember_wharf, chen in room_glassgrass_path."""
+        w2 = _demo_world()  # player in room_ember_wharf, not room_glassgrass_path
+        hp2 = w2.player.hp
+        atk2 = w2.player.attack
+        dfn2 = w2.player.defense
+        with self.assertRaises(WorldRuleError):
+            w2.start_dialogue("character_elder_chen")
+        self.assertEqual(w2.player.hp, hp2)
+        self.assertEqual(w2.player.attack, atk2)
+        self.assertEqual(w2.player.defense, dfn2)
+        self.assertIsNone(w2.active_dialogue)
+
+    def test_select_option_no_dialogue_unchanged(self) -> None:
+        with self.assertRaises(WorldRuleError):
+            self.w.select_option(1)
+        self._assert_state_unchanged()
+
+    def test_select_option_out_of_range_unchanged(self) -> None:
+        self.w.start_dialogue("character_elder_chen")
+        before = self.w.active_dialogue.current_node_id
+        with self.assertRaises(WorldRuleError):
+            self.w.select_option(99)
+        self._assert_state_unchanged()
+        self.assertIsNotNone(self.w.active_dialogue)
+        self.assertEqual(self.w.active_dialogue.current_node_id, before)
+
+    def test_select_option_zero_unchanged(self) -> None:
+        self.w.start_dialogue("character_elder_chen")
+        before = self.w.active_dialogue.current_node_id
+        with self.assertRaises(WorldRuleError):
+            self.w.select_option(0)
+        self._assert_state_unchanged()
+        self.assertEqual(self.w.active_dialogue.current_node_id, before)
+
+    def test_end_dialogue_no_active_unchanged(self) -> None:
+        with self.assertRaises(WorldRuleError):
+            self.w.end_dialogue()
+        self._assert_state_unchanged()
 
 class CommandIntegrationTests(unittest.TestCase):
     """F. Command integration tests for dialogue."""
@@ -720,6 +902,26 @@ class CommandIntegrationTests(unittest.TestCase):
         r = self.cmd.execute("go north")  # no north exit
         self.assertIn("不能", r.text)
         self.assertIsNotNone(self.world.active_dialogue)
+
+    def test_100000_boundary_returns_unknown(self) -> None:
+        """6-digit '100000' exceeds 5-digit regex → unknown command."""
+        self.cmd.execute("talk character_elder_chen")
+        self.assertIsNotNone(self.world.active_dialogue)
+        node_before = self.world.active_dialogue.current_node_id
+        r = self.cmd.execute("100000")
+        self.assertIn("未知指令", r.text)
+        self.assertIsNotNone(self.world.active_dialogue)
+        self.assertEqual(self.world.active_dialogue.current_node_id, node_before)
+
+    def test_out_of_range_returns_invalid(self) -> None:
+        """'99' in dialogue with3 options → invalid option, state unchanged."""
+        self.cmd.execute("talk character_elder_chen")
+        self.assertIsNotNone(self.world.active_dialogue)
+        node_before = self.world.active_dialogue.current_node_id
+        r = self.cmd.execute("99")
+        self.assertIn("无效", r.text)
+        self.assertIsNotNone(self.world.active_dialogue)
+        self.assertEqual(self.world.active_dialogue.current_node_id, node_before)
 
 
 if __name__ == "__main__":

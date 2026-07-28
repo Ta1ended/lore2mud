@@ -27,7 +27,7 @@ HELP_TEXT = """可用指令：
   help                  查看帮助
   quit                  退出游戏"""
 
-_BARE_SELECTION = re.compile(r'^[1-9][0-9]*$')
+_BARE_SELECTION = re.compile(r'^[1-9][0-9]{0,4}$')
 
 
 @dataclass(frozen=True, slots=True)

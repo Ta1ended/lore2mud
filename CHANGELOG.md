@@ -12,7 +12,7 @@
 - Added `TalkOutcome`, `DialogueOptionSummary`, `DialogueEndOutcome` structured
   outcomes.
 - Added `talk <character>`, bare integer option selection (ASCII
-  `^[1-9][0-9]*$`), and `bye` commands.
+  `^[1-9][0-9]{0,4}$`, max 5 digits), and `bye` commands.
 - Added `look` command displays characters in current room.
 - Added `dialogues.json` to required content pack files.
 - Added `dialogues` field to `ContentPack` and `DialogueDefinition` validation
@@ -36,8 +36,9 @@
 - Upgraded save format to version 5 with required `active_dialogue` field;
   v4 saves explicitly rejected.
 - Upgraded content pack version to 0.2.4 (breaking: old 0.2.3 saves rejected).
-- Added 66 new tests covering dialogue loading (18), World dialogue domain (15),
-  state invariance (8), save/load (11), and command integration (14).
+- Added 77 new tests covering dialogue loading (18), World normal (8),
+  World failure (7), state invariance (8), save/load (11), save-time
+  validation (3), failure invariance (6), and command integration (16).
 
 ### Changed
 

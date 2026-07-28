@@ -35,7 +35,9 @@ stale.
 
 ## Verified facts
 
-- Full project suite: 314 tests passed (2026-07-28).
+- Full project suite: 325 tests passed (2026-07-28).
+- tests/test_dialogue.py: 77 tests (18 loading, 8 normal, 7 failure, 8 invariance,
+  11 save/load, 3 save-time, 6 failure-invariance, 16 command integration).
 - Repository safety check: passed.
 - Compile check and CLI save/load smoke test: passed.
 - CLI validate smoke test: passed.
@@ -46,9 +48,9 @@ stale.
 - Equipment hand: attack_bonus, equip/unequip, effective_attack, save v3: passed.
 - Equipment body: defense_bonus, effective_defense, player_defense, save v4,
   World state invariance, save v4 illegal matrix: passed.
-- Dialogue system: talk command, bare integer selection, bye, terminal node
-  auto-end, character lookup, World state invariance, save v5 round-trip,
-  v4 save rejection: passed.
+- Dialogue system: talk command, bare integer selection (max 5 digits), bye,
+  terminal node auto-end, character lookup, World state invariance, save v5
+  round-trip, v4 save rejection, save-time validation, failure invariance: passed.
 - Schema: 9 allOf rules including hand→no defense, body→no attack: passed.
 - Content pack version: 0.2.4; save format version: 5.
 - git diff --check: clean.
