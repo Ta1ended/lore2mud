@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-28（M1 recovery 完成后）_
+_Last updated: 2026-07-28（M1 验收返工）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -27,8 +27,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 `d81310c08ada7d2950dbfbcd1c431d42773c056e` 为基线，确认工作树干净、远端仍为
 `1936e913348d3d46278ffaae2cfabf6502020835`、ahead/behind 为 `2/0`，结论为
 `CONDITIONAL GO`：可以继续扩展完全原创的公共可玩内容，但这不等于引擎功能已全部完成，
-更不授权小说事实层访问。M1 确定性死亡恢复已完成：`World.recover()` + `_require_alive()`
-统一门禁 + 命令层门禁 + 55 项新测试，全量 470 项测试通过。
+更不授权小说事实层访问。M1 死亡/失败处理已由 Hermes 实现并完成执行者自测，等待
+GPT-5.6-sol 独立验收。命令层死亡门禁顺序已修正（门禁位于裸对话选项和 bye 路由之前）。
 
 ## Completed
 
@@ -97,15 +97,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   可选且严格校验；它引用的物品必须存在、初始不在房间、不会与对话奖励或另一只怪物重复。
   `World.attack()` 在击败时把战利品置入当前房间并返回 `LootOutcome`，存活怪物战利品若已在
   保存的房间/背包状态中出现则拒绝读档。save v5 格式未变。
-- M1 确定性死亡恢复：`World.recover()` 将死亡玩家传送回起始房间并恢复满血；
-  `_require_alive()` 统一门禁覆盖 `move`/`take`/`drop`/`use`/`equip`/`unequip`/
-  `attack`/`start_dialogue`/`select_option`/`end_dialogue` 共 10 个方法，取代
-  `attack()` 和 `use()` 的旧 `is_alive` 检查；命令层 `_DEAD_ALLOWED` frozenset 允许
-  look/inspect/status/inventory/quests/help/save/load/recover/quit/exit；
-  `RecoverOutcome` 携带 start_room_id/room_name/hp/max_hp；`start_room_id` 从
-  ContentPack 重建、不序列化入 save JSON；save format 保持 v5。55 项新测试覆盖
-  recover 成功/失败、存活拒绝、World 层死亡门禁（10 个方法含状态不变性和优先级）、
-  命令层门禁、save/load 往返。全量 470 项测试通过。
+- M1 死亡/失败处理（`World.recover()` + `_require_alive()` 统一门禁 + 命令层门禁 +
+  55 项测试）已由 Hermes 实现并完成执行者自测，等待 GPT-5.6-sol 独立验收。
+  命令层死亡门禁顺序已修正：门禁位于裸对话选项和 `bye` 路由之前。
 
 ## In progress
 
@@ -139,8 +133,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `python -m lore2mud validate --content examples/original_demo` - passed (2026-07-28).
 - `git diff --check` - clean (2026-07-28).
-- 本次 Terra 自审验证：完整 470 项测试、历史安全扫描、编译、内容包校验和真实
-  `击败 → look → take` CLI 试玩均通过（2026-07-28）；这不是独立 Sol 验收。
+- 本次 Hermes 自审验证：完整 470+ 项测试、历史安全扫描、编译、内容包校验和真实
+  CLI 试玩（倒下 → 移动拒绝 → 死亡存档 → recover → 满 HP → 可继续游戏）均通过
+  （2026-07-28）；这不是独立 Sol 验收。
 
 ## Key paths
 

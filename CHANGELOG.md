@@ -2,6 +2,12 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Moved command-layer death gate before dialogue routing in `CommandProcessor`
+  so that dead players cannot invoke `_select_option` or `_bye` through bare
+  numbers or `bye` when `active_dialogue` is set (DEC-0020).
+
 ### Added
 
 - Added deterministic defeat recovery: `World.recover()` teleports a dead player

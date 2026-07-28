@@ -65,18 +65,20 @@ class CommandProcessor:
         command = parts[0].casefold()
         arguments = parts[1:]
         try:
+            # Death gate: only allow read-only and recovery commands.
+            # This MUST precede dialogue routing so that dead players cannot
+            # invoke _select_option or _bye through bare numbers or "bye".
+            if not self.world.player.is_alive:
+                if command not in _DEAD_ALLOWED:
+                    from lore2mud.engine.world import _DEAD_ERROR
+                    return CommandResult(_DEAD_ERROR)
+
             # Bare integer selection in active dialogue
             if self.world.active_dialogue is not None and len(parts) == 1:
                 if _BARE_SELECTION.fullmatch(parts[0]):
                     return self._select_option(int(parts[0]))
                 if command == "bye":
                     return self._bye()
-
-            # Death gate: only allow read-only and recovery commands
-            if not self.world.player.is_alive:
-                if command not in _DEAD_ALLOWED:
-                    from lore2mud.engine.world import _DEAD_ERROR
-                    return CommandResult(_DEAD_ERROR)
 
             if command == "look":
                 return CommandResult(self._look())

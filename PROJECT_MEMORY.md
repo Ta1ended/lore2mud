@@ -35,12 +35,14 @@ stale.
   read-only visible-item inspection, safe named local save slots, a write-I/O
   error contract, `drop` for unequipped inventory items, deterministic
   single-item monster loot, and deterministic defeat recovery (`World.recover()`
-  + `_require_alive()` unified death gate) are implemented;
+  + `_require_alive()` unified death gate + command-layer gate before dialogue
+  routing) are implemented; M1 awaiting independent verification;
   always inspect the live working tree before relying on this checkpoint.
 - 2026-07-28 public-history cleanup baseline: `96de7b2`（现为 `eafe70e`
   的祖先）；任何后续历史操作前仍须重新检查实时远端。
 - 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励 + 可见物品查看 + 命名存档槽位 +
-  写入错误契约 + 丢弃物品 + 确定性怪物战利品 + 确定性死亡恢复(M1) 已完成
+  写入错误契约 + 丢弃物品 + 确定性怪物战利品 + 死亡/失败处理(M1) 已实现；
+  M1 等待 GPT-5.6-sol 独立验收
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
 - The private novel corpus and split chapters are outside the repository under:
@@ -126,11 +128,11 @@ stale.
   reward, and is placed in the current room only when that monster is first
   defeated. `World.attack()` remains the authoritative transition and returns a
   typed `LootOutcome`; save format v5 reuses existing room/inventory placement.
-- Under the project owner's temporary Hermes agent exception, agent self-audited
-  and executed the `drop`, deterministic monster-loot, and M1 recovery slices. The loot slice
-  reran 15 focused tests, all 415 tests, history safety scan, compile, content
-  validation, and a real defeat/loot/take CLI smoke on 2026-07-28. This is not
-  an independent GPT-5.6-sol acceptance.
+- Under the project owner's temporary GPT-5.6-terra exception, Terra self-audited
+  and executed the `drop` and deterministic monster-loot slices.
+- Under the project owner's direction, Hermes agent executed the M1 defeat-recovery
+  slice and the M1 acceptance-rework fix. This is not an independent GPT-5.6-sol
+  acceptance.
 - The project owner provided a completed GPT-5.6-sol public-repository audit for
   baseline `2ecead1`, with a `CONDITIONAL GO`. It identified this write-I/O gap;
   the current slice closes it. The audit reported 43 dangling blobs without reading

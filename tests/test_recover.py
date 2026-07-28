@@ -340,6 +340,26 @@ class DeathGateCommandTests(unittest.TestCase):
         self.commands.execute("attack monster_ash_mite")
         assert self.world.player.hp == 0
 
+    def _snapshot(self) -> dict:
+        """Capture full mutable state for invariance checks."""
+        w = self.world
+        return {
+            "room_id": w.player.room_id,
+            "hp": w.player.hp,
+            "level": w.player.level,
+            "exp": w.player.experience,
+            "inv": list(w.player.inventory.item_ids),
+            "hand": w.equipped.hand,
+            "body": w.equipped.body,
+            "dlg": w.active_dialogue,
+            "room_items": {
+                rid: list(r.item_ids) for rid, r in w.rooms.items()
+            },
+            "quests": {
+                qid: qs.completed for qid, qs in w.quest_states.items()
+            },
+        }
+
     def test_dead_look_still_works(self) -> None:
         result = self.commands.execute("look")
         self.assertIn("静默观测站", result.text)
@@ -403,6 +423,51 @@ class DeathGateCommandTests(unittest.TestCase):
     def test_dead_bye_rejected_by_command_gate(self) -> None:
         result = self.commands.execute("bye")
         self.assertIn("倒下", result.text)
+
+    def test_dead_bare_number_with_active_dialogue_blocked(self) -> None:
+        """Dead + active_dialogue + bare number → _DEAD_ERROR, no _select_option."""
+        from lore2mud.engine.models import DialogueState
+        from unittest.mock import patch as _patch
+        # Set up active dialogue (simulate mid-dialogue death)
+        self.world.active_dialogue = DialogueState("dialogue_elder_chen", "node_1")
+        before_dialogue = self.world.active_dialogue
+        with _patch.object(
+            type(self.commands), '_select_option', side_effect=AssertionError("must not call")
+        ) as mock_sel:
+            result = self.commands.execute("1")
+        mock_sel.assert_not_called()
+        self.assertIn("倒下了", result.text)
+        self.assertEqual(self.world.active_dialogue, before_dialogue)
+
+    def test_dead_bye_with_active_dialogue_blocked(self) -> None:
+        """Dead + active_dialogue + bye → _DEAD_ERROR, no _bye."""
+        from lore2mud.engine.models import DialogueState
+        from unittest.mock import patch as _patch
+        self.world.active_dialogue = DialogueState("dialogue_elder_chen", "node_1")
+        before_dialogue = self.world.active_dialogue
+        with _patch.object(
+            type(self.commands), '_bye', side_effect=AssertionError("must not call")
+        ) as mock_bye:
+            result = self.commands.execute("bye")
+        mock_bye.assert_not_called()
+        self.assertIn("倒下了", result.text)
+        self.assertEqual(self.world.active_dialogue, before_dialogue)
+
+    def test_dead_other_command_with_active_dialogue_blocked(self) -> None:
+        """Dead + active_dialogue + disallowed command → state invariant."""
+        from lore2mud.engine.models import DialogueState
+        self.world.active_dialogue = DialogueState("dialogue_elder_chen", "node_1")
+        snapshot = self._snapshot()
+        result = self.commands.execute("go west")
+        self.assertIn("倒下了", result.text)
+        self.assertEqual(self._snapshot(), snapshot)
+
+    def test_dead_bare_number_no_dialogue_returns_dead_error(self) -> None:
+        """Dead + no active_dialogue + bare number → _DEAD_ERROR (not unknown command)."""
+        self.assertIsNone(self.world.active_dialogue)
+        result = self.commands.execute("1")
+        self.assertIn("倒下了", result.text)
+        self.assertNotIn("未知指令", result.text)
 
     def test_recover_command_success(self) -> None:
         result = self.commands.execute("recover")

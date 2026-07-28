@@ -399,3 +399,25 @@
 - Evidence: `src/lore2mud/engine/world.py`, `src/lore2mud/engine/commands.py`,
   `src/lore2mud/engine/save.py`, `tests/test_recover.py`.
 - Supersedes: None.
+
+## DEC-0020: Death gate must precede dialogue routing in CommandProcessor
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: DEC-0019 placed the command-layer death gate AFTER the bare integer
+  dialogue selection and `bye` routing in `CommandProcessor.execute()`. This
+  means a dead player with an active dialogue could invoke `_select_option` or
+  `_bye` before the death gate fires. The existing tests did not catch this
+  because `_make_dead_world()` never sets `active_dialogue`.
+- Decision: Move the death gate (`if not self.world.player.is_alive`) to BEFORE
+  the bare-selection/bye routing block. Do NOT add `bye` to `_DEAD_ALLOWED`.
+  Dead players with active dialogues receive `_DEAD_ERROR` for any non-allowed
+  command, including bare numbers and `bye`. `World._require_alive()` remains
+  unchanged as the domain-layer second defense.
+- Consequences: Dead players can never invoke `_select_option` or `_bye`, even
+  when `active_dialogue` is set. The death gate is the first routing decision
+  after command parsing. New tests cover dead+active_dialogue+number,
+  dead+active_dialogue+bye, and dead+no_dialogue+number scenarios with mock
+  verification that routing methods are not called.
+- Evidence: `src/lore2mud/engine/commands.py`, `tests/test_recover.py`.
+- Supersedes: DEC-0019's placement of the death gate after dialogue routing.
