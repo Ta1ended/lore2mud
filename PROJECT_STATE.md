@@ -85,10 +85,8 @@ _Last updated: 2026-07-28_
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `python -m lore2mud validate --content examples/original_demo` - passed (2026-07-28).
 - `git diff --check` - clean (2026-07-28).
-- 根级独立复核：`tests.test_locked_exit` 的 17 项测试、完整 365 项测试、历史安全扫描、
-  编译、内容包校验和 Git 对象检查均通过（2026-07-28）。
-- 原创 CLI 流程已验证“无铜牌拒绝 / 对话获铜牌 / 通行 / save-load 后仍持有”；从隔离
-  wheel 安装运行 `lore2mud validate` 也通过（2026-07-28）。
+- 本次根级独立验收：26 项门禁/命令测试、完整 368 项测试、历史安全扫描、编译、内容包
+  校验、真实 CLI 门禁状态流程和 Git 对象检查均通过（2026-07-28）。
 
 ## Key paths
 
@@ -120,3 +118,6 @@ _Last updated: 2026-07-28_
   do not send the entire corpus to a cloud model by default.
 - History rewriting can leave Git hosting caches and pre-existing external clones with
   old objects; repository checks only cover currently reachable refs.
+- 本次仅展示层切片的 GPT-5.6-sol 顾问调用连续三次受模型容量阻断；根级范围审查和
+  GPT-5.6-terra 只读勘查是一次透明的临时例外，不改变后续规则或数据契约切片必须先经
+  GPT-5.6-sol 审查的流程。

@@ -36,6 +36,14 @@ def _grant_demo_token(world: World) -> None:
 def _runtime_snapshot(world: World) -> dict[str, object]:
     return {
         "room": world.player.room_id,
+        "player_stats": (
+            world.player.hp,
+            world.player.max_hp,
+            world.player.attack,
+            world.player.defense,
+            world.player.level,
+            world.player.experience,
+        ),
         "inventory": list(world.player.inventory.item_ids),
         "equipped": (world.equipped.hand, world.equipped.body),
         "quests": copy.deepcopy(world.quest_states),

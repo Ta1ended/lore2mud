@@ -24,8 +24,9 @@ stale.
   提交栈尚未推送，按项目负责人指示保留给 GitHub Desktop 发布。恢复时仍须运行
   `git status --short --branch` 和 `git rev-list --left-right --count
   HEAD...origin/main` 检查实时状态。
-- Functional checkpoint: held-item exit-gate delivery begins at `983d7a9`;
-  always inspect the live working tree before relying on this checkpoint.
+- Functional checkpoint: held-item exit-gate plus read-only `look` status delivery
+  is implemented through `f70f7d7`; always inspect the live working tree before
+  relying on this checkpoint.
 - 2026-07-28 public-history cleanup baseline: `96de7b2`（现为 `eafe70e`
   的祖先）；任何后续历史操作前仍须重新检查实时远端。
 - 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励系统 已完成
@@ -78,11 +79,15 @@ stale.
   stable ID, and `未持有`/`已持有` status; ordinary exits remain bare directions.
   `World.move()` remains the sole gate-rule authority, and the display adds no
   content or save contract.
-- Root independently reran the 17 focused gate tests, full 365-test suite,
-  history safety scan, compile, validation, original CLI gate/save-load flow,
-  Git object check, and isolated wheel-install validation on 2026-07-28.
+- Root independently reran the 26 focused gate/command tests, full 368-test suite,
+  history safety scan, compile, validation, original CLI gate-status flow, and Git
+  object check on 2026-07-28.
+- Process exception (2026-07-28): three GPT-5.6-sol advisory attempts were blocked
+  by model capacity before this display-only slice. Root performed the documented
+  scope review and a GPT-5.6-terra read-only code scout; this is not a permanent
+  role change. The next rule or data-contract slice must obtain the normal
+  GPT-5.6-sol review when capacity is available.
 - Content pack version: 0.2.6; save format version: 5.
-- Focused gate/command suite: 26 tests passed (2026-07-28).
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.
 - Private split reconstruction matched the decoded source in character count and
