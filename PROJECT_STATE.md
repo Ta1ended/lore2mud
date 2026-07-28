@@ -23,7 +23,11 @@ _Last updated: 2026-07-28_
 远端 `main` 都是 `1936e913348d3d46278ffaae2cfabf6502020835`，因此此前“仍为 `6c13fca`、
 尚待发布”的交接表述已确认过期。本地提交按项目负责人指示不自动推送；恢复时必须重新检查
 实时远端同步状态。本切片依项目负责人临时授权由 GPT-5.6-terra 自审并执行，不构成独立
-GPT-5.6-sol 验收。
+GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
+`d81310c08ada7d2950dbfbcd1c431d42773c056e` 为基线，确认工作树干净、远端仍为
+`1936e913348d3d46278ffaae2cfabf6502020835`、ahead/behind 为 `2/0`，结论为
+`CONDITIONAL GO`：可以继续扩展完全原创的公共可玩内容，但这不等于引擎功能已全部完成，
+更不授权小说事实层访问。
 
 ## Completed
 
@@ -103,6 +107,11 @@ GPT-5.6-sol 验收。
 
 ## Verification
 
+- 公共核心 readiness audit（2026-07-28）：完整 415 项测试和 248 项聚焦的
+  content/save/dialogue/gate/drop/inspect/loot/safety 测试通过；编译、原创内容包校验、
+  `check_repo_safety.py --history`、`git diff --check`、`git fsck --full --no-dangling`
+  与真实 CLI 主循环均通过。CLI 覆盖装备、对话奖励、持有物品门禁、消耗、战斗、掉落、
+  拾取和丢弃；没有读取私有小说目录。
 - `python -m unittest discover -s tests -v` - 415 tests passed (2026-07-28).
 - `python -m unittest tests.test_loot -v` - 15 tests passed (2026-07-28), covering
   loader contracts, one-time placement, state invariance, CLI, and save/load.
@@ -166,6 +175,7 @@ GPT-5.6-sol 验收。
   写入 I/O 错误契约已补齐；审计报告的 43 个 dangling blob 未读取内容，也不受可达历史
   安全扫描覆盖。当前 `drop` 切片仅在项目负责人授权的 Terra 临时流程下自审，不得表述为
   独立 Sol 验收；后续发布前仍须重新核对远端，若远端变动则停止发布并重新审查。
-- 415 项公共回归测试是引擎回归证据，不是私有小说事实层的稳定性或事实准确性认证。
-  下一步必须先做公共仓库的只读核心稳定性 readiness audit；即使结论为 GO，私有小说
-  facts/canon/摘要/派生内容也仍需新的、明确范围授权后才可访问。
+- 公共核心 readiness audit 的结论是 `CONDITIONAL GO`，不是“引擎开发完成”的认证。
+  其证据足以支持下一步继续扩展完全原创的公共内容，但新的玩法机制仍应保持小纵向切片。
+- 项目负责人已明确将小说事实层延后至公共引擎开发完成之后；无论公共审计结论如何，私有
+  facts/canon/摘要/派生内容仍禁止访问，届时也必须重新获得明确、范围受限的授权。

@@ -344,3 +344,27 @@
 - Evidence: Project owner direction on 2026-07-28; `PROJECT_STATE.md`;
   `NEXT_TASK.md`.
 - Supersedes: None.
+
+## DEC-0018: Conditional public-content GO; defer private facts until engine completion
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: A read-only public core readiness audit at
+  `d81310c08ada7d2950dbfbcd1c431d42773c056e` passed the full 415-test suite,
+  248 focused tests, compile, original-demo validation, history safety scan,
+  Git integrity checks, and a real public CLI loop. The project owner then
+  clarified that the novel fact layer should wait until the engine development
+  phase is complete.
+- Decision: Record `CONDITIONAL GO` only for another small, fully original
+  public content slice using existing engine contracts. Do not treat the audit
+  as an engine-completion certificate. Defer every private novel fact, canon,
+  summary, and derived adaptation until a future public-engine-complete
+  milestone is explicitly established and the owner supplies a new, scoped
+  authorization.
+- Consequences: The next slice may increase the public demo's playable scale
+  without new private inputs. A future fact-layer phase must start with its own
+  authorization and boundary audit; it cannot be inferred from this GO.
+- Evidence: `PROJECT_STATE.md`, `PROJECT_MEMORY.md`, `NEXT_TASK.md`,
+  `tests/`, `scripts/check_repo_safety.py`, and public original demo evidence
+  verified on 2026-07-28.
+- Supersedes: DEC-0017's readiness-only activation wording.

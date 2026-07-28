@@ -27,6 +27,10 @@ stale.
   此前“仍为 `6c13fca`、等待发布”的交接叙述已过期。各切片仅做本地提交，未自动推送；恢复时仍须运行
   `git status --short --branch` 和 `git rev-list --left-right --count
   HEAD...origin/main` 检查实时状态。
+- 2026-07-28 公共核心 readiness audit 基线：`HEAD` 为
+  `d81310c08ada7d2950dbfbcd1c431d42773c056e`，本地工作树干净，直接远端和
+  `origin/main` 都是 `1936e913348d3d46278ffaae2cfabf6502020835`，
+  ahead/behind 为 `2/0`。结论为仅对公共原创内容扩展的 `CONDITIONAL GO`；不推送。
 - Functional checkpoint: held-item exit gates, read-only `look` gate status,
   read-only visible-item inspection, safe named local save slots, a write-I/O
   error contract, `drop` for unequipped inventory items, and deterministic
@@ -49,8 +53,12 @@ stale.
 
 ## Verified facts
 
-- Full project suite: 415 tests passed (2026-07-28) after the deterministic
-  monster-loot slice.
+- Full project suite: 415 tests passed (2026-07-28) during the public core
+  readiness audit.
+- Focused readiness suite: 248 tests covering content loading, save/load and
+  slots, dialogue, locked exits, drop, inspect, loot, and repository safety
+  passed (2026-07-28). Compile, original-demo validation, history safety scan,
+  and a real public CLI loop also passed.
 - `tests/test_loot.py`: 15 tests cover optional-field parsing, invalid and
   duplicate references, dialogue conflicts, one-time room placement, attack
   failure invariance, CLI rendering, and save/load validation.
@@ -165,7 +173,8 @@ To resume safely:
 - Treat all player input, model output, and generated content as untrusted.
 - Keep original facts and game adaptation values in separate layers.
 - Use stable IDs for game entities; display names are not keys.
-- Passing public-engine regression checks does not certify private novel facts or
-  authorize private fact-layer work. First perform a separate read-only
-  core-stability readiness audit; private facts, canon, summaries, and derived
-  content still require explicit scoped authorization before any access.
+- The completed public core-stability audit is a `CONDITIONAL GO` only for
+  scaling fully original public content. It does not certify private novel facts
+  or authorize private fact-layer work. The project owner has deferred that
+  layer until public engine development is declared feature-complete; it will
+  still require new, explicit scoped authorization before any access.
