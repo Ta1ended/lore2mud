@@ -15,6 +15,7 @@ from lore2mud.content.models import (
     DialogueDefinition,
     DialogueNode,
     DialogueOption,
+    ExitDefinition,
     ItemDefinition,
     MonsterDefinition,
     PlayerDefaults,
@@ -301,19 +302,63 @@ def load_content_pack(path: str | Path) -> ContentPack:
             f"{location}.id",
         )
         raw_exits = validator.object(obj.get("exits", {}), f"{location}.exits")
-        exits: dict[str, str] = {}
-        for direction, target in raw_exits.items():
-            if (
-                not isinstance(direction, str)
-                or not direction
-                or not isinstance(target, str)
-                or not target
-            ):
+        exits: dict[str, ExitDefinition] = {}
+        for direction, raw_exit in raw_exits.items():
+            exit_location = f"{location}.exits[{direction!r}]"
+            if not isinstance(direction, str) or not direction.strip():
                 validator.issues.append(
-                    f"{location}.exits 的方向和目标必须是非空字符串"
+                    f"{location}.exits 的方向必须是非空字符串"
                 )
                 continue
-            exits[direction.casefold()] = target
+            normalized_direction = direction.casefold()
+
+            if isinstance(raw_exit, str):
+                if not raw_exit.strip():
+                    validator.issues.append(
+                        f"{exit_location} 必须是非空字符串或出口对象"
+                    )
+                    continue
+                exit_def = ExitDefinition(
+                    target_room_id=validator.stable_id(
+                        raw_exit, f"{exit_location}.target_room_id"
+                    )
+                )
+            elif isinstance(raw_exit, dict):
+                exit_obj = validator.object(raw_exit, exit_location)
+                validator.keys(
+                    exit_obj,
+                    {"target_room_id", "required_item_id"},
+                    exit_location,
+                )
+                target_room_id = validator.stable_id(
+                    validator.text(exit_obj, "target_room_id", exit_location),
+                    f"{exit_location}.target_room_id",
+                )
+                required_item_id: str | None = None
+                if "required_item_id" in exit_obj:
+                    required_item_id = validator.stable_id(
+                        validator.text(
+                            exit_obj, "required_item_id", exit_location
+                        ),
+                        f"{exit_location}.required_item_id",
+                    )
+                exit_def = ExitDefinition(
+                    target_room_id=target_room_id,
+                    required_item_id=required_item_id,
+                )
+            else:
+                validator.issues.append(
+                    f"{exit_location} 必须是非空字符串或出口对象"
+                )
+                continue
+
+            if normalized_direction in exits:
+                validator.issues.append(
+                    f"{location}.exits 包含大小写无关的重复方向："
+                    f"{direction}"
+                )
+                continue
+            exits[normalized_direction] = exit_def
         room_defs.append(
             RoomDefinition(
                 id=entity_id,
@@ -714,11 +759,19 @@ def load_content_pack(path: str | Path) -> ContentPack:
     item_placements: dict[str, str] = {}
     monster_placements: dict[str, str] = {}
     for room in rooms.values():
-        for direction, target_id in room.exits.items():
-            if target_id not in rooms:
+        for direction, exit_def in room.exits.items():
+            if exit_def.target_room_id not in rooms:
                 validator.issues.append(
                     f"房间 {room.id} 的出口 {direction} 引用了不存在的房间："
-                    f"{target_id}"
+                    f"{exit_def.target_room_id}"
+                )
+            if (
+                exit_def.required_item_id is not None
+                and exit_def.required_item_id not in items
+            ):
+                validator.issues.append(
+                    f"房间 {room.id} 的出口 {direction} 所需物品不存在："
+                    f"{exit_def.required_item_id}"
                 )
         for item_id in room.item_ids:
             if item_id not in items:

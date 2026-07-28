@@ -55,14 +55,27 @@ JSON。稳定 ID 必须匹配：
   "name": "起点",
   "description": "原创描述。",
   "exits": {
-    "north": "room_north"
+    "north": "room_north",
+    "west": {
+      "target_room_id": "room_west",
+      "required_item_id": "item_gate_token"
+    }
   },
   "item_ids": ["item_lantern"],
   "monster_ids": []
 }
 ```
 
-出口目标、物品和怪物必须存在。物品和怪物首版不能同时放在多个房间。
+出口可保留兼容格式 `"方向": "目标房间ID"`，也可使用对象格式：
+
+- `target_room_id`：必填、非空稳定 ID，必须引用现有房间。
+- `required_item_id`：可省略的非空稳定 ID，必须引用现有物品；`null`、空字符串和
+  其他类型均非法。
+- 出口对象严格拒绝未知字段；同一房间中方向按 `casefold()` 不能重复。
+- 移动经过带 `required_item_id` 的出口时，玩家必须在背包中持有该物品。物品不被
+  消耗；类型和初始摆放不受额外限制。
+
+出口目标、门禁物品、房间内物品和怪物必须存在。物品和怪物首版不能同时放在多个房间。
 
 ## 物品
 

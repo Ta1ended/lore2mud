@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from lore2mud.content.models import ExitDefinition
 from lore2mud.inventory.models import Inventory
 
 
@@ -12,7 +13,7 @@ class Room:
     id: str
     name: str
     description: str
-    exits: dict[str, str] = field(default_factory=dict)
+    exits: dict[str, ExitDefinition] = field(default_factory=dict)
     item_ids: list[str] = field(default_factory=list)
     monster_ids: list[str] = field(default_factory=list)
 

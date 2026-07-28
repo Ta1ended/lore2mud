@@ -27,7 +27,26 @@
     "exits": {
       "type": "object",
       "additionalProperties": {
-        "$ref": "common.schema.json#/$defs/stable_id"
+        "oneOf": [
+          {
+            "$ref": "common.schema.json#/$defs/stable_id"
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "target_room_id"
+            ],
+            "properties": {
+              "target_room_id": {
+                "$ref": "common.schema.json#/$defs/stable_id"
+              },
+              "required_item_id": {
+                "$ref": "common.schema.json#/$defs/stable_id"
+              }
+            }
+          }
+        ]
       }
     },
     "item_ids": {

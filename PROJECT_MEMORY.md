@@ -23,8 +23,8 @@ stale.
 - Remote: origin/main；2026-07-28 的功能交付已以精确租约推送到
   `eafe70e`；恢复时仍须运行 `git status --short --branch` 和
   `git rev-list --left-right --count HEAD...origin/main` 检查实时状态。
-- Functional checkpoint: `eafe70e` dialogue-reward delivery; always inspect
-  the live working tree before relying on this checkpoint.
+- Functional checkpoint: held-item exit-gate delivery; always inspect the live
+  working tree before relying on this checkpoint.
 - 2026-07-28 public-history cleanup baseline: `96de7b2`（现为 `eafe70e`
   的祖先）；任何后续历史操作前仍须重新检查实时远端。
 - 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励系统 已完成
@@ -41,7 +41,7 @@ stale.
 
 ## Verified facts
 
-- Full project suite: 348 tests passed (2026-07-28).
+- Full project suite: 365 tests passed (2026-07-28).
 - tests/test_dialogue.py: 91 tests, including reward loading, atomic success and
   failure paths, terminal/end behavior, save/load, and command rendering.
 - Repository safety check: passed.
@@ -64,12 +64,16 @@ stale.
 - Dialogue reward: `grant_item_id` is optional but, when present, must be one
   unique, unplaced, non-consumable stable item ID. `World.select_option()` checks
   `Inventory.can_add` and duplicate ownership before `Inventory.add`, then returns
-  a typed `DialogueItemGrant`; save format remains v5 and demo pack is 0.2.5.
+  a typed `DialogueItemGrant`; save format remains v5 and demo pack is 0.2.6.
 - Save format v5 loading rejects unknown fields at the top level, `content_pack`,
   `player`, every room, every monster, `quest_states`, `equipped`, and
   `active_dialogue`; validation completes before a replacement `World` is built.
 - Schema: 9 allOf rules including hand→no defense, body→no attack: passed.
-- Content pack version: 0.2.5; save format version: 5.
+- Held-item exit gates: `ExitDefinition` normalizes legacy string and structured
+  exits. A gate checks inventory before room/quest/dialogue mutations, does not
+  consume its item, and requires no save state; demo west exit needs the
+  dialogue-earned `item_chen_token`.
+- Content pack version: 0.2.6; save format version: 5.
 - git diff --check: clean.
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.

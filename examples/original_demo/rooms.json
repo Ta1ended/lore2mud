@@ -20,7 +20,10 @@
     "name": "琉草小径",
     "description": "半透明的草叶在风中相击，发出细小而清亮的声响。",
     "exits": {
-      "west": "room_ember_wharf",
+      "west": {
+        "target_room_id": "room_ember_wharf",
+        "required_item_id": "item_chen_token"
+      },
       "east": "room_silent_observatory"
     },
     "item_ids": [],

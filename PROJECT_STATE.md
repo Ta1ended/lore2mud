@@ -8,7 +8,7 @@ _Last updated: 2026-07-28_
 
 ## Current status
 装备系统已实现 hand 和 body 双槽位，存档格式升级至 v5。对话系统已实现——
-原创 NPC 老陈带有确定性分支对话和一次性普通物品奖励，内容包版本升至 0.2.5。生产安全门已扩展为
+原创 NPC 老陈带有确定性分支对话和一次性普通物品奖励；琉草小径西向出口要求持有该铜牌，内容包版本升至 0.2.6。生产安全门已扩展为
 当前 Git 候选与可达历史的双层检查。2026-07-28 的功能交付已以精确租约发布至
 `eafe70e`；恢复时必须重新检查实时远端同步状态。
 
@@ -54,6 +54,10 @@ _Last updated: 2026-07-28_
   奖励引用。`World.select_option()` 使用背包契约原子发放，失败不改变任何游戏状态；
   原创 `item_chen_token` 由老陈观测站对话结束选项发放。
 - 内容包版本升至 0.2.5；存档格式保持 v5。
+- 持有物品门禁出口：不可变 `ExitDefinition` 将旧字符串和对象出口统一规范化；对象可选
+  `required_item_id`。加载器校验目标/物品引用、稳定 ID、严格对象字段及 casefold 方向重复。
+  `World.move()` 在变更房间、任务和对话前检查背包，失败不改变任何状态、成功不消耗物品；
+  原创演示琉草小径西向出口要求 `item_chen_token`，内容包升至 v0.2.6，存档保持 v5。
 
 ## In progress
 
@@ -65,7 +69,7 @@ _Last updated: 2026-07-28_
 
 ## Verification
 
-- `python -m unittest discover -s tests -v` - 348 tests passed (2026-07-28).
+- `python -m unittest discover -s tests -v` - 365 tests passed (2026-07-28).
 - tests/test_dialogue.py: 91 tests, including typed item reward loading, state
   invariance, save/load and CLI rendering.
 - `python scripts/check_repo_safety.py` - passed (2026-07-28).

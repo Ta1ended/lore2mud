@@ -4,6 +4,13 @@
 
 ### Added
 
+- Added normalized `ExitDefinition` content contracts and optional
+  `required_item_id` gates for room exits, while preserving legacy string exits.
+- Added one original demo gate: returning west from 琉草小径 requires the
+  dialogue-earned `item_chen_token`; the demo content pack is now 0.2.6 and
+  save format remains v5.
+- Added focused loading, state-invariance, CLI, and save/load coverage for
+  held-item exit gates.
 - Added one typed dialogue item-reward effect: `DialogueOption.grant_item_id`,
   `DialogueItemGrant`, and `TalkOutcome.granted_item`.
 - Added strict cross-file validation for dialogue rewards and one hidden original
@@ -55,6 +62,8 @@
 
 ### Changed
 
+- `World.move()` now checks a required inventory item before changing room,
+  quest, or dialogue state; passing a gate does not consume the item.
 - Dialogue selection now atomically awards a validated item before advancing or
   ending, and rejects a full inventory or duplicate reward without state changes.
 - Tightened save format v5 loading: top-level, `content_pack`, `player`, room, and

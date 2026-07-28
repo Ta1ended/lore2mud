@@ -21,11 +21,19 @@ class ContentMetadata:
 
 
 @dataclass(frozen=True, slots=True)
+class ExitDefinition:
+    """One normalized room exit, optionally gated by an inventory item."""
+
+    target_room_id: str
+    required_item_id: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class RoomDefinition:
     id: str
     name: str
     description: str
-    exits: dict[str, str]
+    exits: dict[str, ExitDefinition]
     item_ids: tuple[str, ...] = ()
     monster_ids: tuple[str, ...] = ()
     metadata: ContentMetadata = field(default_factory=ContentMetadata)

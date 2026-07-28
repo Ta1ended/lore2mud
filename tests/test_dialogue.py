@@ -470,7 +470,7 @@ class WorldDialogueNormalTests(unittest.TestCase):
         w = _world_at_chen()
         w.start_dialogue("character_elder_chen")
         self.assertIsNotNone(w.active_dialogue)
-        w.move("west")
+        w.move("east")
         self.assertIsNone(w.active_dialogue)
 
 
@@ -942,7 +942,7 @@ class SaveTimeValidationTests(unittest.TestCase):
         # Move player away (dialogue should be cleared by move,
         # but manually set it to simulate a bug)
         from lore2mud.engine.models import DialogueState
-        w.move("west")  # clears active_dialogue
+        w.move("east")  # clears active_dialogue
         w.active_dialogue = DialogueState(
             dialogue_id="dialogue_elder_chen",
             current_node_id="node_greeting",
@@ -960,7 +960,7 @@ class SaveTimeValidationTests(unittest.TestCase):
         original_content = svc.save_path.read_text("utf-8")
         # Now make the World invalid and try to save
         from lore2mud.engine.models import DialogueState
-        w.move("west")
+        w.move("east")
         w.active_dialogue = DialogueState(
             dialogue_id="dialogue_elder_chen",
             current_node_id="node_greeting",
@@ -1096,7 +1096,7 @@ class CommandIntegrationTests(unittest.TestCase):
     def test_go_during_dialogue_ends_it(self) -> None:
         self.cmd.execute("talk character_elder_chen")
         self.assertIsNotNone(self.world.active_dialogue)
-        self.cmd.execute("go west")
+        self.cmd.execute("go east")
         self.assertIsNone(self.world.active_dialogue)
 
     def test_help_includes_dialogue_commands(self) -> None:

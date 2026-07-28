@@ -33,7 +33,7 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
 
 - 必填字段与基本类型；
 - 稳定 ID 格式和重复 ID；
-- 起始房间、出口、物品、怪物、角色和对话引用；
+- 起始房间、出口目标、出口门禁物品、物品、怪物、角色和对话引用；
 - `pack.json`、`rooms.json`、`items.json`、`monsters.json`、`characters.json`、
   `quests.json` 和 `dialogues.json` 七个必需内容文件；
 - 同一实体的重复放置；
@@ -67,6 +67,14 @@ take item_spark_lantern
 ```
 
 任何失败都发生在修改之前，避免半完成状态。
+
+### 门禁出口
+
+`ExitDefinition` 是不可变的内容契约：每个出口都有 `target_room_id`，并可带有
+`required_item_id`。加载器把旧的字符串出口和对象出口统一规范化；`World.move()`
+在修改房间、触发任务或清理活动对话前检查背包。缺少所需物品时，错误同时显示物品名
+和稳定 ID，且不改变任何运行时状态；通过时物品不会被消耗。出口定义属于内容包，
+不写入 save v5 的可变状态。
 
 ## 原作事实与游戏规则
 

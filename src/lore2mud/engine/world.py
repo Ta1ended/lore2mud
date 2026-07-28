@@ -224,11 +224,20 @@ class World:
 
     def move(self, direction: str) -> Room:
         normalized = direction.casefold()
-        target_id = self.current_room.exits.get(normalized)
-        if target_id is None:
+        exit_def = self.current_room.exits.get(normalized)
+        if exit_def is None:
             raise WorldRuleError(f"这里不能向 {direction} 移动。")
-        self.player.room_id = target_id
-        self._accept_quests_for_room(target_id)
+        required_item_id = exit_def.required_item_id
+        if required_item_id is not None:
+            if required_item_id not in self.player.inventory.item_ids:
+                item = self.items.get(required_item_id)
+                item_name = item.name if item is not None else "未知物品"
+                raise WorldRuleError(
+                    f"向 {direction} 移动需要持有 {item_name} "
+                    f"({required_item_id})。"
+                )
+        self.player.room_id = exit_def.target_room_id
+        self._accept_quests_for_room(exit_def.target_room_id)
         self.active_dialogue = None
         return self.current_room
 
