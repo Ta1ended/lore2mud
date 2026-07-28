@@ -4,6 +4,11 @@
 
 ### Added
 
+- Added safe named local save slots through `save [slot]` and `load [slot]`.
+  Default `default.json` behavior remains compatible; validated slot names cannot
+  traverse paths or address Windows reserved device names, and save format remains v5.
+- Added nine focused save-slot tests for default compatibility, isolation, invalid
+  names, command syntax, world invariance, and named save/load round trips.
 - Added read-only `inspect <item ID or name>` with `World.inspect_item()` and
   typed `InspectItemOutcome`.  It exposes only current-room or inventory items,
   preserves all runtime state, and adds no content-pack or save-v5 contract.

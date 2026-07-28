@@ -9,10 +9,12 @@ _Last updated: 2026-07-28_
 ## Current status
 装备系统已实现 hand 和 body 双槽位，存档格式为 v5。对话系统已实现——原创 NPC 老陈带有
 确定性分支对话和一次性普通物品奖励；琉草小径西向出口要求持有该铜牌，`look` 会只读显示
-门禁所需物品与持有状态。新增 `inspect`：仅查看当前房间或背包内物品的稳定 ID 和描述，
-不改变任何运行时状态，内容包仍为 v0.2.6。生产安全门已扩展为当前 Git 候选与可达历史的
-双层检查。开始本切片前已确认 `main` 与 `origin/main` 同步于 `6c13fca`；本地后续提交按
-项目负责人指示不自动推送。恢复时必须重新检查实时远端同步状态。
+门禁所需物品与持有状态。`inspect` 仅查看当前房间或背包内物品的稳定 ID 和描述，不改变
+任何运行时状态；新增 `save [槽位]` / `load [槽位]`，在默认 `default.json` 之外支持安全的
+命名本地存档槽位，内容包仍为 v0.2.6、存档格式仍为 v5。生产安全门已扩展为当前 Git 候选
+与可达历史的双层检查。开始本切片前 `main` 的 `5ea42c7` 已比本地 `origin/main` 引用
+`6c13fca` 领先一个提交；本地后续提交按项目负责人指示不自动推送。恢复时必须重新检查
+实时远端同步状态。
 
 ## Completed
 
@@ -67,6 +69,10 @@ _Last updated: 2026-07-28_
   `InspectItemOutcome`；同名时要求稳定 ID，其他房间与未发放对话奖励不可见。`inspect`
   命令只渲染 ID 和描述，且不会改变房间、背包、装备、任务、活动对话或怪物状态。
   内容包版本与 save v5 格式均未变更。
+- 命名存档槽位：`SaveLoadService.save/load` 可选一个受限槽位名，`save` / `load` 无参数仍
+  使用 `default.json`。槽位名仅允许 1–32 位小写 ASCII 字母、数字、`-`、`_`，并拒绝路径、
+  扩展名和 Windows 保留设备名；它只选择保存目录内的文件，失败不会写入文件或替换当前
+  `World`。save v5 JSON 格式保持不变。
 
 ## In progress
 
@@ -78,10 +84,10 @@ _Last updated: 2026-07-28_
 
 ## Verification
 
-- `python -m unittest discover -s tests -q` - 377 tests passed (2026-07-28).
-- `python -m unittest tests.test_inspect tests.test_commands -v` - 15 tests
-  passed (2026-07-28), including visible/inventory inspection, state invariance,
-  CLI text, and save/load.
+- `python -m unittest discover -s tests -q` - 386 tests passed (2026-07-28).
+- `python -m unittest tests.test_save_slots tests.test_save -v` - 87 tests
+  passed (2026-07-28), including named-slot isolation, input safety, default
+  compatibility, CLI text, and load-failure invariance.
 - tests/test_dialogue.py: 91 tests, including typed item reward loading, state
   invariance, save/load and CLI rendering.
 - `python scripts/check_repo_safety.py` - passed (2026-07-28).
@@ -90,7 +96,7 @@ _Last updated: 2026-07-28_
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `python -m lore2mud validate --content examples/original_demo` - passed (2026-07-28).
 - `git diff --check` - clean (2026-07-28).
-- 本次根级验证：15 项 inspect/command 测试、完整 377 项测试、历史安全扫描、编译和
+- 本次根级验证：87 项 save/save-slot 测试、完整 386 项测试、历史安全扫描、编译和
   内容包校验均通过（2026-07-28）。
 
 ## Key paths
@@ -101,9 +107,10 @@ _Last updated: 2026-07-28_
 - `NEXT_TASK.md` - exactly one recommended continuation.
 - `src/lore2mud/engine/world.py` - authoritative runtime state with quest,
   item inspection/use, equipment, and dialogue logic.
-- `src/lore2mud/engine/save.py` - save/load service (format v5).
+- `src/lore2mud/engine/save.py` - save/load service with safe local slot paths (format v5).
 - `src/lore2mud/engine/commands.py` - command processor with dialogue rendering.
 - `tests/test_inspect.py` - visible-item inspection state-invariance and round-trip coverage.
+- `tests/test_save_slots.py` - named-slot safety, isolation, and command coverage.
 - `src/lore2mud/content/loader.py` - schema-like and reference validation.
 - `src/lore2mud/cli.py` - CLI entry point with play/validate subcommands.
 - `src/lore2mud/combat/service.py` - deterministic combat with player_attack/defense.
@@ -125,5 +132,5 @@ _Last updated: 2026-07-28_
 - History rewriting can leave Git hosting caches and pre-existing external clones with
   old objects; repository checks only cover currently reachable refs.
 - GPT-5.6-sol 目前仍受模型容量阻断。项目负责人已明确延期独立审计并授权继续本次
-  公开、只读切片；这不是 GPT-5.6-sol 已验收的声明。容量恢复后，先完成独立审计，
+  公开、本地持久化切片；这不是 GPT-5.6-sol 已验收的声明。容量恢复后，先完成独立审计，
   再选择下一项规则或数据契约功能。

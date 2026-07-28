@@ -241,3 +241,23 @@
    `src/lore2mud/engine/models.py`, `src/lore2mud/engine/world.py`,
    `src/lore2mud/engine/commands.py`, `src/lore2mud/engine/save.py`,
    `examples/original_demo/dialogues.json`, `tests/test_dialogue.py`.
+
+## DEC-0013: Safe named local save slots without changing save v5
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: The single default save file prevents players from preserving distinct
+  local progress points. Accepting arbitrary file names would allow path traversal
+  and Windows device-name hazards.
+- Decision: Keep parameterless `SaveLoadService.save()` / `.load()` and
+  `default.json` exactly compatible. Accept one optional slot name through
+  `save [slot]` / `load [slot]`, map it only to `<save-dir>/<slot>.json`, and
+  validate before any serialization, reading, or `World` replacement. Names are
+  1–32 lowercase ASCII letters, digits, `-`, or `_`, start with a letter or digit,
+  and exclude Windows reserved device names. Save JSON remains format v5.
+- Consequences: Slots are independent and cannot escape the save directory.
+  Existing callers and default saves remain valid. A failed slot validation does
+  not write a file or replace the active world.
+- Evidence: `src/lore2mud/engine/save.py`, `src/lore2mud/engine/commands.py`,
+  `tests/test_save_slots.py`, `tests/test_save.py`.
+- Supersedes: None.

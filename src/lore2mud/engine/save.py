@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import tempfile
 from pathlib import Path
 
@@ -25,6 +26,12 @@ from lore2mud.inventory.models import EquippedItems, Inventory, Item
 
 SAVE_FORMAT_VERSION = 5
 DEFAULT_SLOT = "default.json"
+_SLOT_NAME_PATTERN = re.compile(r"[a-z0-9][a-z0-9_-]{0,31}")
+_WINDOWS_RESERVED_SLOT_NAMES = frozenset(
+    {"con", "prn", "aux", "nul"}
+    | {f"com{number}" for number in range(1, 10)}
+    | {f"lpt{number}" for number in range(1, 10)}
+)
 _SAVE_TOP_LEVEL_KEYS = frozenset(
     {
         "save_format_version",
@@ -611,7 +618,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
 
 
 class SaveLoadService:
-    """Holds content pack reference and save path; provides save/load to CLI."""
+    """Holds content pack reference and safe local save-slot paths."""
 
     def __init__(self, pack: ContentPack, save_dir: Path) -> None:
         self._pack = pack
@@ -620,21 +627,28 @@ class SaveLoadService:
 
     @property
     def save_path(self) -> Path:
+        """Return the backward-compatible path for the default save slot."""
         return self._save_path
 
-    def save(self, world: World) -> str:
-        """Save current world state. Returns success message."""
-        data = _serialize_world(world)
-        _atomic_write(self._save_path, data)
-        return f"存档成功：{self._save_path}"
+    def slot_path(self, slot: str) -> Path:
+        """Return the validated path for one named save slot."""
+        return self._path_for_slot(slot)
 
-    def load(self) -> World:
+    def save(self, world: World, slot: str | None = None) -> str:
+        """Save current world state. Returns success message."""
+        save_path = self._path_for_slot(slot)
+        data = _serialize_world(world)
+        _atomic_write(save_path, data)
+        return f"存档成功：{save_path}"
+
+    def load(self, slot: str | None = None) -> World:
         """Load world from save file. Raises SaveLoadError on any failure."""
-        if not self._save_path.is_file():
-            raise SaveLoadError(f"存档文件不存在：{self._save_path}")
+        save_path = self._path_for_slot(slot)
+        if not save_path.is_file():
+            raise SaveLoadError(f"存档文件不存在：{save_path}")
 
         try:
-            raw_text = self._save_path.read_text(encoding="utf-8")
+            raw_text = save_path.read_text(encoding="utf-8")
         except OSError as exc:
             raise SaveLoadError(f"读取存档失败：{exc}") from exc
 
@@ -647,3 +661,17 @@ class SaveLoadService:
             raise SaveLoadError("存档顶层必须是 JSON 对象")
 
         return _validate_and_build_world(data, self._pack)
+
+    def _path_for_slot(self, slot: str | None) -> Path:
+        if slot is None:
+            return self._save_path
+        if (
+            not isinstance(slot, str)
+            or not _SLOT_NAME_PATTERN.fullmatch(slot)
+            or slot in _WINDOWS_RESERVED_SLOT_NAMES
+        ):
+            raise SaveLoadError(
+                "存档槽位必须为 1–32 位小写字母、数字、连字符或下划线，"
+                "且以字母或数字开头。"
+            )
+        return self._save_dir / f"{slot}.json"

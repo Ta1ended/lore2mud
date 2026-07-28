@@ -23,8 +23,8 @@ HELP_TEXT = """可用指令：
   talk <角色ID或名称>   与角色对话
   <数字>                选择对话选项（对话中）
   bye                   结束当前对话（对话中）
-  save                  保存游戏
-  load                  读取存档
+  save [槽位]           保存游戏（默认 default）
+  load [槽位]           读取存档（默认 default）
   help                  查看帮助
   quit                  退出游戏"""
 
@@ -89,9 +89,9 @@ class CommandProcessor:
             if command == "talk":
                 return self._talk(arguments)
             if command == "save":
-                return self._save()
+                return self._save(arguments)
             if command == "load":
-                return self._load()
+                return self._load(arguments)
             if command == "help":
                 return CommandResult(HELP_TEXT)
             if command in {"quit", "exit"}:
@@ -326,22 +326,28 @@ class CommandProcessor:
             lines.append("对话结束了。")
         return "\n".join(lines)
 
-    def _save(self) -> CommandResult:
+    def _save(self, arguments: list[str]) -> CommandResult:
+        if len(arguments) > 1:
+            return CommandResult("用法：save [槽位]")
         if self._save_service is None:
             return CommandResult("存档服务不可用。")
         try:
             from lore2mud.engine.save import SaveLoadError
-            msg = self._save_service.save(self.world)
+            slot = arguments[0] if arguments else None
+            msg = self._save_service.save(self.world, slot)
             return CommandResult(msg)
         except SaveLoadError as exc:
             return CommandResult(f"存档失败：{exc}")
 
-    def _load(self) -> CommandResult:
+    def _load(self, arguments: list[str]) -> CommandResult:
+        if len(arguments) > 1:
+            return CommandResult("用法：load [槽位]")
         if self._save_service is None:
             return CommandResult("存档服务不可用。")
         try:
             from lore2mud.engine.save import SaveLoadError
-            new_world = self._save_service.load()
+            slot = arguments[0] if arguments else None
+            new_world = self._save_service.load(slot)
             self.world = new_world
             return CommandResult(
                 f"读档成功。\n{self._look()}"
