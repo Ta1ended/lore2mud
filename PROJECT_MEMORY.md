@@ -20,11 +20,12 @@ stale.
 
 - Repository: `lore2mud`
 - Branch: `main`
-- Remote: origin/main；2026-07-28 的功能交付已以精确租约推送到
-  `eafe70e`；恢复时仍须运行 `git status --short --branch` 和
-  `git rev-list --left-right --count HEAD...origin/main` 检查实时状态。
-- Functional checkpoint: held-item exit-gate delivery; always inspect the live
-  working tree before relying on this checkpoint.
+- Remote: origin/main 仍为 `8d71ed7`；持有物品门禁功能提交 `983d7a9` 和本次
+  复核交接记录尚未推送，按项目负责人指示保留给 GitHub Desktop 发布。恢复时仍须运行
+  `git status --short --branch` 和 `git rev-list --left-right --count
+  HEAD...origin/main` 检查实时状态。
+- Functional checkpoint: held-item exit-gate delivery begins at `983d7a9`;
+  always inspect the live working tree before relying on this checkpoint.
 - 2026-07-28 public-history cleanup baseline: `96de7b2`（现为 `eafe70e`
   的祖先）；任何后续历史操作前仍须重新检查实时远端。
 - 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励系统 已完成
@@ -73,6 +74,9 @@ stale.
   exits. A gate checks inventory before room/quest/dialogue mutations, does not
   consume its item, and requires no save state; demo west exit needs the
   dialogue-earned `item_chen_token`.
+- Root independently reran the 17 focused gate tests, full 365-test suite,
+  history safety scan, compile, validation, original CLI gate/save-load flow,
+  Git object check, and isolated wheel-install validation on 2026-07-28.
 - Content pack version: 0.2.6; save format version: 5.
 - git diff --check: clean.
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume

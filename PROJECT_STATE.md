@@ -9,8 +9,10 @@ _Last updated: 2026-07-28_
 ## Current status
 装备系统已实现 hand 和 body 双槽位，存档格式升级至 v5。对话系统已实现——
 原创 NPC 老陈带有确定性分支对话和一次性普通物品奖励；琉草小径西向出口要求持有该铜牌，内容包版本升至 0.2.6。生产安全门已扩展为
-当前 Git 候选与可达历史的双层检查。2026-07-28 的功能交付已以精确租约发布至
-`eafe70e`；恢复时必须重新检查实时远端同步状态。
+当前 Git 候选与可达历史的双层检查。此前功能交付 `eafe70e` 及其发布交接记录
+`8d71ed7` 已在远端；持有物品门禁功能提交 `983d7a9` 及其根级复核记录仅保留在本地，
+按项目负责人指示未自动推送。
+恢复时必须重新检查实时远端同步状态。
 
 ## Completed
 
@@ -78,6 +80,10 @@ _Last updated: 2026-07-28_
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `python -m lore2mud validate --content examples/original_demo` - passed (2026-07-28).
 - `git diff --check` - clean (2026-07-28).
+- 根级独立复核：`tests.test_locked_exit` 的 17 项测试、完整 365 项测试、历史安全扫描、
+  编译、内容包校验和 Git 对象检查均通过（2026-07-28）。
+- 原创 CLI 流程已验证“无铜牌拒绝 / 对话获铜牌 / 通行 / save-load 后仍持有”；从隔离
+  wheel 安装运行 `lore2mud validate` 也通过（2026-07-28）。
 
 ## Key paths
 
