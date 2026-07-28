@@ -40,6 +40,13 @@ class UseOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class DropOutcome:
+    """Result of dropping one unequipped inventory item."""
+    item_id: str
+    item_name: str
+
+
+@dataclass(frozen=True, slots=True)
 class InspectItemOutcome:
     """Read-only details for an item visible to the player."""
     item_id: str
@@ -264,6 +271,27 @@ class World:
         self.current_room.item_ids.remove(item_id)
         self.player.inventory.add(item_id)
         return self.items[item_id]
+
+    def drop(self, item_query: str) -> DropOutcome:
+        """Drop one unequipped inventory item into the current room."""
+        item_id = self._resolve_id(
+            item_query,
+            self.player.inventory.item_ids,
+            self.items,
+            kind="物品",
+        )
+        if item_id is None:
+            raise WorldRuleError("背包中没有该物品。")
+
+        item = self.items[item_id]
+        if self.equipped.hand == item_id or self.equipped.body == item_id:
+            raise WorldRuleError(f"{item.name} 正在装备中，请先卸下。")
+        if item_id in self.current_room.item_ids:
+            raise WorldRuleError(f"{item.name} 已在当前房间中。")
+
+        self.player.inventory.item_ids.remove(item_id)
+        self.current_room.item_ids.append(item_id)
+        return DropOutcome(item_id=item_id, item_name=item.name)
 
     def inspect_item(self, item_query: str) -> InspectItemOutcome:
         """Return details for an item in the current room or inventory.

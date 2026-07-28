@@ -4,6 +4,12 @@
 
 ### Added
 
+- Added `drop <item ID or name>` for moving an unequipped inventory item into
+  the current room, with typed `DropOutcome`, stable-ID/unique-name resolution,
+  and no save-v5 or content-contract change.
+- Added eleven focused drop tests for successful movement, failure invariance,
+  equipped hand/body rejection, dialogue preservation, CLI rendering, and
+  save/load round trips.
 - Added safe named local save slots through `save [slot]` and `load [slot]`.
   Default `default.json` behavior remains compatible; validated slot names cannot
   traverse paths or address Windows reserved device names, and save format remains v5.

@@ -13,6 +13,7 @@ HELP_TEXT = """可用指令：
   inspect <物品ID或名称> 查看当前房间或背包中的物品详情
   go <方向>             移动，例如 go north
   take <物品ID或名称>   拾取物品
+  drop <物品ID或名称>   放下背包中的未装备物品
   use <物品ID或名称>    使用消耗品
   equip <物品ID或名称>  装备物品
   unequip [hand|body]   卸下装备（默认 hand）
@@ -72,6 +73,8 @@ class CommandProcessor:
                 return self._go(arguments)
             if command == "take":
                 return self._take(arguments)
+            if command == "drop":
+                return self._drop(arguments)
             if command == "use":
                 return self._use(arguments)
             if command == "equip":
@@ -181,6 +184,12 @@ class CommandProcessor:
             return CommandResult("用法：take <物品ID或名称>")
         item = self.world.take(" ".join(arguments))
         return CommandResult(f"你拾取了 {item.name} ({item.id})。")
+
+    def _drop(self, arguments: list[str]) -> CommandResult:
+        if not arguments:
+            return CommandResult("用法：drop <物品ID或名称>")
+        outcome = self.world.drop(" ".join(arguments))
+        return CommandResult(f"你放下了 {outcome.item_name} ({outcome.item_id})。")
 
     def _inspect(self, arguments: list[str]) -> CommandResult:
         if not arguments:

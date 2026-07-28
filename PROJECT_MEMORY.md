@@ -20,18 +20,20 @@ stale.
 
 - Repository: `lore2mud`
 - Branch: `main`
-- Remote: `origin/main` 当前本地跟踪引用仍为 `6c13fca`；本次写入错误契约切片开始前，
-  Sol 审计基线 `2ecead1` 已比它领先两个提交。后续本地提交按项目负责人指示不自动推送，
-  恢复时仍须运行
+- Remote: 在本次 `drop` 切片开始前，`HEAD`、本地跟踪 `origin/main` 与直接查询的
+  `origin` 服务器 `main` 都是
+  `1936e913348d3d46278ffaae2cfabf6502020835`；此前“仍为 `6c13fca`、等待发布”的
+  交接叙述已过期。此切片仅做本地提交，未自动推送；恢复时仍须运行
   `git status --short --branch` 和 `git rev-list --left-right --count
   HEAD...origin/main` 检查实时状态。
-- Functional checkpoint: held-item exit gates, read-only `look` gate status, and
-  read-only visible-item inspection plus safe named local save slots and a
-  write-I/O error contract are implemented; always inspect the live working tree
-  before relying on this checkpoint.
+- Functional checkpoint: held-item exit gates, read-only `look` gate status,
+  read-only visible-item inspection, safe named local save slots, a write-I/O
+  error contract, and `drop` for unequipped inventory items are implemented;
+  always inspect the live working tree before relying on this checkpoint.
 - 2026-07-28 public-history cleanup baseline: `96de7b2`（现为 `eafe70e`
   的祖先）；任何后续历史操作前仍须重新检查实时远端。
-- 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励 + 可见物品查看 + 命名存档槽位 + 写入错误契约 已完成
+- 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励 + 可见物品查看 + 命名存档槽位 +
+  写入错误契约 + 丢弃物品 已完成
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
 - The private novel corpus and split chapters are outside the repository under:
@@ -39,13 +41,15 @@ stale.
 - The preprocessing pipeline is complete and verified; original source
   reconstruction matched in character count and SHA-256.
 - The game engine has versioned local save/load (v5), deterministic quest flow,
-  consumable items, hand+body equipment, branching NPC dialogue, and one typed
-  dialogue item-reward effect.
+  consumable items, hand+body equipment, item dropping, branching NPC dialogue,
+  and one typed dialogue item-reward effect.
 - No Agent should start background work automatically when the project is resumed.
 
 ## Verified facts
 
-- Full project suite: 389 tests passed (2026-07-28).
+- Full project suite: 400 tests passed (2026-07-28) after the `drop` slice.
+- `tests/test_drop.py`: 11 tests cover ID/name resolution, failure invariance,
+  equipped-item rejection, dialogue preservation, CLI text, and save/load.
 - `tests/test_save_slots.py`: 12 tests cover default compatibility, isolated named
   saves, invalid/path-like names, Windows device names, command grammar, load
   failure invariance, write-I/O translation, and non-I/O propagation.
@@ -96,9 +100,14 @@ stale.
 - `SaveLoadService.save()` now converts filesystem `OSError` from its write path
   into a chained `SaveLoadError`; `CommandProcessor.save` reports it normally.
   It does not catch non-I/O programming errors, and save v5 data remains unchanged.
-- Root independently reran 90 focused save/save-slot tests, the full 389-test
-  suite, history safety scan, compile, content validation, and real two-slot CLI
-  save/load smoke on 2026-07-28.
+- `World.drop()` resolves only items already in the player's inventory and moves a
+  valid, unequipped item to the current room. It rejects missing, ambiguous, or
+  hand/body-equipped items before mutation; room/inventory placement is already
+  covered by save v5 serialization and uniqueness validation.
+- Under the project owner's temporary GPT-5.6-terra exception, Terra self-audited
+  and executed this `drop` slice. It reran the 11 focused tests, all 400 tests,
+  history safety scan, compile, content validation, and a real drop/take CLI
+  smoke on 2026-07-28. This is not an independent GPT-5.6-sol acceptance.
 - The project owner provided a completed GPT-5.6-sol public-repository audit for
   baseline `2ecead1`, with a `CONDITIONAL GO`. It identified this write-I/O gap;
   the current slice closes it. The audit reported 43 dangling blobs without reading

@@ -4,7 +4,9 @@ _Last updated: 2026-07-28_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
-改编内容始终与通用代码、原创示例分离。
+改编内容始终与通用代码、原创示例分离。中期目标是在该引擎成熟后、保持私有素材
+不进入公开仓库的前提下，制作仅供项目负责人游玩的个人 MUD 试玩版；当前阶段只扩展
+通用引擎和原创示例。
 
 ## Current status
 装备系统已实现 hand 和 body 双槽位，存档格式为 v5。对话系统已实现——原创 NPC 老陈带有
@@ -12,10 +14,14 @@ _Last updated: 2026-07-28_
 门禁所需物品与持有状态。`inspect` 仅查看当前房间或背包内物品的稳定 ID 和描述，不改变
 任何运行时状态；新增 `save [槽位]` / `load [槽位]`，在默认 `default.json` 之外支持安全的
 命名本地存档槽位。写入端文件系统 `OSError` 现在会被 `SaveLoadService` 转换为带 cause 的
-`SaveLoadError`，CLI 能稳定返回失败文本；内容包仍为 v0.2.6、存档格式仍为 v5。生产安全门
-已扩展为当前 Git 候选与可达历史的双层检查。Sol 审计基线 `2ecead1` 已比本地
-`origin/main` 引用 `6c13fca` 领先两个提交；本地后续提交按项目负责人指示不自动推送。
-恢复时必须重新检查实时远端同步状态。
+`SaveLoadError`，CLI 能稳定返回失败文本。新增 `drop <物品ID或名称>`：仅将背包中未装备的
+物品放入当前房间，hand/body 装备必须先 `unequip`，以免隐式改变有效战斗属性。内容包仍为
+v0.2.6、存档格式仍为 v5；现有房间/背包序列化已覆盖丢弃后的物品位置。生产安全门已扩展为
+当前 Git 候选与可达历史的双层检查。2026-07-28 切片前，`HEAD`、`origin/main` 和直接查询的
+远端 `main` 都是 `1936e913348d3d46278ffaae2cfabf6502020835`，因此此前“仍为 `6c13fca`、
+尚待发布”的交接表述已确认过期。本地提交按项目负责人指示不自动推送；恢复时必须重新检查
+实时远端同步状态。本切片依项目负责人临时授权由 GPT-5.6-terra 自审并执行，不构成独立
+GPT-5.6-sol 验收。
 
 ## Completed
 
@@ -77,6 +83,9 @@ _Last updated: 2026-07-28_
 - 写入错误契约：`SaveLoadService.save()` 仅把 `_atomic_write()` 产生的文件系统 `OSError`
   转为带原始 cause 的 `SaveLoadError`；命令层据此返回“存档失败”文本。既有原子写入、
   临时文件清理和非 I/O 编程错误传播语义不变。
+- 丢弃物品：`World.drop()` 是唯一规则权威，按背包中稳定 ID 或唯一显示名解析物品；所有
+  校验完成后才从背包移动到当前房间。缺失、同名歧义、已装备 hand/body 物品均不改变运行时
+  状态；成功丢弃不结束活动对话，且 save v5 往返后可再次拾取。
 
 ## In progress
 
@@ -88,7 +97,10 @@ _Last updated: 2026-07-28_
 
 ## Verification
 
-- `python -m unittest discover -s tests -q` - 389 tests passed (2026-07-28).
+- `python -m unittest discover -s tests -v` - 400 tests passed (2026-07-28).
+- `python -m unittest tests.test_drop -v` - 11 tests passed (2026-07-28), covering
+  ID/name resolution, state invariance, equipped rejection, dialogue preservation,
+  CLI rendering, and save/load.
 - `python -m unittest tests.test_save_slots tests.test_save -v` - 90 tests
   passed (2026-07-28), including named-slot isolation, input safety, default
   compatibility, write-I/O translation, CLI text, and failure invariance.
@@ -100,8 +112,8 @@ _Last updated: 2026-07-28_
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `python -m lore2mud validate --content examples/original_demo` - passed (2026-07-28).
 - `git diff --check` - clean (2026-07-28).
-- 本次根级验证：90 项 save/save-slot 测试、完整 389 项测试、历史安全扫描、编译、
-  内容包校验和真实双槽位 CLI 试玩均通过（2026-07-28）。
+- 本次 Terra 自审验证：完整 400 项测试、历史安全扫描、编译、内容包校验和真实
+  `take → drop → look → take` CLI 试玩均通过（2026-07-28）；这不是独立 Sol 验收。
 
 ## Key paths
 
@@ -114,6 +126,8 @@ _Last updated: 2026-07-28_
 - `src/lore2mud/engine/save.py` - save/load service with safe local slot paths (format v5).
 - `src/lore2mud/engine/commands.py` - command processor with dialogue rendering.
 - `tests/test_inspect.py` - visible-item inspection state-invariance and round-trip coverage.
+- `tests/test_drop.py` - inventory-to-current-room drop, failure invariance, and
+  save/load coverage.
 - `tests/test_save_slots.py` - named-slot safety, isolation, and command coverage.
 - `src/lore2mud/content/loader.py` - schema-like and reference validation.
 - `src/lore2mud/cli.py` - CLI entry point with play/validate subcommands.
@@ -128,14 +142,17 @@ _Last updated: 2026-07-28_
 - The one-target-monster-per-quest constraint will need revisiting if shared-target
   quests are ever needed.
 - Dialogue grants only one typed item effect; quest triggers, experience effects,
-  generic effect dictionaries, item dropping and repeatable rewards remain out of scope.
+  generic effect dictionaries, and repeatable rewards remain out of scope.
+- `drop` can deliberately leave a gate item in the current room and therefore block
+  a gated exit until the player takes it again; this is explicit player intent.
+  Equipped items are intentionally rejected instead of silently changing combat stats.
 - Private corpus summaries, canon facts and game adaptation content have not been
   generated or reviewed.
 - The provider's privacy claim about model visibility is not independently verified;
   do not send the entire corpus to a cloud model by default.
 - History rewriting can leave Git hosting caches and pre-existing external clones with
   old objects; repository checks only cover currently reachable refs.
-- 项目负责人提供的 GPT-5.6-sol 审计已在 `2ecead1` 上完成，结论为 `CONDITIONAL GO`：
-  当前写入 I/O 错误契约已补齐；审计报告的 43 个 dangling blob 未读取内容，也不受可达
-  历史安全扫描覆盖。GitHub 服务器状态尚未刷新，发布前必须重新核对远端；若远端变动，
-  停止发布并重新审查。
+- 项目负责人提供的历史 GPT-5.6-sol 审计已在 `2ecead1` 上完成，结论为 `CONDITIONAL GO`：
+  写入 I/O 错误契约已补齐；审计报告的 43 个 dangling blob 未读取内容，也不受可达历史
+  安全扫描覆盖。当前 `drop` 切片仅在项目负责人授权的 Terra 临时流程下自审，不得表述为
+  独立 Sol 验收；后续发布前仍须重新核对远端，若远端变动则停止发布并重新审查。

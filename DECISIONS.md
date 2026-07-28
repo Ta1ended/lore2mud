@@ -280,3 +280,23 @@
 - Evidence: `src/lore2mud/engine/save.py`, `tests/test_save_slots.py`,
   `tests/test_save.py`, GPT-5.6-sol audit report supplied on 2026-07-28.
 - Supersedes: None.
+
+## DEC-0015: Drop only unequipped inventory items into the current room
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: A playable MUD needs a reversible way to move items out of the
+  backpack. Allowing a hand/body-equipped item to be dropped directly would
+  silently change effective combat attributes and make the state transition
+  harder to understand.
+- Decision: Add `World.drop()` and `drop <物品ID或名称>`. Resolve only from the
+  player's inventory using existing stable-ID and unique-display-name rules;
+  reject a missing, ambiguous, or equipped item before mutation. On success,
+  remove the ID from the inventory and append it to the current room. The player
+  must explicitly `unequip` before dropping an equipped item.
+- Consequences: The command reuses existing room/inventory save-v5 placement and
+  uniqueness rules, so it needs no format or content-pack change. Dropping a
+  gate item can deliberately remove access until the player takes it again.
+- Evidence: `src/lore2mud/engine/world.py`, `src/lore2mud/engine/commands.py`,
+  `tests/test_drop.py`, `examples/original_demo/README.md`.
+- Supersedes: None.
