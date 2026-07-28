@@ -22,7 +22,7 @@ class CommandScenarioTests(unittest.TestCase):
         result = self.commands.execute("look")
         self.assertIn("余烬渡台", result.text)
         self.assertIn("room_ember_wharf", result.text)
-        self.assertIn("item_spark_lantern", result.text)
+        self.assertIn("微火提灯", result.text)
         self.assertIn("east", result.text)
 
     def test_go_moves_only_through_existing_exit(self) -> None:
@@ -39,10 +39,10 @@ class CommandScenarioTests(unittest.TestCase):
         self.assertIn("微火提灯", result.text)
         self.assertNotIn(
             "item_spark_lantern",
-            self.world.current_room.item_ids,
+            [s.item_id for s in self.world.current_room.item_stacks],
         )
         self.assertEqual(
-            self.world.player.inventory.item_ids,
+            [s.item_id for s in self.world.player.inventory.stacks],
             ["item_spark_lantern"],
         )
 

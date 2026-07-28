@@ -5,7 +5,12 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from lore2mud.combat.service import CombatRound, resolve_combat_round
-from lore2mud.content.models import ContentPack, DialogueDefinition, QuestDefinition
+from lore2mud.content.models import (
+    ContentPack,
+    DialogueDefinition,
+    ItemStackDefinition,
+    QuestDefinition,
+)
 from lore2mud.engine.models import (
     Character,
     DialogueState,
@@ -14,7 +19,7 @@ from lore2mud.engine.models import (
     QuestState,
     Room,
 )
-from lore2mud.inventory.models import EquippedItems, Inventory, Item
+from lore2mud.inventory.models import EquippedItems, Inventory, Item, ItemStack
 from lore2mud.progression.service import LevelGain, grant_experience
 
 
@@ -36,6 +41,15 @@ class LootOutcome:
     """One item placed in the room after a monster defeat."""
     item_id: str
     item_name: str
+    quantity: int
+
+
+@dataclass(frozen=True, slots=True)
+class TakeOutcome:
+    """Result of taking items from a room."""
+    item_id: str
+    item_name: str
+    quantity: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,14 +57,16 @@ class UseOutcome:
     """Result of using a consumable item."""
     item_id: str
     item_name: str
+    quantity: int
     healed_amount: int
 
 
 @dataclass(frozen=True, slots=True)
 class DropOutcome:
-    """Result of dropping one unequipped inventory item."""
+    """Result of dropping items into the current room."""
     item_id: str
     item_name: str
+    quantity: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -99,6 +115,7 @@ class DialogueItemGrant:
     """One item awarded atomically by a dialogue option."""
     item_id: str
     item_name: str
+    quantity: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -132,6 +149,12 @@ class RecoverOutcome:
 
 
 _DEAD_ERROR = "你已经倒下了。使用 recover 恢复，或 load 读档。"
+
+
+def _validate_quantity(quantity: int) -> None:
+    """Reject non-positive-integer quantities at the World layer."""
+    if isinstance(quantity, bool) or not isinstance(quantity, int) or quantity < 1:
+        raise WorldRuleError("数量必须为正整数。")
 
 
 @dataclass(slots=True)
@@ -178,7 +201,10 @@ class World:
                 name=room.name,
                 description=room.description,
                 exits=dict(room.exits),
-                item_ids=list(room.item_ids),
+                item_stacks=[
+                    ItemStack(item_id=s.item_id, quantity=s.quantity)
+                    for s in room.item_stacks
+                ],
                 monster_ids=list(room.monster_ids),
             )
             for room in pack.rooms.values()
@@ -192,7 +218,7 @@ class World:
                 attack=monster.attack,
                 defense=monster.defense,
                 experience_reward=monster.experience_reward,
-                loot_item_id=monster.loot_item_id,
+                loot_item=monster.loot_item,
             )
             for monster in pack.monsters.values()
         }
@@ -205,6 +231,7 @@ class World:
                 slot=item.slot,
                 attack_bonus=item.attack_bonus,
                 defense_bonus=item.defense_bonus,
+                stack_limit=item.stack_limit,
             )
             for item in pack.items.values()
         }
@@ -241,7 +268,6 @@ class World:
             characters=characters,
             dialogue_defs=dialogue_defs,
         )
-        # Auto-accept quests triggered in the start room.
         world._accept_quests_for_room(pack.start_room_id)
         return world
 
@@ -290,7 +316,7 @@ class World:
             raise WorldRuleError(f"这里不能向 {direction} 移动。")
         required_item_id = exit_def.required_item_id
         if required_item_id is not None:
-            if required_item_id not in self.player.inventory.item_ids:
+            if not self.player.inventory.has_item(required_item_id):
                 item = self.items.get(required_item_id)
                 item_name = item.name if item is not None else "未知物品"
                 raise WorldRuleError(
@@ -302,61 +328,92 @@ class World:
         self.active_dialogue = None
         return self.current_room
 
-    def take(self, item_query: str) -> Item:
+    def take(self, item_query: str, quantity: int = 1) -> TakeOutcome:
         self._require_alive()
-        item_id = self._resolve_id(
-            item_query,
-            self.current_room.item_ids,
-            self.items,
-            kind="物品",
+        _validate_quantity(quantity)
+        item_id = self._resolve_stack_id(
+            item_query, self.current_room.item_stacks, kind="物品"
         )
         if item_id is None:
             raise WorldRuleError(f"这里没有 {item_query}。")
-        if not self.player.inventory.can_add:
-            raise WorldRuleError("背包已经满了。")
 
-        self.current_room.item_ids.remove(item_id)
-        self.player.inventory.add(item_id)
-        return self.items[item_id]
+        src_stack = self.current_room.find_stack(item_id)
+        assert src_stack is not None
+        if src_stack.quantity < quantity:
+            raise WorldRuleError(
+                f"数量不足：这里只有 {src_stack.quantity} 个。"
+            )
 
-    def drop(self, item_query: str) -> DropOutcome:
-        """Drop one unequipped inventory item into the current room."""
+        item = self.items[item_id]
+        stack_limit = item.stack_limit
+        existing = self.player.inventory.find_stack(item_id)
+        if existing is not None:
+            if existing.quantity + quantity > stack_limit:
+                raise WorldRuleError(f"超过栈上限 ({stack_limit})。")
+        else:
+            if self.player.inventory.stack_count >= self.player.inventory.capacity:
+                raise WorldRuleError("背包已经满了。")
+
+        src_stack.quantity -= quantity
+        if src_stack.quantity == 0:
+            self.current_room.item_stacks.remove(src_stack)
+        self.player.inventory.add_stack(item_id, quantity)
+        return TakeOutcome(item_id=item_id, item_name=item.name, quantity=quantity)
+
+    def drop(self, item_query: str, quantity: int = 1) -> DropOutcome:
+        """Drop items from inventory into the current room."""
         self._require_alive()
-        item_id = self._resolve_id(
-            item_query,
-            self.player.inventory.item_ids,
-            self.items,
-            kind="物品",
+        _validate_quantity(quantity)
+        item_id = self._resolve_stack_id(
+            item_query, self.player.inventory.stacks, kind="物品"
         )
         if item_id is None:
             raise WorldRuleError("背包中没有该物品。")
 
+        inv_stack = self.player.inventory.find_stack(item_id)
+        assert inv_stack is not None
+        if inv_stack.quantity < quantity:
+            raise WorldRuleError(
+                f"数量不足：背包中只有 {inv_stack.quantity} 个。"
+            )
+
         item = self.items[item_id]
         if self.equipped.hand == item_id or self.equipped.body == item_id:
             raise WorldRuleError(f"{item.name} 正在装备中，请先卸下。")
-        if item_id in self.current_room.item_ids:
-            raise WorldRuleError(f"{item.name} 已在当前房间中。")
 
-        self.player.inventory.item_ids.remove(item_id)
-        self.current_room.item_ids.append(item_id)
-        return DropOutcome(item_id=item_id, item_name=item.name)
+        stack_limit = item.stack_limit
+        existing_room = self.current_room.find_stack(item_id)
+        if existing_room is not None:
+            if existing_room.quantity + quantity > stack_limit:
+                raise WorldRuleError(f"超过栈上限 ({stack_limit})。")
+
+        inv_stack.quantity -= quantity
+        if inv_stack.quantity == 0:
+            self.player.inventory.stacks.remove(inv_stack)
+        if existing_room is not None:
+            existing_room.quantity += quantity
+        else:
+            self.current_room.item_stacks.append(
+                ItemStack(item_id=item_id, quantity=quantity)
+            )
+        return DropOutcome(item_id=item_id, item_name=item.name, quantity=quantity)
 
     def inspect_item(self, item_query: str) -> InspectItemOutcome:
-        """Return details for an item in the current room or inventory.
+        """Return details for an item in the current room or inventory."""
+        available: list[tuple[str, int]] = []
+        seen: set[str] = set()
+        for s in self.current_room.item_stacks:
+            if s.item_id not in seen:
+                available.append((s.item_id, s.quantity))
+                seen.add(s.item_id)
+        for s in self.player.inventory.stacks:
+            if s.item_id not in seen:
+                available.append((s.item_id, s.quantity))
+                seen.add(s.item_id)
 
-        This query is deliberately read-only.  Items elsewhere in the world,
-        including unawarded dialogue rewards, are not visible through it.
-        """
-        available_item_ids = list(self.current_room.item_ids)
-        for item_id in self.player.inventory.item_ids:
-            if item_id not in available_item_ids:
-                available_item_ids.append(item_id)
-
-        item_id = self._resolve_id(
-            item_query,
-            available_item_ids,
-            self.items,
-            kind="物品",
+        available_ids = [item_id for item_id, _ in available]
+        item_id = self._resolve_id_from_ids(
+            item_query, available_ids, self.items, kind="物品"
         )
         if item_id is None:
             raise WorldRuleError(f"这里或背包中没有 {item_query}。")
@@ -368,22 +425,22 @@ class World:
             description=item.description,
         )
 
-    def use(self, item_query: str) -> UseOutcome:
-        """Use a consumable item from the player's inventory.
-
-        Raises WorldRuleError for non-usable items, missing items,
-        dead player, or full HP.
-        """
+    def use(self, item_query: str, quantity: int = 1) -> UseOutcome:
+        """Use consumable items from the player's inventory."""
         self._require_alive()
-        # Resolve item from inventory.
-        item_id = self._resolve_id(
-            item_query,
-            self.player.inventory.item_ids,
-            self.items,
-            kind="物品",
+        _validate_quantity(quantity)
+        item_id = self._resolve_stack_id(
+            item_query, self.player.inventory.stacks, kind="物品"
         )
         if item_id is None:
             raise WorldRuleError("背包中没有该物品。")
+
+        inv_stack = self.player.inventory.find_stack(item_id)
+        assert inv_stack is not None
+        if inv_stack.quantity < quantity:
+            raise WorldRuleError(
+                f"数量不足：背包中只有 {inv_stack.quantity} 个。"
+            )
 
         item = self.items[item_id]
         if self.equipped.hand == item_id or self.equipped.body == item_id:
@@ -395,26 +452,31 @@ class World:
         if missing_hp <= 0:
             raise WorldRuleError("你已经满血了。")
 
-        actual = min(item.heal_amount, missing_hp)
-        self.player.hp += actual
-        self.player.inventory.item_ids.remove(item_id)
+        actual_heal = min(quantity * item.heal_amount, missing_hp)
+        self.player.hp += actual_heal
+        inv_stack.quantity -= quantity
+        if inv_stack.quantity == 0:
+            self.player.inventory.stacks.remove(inv_stack)
         return UseOutcome(
             item_id=item_id,
             item_name=item.name,
-            healed_amount=actual,
+            quantity=quantity,
+            healed_amount=actual_heal,
         )
 
     def equip(self, item_query: str) -> EquipOutcome:
         """Equip an item from the player's inventory."""
         self._require_alive()
-        item_id = self._resolve_id(
-            item_query,
-            self.player.inventory.item_ids,
-            self.items,
-            kind="物品",
+        item_id = self._resolve_stack_id(
+            item_query, self.player.inventory.stacks, kind="物品"
         )
         if item_id is None:
             raise WorldRuleError("背包中没有该物品。")
+
+        inv_stack = self.player.inventory.find_stack(item_id)
+        assert inv_stack is not None
+        if inv_stack.quantity != 1:
+            raise WorldRuleError("装备物品数量必须为 1。")
 
         item = self.items[item_id]
 
@@ -480,7 +542,7 @@ class World:
 
     def attack(self, monster_query: str) -> AttackOutcome:
         self._require_alive()
-        monster_id = self._resolve_id(
+        monster_id = self._resolve_id_from_ids(
             monster_query,
             self.current_room.monster_ids,
             self.monsters,
@@ -490,18 +552,26 @@ class World:
             raise WorldRuleError(f"这里没有可攻击的 {monster_query}。")
 
         monster = self.monsters[monster_id]
-        loot_item: Item | None = None
-        if monster.loot_item_id is not None:
-            loot_item = self.items.get(monster.loot_item_id)
-            if loot_item is None:
-                raise WorldRuleError(
-                    f"怪物 {monster.name} 的战利品不存在："
-                    f"{monster.loot_item_id}"
-                )
-            if self._is_item_placed(loot_item.id):
-                raise WorldRuleError(
-                    f"怪物 {monster.name} 的战利品已在世界中，无法继续战斗。"
-                )
+
+        # Loot preflight BEFORE combat
+        if monster.loot_item is not None:
+            loot_def = monster.loot_item
+            loot_item_id = loot_def.item_id
+            loot_qty = loot_def.quantity
+            stack_limit = self.items[loot_item_id].stack_limit
+
+            if stack_limit == 1:
+                if self._is_item_placed_anywhere(loot_item_id):
+                    raise WorldRuleError(
+                        f"战利品无法放置：{self.items[loot_item_id].name} 已在世界中。"
+                    )
+            else:
+                existing = self.current_room.find_stack(loot_item_id)
+                if existing is not None:
+                    if existing.quantity + loot_qty > stack_limit:
+                        raise WorldRuleError(
+                            f"战利品无法放置：超过栈上限 ({stack_limit})。"
+                        )
 
         combat = resolve_combat_round(
             self.player, monster,
@@ -516,11 +586,21 @@ class World:
             self.current_room.monster_ids.remove(monster_id)
             level_gains.extend(grant_experience(self.player, monster.experience_reward))
 
-            if loot_item is not None:
-                self.current_room.item_ids.append(loot_item.id)
+            if monster.loot_item is not None:
+                loot_def = monster.loot_item
+                loot_item_id = loot_def.item_id
+                loot_qty = loot_def.quantity
+                existing = self.current_room.find_stack(loot_item_id)
+                if existing is not None:
+                    existing.quantity += loot_qty
+                else:
+                    self.current_room.item_stacks.append(
+                        ItemStack(item_id=loot_item_id, quantity=loot_qty)
+                    )
                 loot_outcome = LootOutcome(
-                    item_id=loot_item.id,
-                    item_name=loot_item.name,
+                    item_id=loot_item_id,
+                    item_name=self.items[loot_item_id].name,
+                    quantity=loot_qty,
                 )
 
             # Check if this monster completes any accepted quest.
@@ -558,7 +638,7 @@ class World:
             c.id for c in self.characters.values()
             if c.room_id == self.player.room_id
         ]
-        character_id = self._resolve_id(
+        character_id = self._resolve_id_from_ids(
             character_query, room_char_ids, self.characters, kind="角色"
         )
         if character_id is None:
@@ -635,24 +715,30 @@ class World:
         option = node.options[index - 1]
         character = self.characters[dialogue.character_id]
         granted_item: DialogueItemGrant | None = None
-        if option.grant_item_id is not None:
-            item = self.items.get(option.grant_item_id)
+        if option.grant_item is not None:
+            grant_def = option.grant_item
+            item = self.items.get(grant_def.item_id)
             if item is None:
                 raise WorldRuleError(
-                    f"对话奖励物品 {option.grant_item_id!r} 不存在。"
+                    f"对话奖励物品 {grant_def.item_id!r} 不存在。"
                 )
             if item.heal_amount is not None:
                 raise WorldRuleError("对话奖励不能是消耗品。")
-            if item.id in self.player.inventory.item_ids:
+            grant_qty = grant_def.quantity
+            if item.stack_limit == 1 and self.player.inventory.has_item(item.id):
                 raise WorldRuleError(f"你已经拥有 {item.name}。")
-            if not self.player.inventory.can_add:
+            if not self.player.inventory.can_add_stack(
+                item.id, grant_qty, item.stack_limit
+            ):
                 raise WorldRuleError("背包已满，无法获得对话奖励。")
-            granted_item = DialogueItemGrant(item.id, item.name)
+            granted_item = DialogueItemGrant(item.id, item.name, grant_qty)
 
         # All reward checks completed; no failure below this line may leave
         # dialogue state changed without also granting the item.
         if granted_item is not None:
-            self.player.inventory.add(granted_item.item_id)
+            self.player.inventory.add_stack(
+                granted_item.item_id, granted_item.quantity
+            )
 
         if option.next_node_id is None:
             self.active_dialogue = None
@@ -720,14 +806,30 @@ class World:
                 return dialogue
         return None
 
-    def _is_item_placed(self, item_id: str) -> bool:
-        """Return whether an item already has a runtime placement."""
-        if item_id in self.player.inventory.item_ids:
+    def _is_item_placed_anywhere(self, item_id: str) -> bool:
+        """Return whether a non-stackable item has any runtime placement."""
+        if self.player.inventory.has_item(item_id):
             return True
-        return any(item_id in room.item_ids for room in self.rooms.values())
+        return any(
+            room.find_stack(item_id) is not None
+            for room in self.rooms.values()
+        )
+
+    def _resolve_stack_id(
+        self,
+        query: str,
+        stacks: list[ItemStack],
+        *,
+        kind: str,
+    ) -> str | None:
+        """Resolve item ID from a list of ItemStack by ID or name."""
+        available_ids = [s.item_id for s in stacks]
+        return self._resolve_id_from_ids(
+            query, available_ids, self.items, kind=kind
+        )
 
     @staticmethod
-    def _resolve_id(
+    def _resolve_id_from_ids(
         query: str,
         available_ids: list[str],
         entities: dict[str, object],

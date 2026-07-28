@@ -17,6 +17,7 @@ from lore2mud.content.models import (
     DialogueOption,
     ExitDefinition,
     ItemDefinition,
+    ItemStackDefinition,
     MonsterDefinition,
     PlayerDefaults,
     QuestDefinition,
@@ -290,7 +291,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 "name",
                 "description",
                 "exits",
-                "item_ids",
+                "item_stacks",
                 "monster_ids",
                 "canon_ref",
                 "adaptation_notes",
@@ -359,15 +360,34 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 )
                 continue
             exits[normalized_direction] = exit_def
+        item_stacks_raw = obj.get("item_stacks", [])
+        item_stacks_list: list[ItemStackDefinition] = []
+        if isinstance(item_stacks_raw, list):
+            for si, stack_obj in enumerate(item_stacks_raw):
+                sloc = f"{location}.item_stacks[{si}]"
+                if not isinstance(stack_obj, dict):
+                    validator.issues.append(f"{sloc} 必须是对象")
+                    continue
+                validator.keys(stack_obj, {"item_id", "quantity"}, sloc)
+                sid_raw = stack_obj.get("item_id")
+                if not isinstance(sid_raw, str) or not sid_raw.strip():
+                    validator.issues.append(f"{sloc}.item_id 必须是非空字符串")
+                    continue
+                sid = validator.stable_id(sid_raw, f"{sloc}.item_id")
+                sqty = validator.integer(
+                    stack_obj, "quantity", sloc, minimum=1, default=1,
+                )
+                item_stacks_list.append(ItemStackDefinition(item_id=sid, quantity=sqty))
+        else:
+            validator.issues.append(f"{location}.item_stacks 必须是数组")
+
         room_defs.append(
             RoomDefinition(
                 id=entity_id,
                 name=validator.text(obj, "name", location),
                 description=validator.text(obj, "description", location),
                 exits=exits,
-                item_ids=validator.string_list(
-                    obj.get("item_ids", []), f"{location}.item_ids"
-                ),
+                item_stacks=tuple(item_stacks_list),
                 monster_ids=validator.string_list(
                     obj.get("monster_ids", []), f"{location}.monster_ids"
                 ),
@@ -388,6 +408,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 "slot",
                 "attack_bonus",
                 "defense_bonus",
+                "stack_limit",
                 "canon_ref",
                 "adaptation_notes",
             },
@@ -458,6 +479,17 @@ def load_content_pack(path: str | Path) -> ContentPack:
             validator.issues.append(
                 f"{location}: body 槽不可指定 attack_bonus"
             )
+        # stack_limit: optional; default 1.
+        stack_limit = 1
+        if "stack_limit" in obj:
+            stack_limit = validator.integer(
+                obj, "stack_limit", location, minimum=1, default=1,
+            )
+        # Equipment items must have stack_limit == 1.
+        if slot is not None and stack_limit != 1:
+            validator.issues.append(
+                f"{location}: 可装备物品的 stack_limit 必须为 1"
+            )
         item_defs.append(
             ItemDefinition(
                 id=entity_id,
@@ -467,6 +499,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 slot=slot,
                 attack_bonus=attack_bonus,
                 defense_bonus=defense_bonus,
+                stack_limit=stack_limit,
                 metadata=_metadata(obj, location, validator),
             )
         )
@@ -487,7 +520,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 "attack",
                 "defense",
                 "experience_reward",
-                "loot_item_id",
+                "loot_item",
                 "canon_ref",
                 "adaptation_notes",
             },
@@ -501,19 +534,23 @@ def load_content_pack(path: str | Path) -> ContentPack:
             validator.text(obj, "room_id", location),
             f"{location}.room_id",
         )
-        loot_item_id: str | None = None
-        if "loot_item_id" in obj:
-            raw_loot_item_id = obj["loot_item_id"]
-            if (
-                isinstance(raw_loot_item_id, str)
-                and raw_loot_item_id.strip()
-            ):
-                loot_item_id = validator.stable_id(
-                    raw_loot_item_id,
-                    f"{location}.loot_item_id",
-                )
-            else:
-                validator.text(obj, "loot_item_id", location)
+        loot_item: ItemStackDefinition | None = None
+        if "loot_item" in obj:
+            raw_loot = obj["loot_item"]
+            if isinstance(raw_loot, dict):
+                loot_loc = f"{location}.loot_item"
+                validator.keys(raw_loot, {"item_id", "quantity"}, loot_loc)
+                loot_id_raw = raw_loot.get("item_id")
+                if isinstance(loot_id_raw, str) and loot_id_raw.strip():
+                    loot_id = validator.stable_id(loot_id_raw, f"{loot_loc}.item_id")
+                    loot_qty = validator.integer(
+                        raw_loot, "quantity", loot_loc, minimum=1, default=1,
+                    )
+                    loot_item = ItemStackDefinition(item_id=loot_id, quantity=loot_qty)
+                else:
+                    validator.issues.append(f"{loot_loc}.item_id 必须是非空字符串")
+            elif raw_loot is not None:
+                validator.issues.append(f"{location}.loot_item 必须是对象或省略")
         monster_defs.append(
             MonsterDefinition(
                 id=entity_id,
@@ -536,7 +573,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                     minimum=0,
                     default=0,
                 ),
-                loot_item_id=loot_item_id,
+                loot_item=loot_item,
                 metadata=_metadata(obj, location, validator),
             )
         )
@@ -689,7 +726,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 opt_obj = validator.object(opt_obj, oloc)
                 validator.keys(
                     opt_obj,
-                    {"id", "text", "next_node_id", "grant_item_id"},
+                    {"id", "text", "next_node_id", "grant_item"},
                     oloc,
                 )
                 oid = validator.stable_id(
@@ -706,19 +743,23 @@ def load_content_pack(path: str | Path) -> ContentPack:
                         f"{oloc}.next_node_id 必须是非空字符串或 null"
                     )
                     next_id = None
-                grant_item_id: str | None = None
-                if "grant_item_id" in opt_obj:
-                    raw_grant_item_id = opt_obj["grant_item_id"]
-                    if (
-                        isinstance(raw_grant_item_id, str)
-                        and raw_grant_item_id.strip()
-                    ):
-                        grant_item_id = validator.stable_id(
-                            raw_grant_item_id,
-                            f"{oloc}.grant_item_id",
-                        )
-                    else:
-                        validator.text(opt_obj, "grant_item_id", oloc)
+                grant_item: ItemStackDefinition | None = None
+                if "grant_item" in opt_obj:
+                    raw_gi = opt_obj["grant_item"]
+                    if isinstance(raw_gi, dict):
+                        gi_loc = f"{oloc}.grant_item"
+                        validator.keys(raw_gi, {"item_id", "quantity"}, gi_loc)
+                        gi_id_raw = raw_gi.get("item_id")
+                        if isinstance(gi_id_raw, str) and gi_id_raw.strip():
+                            gi_id = validator.stable_id(gi_id_raw, f"{gi_loc}.item_id")
+                            gi_qty = validator.integer(
+                                raw_gi, "quantity", gi_loc, minimum=1, default=1,
+                            )
+                            grant_item = ItemStackDefinition(item_id=gi_id, quantity=gi_qty)
+                        else:
+                            validator.issues.append(f"{gi_loc}.item_id 必须是非空字符串")
+                    elif raw_gi is not None:
+                        validator.issues.append(f"{oloc}.grant_item 必须是对象或省略")
                 if oid in opt_ids_seen:
                     validator.issues.append(f"{nloc} 选项 ID 重复：{oid}")
                 opt_ids_seen.add(oid)
@@ -727,7 +768,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                         id=oid,
                         text=otxt,
                         next_node_id=next_id,
-                        grant_item_id=grant_item_id,
+                        grant_item=grant_item,
                     )
                 )
 
@@ -771,8 +812,11 @@ def load_content_pack(path: str | Path) -> ContentPack:
             f"pack.json.start_room_id 引用了不存在的房间：{start_room_id}"
         )
 
-    item_placements: dict[str, str] = {}
+    # --- Cross-reference validation with stackable/non-stackable rules ---
+    # Build item_id → list of source descriptions for conflict detection.
+    item_sources: dict[str, list[str]] = {}  # item_id → [source descriptions]
     monster_placements: dict[str, str] = {}
+
     for room in rooms.values():
         for direction, exit_def in room.exits.items():
             if exit_def.target_room_id not in rooms:
@@ -788,18 +832,32 @@ def load_content_pack(path: str | Path) -> ContentPack:
                     f"房间 {room.id} 的出口 {direction} 所需物品不存在："
                     f"{exit_def.required_item_id}"
                 )
-        for item_id in room.item_ids:
-            if item_id not in items:
+        seen_in_room: set[str] = set()
+        for stack_def in room.item_stacks:
+            iid = stack_def.item_id
+            if iid not in items:
                 validator.issues.append(
-                    f"房间 {room.id} 引用了不存在的物品：{item_id}"
+                    f"房间 {room.id} 引用了不存在的物品：{iid}"
                 )
-            elif item_id in item_placements:
+                continue
+            if iid in seen_in_room:
                 validator.issues.append(
-                    f"物品 {item_id} 同时放置在 {item_placements[item_id]} "
-                    f"和 {room.id}"
+                    f"房间 {room.id} 包含重复物品栈：{iid}"
                 )
-            else:
-                item_placements[item_id] = room.id
+            seen_in_room.add(iid)
+            # Check quantity <= stack_limit
+            item_def = items[iid]
+            if stack_def.quantity > item_def.stack_limit:
+                validator.issues.append(
+                    f"房间 {room.id} 物品 {iid} 数量 {stack_def.quantity} "
+                    f"超过栈上限 ({item_def.stack_limit})"
+                )
+            if item_def.stack_limit == 1 and stack_def.quantity != 1:
+                validator.issues.append(
+                    f"房间 {room.id} 物品 {iid} stack_limit=1 时数量必须为 1"
+                )
+            item_sources.setdefault(iid, []).append(f"房间 {room.id}")
+
         for monster_id in room.monster_ids:
             if monster_id not in monsters:
                 validator.issues.append(
@@ -824,26 +882,38 @@ def load_content_pack(path: str | Path) -> ContentPack:
             validator.issues.append(
                 f"怪物 {monster.id} 的 room_id 与房间 monster_ids 不一致"
             )
-        loot_item_id = monster.loot_item_id
-        if loot_item_id is None:
+        if monster.loot_item is None:
             continue
-        loot_item_monsters.setdefault(loot_item_id, []).append(monster.id)
-        if loot_item_id not in items:
+        loot_def = monster.loot_item
+        loot_item_monsters.setdefault(loot_def.item_id, []).append(monster.id)
+        if loot_def.item_id not in items:
             validator.issues.append(
-                f"怪物 {monster.id} 的 loot_item_id 引用了不存在的物品："
-                f"{loot_item_id}"
+                f"怪物 {monster.id} 的 loot_item 引用了不存在的物品："
+                f"{loot_def.item_id}"
             )
-        elif loot_item_id in item_placements:
+            continue
+        item_def = items[loot_def.item_id]
+        if loot_def.quantity > item_def.stack_limit:
             validator.issues.append(
-                f"怪物 {monster.id} 的 loot_item_id 物品已放置在房间 "
-                f"{item_placements[loot_item_id]}：{loot_item_id}"
+                f"怪物 {monster.id} 的 loot_item 数量 {loot_def.quantity} "
+                f"超过栈上限 ({item_def.stack_limit})"
             )
+        if item_def.stack_limit == 1 and loot_def.quantity != 1:
+            validator.issues.append(
+                f"怪物 {monster.id} 的 loot_item {loot_def.item_id} "
+                f"stack_limit=1 时数量必须为 1"
+            )
+        item_sources.setdefault(loot_def.item_id, []).append(
+            f"怪物 {monster.id} loot"
+        )
+
     for character in characters.values():
         if character.room_id not in rooms:
             validator.issues.append(
                 f"角色 {character.id} 的 room_id 引用了不存在的房间："
                 f"{character.room_id}"
             )
+
     granted_item_options: dict[str, list[str]] = {}
     for dialogue in dialogues.values():
         if dialogue.character_id not in characters:
@@ -853,45 +923,50 @@ def load_content_pack(path: str | Path) -> ContentPack:
             )
         for node in dialogue.nodes.values():
             for option in node.options:
-                grant_item_id = option.grant_item_id
-                if grant_item_id is None:
+                gi = option.grant_item
+                if gi is None:
                     continue
                 option_location = (
                     f"对话 {dialogue.id} 节点 {node.id} 选项 {option.id}"
                 )
-                granted_item_options.setdefault(grant_item_id, []).append(
+                granted_item_options.setdefault(gi.item_id, []).append(
                     option_location
                 )
-                item = items.get(grant_item_id)
+                item = items.get(gi.item_id)
                 if item is None:
                     validator.issues.append(
-                        f"{option_location} 的 grant_item_id 引用了不存在的物品："
-                        f"{grant_item_id}"
+                        f"{option_location} 的 grant_item 引用了不存在的物品："
+                        f"{gi.item_id}"
                     )
                     continue
                 if item.heal_amount is not None:
                     validator.issues.append(
-                        f"{option_location} 的 grant_item_id 不能引用消耗品："
-                        f"{grant_item_id}"
+                        f"{option_location} 的 grant_item 不能引用消耗品："
+                        f"{gi.item_id}"
                     )
-                if grant_item_id in item_placements:
+                if gi.quantity > item.stack_limit:
                     validator.issues.append(
-                        f"{option_location} 的 grant_item_id 物品已放置在房间 "
-                        f"{item_placements[grant_item_id]}：{grant_item_id}"
+                        f"{option_location} 的 grant_item 数量 {gi.quantity} "
+                        f"超过栈上限 ({item.stack_limit})"
                     )
-    for item_id, option_locations in granted_item_options.items():
-        if len(option_locations) > 1:
+                if item.stack_limit == 1 and gi.quantity != 1:
+                    validator.issues.append(
+                        f"{option_location} 的 grant_item {gi.item_id} "
+                        f"stack_limit=1 时数量必须为 1"
+                    )
+                item_sources.setdefault(gi.item_id, []).append(option_location)
+
+    # Non-stackable (stack_limit==1) cross-source conflict detection.
+    for item_id, sources in item_sources.items():
+        if len(sources) > 1 and items[item_id].stack_limit == 1:
             validator.issues.append(
-                f"物品 {item_id} 被多个对话选项奖励：{option_locations}"
+                f"stack_limit=1 的物品 {item_id} 被多个来源引用：{sources}"
             )
+
     for item_id, monster_ids in loot_item_monsters.items():
         if len(monster_ids) > 1:
             validator.issues.append(
                 f"物品 {item_id} 被多个怪物作为战利品：{sorted(monster_ids)}"
-            )
-        if item_id in granted_item_options:
-            validator.issues.append(
-                f"物品 {item_id} 不能同时作为怪物战利品和对话奖励"
             )
     # Track quest→monster mapping for duplicate target check
     quest_target_map: dict[str, list[str]] = {}

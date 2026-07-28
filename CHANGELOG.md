@@ -10,6 +10,26 @@
 
 ### Added
 
+- Added typed item stacks: frozen `ItemStackDefinition` in content layer,
+  mutable `ItemStack` in runtime. `ItemDefinition.stack_limit` field (default 1).
+  Rooms, inventory, loot, and dialogue rewards use typed stacks.
+- Added optional quantity to `take`, `drop`, and `use` commands (suffix syntax:
+  `take <item> [qty]`). Default quantity is 1. Numeric style validation rejects
+  0, negative, signed, float, hex, binary, octal, inf/nan.
+- Added loot preflight in `World.attack()`: combat fails entirely if loot
+  cannot be placed (stack overflow or non-stackable duplicate).
+- Upgraded save format to version 6 with `inventory_stacks` and `item_stacks`
+  fields (list of `{item_id, quantity}` objects). v5 saves explicitly rejected.
+- Upgraded content pack to version 0.3.0. Old 0.2.7 saves rejected by
+  content-pack version check.
+- Added `docs/engine_completion_milestones.md` M2 status.
+- Added 51 new M2 tests in `tests/test_item_stacks.py` covering content
+  definition immutability, quantity parsing, take/drop/use with quantities,
+  equipment quantity validation, loot preflight, save v6 round-trip, and
+  M1 death gate regression.
+
+### Added
+
 - Added deterministic defeat recovery: `World.recover()` teleports a dead player
   to the start room with full HP; `_require_alive()` unified death gate covers
   10 mutating World methods; command-layer gate with `_DEAD_ALLOWED` frozenset;

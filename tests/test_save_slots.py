@@ -21,7 +21,7 @@ def _runtime_snapshot(world: World) -> dict[str, object]:
     return {
         "room": world.player.room_id,
         "hp": world.player.hp,
-        "inventory": list(world.player.inventory.item_ids),
+        "inventory": [s.item_id for s in world.player.inventory.stacks],
         "equipped": (world.equipped.hand, world.equipped.body),
         "quests": {
             quest_id: state.completed
@@ -29,7 +29,7 @@ def _runtime_snapshot(world: World) -> dict[str, object]:
         },
         "active_dialogue": world.active_dialogue,
         "room_items": {
-            room_id: list(room.item_ids)
+            room_id: [s.item_id for s in room.item_stacks]
             for room_id, room in world.rooms.items()
         },
         "monster_hp": {
@@ -69,9 +69,14 @@ class NamedSaveSlotServiceTests(unittest.TestCase):
 
         self.assertEqual(self.service.slot_path("start"), self.save_dir / "start.json")
         self.assertEqual(start.player.room_id, "room_ember_wharf")
-        self.assertEqual(start.player.inventory.item_ids, [])
+        self.assertEqual(
+            [s.item_id for s in start.player.inventory.stacks], []
+        )
         self.assertEqual(lantern_run.player.room_id, "room_glassgrass_path")
-        self.assertEqual(lantern_run.player.inventory.item_ids, ["item_spark_lantern"])
+        self.assertEqual(
+            [s.item_id for s in lantern_run.player.inventory.stacks],
+            ["item_spark_lantern"],
+        )
 
     def test_invalid_slot_never_writes_a_file(self) -> None:
         self.service.save(self.world)
@@ -163,11 +168,13 @@ class NamedSaveSlotCommandTests(unittest.TestCase):
         fresh_world = World.from_content_pack(self.pack, player_name="测试旅人")
         fresh_commands = CommandProcessor(fresh_world, save_service=self.service)
         self.assertIn("读档成功", fresh_commands.execute("load start").text)
-        self.assertEqual(fresh_commands.world.player.inventory.item_ids, [])
+        self.assertEqual(
+            [s.item_id for s in fresh_commands.world.player.inventory.stacks], []
+        )
 
         self.assertIn("读档成功", fresh_commands.execute("load lantern_run").text)
         self.assertEqual(
-            fresh_commands.world.player.inventory.item_ids,
+            [s.item_id for s in fresh_commands.world.player.inventory.stacks],
             ["item_spark_lantern"],
         )
         self.assertEqual(fresh_commands.world.player.room_id, "room_glassgrass_path")

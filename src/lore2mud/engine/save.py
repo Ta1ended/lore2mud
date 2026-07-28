@@ -5,14 +5,13 @@ Serialization logic lives here, not in CommandProcessor.
 """
 
 from __future__ import annotations
-
 import json
 import os
 import re
 import tempfile
 from pathlib import Path
 
-from lore2mud.content.models import ContentPack, QuestDefinition
+from lore2mud.content.models import ContentPack, ItemStackDefinition, QuestDefinition
 from lore2mud.engine.models import (
     Character,
     DialogueState,
@@ -22,9 +21,9 @@ from lore2mud.engine.models import (
     Room,
 )
 from lore2mud.engine.world import World
-from lore2mud.inventory.models import EquippedItems, Inventory, Item
+from lore2mud.inventory.models import EquippedItems, Inventory, Item, ItemStack
 
-SAVE_FORMAT_VERSION = 5
+SAVE_FORMAT_VERSION = 6
 DEFAULT_SLOT = "default.json"
 _SLOT_NAME_PATTERN = re.compile(r"[a-z0-9][a-z0-9_-]{0,31}")
 _WINDOWS_RESERVED_SLOT_NAMES = frozenset(
@@ -56,18 +55,21 @@ _PLAYER_KEYS = frozenset(
         "defense",
         "level",
         "experience",
-        "inventory_item_ids",
+        "inventory_stacks",
     }
 )
-_ROOM_KEYS = frozenset({"item_ids", "monster_ids"})
+_ROOM_KEYS = frozenset({"item_stacks", "monster_ids"})
 _MONSTER_KEYS = frozenset({"hp"})
+_STACK_KEYS = frozenset({"item_id", "quantity"})
 
 
 class SaveLoadError(Exception):
     """Raised when save or load fails."""
 
 
-def _validate_int(value: object, name: str, *, minimum: int | None = None) -> int:
+def _validate_int(
+    value: object, name: str, *, minimum: int | None = None
+) -> int:
     """Validate that value is an int (not bool) and meets minimum."""
     if isinstance(value, bool):
         raise SaveLoadError(f"{name} 必须是整数，不能是布尔值")
@@ -86,13 +88,17 @@ def _reject_unknown_fields(
         raise SaveLoadError(f"{location} 包含未知字段：{sorted(unknown)}")
 
 
+def _serialize_stacks(stacks: list[ItemStack]) -> list[dict]:
+    return [{"item_id": s.item_id, "quantity": s.quantity} for s in stacks]
+
+
 def _serialize_world(world: World) -> dict:
     """Serialize all mutable state from a World into a JSON-safe dict."""
     player = world.player
     rooms_data: dict[str, dict] = {}
     for room_id, room in world.rooms.items():
         rooms_data[room_id] = {
-            "item_ids": list(room.item_ids),
+            "item_stacks": _serialize_stacks(room.item_stacks),
             "monster_ids": list(room.monster_ids),
         }
 
@@ -124,7 +130,7 @@ def _serialize_world(world: World) -> dict:
             "defense": player.defense,
             "level": player.level,
             "experience": player.experience,
-            "inventory_item_ids": list(player.inventory.item_ids),
+            "inventory_stacks": _serialize_stacks(player.inventory.stacks),
         },
         "equipped": {
             "hand": world.equipped.hand,
@@ -187,12 +193,59 @@ def _atomic_write(path: Path, data: dict) -> None:
             os.fsync(f.fileno())
         os.replace(tmp_path, path)
     except BaseException:
-        # Clean up temp file on any failure
         try:
             os.unlink(tmp_path)
         except OSError:
             pass
         raise
+
+
+def _validate_stacks(
+    raw: object,
+    location: str,
+    pack: ContentPack,
+    *,
+    track_placements: dict[str, list[str]] | None = None,
+    container_name: str = "",
+) -> list[ItemStack]:
+    """Validate a stacks array and return runtime ItemStacks."""
+    if not isinstance(raw, list):
+        raise SaveLoadError(f"{location} 必须是数组")
+    result: list[ItemStack] = []
+    seen_ids: set[str] = set()
+    for i, entry in enumerate(raw):
+        loc = f"{location}[{i}]"
+        if not isinstance(entry, dict):
+            raise SaveLoadError(f"{loc} 必须是对象")
+        _reject_unknown_fields(entry, _STACK_KEYS, loc)
+
+        item_id_raw = entry.get("item_id")
+        if not isinstance(item_id_raw, str) or not item_id_raw:
+            raise SaveLoadError(f"{loc}.item_id 必须是非空字符串")
+        if item_id_raw not in pack.items:
+            raise SaveLoadError(f"{loc} 物品 {item_id_raw!r} 在内容包中不存在")
+        if item_id_raw in seen_ids:
+            raise SaveLoadError(f"{location} 包含重复物品 {item_id_raw!r}")
+        seen_ids.add(item_id_raw)
+
+        qty_raw = entry.get("quantity")
+        qty = _validate_int(qty_raw, f"{loc}.quantity", minimum=1)
+        item_def = pack.items[item_id_raw]
+        if qty > item_def.stack_limit:
+            raise SaveLoadError(
+                f"{loc} 数量 {qty} 超过栈上限 ({item_def.stack_limit})"
+            )
+        if item_def.stack_limit == 1 and qty != 1:
+            raise SaveLoadError(
+                f"{loc} stack_limit=1 的物品数量必须为 1"
+            )
+
+        result.append(ItemStack(item_id=item_id_raw, quantity=qty))
+
+        if track_placements is not None:
+            track_placements.setdefault(item_id_raw, []).append(container_name)
+
+    return result
 
 
 def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
@@ -250,16 +303,19 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
     if hp < 0 or hp > max_hp:
         raise SaveLoadError(f"player.hp ({hp}) 必须在 0 和 max_hp ({max_hp}) 之间")
 
-    inv_ids_raw = player_data.get("inventory_item_ids")
-    if not isinstance(inv_ids_raw, list):
-        raise SaveLoadError("player.inventory_item_ids 必须是数组")
-    inv_ids: list[str] = []
-    for i, entry in enumerate(inv_ids_raw):
-        if not isinstance(entry, str):
-            raise SaveLoadError(f"player.inventory_item_ids[{i}] 必须是字符串")
-        inv_ids.append(entry)
-    if len(inv_ids) != len(set(inv_ids)):
-        raise SaveLoadError("player.inventory_item_ids 包含重复物品")
+    capacity = pack.player.inventory_capacity
+
+    # --- inventory stacks ---
+    inv_stacks_raw = player_data.get("inventory_stacks")
+    all_placements: dict[str, list[str]] = {}
+    inv_stacks = _validate_stacks(
+        inv_stacks_raw, "player.inventory_stacks", pack,
+        track_placements=all_placements, container_name="__inventory__",
+    )
+    if len(inv_stacks) > capacity:
+        raise SaveLoadError(
+            f"背包栈位数 ({len(inv_stacks)}) 超过容量上限 ({capacity})"
+        )
 
     # --- rooms ---
     rooms_data = data.get("rooms")
@@ -279,30 +335,23 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         raise SaveLoadError(f"房间键集合不匹配：{'; '.join(parts)}")
 
     rooms: dict[str, Room] = {}
-    all_save_item_ids: set[str] = set()
-    all_save_monster_ids: set[str] = set()
     for room_id, room_data in rooms_data.items():
         if not isinstance(room_data, dict):
             raise SaveLoadError(f"rooms.{room_id} 必须是对象")
         _reject_unknown_fields(room_data, _ROOM_KEYS, f"rooms.{room_id}")
-        if "item_ids" not in room_data:
-            raise SaveLoadError(f"rooms.{room_id} 缺少 item_ids 字段")
+        if "item_stacks" not in room_data:
+            raise SaveLoadError(f"rooms.{room_id} 缺少 item_stacks 字段")
         if "monster_ids" not in room_data:
             raise SaveLoadError(f"rooms.{room_id} 缺少 monster_ids 字段")
-        item_ids_raw = room_data["item_ids"]
+
+        room_stacks = _validate_stacks(
+            room_data["item_stacks"], f"rooms.{room_id}.item_stacks", pack,
+            track_placements=all_placements, container_name=room_id,
+        )
+
         monster_ids_raw = room_data["monster_ids"]
-        if not isinstance(item_ids_raw, list):
-            raise SaveLoadError(f"rooms.{room_id}.item_ids 必须是数组")
         if not isinstance(monster_ids_raw, list):
             raise SaveLoadError(f"rooms.{room_id}.monster_ids 必须是数组")
-
-        item_ids: list[str] = []
-        for i, entry in enumerate(item_ids_raw):
-            if not isinstance(entry, str):
-                raise SaveLoadError(
-                    f"rooms.{room_id}.item_ids[{i}] 必须是字符串"
-                )
-            item_ids.append(entry)
 
         monster_ids: list[str] = []
         for i, entry in enumerate(monster_ids_raw):
@@ -317,59 +366,37 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
             name=pack.rooms[room_id].name,
             description=pack.rooms[room_id].description,
             exits=dict(pack.rooms[room_id].exits),
-            item_ids=item_ids,
+            item_stacks=room_stacks,
             monster_ids=monster_ids,
         )
 
-        # Track all items and monsters for cross-room duplicate checks
-        for iid in item_ids:
-            if iid in all_save_item_ids:
-                raise SaveLoadError(
-                    f"物品 {iid} 重复出现在多个房间中"
-                )
-            all_save_item_ids.add(iid)
+    # --- Cross-container uniqueness for stack_limit==1 ---
+    inv_item_ids = {s.item_id for s in inv_stacks}
+    room_item_ids: set[str] = set()
+    for room in rooms.values():
+        for s in room.item_stacks:
+            room_item_ids.add(s.item_id)
 
-        for mid in monster_ids:
-            if mid in all_save_monster_ids:
-                raise SaveLoadError(
-                    f"怪物 {mid} 重复出现在多个房间中"
-                )
-            all_save_monster_ids.add(mid)
+    all_item_ids = inv_item_ids | room_item_ids
+    for item_id in all_placements:
+        containers = all_placements[item_id]
+        if len(containers) > 1 and pack.items[item_id].stack_limit == 1:
+            raise SaveLoadError(
+                f"stack_limit=1 的物品 {item_id!r} 出现在多个容器中：{containers}"
+            )
+
+    # Item in inventory must not also be in a room (for non-stackable)
+    for iid in inv_item_ids:
+        if iid in room_item_ids and pack.items[iid].stack_limit == 1:
+            raise SaveLoadError(
+                f"物品 {iid!r} 同时出现在房间和背包中"
+            )
 
     # --- Validate references ---
-    # Player room must exist
     if player_room_id not in pack_room_ids:
         raise SaveLoadError(
             f"玩家房间 {player_room_id!r} 在内容包中不存在"
         )
-
-    # All item IDs must exist in content pack
-    pack_item_ids = set(pack.items.keys())
-    for iid in all_save_item_ids:
-        if iid not in pack_item_ids:
-            raise SaveLoadError(f"物品 {iid!r} 在内容包中不存在")
-
-    # Item in inventory must not also be in a room
-    for iid in inv_ids:
-        if iid in all_save_item_ids:
-            raise SaveLoadError(
-                f"物品 {iid!r} 同时出现在房间和背包中"
-            )
-        if iid not in pack_item_ids:
-            raise SaveLoadError(f"背包物品 {iid!r} 在内容包中不存在")
-
-    # Inventory capacity check
-    capacity = pack.player.inventory_capacity
-    if len(inv_ids) > capacity:
-        raise SaveLoadError(
-            f"背包物品数 ({len(inv_ids)}) 超过容量上限 ({capacity})"
-        )
-
-    # All monster IDs must exist in content pack
-    pack_monster_ids = set(pack.monsters.keys())
-    for mid in all_save_monster_ids:
-        if mid not in pack_monster_ids:
-            raise SaveLoadError(f"怪物 {mid!r} 在内容包中不存在")
 
     # --- monsters ---
     monsters_data = data.get("monsters")
@@ -411,21 +438,26 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
             defense=m_def.defense,
             experience_reward=m_def.experience_reward,
             hp=m_hp,
-            loot_item_id=m_def.loot_item_id,
+            loot_item=m_def.loot_item,
         )
 
-    placed_item_ids = all_save_item_ids | set(inv_ids)
+    # Alive monster non-stackable loot must not be placed
     for monster_id, monster in monsters.items():
-        loot_item_id = monster.loot_item_id
-        if (
-            monster.is_alive
-            and loot_item_id is not None
-            and loot_item_id in placed_item_ids
-        ):
-            raise SaveLoadError(
-                f"存活怪物 {monster_id!r} 的战利品 {loot_item_id!r} "
-                "已出现在世界中"
-            )
+        loot = monster.loot_item
+        if loot is None:
+            continue
+        if not monster.is_alive:
+            continue
+        item_def = pack.items.get(loot.item_id)
+        if item_def is None:
+            continue
+        if item_def.stack_limit == 1:
+            containers = all_placements.get(loot.item_id, [])
+            if containers:
+                raise SaveLoadError(
+                    f"存活怪物 {monster_id!r} 的战利品 {loot.item_id!r} "
+                    f"已出现在容器 {containers} 中"
+                )
 
     # --- quest_states ---
     quest_states_raw = data.get("quest_states")
@@ -485,9 +517,19 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
                 raise SaveLoadError(
                     f"equipped.{slot_name} 物品 {slot_raw!r} 在内容包中不存在"
                 )
-            if slot_raw not in inv_ids:
+            # Check stack exists and quantity == 1
+            inv_stack = None
+            for s in inv_stacks:
+                if s.item_id == slot_raw:
+                    inv_stack = s
+                    break
+            if inv_stack is None:
                 raise SaveLoadError(
-                    f"equipped.{slot_name} 物品 {slot_raw!r} 不在背包中"
+                    f"equipped.{slot_name} 物品 {slot_raw!r} 不在背包栈中"
+                )
+            if inv_stack.quantity != 1:
+                raise SaveLoadError(
+                    f"equipped.{slot_name} 物品 {slot_raw!r} 数量必须为 1"
                 )
             item_def = pack.items[slot_raw]
             if item_def.slot != slot_name:
@@ -525,7 +567,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
 
     equipped = EquippedItems(hand=equipped_hand, body=equipped_body)
 
-    # --- active_dialogue (required in v5) ---
+    # --- active_dialogue (required in v6) ---
     if "active_dialogue" not in data:
         raise SaveLoadError("存档缺少 active_dialogue 字段")
     active_dialogue_raw = data["active_dialogue"]
@@ -588,7 +630,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         level=level,
         experience=experience,
         hp=hp,
-        inventory=Inventory(capacity=capacity, item_ids=inv_ids),
+        inventory=Inventory(capacity=capacity, stacks=inv_stacks),
     )
 
     # --- Build characters ---
@@ -618,6 +660,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
                 slot=item_def.slot,
                 attack_bonus=item_def.attack_bonus,
                 defense_bonus=item_def.defense_bonus,
+                stack_limit=item_def.stack_limit,
             )
             for item_id, item_def in pack.items.items()
         },

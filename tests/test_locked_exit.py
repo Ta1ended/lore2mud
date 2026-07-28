@@ -30,7 +30,7 @@ def _grant_demo_token(world: World) -> None:
     world.select_option(1)
     world.select_option(1)
     world.select_option(2)
-    assert "item_chen_token" in world.player.inventory.item_ids
+    assert "item_chen_token" in [s.item_id for s in world.player.inventory.stacks]
 
 
 def _runtime_snapshot(world: World) -> dict[str, object]:
@@ -44,12 +44,12 @@ def _runtime_snapshot(world: World) -> dict[str, object]:
             world.player.level,
             world.player.experience,
         ),
-        "inventory": list(world.player.inventory.item_ids),
+        "inventory": [s.item_id for s in world.player.inventory.stacks],
         "equipped": (world.equipped.hand, world.equipped.body),
         "quests": copy.deepcopy(world.quest_states),
         "active_dialogue": copy.deepcopy(world.active_dialogue),
         "rooms": {
-            room_id: (list(room.item_ids), list(room.monster_ids))
+            room_id: ([s.item_id for s in room.item_stacks], list(room.monster_ids))
             for room_id, room in world.rooms.items()
         },
         "monsters": {monster_id: monster.hp for monster_id, monster in world.monsters.items()},
@@ -195,12 +195,12 @@ class LockedExitWorldTests(unittest.TestCase):
                 world.player.level,
                 world.player.experience,
             ),
-            "inventory": list(world.player.inventory.item_ids),
+            "inventory": [s.item_id for s in world.player.inventory.stacks],
             "equipped": (world.equipped.hand, world.equipped.body),
             "quests": copy.deepcopy(world.quest_states),
             "active_dialogue": copy.deepcopy(world.active_dialogue),
             "rooms": {
-                room_id: (list(room.item_ids), list(room.monster_ids))
+                room_id: ([s.item_id for s in room.item_stacks], list(room.monster_ids))
                 for room_id, room in world.rooms.items()
             },
             "monsters": {monster_id: monster.hp for monster_id, monster in world.monsters.items()},
@@ -223,7 +223,7 @@ class LockedExitWorldTests(unittest.TestCase):
             ),
             snapshot["player_stats"],
         )
-        self.assertEqual(world.player.inventory.item_ids, snapshot["inventory"])
+        self.assertEqual([s.item_id for s in world.player.inventory.stacks], snapshot["inventory"])
         self.assertEqual(
             (world.equipped.hand, world.equipped.body), snapshot["equipped"]
         )
@@ -231,7 +231,7 @@ class LockedExitWorldTests(unittest.TestCase):
         self.assertEqual(world.active_dialogue, snapshot["active_dialogue"])
         self.assertEqual(
             {
-                room_id: (list(room.item_ids), list(room.monster_ids))
+                room_id: ([s.item_id for s in room.item_stacks], list(room.monster_ids))
                 for room_id, room in world.rooms.items()
             },
             snapshot["rooms"],
@@ -248,7 +248,7 @@ class LockedExitWorldTests(unittest.TestCase):
         room = world.move("west")
 
         self.assertEqual(room.id, "room_ember_wharf")
-        self.assertIn("item_chen_token", world.player.inventory.item_ids)
+        self.assertIn("item_chen_token", [s.item_id for s in world.player.inventory.stacks])
 
     def test_ordinary_exit_remains_usable_without_token(self) -> None:
         world = _demo_world()
@@ -277,7 +277,7 @@ class LockedExitCommandAndSaveTests(unittest.TestCase):
         self._grant_token_via_commands(commands)
         moved = commands.execute("go west")
         self.assertIn("余烬渡台", moved.text)
-        self.assertIn("item_chen_token", commands.world.player.inventory.item_ids)
+        self.assertIn("item_chen_token", [s.item_id for s in commands.world.player.inventory.stacks])
 
     def test_look_keeps_ordinary_exits_bare(self) -> None:
         result = CommandProcessor(_demo_world()).execute("look")
@@ -331,7 +331,7 @@ class LockedExitCommandAndSaveTests(unittest.TestCase):
             _grant_demo_token(with_token)
             service.save(with_token)
             loaded_with = service.load()
-            self.assertIn("item_chen_token", loaded_with.player.inventory.item_ids)
+            self.assertIn("item_chen_token", [s.item_id for s in loaded_with.player.inventory.stacks])
             looked = CommandProcessor(loaded_with).execute("look")
             self.assertIn("已持有", looked.text)
             self.assertEqual(loaded_with.move("west").id, "room_ember_wharf")

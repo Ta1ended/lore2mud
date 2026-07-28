@@ -102,7 +102,7 @@ class ConsumableUseTests(unittest.TestCase):
         result = self.commands.execute("use item_linglu_pill")
         self.assertIn("恢复了", result.text)
         self.assertIn("灵露丸", result.text)
-        self.assertNotIn("item_linglu_pill", self.world.player.inventory.item_ids)
+        self.assertNotIn("item_linglu_pill", [s.item_id for s in self.world.player.inventory.stacks])
         self.assertGreater(self.world.player.hp, hp_before)
 
     def test_use_partial_heal(self) -> None:
@@ -135,25 +135,25 @@ class ConsumableFailureTests(unittest.TestCase):
     def _assert_state_unchanged(self) -> None:
         """Assert HP and inventory are unchanged."""
         # Inventory should still have the pill.
-        self.assertIn("item_linglu_pill", self.world.player.inventory.item_ids)
+        self.assertIn("item_linglu_pill", [s.item_id for s in self.world.player.inventory.stacks])
 
     def test_use_non_usable_item(self) -> None:
         """item_spark_lantern has no heal_amount — cannot use."""
         self.commands.execute("take item_spark_lantern")
         hp_before = self.world.player.hp
-        inv_before = list(self.world.player.inventory.item_ids)
+        inv_before = [s.item_id for s in self.world.player.inventory.stacks]
         result = self.commands.execute("use item_spark_lantern")
         self.assertIn("无法使用", result.text)
         self.assertEqual(self.world.player.hp, hp_before)
-        self.assertEqual(self.world.player.inventory.item_ids, inv_before)
+        self.assertEqual([s.item_id for s in self.world.player.inventory.stacks], inv_before)
 
     def test_use_item_not_in_inventory(self) -> None:
         hp_before = self.world.player.hp
-        inv_before = list(self.world.player.inventory.item_ids)
+        inv_before = [s.item_id for s in self.world.player.inventory.stacks]
         result = self.commands.execute("use nonexistent")
         self.assertIn("没有", result.text)
         self.assertEqual(self.world.player.hp, hp_before)
-        self.assertEqual(self.world.player.inventory.item_ids, inv_before)
+        self.assertEqual([s.item_id for s in self.world.player.inventory.stacks], inv_before)
 
     def test_use_at_full_hp(self) -> None:
         hp_before = self.world.player.hp
@@ -161,7 +161,7 @@ class ConsumableFailureTests(unittest.TestCase):
         self.assertIn("满血", result.text)
         self.assertEqual(self.world.player.hp, hp_before)
         # Item must NOT be consumed.
-        self.assertIn("item_linglu_pill", self.world.player.inventory.item_ids)
+        self.assertIn("item_linglu_pill", [s.item_id for s in self.world.player.inventory.stacks])
 
     def test_use_empty_args(self) -> None:
         result = self.commands.execute("use")
@@ -178,17 +178,17 @@ class ConsumableFailureTests(unittest.TestCase):
 
         result = self.commands.execute("use 灵露丸")
         self.assertIn("恢复了", result.text)
-        self.assertNotIn("item_linglu_pill", self.world.player.inventory.item_ids)
+        self.assertNotIn("item_linglu_pill", [s.item_id for s in self.world.player.inventory.stacks])
         self.assertGreater(self.world.player.hp, hp_before)
 
     def test_use_dead_player(self) -> None:
         """HP=0 player cannot use consumable."""
         self.world.player.hp = 0
-        inv_before = list(self.world.player.inventory.item_ids)
+        inv_before = [s.item_id for s in self.world.player.inventory.stacks]
         result = self.commands.execute("use item_linglu_pill")
         self.assertIn("倒下", result.text)
         self.assertEqual(self.world.player.hp, 0)
-        self.assertEqual(self.world.player.inventory.item_ids, inv_before)
+        self.assertEqual([s.item_id for s in self.world.player.inventory.stacks], inv_before)
 
 
 # -- Save round-trip tests ---------------------------------------------------
@@ -228,7 +228,7 @@ class ConsumableSaveRoundTripTests(unittest.TestCase):
         result = commands.execute("use item_linglu_pill")
         self.assertIn("恢复了", result.text)
         self.assertNotIn(
-            "item_linglu_pill", loaded.player.inventory.item_ids
+            "item_linglu_pill", [s.item_id for s in loaded.player.inventory.stacks]
         )
 
     def test_used_pill_gone_after_reload(self) -> None:
@@ -241,14 +241,14 @@ class ConsumableSaveRoundTripTests(unittest.TestCase):
 
         self.service.save(self.world)
         loaded = self.service.load()
-        self.assertNotIn("item_linglu_pill", loaded.player.inventory.item_ids)
+        self.assertNotIn("item_linglu_pill", [s.item_id for s in loaded.player.inventory.stacks])
 
     def test_old_version_save_rejected(self) -> None:
-        """A save from pack version 0.2.6 must be rejected by 0.2.7."""
+        """A save from pack version 0.2.6 must be rejected by 0.3.0."""
         self.service.save(self.world)
         # Tamper the version in the save file.
         save_text = self.service.save_path.read_text("utf-8")
-        save_text = save_text.replace('"version": "0.2.7"', '"version": "0.2.6"')
+        save_text = save_text.replace('"version": "0.3.0"', '"version": "0.2.6"')
         self.service.save_path.write_text(save_text, "utf-8")
         from lore2mud.engine.save import SaveLoadError
         with self.assertRaises(SaveLoadError) as ctx:

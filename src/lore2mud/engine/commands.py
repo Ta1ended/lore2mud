@@ -9,26 +9,26 @@ from dataclasses import dataclass
 from lore2mud.engine.world import World, WorldRuleError
 
 HELP_TEXT = """可用指令：
-  look                  查看当前房间
-  inspect <物品ID或名称> 查看当前房间或背包中的物品详情
-  go <方向>             移动，例如 go north
-  take <物品ID或名称>   拾取物品
-  drop <物品ID或名称>   放下背包中的未装备物品
-  use <物品ID或名称>    使用消耗品
-  equip <物品ID或名称>  装备物品
-  unequip [hand|body]   卸下装备（默认 hand）
-  inventory             查看背包
-  quests                查看任务
-  status                查看角色状态
-  attack <怪物ID或名称> 攻击怪物
-  talk <角色ID或名称>   与角色对话
-  <数字>                选择对话选项（对话中）
-  bye                   结束当前对话（对话中）
-  save [槽位]           保存游戏（默认 default）
-  load [槽位]           读取存档（默认 default）
-  recover               恢复倒下的角色
-  help                  查看帮助
-  quit                  退出游戏"""
+  look                        查看当前房间
+  inspect <物品ID或名称>       查看当前房间或背包中的物品详情
+  go <方向>                   移动，例如 go north
+  take <物品ID或名称> [数量]   拾取物品（数量可选，默认 1）
+  drop <物品ID或名称> [数量]   放下背包中的未装备物品
+  use <物品ID或名称> [数量]    使用消耗品
+  equip <物品ID或名称>         装备物品
+  unequip [hand|body]          卸下装备（默认 hand）
+  inventory                    查看背包
+  quests                       查看任务
+  status                       查看角色状态
+  attack <怪物ID或名称>         攻击怪物
+  talk <角色ID或名称>           与角色对话
+  <数字>                       选择对话选项（对话中）
+  bye                          结束当前对话（对话中）
+  save [槽位]                  保存游戏（默认 default）
+  load [槽位]                  读取存档（默认 default）
+  recover                      恢复倒下的角色
+  help                         查看帮助
+  quit                         退出游戏"""
 
 _BARE_SELECTION = re.compile(r'^[1-9][0-9]{0,4}$')
 
@@ -37,6 +37,74 @@ _DEAD_ALLOWED = frozenset({
     "quests", "help", "save", "load", "recover",
     "quit", "exit",
 })
+
+# Numeric style patterns for quantity parsing
+_UNSIGNED_INT = re.compile(r'^[0-9]+$')
+_SIGNED_INT = re.compile(r'^[+-][0-9]+$')
+_DECIMAL_OR_EXPONENT = re.compile(
+    r'^[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?$'
+)
+_HEX = re.compile(r'^[+-]?0[xX][0-9a-fA-F]+$')
+_BINARY = re.compile(r'^[+-]?0[bB][01]+$')
+_OCTAL = re.compile(r'^[+-]?0[oO][0-7]+$')
+_SPECIAL = re.compile(r'^[+-]?(?:inf|infinity|nan)$', re.IGNORECASE)
+
+
+def _classify_quantity_token(token: str) -> tuple[str, int | None]:
+    """Classify a tail token for quantity parsing.
+
+    Returns:
+        ("valid", n)    -- legal unsigned positive integer
+        ("invalid", None) -- looks numeric but not a legal quantity
+        ("name", None)    -- not numeric, treat as item name part
+    """
+    if not token:
+        return ("name", None)
+
+    # Unsigned pure digit string
+    if _UNSIGNED_INT.match(token):
+        n = int(token)
+        return ("valid", n) if n > 0 else ("invalid", None)
+
+    # Various numeric styles that are NOT valid quantities
+    if (_SIGNED_INT.match(token)
+            or _DECIMAL_OR_EXPONENT.match(token)
+            or _HEX.match(token)
+            or _BINARY.match(token)
+            or _OCTAL.match(token)
+            or _SPECIAL.match(token)):
+        return ("invalid", None)
+
+    # Ordinary name
+    return ("name", None)
+
+
+def _parse_quantity(
+    arguments: list[str],
+) -> tuple[str, int, str | None]:
+    """Parse tail quantity from arguments.
+
+    Returns (query, quantity, error).
+    error non-empty means return it directly.
+    """
+    if not arguments:
+        return ("", 1, "用法：take <物品ID或名称> [数量]")
+
+    last = arguments[-1]
+    kind, val = _classify_quantity_token(last)
+
+    if kind == "valid":
+        assert val is not None
+        rest = arguments[:-1]
+        if not rest:
+            return ("", val, "用法：take <物品ID或名称> [数量]")
+        return (" ".join(rest), val, None)
+
+    if kind == "invalid":
+        return (" ".join(arguments), 1, "数量必须为正整数。")
+
+    # kind == "name": no quantity suffix, default to 1
+    return (" ".join(arguments), 1, None)
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,8 +134,6 @@ class CommandProcessor:
         arguments = parts[1:]
         try:
             # Death gate: only allow read-only and recovery commands.
-            # This MUST precede dialogue routing so that dead players cannot
-            # invoke _select_option or _bye through bare numbers or "bye".
             if not self.world.player.is_alive:
                 if command not in _DEAD_ALLOWED:
                     from lore2mud.engine.world import _DEAD_ERROR
@@ -129,10 +195,12 @@ class CommandProcessor:
         ) if room.exits else "无"
         lines.append(f"出口：{exits}")
 
-        if room.item_ids:
+        if room.item_stacks:
             items = "、".join(
-                f"{self.world.items[item_id].name} ({item_id})"
-                for item_id in room.item_ids
+                f"{self.world.items[s.item_id].name} ×{s.quantity}"
+                if s.quantity > 1
+                else f"{self.world.items[s.item_id].name}"
+                for s in room.item_stacks
             )
             lines.append(f"物品：{items}")
         if room.monster_ids:
@@ -152,7 +220,6 @@ class CommandProcessor:
             )
             lines.append(f"角色：{chars}")
 
-        # Show active quest hints (read-only, no state change).
         hints = self._active_quest_hints()
         if hints:
             lines.append(hints)
@@ -169,7 +236,7 @@ class CommandProcessor:
         item = self.world.items[required_item_id]
         possession = (
             "已持有"
-            if required_item_id in self.world.player.inventory.item_ids
+            if self.world.player.inventory.has_item(required_item_id)
             else "未持有"
         )
         return f"{direction}（需要：{item.name} ({required_item_id})，{possession}）"
@@ -197,16 +264,26 @@ class CommandProcessor:
         return CommandResult(f"你来到 {room.name}。\n{self._look()}")
 
     def _take(self, arguments: list[str]) -> CommandResult:
-        if not arguments:
-            return CommandResult("用法：take <物品ID或名称>")
-        item = self.world.take(" ".join(arguments))
-        return CommandResult(f"你拾取了 {item.name} ({item.id})。")
+        query, quantity, error = _parse_quantity(arguments)
+        if error:
+            return CommandResult(error)
+        outcome = self.world.take(query, quantity)
+        if outcome.quantity > 1:
+            return CommandResult(
+                f"你拾取了 {outcome.item_name} ×{outcome.quantity}。"
+            )
+        return CommandResult(f"你拾取了 {outcome.item_name}。")
 
     def _drop(self, arguments: list[str]) -> CommandResult:
-        if not arguments:
-            return CommandResult("用法：drop <物品ID或名称>")
-        outcome = self.world.drop(" ".join(arguments))
-        return CommandResult(f"你放下了 {outcome.item_name} ({outcome.item_id})。")
+        query, quantity, error = _parse_quantity(arguments)
+        if error:
+            return CommandResult(error)
+        outcome = self.world.drop(query, quantity)
+        if outcome.quantity > 1:
+            return CommandResult(
+                f"你放下了 {outcome.item_name} ×{outcome.quantity}。"
+            )
+        return CommandResult(f"你放下了 {outcome.item_name}。")
 
     def _inspect(self, arguments: list[str]) -> CommandResult:
         if not arguments:
@@ -217,11 +294,17 @@ class CommandProcessor:
         )
 
     def _use(self, arguments: list[str]) -> CommandResult:
-        if not arguments:
-            return CommandResult("用法：use <物品ID或名称>")
-        outcome = self.world.use(" ".join(arguments))
+        query, quantity, error = _parse_quantity(arguments)
+        if error:
+            return CommandResult(error)
+        outcome = self.world.use(query, quantity)
+        if outcome.quantity > 1:
+            return CommandResult(
+                f"你使用了 {outcome.quantity} 个 {outcome.item_name}，"
+                f"恢复了 {outcome.healed_amount} 点生命。"
+            )
         return CommandResult(
-            f"你服下 {outcome.item_name}，恢复了 {outcome.healed_amount} 点生命。"
+            f"你使用了 {outcome.item_name}，恢复了 {outcome.healed_amount} 点生命。"
         )
 
     def _equip(self, arguments: list[str]) -> CommandResult:
@@ -243,14 +326,16 @@ class CommandProcessor:
         return CommandResult(f"你卸下了 {outcome.item_name}。")
 
     def _inventory(self) -> str:
-        item_ids = self.world.player.inventory.item_ids
-        if not item_ids:
+        stacks = self.world.player.inventory.stacks
+        if not stacks:
             return "背包是空的。"
         lines = ["背包："]
-        lines.extend(
-            f"- {self.world.items[item_id].name} ({item_id})"
-            for item_id in item_ids
-        )
+        for s in stacks:
+            item = self.world.items[s.item_id]
+            if s.quantity > 1:
+                lines.append(f"- {item.name} ({s.item_id}) ×{s.quantity}")
+            else:
+                lines.append(f"- {item.name} ({s.item_id})")
         return "\n".join(lines)
 
     def _quests(self) -> str:
@@ -304,10 +389,16 @@ class CommandProcessor:
                 f"{combat.experience_reward} 点经验。"
             )
             if outcome.loot_item is not None:
-                lines.append(
-                    f"{outcome.loot_item.item_name} "
-                    f"({outcome.loot_item.item_id}) 掉落在当前房间。"
-                )
+                li = outcome.loot_item
+                if li.quantity > 1:
+                    lines.append(
+                        f"{li.item_name} ×{li.quantity} "
+                        f"掉落在当前房间。"
+                    )
+                else:
+                    lines.append(
+                        f"{li.item_name} 掉落在当前房间。"
+                    )
         else:
             lines.append(
                 f"{combat.monster_name} 反击，造成 "
@@ -344,19 +435,28 @@ class CommandProcessor:
         )
 
     @staticmethod
-    def _render_talk(outcome: "TalkOutcome") -> str:
+    def _render_talk(outcome: object) -> str:
         lines: list[str] = []
-        if outcome.granted_item is not None:
-            lines.append(
-                f"你获得了 {outcome.granted_item.item_name} "
-                f"({outcome.granted_item.item_id})。"
-            )
-        if outcome.node_text is not None:
-            lines.append(f"[{outcome.character_name}] {outcome.node_text}")
-        if outcome.options:
-            for i, opt in enumerate(outcome.options, 1):
+        granted = getattr(outcome, "granted_item", None)
+        if granted is not None:
+            if granted.quantity > 1:
+                lines.append(
+                    f"你获得了 {granted.item_name} ×{granted.quantity}。"
+                )
+            else:
+                lines.append(
+                    f"你获得了 {granted.item_name}。"
+                )
+        node_text = getattr(outcome, "node_text", None)
+        if node_text is not None:
+            char_name = getattr(outcome, "character_name", "")
+            lines.append(f"[{char_name}] {node_text}")
+        options = getattr(outcome, "options", ())
+        if options:
+            for i, opt in enumerate(options, 1):
                 lines.append(f"  {i}. {opt.text}")
-        if outcome.ended:
+        ended = getattr(outcome, "ended", False)
+        if ended:
             lines.append("对话结束了。")
         return "\n".join(lines)
 

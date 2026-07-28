@@ -3,9 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-
-from lore2mud.content.models import ExitDefinition
-from lore2mud.inventory.models import Inventory
+from lore2mud.content.models import ExitDefinition, ItemStackDefinition
+from lore2mud.inventory.models import Inventory, ItemStack
 
 
 @dataclass(slots=True)
@@ -14,8 +13,14 @@ class Room:
     name: str
     description: str
     exits: dict[str, ExitDefinition] = field(default_factory=dict)
-    item_ids: list[str] = field(default_factory=list)
+    item_stacks: list[ItemStack] = field(default_factory=list)
     monster_ids: list[str] = field(default_factory=list)
+
+    def find_stack(self, item_id: str) -> ItemStack | None:
+        for s in self.item_stacks:
+            if s.item_id == item_id:
+                return s
+        return None
 
 
 @dataclass(slots=True)
@@ -28,7 +33,7 @@ class Monster:
     defense: int
     experience_reward: int
     hp: int | None = None
-    loot_item_id: str | None = None
+    loot_item: ItemStackDefinition | None = None
 
     def __post_init__(self) -> None:
         if self.hp is None:

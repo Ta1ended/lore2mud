@@ -6,11 +6,11 @@
     "exits": {
       "east": "room_glassgrass_path"
     },
-    "item_ids": [
-      "item_spark_lantern",
-      "item_linglu_pill",
-      "item_crystal_blade",
-      "item_bronze_scale_mail"
+    "item_stacks": [
+      {"item_id": "item_spark_lantern", "quantity": 1},
+      {"item_id": "item_linglu_pill", "quantity": 3},
+      {"item_id": "item_crystal_blade", "quantity": 1},
+      {"item_id": "item_bronze_scale_mail", "quantity": 1}
     ],
     "monster_ids": [],
     "adaptation_notes": "本仓库原创演示地点。"
@@ -26,7 +26,7 @@
       },
       "east": "room_silent_observatory"
     },
-    "item_ids": [],
+    "item_stacks": [],
     "monster_ids": [],
     "adaptation_notes": "本仓库原创演示地点。"
   },
@@ -37,7 +37,7 @@
     "exits": {
       "west": "room_glassgrass_path"
     },
-    "item_ids": [],
+    "item_stacks": [],
     "monster_ids": [
       "monster_ash_mite"
     ],

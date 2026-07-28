@@ -75,9 +75,9 @@ class RecoverSuccessTests(unittest.TestCase):
         self.assertEqual(quests_before, quests_after)
 
     def test_recover_preserves_inventory(self) -> None:
-        inv_before = list(self.world.player.inventory.item_ids)
+        inv_before = [s.item_id for s in self.world.player.inventory.stacks]
         self.world.recover()
-        self.assertEqual(self.world.player.inventory.item_ids, inv_before)
+        self.assertEqual([s.item_id for s in self.world.player.inventory.stacks], inv_before)
 
     def test_recover_preserves_equipped(self) -> None:
         hand_before = self.world.equipped.hand
@@ -88,11 +88,11 @@ class RecoverSuccessTests(unittest.TestCase):
 
     def test_recover_preserves_room_items(self) -> None:
         items_before = {
-            rid: list(r.item_ids) for rid, r in self.world.rooms.items()
+            rid: [s.item_id for s in r.item_stacks] for rid, r in self.world.rooms.items()
         }
         self.world.recover()
         for rid, room in self.world.rooms.items():
-            self.assertEqual(room.item_ids, items_before[rid])
+            self.assertEqual([s.item_id for s in room.item_stacks], items_before[rid])
 
     def test_recover_preserves_room_monsters(self) -> None:
         monsters_before = {
@@ -184,10 +184,10 @@ class RecoverFailureTests(unittest.TestCase):
     def test_alive_recover_failure_preserves_inventory(self) -> None:
         pack = load_content_pack(DEMO_PATH)
         world = World.from_content_pack(pack)
-        inv_before = list(world.player.inventory.item_ids)
+        inv_before = [s.item_id for s in world.player.inventory.stacks]
         with self.assertRaises(WorldRuleError):
             world.recover()
-        self.assertEqual(world.player.inventory.item_ids, inv_before)
+        self.assertEqual([s.item_id for s in world.player.inventory.stacks], inv_before)
 
     def test_alive_recover_failure_preserves_quests(self) -> None:
         pack = load_content_pack(DEMO_PATH)
@@ -212,12 +212,12 @@ class DeathGateWorldTests(unittest.TestCase):
             "hp": w.player.hp,
             "level": w.player.level,
             "exp": w.player.experience,
-            "inv": list(w.player.inventory.item_ids),
+            "inv": [(s.item_id, s.quantity) for s in w.player.inventory.stacks],
             "hand": w.equipped.hand,
             "body": w.equipped.body,
             "dlg": w.active_dialogue,
             "room_items": {
-                rid: list(r.item_ids) for rid, r in w.rooms.items()
+                rid: [(s.item_id, s.quantity) for s in r.item_stacks] for rid, r in w.rooms.items()
             },
             "room_monsters": {
                 rid: list(r.monster_ids) for rid, r in w.rooms.items()
@@ -235,12 +235,12 @@ class DeathGateWorldTests(unittest.TestCase):
         self.assertEqual(w.player.hp, snap["hp"])
         self.assertEqual(w.player.level, snap["level"])
         self.assertEqual(w.player.experience, snap["exp"])
-        self.assertEqual(w.player.inventory.item_ids, snap["inv"])
+        self.assertEqual([(s.item_id, s.quantity) for s in w.player.inventory.stacks], snap["inv"])
         self.assertEqual(w.equipped.hand, snap["hand"])
         self.assertEqual(w.equipped.body, snap["body"])
         self.assertEqual(w.active_dialogue, snap["dlg"])
         for rid in w.rooms:
-            self.assertEqual(w.rooms[rid].item_ids, snap["room_items"][rid])
+            self.assertEqual([(s.item_id, s.quantity) for s in w.rooms[rid].item_stacks], snap["room_items"][rid])
             self.assertEqual(
                 w.rooms[rid].monster_ids, snap["room_monsters"][rid]
             )
@@ -348,12 +348,12 @@ class DeathGateCommandTests(unittest.TestCase):
             "hp": w.player.hp,
             "level": w.player.level,
             "exp": w.player.experience,
-            "inv": list(w.player.inventory.item_ids),
+            "inv": [(s.item_id, s.quantity) for s in w.player.inventory.stacks],
             "hand": w.equipped.hand,
             "body": w.equipped.body,
             "dlg": w.active_dialogue,
             "room_items": {
-                rid: list(r.item_ids) for rid, r in w.rooms.items()
+                rid: [(s.item_id, s.quantity) for s in r.item_stacks] for rid, r in w.rooms.items()
             },
             "quests": {
                 qid: qs.completed for qid, qs in w.quest_states.items()
@@ -537,10 +537,10 @@ class SaveLoadRecoverTests(unittest.TestCase):
 
     def test_save_format_version_unchanged(self) -> None:
         from lore2mud.engine.save import SAVE_FORMAT_VERSION
-        self.assertEqual(SAVE_FORMAT_VERSION, 5)
+        self.assertEqual(SAVE_FORMAT_VERSION, 6)
 
     def test_content_pack_version_unchanged(self) -> None:
-        self.assertEqual(self.pack.version, "0.2.7")
+        self.assertEqual(self.pack.version, "0.3.0")
 
 
 if __name__ == "__main__":

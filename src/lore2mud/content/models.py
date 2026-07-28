@@ -29,12 +29,19 @@ class ExitDefinition:
 
 
 @dataclass(frozen=True, slots=True)
+class ItemStackDefinition:
+    """Immutable stack reference used in content definitions."""
+    item_id: str
+    quantity: int = 1
+
+
+@dataclass(frozen=True, slots=True)
 class RoomDefinition:
     id: str
     name: str
     description: str
     exits: dict[str, ExitDefinition]
-    item_ids: tuple[str, ...] = ()
+    item_stacks: tuple[ItemStackDefinition, ...] = ()
     monster_ids: tuple[str, ...] = ()
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
 
@@ -48,6 +55,7 @@ class ItemDefinition:
     slot: str | None = None
     attack_bonus: int = 0
     defense_bonus: int = 0
+    stack_limit: int = 1
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
 
 
@@ -61,7 +69,7 @@ class MonsterDefinition:
     attack: int
     defense: int
     experience_reward: int
-    loot_item_id: str | None = None
+    loot_item: ItemStackDefinition | None = None
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
 
 
@@ -90,7 +98,7 @@ class DialogueOption:
     id: str
     text: str
     next_node_id: str | None = None
-    grant_item_id: str | None = None
+    grant_item: ItemStackDefinition | None = None
 
 
 @dataclass(frozen=True, slots=True)

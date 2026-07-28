@@ -30,12 +30,12 @@ def _runtime_snapshot(world: World) -> dict[str, object]:
             world.player.level,
             world.player.experience,
         ),
-        "inventory": list(world.player.inventory.item_ids),
+        "inventory": [s.item_id for s in world.player.inventory.stacks],
         "equipped": (world.equipped.hand, world.equipped.body),
         "quests": copy.deepcopy(world.quest_states),
         "active_dialogue": copy.deepcopy(world.active_dialogue),
         "rooms": {
-            room_id: (list(room.item_ids), list(room.monster_ids))
+            room_id: ([s.item_id for s in room.item_stacks], list(room.monster_ids))
             for room_id, room in world.rooms.items()
         },
         "monsters": {

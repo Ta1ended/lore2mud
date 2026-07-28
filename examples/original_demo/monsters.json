@@ -8,7 +8,7 @@
     "attack": 3,
     "defense": 1,
     "experience_reward": 12,
-    "loot_item_id": "item_ash_mite_gel",
+    "loot_item": {"item_id": "item_ash_mite_gel", "quantity": 1},
     "adaptation_notes": "本仓库原创演示怪物。"
   }
 ]

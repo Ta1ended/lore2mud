@@ -3,6 +3,7 @@
     "id": "item_spark_lantern",
     "name": "微火提灯",
     "description": "一盏封着淡蓝火星的小灯，足以照亮近处的路。",
+    "stack_limit": 1,
     "adaptation_notes": "本仓库原创演示物品。"
   },
   {
@@ -10,6 +11,7 @@
     "name": "灵露丸",
     "description": "一枚晶莹的小药丸，散发清凉草药气息。",
     "heal_amount": 10,
+    "stack_limit": 5,
     "adaptation_notes": "本仓库原创演示消耗品。"
   },
   {
@@ -18,6 +20,7 @@
     "description": "一片薄而透明的晶体，边缘泛着冷光，握柄处缠着细麻绳。",
     "slot": "hand",
     "attack_bonus": 3,
+    "stack_limit": 1,
     "adaptation_notes": "本仓库原创演示装备。"
   },
   {
@@ -26,12 +29,14 @@
     "description": "层层叠叠的铜鳞片串在皮带上，沉甸甸的却意外灵活。",
     "slot": "body",
     "defense_bonus": 3,
+    "stack_limit": 1,
     "adaptation_notes": "本仓库原创演示护甲。"
   },
   {
     "id": "item_chen_token",
     "name": "旧铜牌",
     "description": "陈伯交给你的旧铜牌，边缘刻着模糊的路线记号。",
+    "stack_limit": 1,
     "adaptation_notes": "本仓库原创演示对话奖励物品。"
   },
   {
@@ -39,6 +44,7 @@
     "name": "灰壳凝胶",
     "description": "从灰壳兽甲片间凝出的凉润胶质，能缓解战斗后的疼痛。",
     "heal_amount": 6,
+    "stack_limit": 3,
     "adaptation_notes": "本仓库原创演示怪物战利品。"
   }
 ]

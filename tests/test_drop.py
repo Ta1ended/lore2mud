@@ -30,12 +30,12 @@ def _runtime_snapshot(world: World) -> dict[str, object]:
             world.player.level,
             world.player.experience,
         ),
-        "inventory": list(world.player.inventory.item_ids),
+        "inventory": [s.item_id for s in world.player.inventory.stacks],
         "equipped": (world.equipped.hand, world.equipped.body),
         "quests": copy.deepcopy(world.quest_states),
         "active_dialogue": copy.deepcopy(world.active_dialogue),
         "rooms": {
-            room_id: (list(room.item_ids), list(room.monster_ids))
+            room_id: ([s.item_id for s in room.item_stacks], list(room.monster_ids))
             for room_id, room in world.rooms.items()
         },
         "monsters": {
@@ -58,9 +58,9 @@ class DropWorldTests(unittest.TestCase):
         self.assertIsInstance(outcome, DropOutcome)
         self.assertEqual(outcome.item_id, "item_spark_lantern")
         self.assertEqual(outcome.item_name, "微火提灯")
-        self.assertNotIn("item_spark_lantern", self.world.player.inventory.item_ids)
+        self.assertNotIn("item_spark_lantern", [s.item_id for s in self.world.player.inventory.stacks])
         self.assertEqual(
-            self.world.current_room.item_ids.count("item_spark_lantern"), 1
+            [s.item_id for s in self.world.current_room.item_stacks].count("item_spark_lantern"), 1
         )
 
     def test_drop_by_unique_display_name(self) -> None:
@@ -69,7 +69,7 @@ class DropWorldTests(unittest.TestCase):
         outcome = self.world.drop("微火提灯")
 
         self.assertEqual(outcome.item_id, "item_spark_lantern")
-        self.assertIn("item_spark_lantern", self.world.current_room.item_ids)
+        self.assertIn("item_spark_lantern", [s.item_id for s in self.world.current_room.item_stacks])
 
     def test_drop_keeps_active_dialogue_open(self) -> None:
         self.world.take("item_spark_lantern")
@@ -135,14 +135,14 @@ class DropCommandTests(unittest.TestCase):
 
         result = self.commands.execute("drop item_spark_lantern")
 
-        self.assertEqual(result.text, "你放下了 微火提灯 (item_spark_lantern)。")
-        self.assertIn("item_spark_lantern", self.commands.execute("look").text)
+        self.assertEqual(result.text, "你放下了 微火提灯。")
+        self.assertIn("微火提灯", self.commands.execute("look").text)
         self.assertIn("拾取了", self.commands.execute("take item_spark_lantern").text)
 
     def test_command_requires_an_item_query(self) -> None:
         self.assertEqual(
             self.commands.execute("drop").text,
-            "用法：drop <物品ID或名称>",
+            "用法：take <物品ID或名称> [数量]",
         )
 
     def test_help_includes_drop(self) -> None:
@@ -161,9 +161,9 @@ class DropSaveRoundTripTests(unittest.TestCase):
             service.save(world)
             loaded = service.load()
 
-        self.assertIn("item_spark_lantern", loaded.current_room.item_ids)
+        self.assertIn("item_spark_lantern", [s.item_id for s in loaded.current_room.item_stacks])
         loaded.take("item_spark_lantern")
-        self.assertIn("item_spark_lantern", loaded.player.inventory.item_ids)
+        self.assertIn("item_spark_lantern", [s.item_id for s in loaded.player.inventory.stacks])
 
 
 if __name__ == "__main__":

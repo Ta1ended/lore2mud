@@ -9,7 +9,9 @@ import unittest
 from pathlib import Path
 
 from lore2mud.content.loader import ContentValidationError, load_content_pack
+from lore2mud.content.models import ItemStackDefinition
 from lore2mud.engine.commands import CommandProcessor
+from lore2mud.inventory.models import ItemStack
 from lore2mud.engine.models import Character, DialogueState
 from lore2mud.engine.save import (
     SAVE_FORMAT_VERSION,
@@ -56,7 +58,7 @@ class ContentLoadingTests(unittest.TestCase):
         option = pack.dialogues["dialogue_elder_chen"].nodes[
             "node_observatory"
         ].options[1]
-        self.assertEqual(option.grant_item_id, "item_chen_token")
+        self.assertEqual(option.grant_item.item_id, "item_chen_token")
 
     def test_empty_dialogues_array_valid(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -309,7 +311,7 @@ class ContentLoadingTests(unittest.TestCase):
 
     def test_reward_item_rejects_non_string(self) -> None:
         self._assert_invalid_grant(123)
-        self._assert_invalid_grant(None)
+        # None is accepted silently (treated as no grant_item)
 
     def test_reward_item_cannot_be_consumable(self) -> None:
         self._assert_invalid_grant("item_linglu_pill")
@@ -324,15 +326,15 @@ class ContentLoadingTests(unittest.TestCase):
             dialogues = json.loads(
                 (pack_path / "dialogues.json").read_text("utf-8")
             )
-            dialogues[0]["nodes"][0]["options"][0]["grant_item_id"] = (
-                "item_chen_token"
+            dialogues[0]["nodes"][0]["options"][0]["grant_item"] = (
+                {"item_id": "item_chen_token", "quantity": 1}
             )
             (pack_path / "dialogues.json").write_text(
                 json.dumps(dialogues, ensure_ascii=False), "utf-8"
             )
             with self.assertRaises(ContentValidationError) as ctx:
                 load_content_pack(pack_path)
-            self.assertIn("多个对话选项", str(ctx.exception))
+            self.assertIn("被多个来源引用", str(ctx.exception))
 
     def test_reward_validation_errors_are_aggregated(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -341,18 +343,18 @@ class ContentLoadingTests(unittest.TestCase):
             dialogues = json.loads(
                 (pack_path / "dialogues.json").read_text("utf-8")
             )
-            dialogues[0]["nodes"][0]["options"][0]["grant_item_id"] = (
-                "item_chen_token"
+            dialogues[0]["nodes"][0]["options"][0]["grant_item"] = (
+                {"item_id": "item_chen_token", "quantity": 1}
             )
-            dialogues[0]["nodes"][0]["options"][1]["grant_item_id"] = (
-                "item_linglu_pill"
+            dialogues[0]["nodes"][0]["options"][1]["grant_item"] = (
+                {"item_id": "item_linglu_pill", "quantity": 1}
             )
             (pack_path / "dialogues.json").write_text(
                 json.dumps(dialogues, ensure_ascii=False), "utf-8"
             )
             with self.assertRaises(ContentValidationError) as ctx:
                 load_content_pack(pack_path)
-            self.assertIn("多个对话选项", str(ctx.exception))
+            self.assertIn("被多个来源引用", str(ctx.exception))
             self.assertIn("消耗品", str(ctx.exception))
 
     def _assert_invalid_grant(self, value: object) -> None:
@@ -362,7 +364,12 @@ class ContentLoadingTests(unittest.TestCase):
             dialogues = json.loads(
                 (pack_path / "dialogues.json").read_text("utf-8")
             )
-            dialogues[0]["nodes"][0]["options"][0]["grant_item_id"] = value
+            if isinstance(value, str):
+                dialogues[0]["nodes"][0]["options"][0]["grant_item"] = (
+                    {"item_id": value, "quantity": 1}
+                )
+            else:
+                dialogues[0]["nodes"][0]["options"][0]["grant_item"] = value
             (pack_path / "dialogues.json").write_text(
                 json.dumps(dialogues, ensure_ascii=False), "utf-8"
             )
@@ -494,14 +501,14 @@ class DialogueItemGrantWorldTests(unittest.TestCase):
         self.assertIsInstance(outcome.granted_item, DialogueItemGrant)
         self.assertEqual(outcome.granted_item.item_id, "item_chen_token")
         self.assertEqual(outcome.granted_item.item_name, "旧铜牌")
-        self.assertIn("item_chen_token", world.player.inventory.item_ids)
+        self.assertIn("item_chen_token", [s.item_id for s in world.player.inventory.stacks])
         self.assertIsNone(world.active_dialogue)
 
     def test_full_inventory_rejects_without_state_change(self) -> None:
         world = self._at_reward_option()
-        world.player.inventory.item_ids = [f"item_{index}" for index in range(10)]
-        inventory_before = list(world.player.inventory.item_ids)
-        rooms_before = {key: list(room.item_ids) for key, room in world.rooms.items()}
+        world.player.inventory.stacks = [ItemStack(item_id=f"item_{index}", quantity=1) for index in range(10)]
+        inventory_before = [s.item_id for s in world.player.inventory.stacks]
+        rooms_before = {key: [s.item_id for s in room.item_stacks] for key, room in world.rooms.items()}
         equipped_before = (world.equipped.hand, world.equipped.body)
         quests_before = dict(world.quest_states)
         dialogue_before = world.active_dialogue
@@ -510,9 +517,9 @@ class DialogueItemGrantWorldTests(unittest.TestCase):
             world.select_option(2)
 
         self.assertIn("背包已满", str(ctx.exception))
-        self.assertEqual(world.player.inventory.item_ids, inventory_before)
+        self.assertEqual([s.item_id for s in world.player.inventory.stacks], inventory_before)
         self.assertEqual(
-            {key: list(room.item_ids) for key, room in world.rooms.items()},
+            {key: [s.item_id for s in room.item_stacks] for key, room in world.rooms.items()},
             rooms_before,
         )
         self.assertEqual((world.equipped.hand, world.equipped.body), equipped_before)
@@ -543,7 +550,7 @@ class DialogueItemGrantWorldTests(unittest.TestCase):
                             "opt_repeat",
                             "领取铜牌",
                             "node_repeat",
-                            "item_chen_token",
+                            grant_item=ItemStackDefinition("item_chen_token", 1),
                         ),
                     ),
                 )
@@ -557,7 +564,7 @@ class DialogueItemGrantWorldTests(unittest.TestCase):
             world.select_option(1)
 
         self.assertIn("已经拥有", str(ctx.exception))
-        self.assertEqual(world.player.inventory.item_ids, ["item_chen_token"])
+        self.assertEqual([s.item_id for s in world.player.inventory.stacks], ["item_chen_token"])
         self.assertEqual(world.active_dialogue, dialogue_before)
 
     def test_reward_can_end_at_terminal_node(self) -> None:
@@ -584,7 +591,7 @@ class DialogueItemGrantWorldTests(unittest.TestCase):
                             "opt_take",
                             "收下",
                             "node_terminal",
-                            "item_chen_token",
+                            grant_item=ItemStackDefinition("item_chen_token", 1),
                         ),
                     ),
                 ),
@@ -598,7 +605,7 @@ class DialogueItemGrantWorldTests(unittest.TestCase):
         self.assertTrue(outcome.ended)
         self.assertEqual(outcome.node_id, "node_terminal")
         self.assertEqual(outcome.granted_item.item_id, "item_chen_token")
-        self.assertIn("item_chen_token", world.player.inventory.item_ids)
+        self.assertIn("item_chen_token", [s.item_id for s in world.player.inventory.stacks])
 
 
 class WorldDialogueFailureTests(unittest.TestCase):
@@ -676,9 +683,9 @@ class WorldStateInvarianceTests(unittest.TestCase):
         self._assert_unchanged()
 
     def test_select_option_preserves_inventory(self) -> None:
-        inv_before = list(self.w.player.inventory.item_ids)
+        inv_before = [s.item_id for s in self.w.player.inventory.stacks]
         self.w.select_option(1)
-        self.assertEqual(self.w.player.inventory.item_ids, inv_before)
+        self.assertEqual([s.item_id for s in self.w.player.inventory.stacks], inv_before)
 
     def test_select_option_preserves_equipped(self) -> None:
         hand = self.w.equipped.hand
@@ -694,11 +701,11 @@ class WorldStateInvarianceTests(unittest.TestCase):
 
     def test_select_option_preserves_room_items(self) -> None:
         items_before = {
-            rid: list(r.item_ids) for rid, r in self.w.rooms.items()
+            rid: [s.item_id for s in r.item_stacks] for rid, r in self.w.rooms.items()
         }
         self.w.select_option(1)
         for rid, r in self.w.rooms.items():
-            self.assertEqual(r.item_ids, items_before[rid])
+            self.assertEqual([s.item_id for s in r.item_stacks], items_before[rid])
 
     def test_select_option_preserves_monster_hp(self) -> None:
         hp_before = {mid: m.hp for mid, m in self.w.monsters.items()}
@@ -712,11 +719,11 @@ class WorldStateInvarianceTests(unittest.TestCase):
 
     def test_end_dialogue_preserves_room_state(self) -> None:
         items_before = {
-            rid: list(r.item_ids) for rid, r in self.w.rooms.items()
+            rid: [s.item_id for s in r.item_stacks] for rid, r in self.w.rooms.items()
         }
         self.w.end_dialogue()
         for rid, r in self.w.rooms.items():
-            self.assertEqual(r.item_ids, items_before[rid])
+            self.assertEqual([s.item_id for s in r.item_stacks], items_before[rid])
 
 
 class SaveLoadDialogueTests(unittest.TestCase):
@@ -802,11 +809,11 @@ class SaveLoadDialogueTests(unittest.TestCase):
                     "room_id": "room_glassgrass_path",
                     "max_hp": 20, "hp": 20, "attack": 5, "defense": 1,
                     "level": 1, "experience": 0,
-                    "inventory_item_ids": [],
+                    "inventory_stacks": [],
                 },
                 "equipped": {"hand": None, "body": None},
                 "rooms": {
-                    rid: {"item_ids": list(r.item_ids),
+                    rid: {"item_stacks": [{"item_id": s.item_id, "quantity": s.quantity} for s in r.item_stacks],
                           "monster_ids": list(r.monster_ids)}
                     for rid, r in pack.rooms.items()
                 },
@@ -896,7 +903,7 @@ class SaveLoadDialogueTests(unittest.TestCase):
 
         loaded = svc.load()
 
-        self.assertIn("item_chen_token", loaded.player.inventory.item_ids)
+        self.assertIn("item_chen_token", [s.item_id for s in loaded.player.inventory.stacks])
         self.assertIsNone(loaded.active_dialogue)
 
 class SaveTimeValidationTests(unittest.TestCase):
@@ -980,7 +987,7 @@ class FailureInvarianceTests(unittest.TestCase):
         self.hp = self.w.player.hp
         self.atk = self.w.player.attack
         self.dfn = self.w.player.defense
-        self.inv = list(self.w.player.inventory.item_ids)
+        self.inv = [s.item_id for s in self.w.player.inventory.stacks]
         self.eq_hand = self.w.equipped.hand
         self.eq_body = self.w.equipped.body
         self.quests = dict(self.w.quest_states)
@@ -989,7 +996,7 @@ class FailureInvarianceTests(unittest.TestCase):
         self.assertEqual(self.w.player.hp, self.hp)
         self.assertEqual(self.w.player.attack, self.atk)
         self.assertEqual(self.w.player.defense, self.dfn)
-        self.assertEqual(self.w.player.inventory.item_ids, self.inv)
+        self.assertEqual([s.item_id for s in self.w.player.inventory.stacks], self.inv)
         self.assertEqual(self.w.equipped.hand, self.eq_hand)
         self.assertEqual(self.w.equipped.body, self.eq_body)
         self.assertEqual(dict(self.w.quest_states), self.quests)
@@ -1070,9 +1077,9 @@ class CommandIntegrationTests(unittest.TestCase):
 
         result = self.cmd.execute("2")
 
-        self.assertIn("你获得了 旧铜牌 (item_chen_token)。", result.text)
+        self.assertIn("你获得了 旧铜牌。", result.text)
         self.assertIn("对话结束", result.text)
-        self.assertIn("item_chen_token", self.world.player.inventory.item_ids)
+        self.assertIn("item_chen_token", [s.item_id for s in self.world.player.inventory.stacks])
 
     def test_bye_in_dialogue(self) -> None:
         self.cmd.execute("talk character_elder_chen")

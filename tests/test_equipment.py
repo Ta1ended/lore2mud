@@ -201,11 +201,11 @@ class EquipmentFailureTests(unittest.TestCase):
     def test_equip_already_equipped(self) -> None:
         self.commands.execute("equip item_crystal_blade")
         ea_before = self.world.effective_attack
-        inv_before = list(self.world.player.inventory.item_ids)
+        inv_before = [s.item_id for s in self.world.player.inventory.stacks]
         result = self.commands.execute("equip item_crystal_blade")
         self.assertIn("已经装备了", result.text)
         self.assertEqual(self.world.effective_attack, ea_before)
-        self.assertEqual(self.world.player.inventory.item_ids, inv_before)
+        self.assertEqual([s.item_id for s in self.world.player.inventory.stacks], inv_before)
 
     def test_equip_second_hand_item_rejected(self) -> None:
         """When hand is occupied, equipping another item is rejected."""
@@ -215,7 +215,8 @@ class EquipmentFailureTests(unittest.TestCase):
             id="item_fake_sword", name="假剑", description="测试",
             slot="hand", attack_bonus=1,
         )
-        self.world.player.inventory.item_ids.append("item_fake_sword")
+        from lore2mud.inventory.models import ItemStack
+        self.world.player.inventory.stacks.append(ItemStack(item_id="item_fake_sword", quantity=1))
         ea_before = self.world.effective_attack
         result = self.commands.execute("equip item_fake_sword")
         self.assertIn("已经装备了", result.text)
@@ -530,7 +531,8 @@ class BodyEquipTests(unittest.TestCase):
             id="item_fake_armor", name="假甲", description="测试",
             slot="body", defense_bonus=1,
         )
-        self.world.player.inventory.item_ids.append("item_fake_armor")
+        from lore2mud.inventory.models import ItemStack
+        self.world.player.inventory.stacks.append(ItemStack(item_id="item_fake_armor", quantity=1))
         result = self.commands.execute("equip item_fake_armor")
         self.assertIn("已经装备了", result.text)
         self.assertEqual(self.world.equipped.body, "item_bronze_scale_mail")
@@ -685,7 +687,7 @@ class BodySaveRoundTripTests(unittest.TestCase):
         """v3 saves (no body key) must be rejected."""
         self.service.save(self.world)
         txt = self.service.save_path.read_text("utf-8")
-        txt = txt.replace('"save_format_version": 5', '"save_format_version": 4')
+        txt = txt.replace('"save_format_version": 6', '"save_format_version": 4')
         self.service.save_path.write_text(txt, "utf-8")
         with self.assertRaises(SaveLoadError) as ctx:
             self.service.load()
@@ -867,7 +869,7 @@ class WorldStateInvarianceTests(unittest.TestCase):
             self.world.player.attack,
             self.world.player.defense,
             self.world.player.hp,
-            list(self.world.player.inventory.item_ids),
+            [s.item_id for s in self.world.player.inventory.stacks],
             self.world.equipped.hand,
             self.world.equipped.body,
         )
@@ -984,7 +986,7 @@ class SaveV4IllegalMatrixTests(unittest.TestCase):
     def test_v3_save_rejected(self) -> None:
         self.service.save(self.world)
         txt = self.service.save_path.read_text("utf-8")
-        txt = txt.replace('"save_format_version": 5', '"save_format_version": 4')
+        txt = txt.replace('"save_format_version": 6', '"save_format_version": 4')
         self.service.save_path.write_text(txt, "utf-8")
         with self.assertRaises(SaveLoadError) as ctx:
             self.service.load()
