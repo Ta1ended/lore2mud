@@ -4,6 +4,9 @@
 
 ### Added
 
+- Added read-only `look` rendering for held-item exit gates: gated exits show the
+  direction, required item name, stable ID, and held/missing status, while
+  ordinary exits remain bare directions.
 - Added normalized `ExitDefinition` content contracts and optional
   `required_item_id` gates for room exits, while preserving legacy string exits.
 - Added one original demo gate: returning west from 琉草小径 requires the

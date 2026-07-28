@@ -100,7 +100,10 @@ class CommandProcessor:
     def _look(self) -> str:
         room = self.world.current_room
         lines = [f"{room.name} [{room.id}]", room.description]
-        exits = "、".join(sorted(room.exits)) if room.exits else "无"
+        exits = "、".join(
+            self._render_exit(direction)
+            for direction in sorted(room.exits)
+        ) if room.exits else "无"
         lines.append(f"出口：{exits}")
 
         if room.item_ids:
@@ -132,6 +135,21 @@ class CommandProcessor:
             lines.append(hints)
 
         return "\n".join(lines)
+
+    def _render_exit(self, direction: str) -> str:
+        """Render one exit's read-only gate status for ``look``."""
+        exit_def = self.world.current_room.exits[direction]
+        required_item_id = exit_def.required_item_id
+        if required_item_id is None:
+            return direction
+
+        item = self.world.items[required_item_id]
+        possession = (
+            "已持有"
+            if required_item_id in self.world.player.inventory.item_ids
+            else "未持有"
+        )
+        return f"{direction}（需要：{item.name} ({required_item_id})，{possession}）"
 
     def _active_quest_hints(self) -> str:
         """Return a hint line for incomplete quests triggered in this room."""

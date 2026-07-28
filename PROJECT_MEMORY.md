@@ -20,8 +20,8 @@ stale.
 
 - Repository: `lore2mud`
 - Branch: `main`
-- Remote: origin/main 仍为 `8d71ed7`；持有物品门禁功能提交 `983d7a9` 和本次
-  复核交接记录尚未推送，按项目负责人指示保留给 GitHub Desktop 发布。恢复时仍须运行
+- Remote: origin/main 仍为 `8d71ed7`；持有物品门禁及其 `look` 只读状态展示的本地
+  提交栈尚未推送，按项目负责人指示保留给 GitHub Desktop 发布。恢复时仍须运行
   `git status --short --branch` 和 `git rev-list --left-right --count
   HEAD...origin/main` 检查实时状态。
 - Functional checkpoint: held-item exit-gate delivery begins at `983d7a9`;
@@ -42,7 +42,7 @@ stale.
 
 ## Verified facts
 
-- Full project suite: 365 tests passed (2026-07-28).
+- Full project suite: 368 tests passed (2026-07-28).
 - tests/test_dialogue.py: 91 tests, including reward loading, atomic success and
   failure paths, terminal/end behavior, save/load, and command rendering.
 - Repository safety check: passed.
@@ -74,11 +74,15 @@ stale.
   exits. A gate checks inventory before room/quest/dialogue mutations, does not
   consume its item, and requires no save state; demo west exit needs the
   dialogue-earned `item_chen_token`.
+- `look` renders each gated exit read-only with its direction, required item name,
+  stable ID, and `未持有`/`已持有` status; ordinary exits remain bare directions.
+  `World.move()` remains the sole gate-rule authority, and the display adds no
+  content or save contract.
 - Root independently reran the 17 focused gate tests, full 365-test suite,
   history safety scan, compile, validation, original CLI gate/save-load flow,
   Git object check, and isolated wheel-install validation on 2026-07-28.
 - Content pack version: 0.2.6; save format version: 5.
-- git diff --check: clean.
+- Focused gate/command suite: 26 tests passed (2026-07-28).
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.
 - Private split reconstruction matched the decoded source in character count and

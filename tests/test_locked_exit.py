@@ -33,6 +33,21 @@ def _grant_demo_token(world: World) -> None:
     assert "item_chen_token" in world.player.inventory.item_ids
 
 
+def _runtime_snapshot(world: World) -> dict[str, object]:
+    return {
+        "room": world.player.room_id,
+        "inventory": list(world.player.inventory.item_ids),
+        "equipped": (world.equipped.hand, world.equipped.body),
+        "quests": copy.deepcopy(world.quest_states),
+        "active_dialogue": copy.deepcopy(world.active_dialogue),
+        "rooms": {
+            room_id: (list(room.item_ids), list(room.monster_ids))
+            for room_id, room in world.rooms.items()
+        },
+        "monsters": {monster_id: monster.hp for monster_id, monster in world.monsters.items()},
+    }
+
+
 class ExitContentLoadingTests(unittest.TestCase):
     """Both legacy and structured exits normalize to ExitDefinition."""
 
@@ -256,6 +271,39 @@ class LockedExitCommandAndSaveTests(unittest.TestCase):
         self.assertIn("余烬渡台", moved.text)
         self.assertIn("item_chen_token", commands.world.player.inventory.item_ids)
 
+    def test_look_keeps_ordinary_exits_bare(self) -> None:
+        result = CommandProcessor(_demo_world()).execute("look")
+        self.assertIn("出口：east", result.text)
+        self.assertNotIn("需要：", result.text)
+
+    def test_look_shows_missing_gate_item_without_changing_world_state(self) -> None:
+        world = _demo_world()
+        world.move("east")
+        world.start_dialogue("character_elder_chen")
+        commands = CommandProcessor(world)
+        snapshot = _runtime_snapshot(world)
+
+        result = commands.execute("look")
+
+        self.assertIn("west", result.text)
+        self.assertIn("旧铜牌", result.text)
+        self.assertIn("item_chen_token", result.text)
+        self.assertIn("未持有", result.text)
+        self.assertEqual(_runtime_snapshot(world), snapshot)
+
+    def test_look_shows_held_gate_item_after_real_dialogue_without_mutation(self) -> None:
+        commands = CommandProcessor(_demo_world())
+        self._grant_token_via_commands(commands)
+        snapshot = _runtime_snapshot(commands.world)
+
+        result = commands.execute("look")
+
+        self.assertIn("west", result.text)
+        self.assertIn("旧铜牌", result.text)
+        self.assertIn("item_chen_token", result.text)
+        self.assertIn("已持有", result.text)
+        self.assertEqual(_runtime_snapshot(commands.world), snapshot)
+
     def test_save_v5_preserves_inventory_gate_without_serializing_exit_state(self) -> None:
         pack = load_content_pack(DEMO_PATH)
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -276,6 +324,8 @@ class LockedExitCommandAndSaveTests(unittest.TestCase):
             service.save(with_token)
             loaded_with = service.load()
             self.assertIn("item_chen_token", loaded_with.player.inventory.item_ids)
+            looked = CommandProcessor(loaded_with).execute("look")
+            self.assertIn("已持有", looked.text)
             self.assertEqual(loaded_with.move("west").id, "room_ember_wharf")
 
     def test_serialization_has_no_exit_state(self) -> None:
