@@ -300,3 +300,47 @@
 - Evidence: `src/lore2mud/engine/world.py`, `src/lore2mud/engine/commands.py`,
   `tests/test_drop.py`, `examples/original_demo/README.md`.
 - Supersedes: None.
+
+## DEC-0016: Deterministic single-item monster loot reuses save v5 placement
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: The public original demo needs a small combat-to-item gameplay loop
+  without introducing randomized tables, automatic inventory changes, or a new
+  save format.
+- Decision: Add optional `MonsterDefinition.loot_item_id` and runtime
+  `Monster.loot_item_id`. The loader requires a real, initially unplaced item
+  ID with no duplicate monster owner and no conflict with a dialogue reward.
+  `World.attack()` preflights that the loot is still unplaced, then puts it in
+  the current room only when the monster is defeated and returns `LootOutcome`.
+  Consumables are allowed. Save/load continues to use existing room and
+  inventory item placement, and rejects a loaded state where a living monster's
+  loot is already placed.
+- Consequences: Loot is deterministic, visible to `look`, and collected through
+  the existing `take` command. It cannot be farmed by repeated attacks. The
+  original demo content pack becomes 0.2.7; its older 0.2.6 saves are rejected
+  by the existing content-pack version check, while save JSON remains v5.
+- Evidence: `src/lore2mud/content/loader.py`,
+  `src/lore2mud/engine/world.py`, `src/lore2mud/engine/save.py`,
+  `tests/test_loot.py`, `examples/original_demo/`.
+- Supersedes: None.
+
+## DEC-0017: Gate private fact-layer activation behind core readiness
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: The project goal includes a personal playable adaptation, but the
+  current phase is public-engine development and the private novel corpus must
+  not be read, copied, scanned, or committed by this workflow.
+- Decision: Treat public regression results as evidence only for the generic
+  engine and original demo. Before scaling public playable content, first run a
+  read-only core-stability readiness audit with explicit public acceptance
+  gates. Private novel facts, canon, summaries, and derived adaptations remain
+  inaccessible until the project owner later grants a new, explicit, scoped
+  authorization.
+- Consequences: The next task may evaluate public engine readiness but cannot
+  inspect private material. A GO for public content scaling is not permission to
+  enter the private fact layer.
+- Evidence: Project owner direction on 2026-07-28; `PROJECT_STATE.md`;
+  `NEXT_TASK.md`.
+- Supersedes: None.

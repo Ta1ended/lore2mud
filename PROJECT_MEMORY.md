@@ -20,20 +20,22 @@ stale.
 
 - Repository: `lore2mud`
 - Branch: `main`
-- Remote: 在本次 `drop` 切片开始前，`HEAD`、本地跟踪 `origin/main` 与直接查询的
+- Remote: `drop` 切片开始前，`HEAD`、本地跟踪 `origin/main` 与直接查询的
   `origin` 服务器 `main` 都是
-  `1936e913348d3d46278ffaae2cfabf6502020835`；此前“仍为 `6c13fca`、等待发布”的
-  交接叙述已过期。此切片仅做本地提交，未自动推送；恢复时仍须运行
+  `1936e913348d3d46278ffaae2cfabf6502020835`；怪物战利品切片开始前，本地 `HEAD` 为
+  `7a084e9d2439e00d1b0f9098300219e6d9c4e802`，相对该远端为 ahead/behind `1/0`。
+  此前“仍为 `6c13fca`、等待发布”的交接叙述已过期。各切片仅做本地提交，未自动推送；恢复时仍须运行
   `git status --short --branch` 和 `git rev-list --left-right --count
   HEAD...origin/main` 检查实时状态。
 - Functional checkpoint: held-item exit gates, read-only `look` gate status,
   read-only visible-item inspection, safe named local save slots, a write-I/O
-  error contract, and `drop` for unequipped inventory items are implemented;
+  error contract, `drop` for unequipped inventory items, and deterministic
+  single-item monster loot are implemented;
   always inspect the live working tree before relying on this checkpoint.
 - 2026-07-28 public-history cleanup baseline: `96de7b2`（现为 `eafe70e`
   的祖先）；任何后续历史操作前仍须重新检查实时远端。
 - 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励 + 可见物品查看 + 命名存档槽位 +
-  写入错误契约 + 丢弃物品 已完成
+  写入错误契约 + 丢弃物品 + 确定性怪物战利品 已完成
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
 - The private novel corpus and split chapters are outside the repository under:
@@ -47,7 +49,11 @@ stale.
 
 ## Verified facts
 
-- Full project suite: 400 tests passed (2026-07-28) after the `drop` slice.
+- Full project suite: 415 tests passed (2026-07-28) after the deterministic
+  monster-loot slice.
+- `tests/test_loot.py`: 15 tests cover optional-field parsing, invalid and
+  duplicate references, dialogue conflicts, one-time room placement, attack
+  failure invariance, CLI rendering, and save/load validation.
 - `tests/test_drop.py`: 11 tests cover ID/name resolution, failure invariance,
   equipped-item rejection, dialogue preservation, CLI text, and save/load.
 - `tests/test_save_slots.py`: 12 tests cover default compatibility, isolated named
@@ -77,7 +83,7 @@ stale.
 - Dialogue reward: `grant_item_id` is optional but, when present, must be one
   unique, unplaced, non-consumable stable item ID. `World.select_option()` checks
   `Inventory.can_add` and duplicate ownership before `Inventory.add`, then returns
-  a typed `DialogueItemGrant`; save format remains v5 and demo pack is 0.2.6.
+  a typed `DialogueItemGrant`; save format remains v5.
 - Save format v5 loading rejects unknown fields at the top level, `content_pack`,
   `player`, every room, every monster, `quest_states`, `equipped`, and
   `active_dialogue`; validation completes before a replacement `World` is built.
@@ -104,16 +110,22 @@ stale.
   valid, unequipped item to the current room. It rejects missing, ambiguous, or
   hand/body-equipped items before mutation; room/inventory placement is already
   covered by save v5 serialization and uniqueness validation.
+- `MonsterDefinition.loot_item_id` is optional. It must reference an existing,
+  initially unplaced item, cannot duplicate another monster's loot or a dialogue
+  reward, and is placed in the current room only when that monster is first
+  defeated. `World.attack()` remains the authoritative transition and returns a
+  typed `LootOutcome`; save format v5 reuses existing room/inventory placement.
 - Under the project owner's temporary GPT-5.6-terra exception, Terra self-audited
-  and executed this `drop` slice. It reran the 11 focused tests, all 400 tests,
-  history safety scan, compile, content validation, and a real drop/take CLI
-  smoke on 2026-07-28. This is not an independent GPT-5.6-sol acceptance.
+  and executed the `drop` and deterministic monster-loot slices. The loot slice
+  reran 15 focused tests, all 415 tests, history safety scan, compile, content
+  validation, and a real defeat/loot/take CLI smoke on 2026-07-28. This is not
+  an independent GPT-5.6-sol acceptance.
 - The project owner provided a completed GPT-5.6-sol public-repository audit for
   baseline `2ecead1`, with a `CONDITIONAL GO`. It identified this write-I/O gap;
   the current slice closes it. The audit reported 43 dangling blobs without reading
   their contents; reachable-history scanning does not cover such objects. It also
   did not refresh the live GitHub server state.
-- Content pack version: 0.2.6; save format version: 5.
+- Content pack version: 0.2.7; save format version: 5.
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.
 - Private split reconstruction matched the decoded source in character count and
@@ -153,3 +165,7 @@ To resume safely:
 - Treat all player input, model output, and generated content as untrusted.
 - Keep original facts and game adaptation values in separate layers.
 - Use stable IDs for game entities; display names are not keys.
+- Passing public-engine regression checks does not certify private novel facts or
+  authorize private fact-layer work. First perform a separate read-only
+  core-stability readiness audit; private facts, canon, summaries, and derived
+  content still require explicit scoped authorization before any access.

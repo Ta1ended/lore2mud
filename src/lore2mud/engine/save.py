@@ -411,7 +411,21 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
             defense=m_def.defense,
             experience_reward=m_def.experience_reward,
             hp=m_hp,
+            loot_item_id=m_def.loot_item_id,
         )
+
+    placed_item_ids = all_save_item_ids | set(inv_ids)
+    for monster_id, monster in monsters.items():
+        loot_item_id = monster.loot_item_id
+        if (
+            monster.is_alive
+            and loot_item_id is not None
+            and loot_item_id in placed_item_ids
+        ):
+            raise SaveLoadError(
+                f"存活怪物 {monster_id!r} 的战利品 {loot_item_id!r} "
+                "已出现在世界中"
+            )
 
     # --- quest_states ---
     quest_states_raw = data.get("quest_states")

@@ -28,6 +28,7 @@ class Monster:
     defense: int
     experience_reward: int
     hp: int | None = None
+    loot_item_id: str | None = None
 
     def __post_init__(self) -> None:
         if self.hp is None:

@@ -33,5 +33,12 @@
     "name": "旧铜牌",
     "description": "陈伯交给你的旧铜牌，边缘刻着模糊的路线记号。",
     "adaptation_notes": "本仓库原创演示对话奖励物品。"
+  },
+  {
+    "id": "item_ash_mite_gel",
+    "name": "灰壳凝胶",
+    "description": "从灰壳兽甲片间凝出的凉润胶质，能缓解战斗后的疼痛。",
+    "heal_amount": 6,
+    "adaptation_notes": "本仓库原创演示怪物战利品。"
   }
 ]

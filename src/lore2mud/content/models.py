@@ -61,6 +61,7 @@ class MonsterDefinition:
     attack: int
     defense: int
     experience_reward: int
+    loot_item_id: str | None = None
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
 
 

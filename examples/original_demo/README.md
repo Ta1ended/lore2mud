@@ -21,6 +21,8 @@ talk character_elder_chen
 go east
 attack monster_ash_mite
 attack monster_ash_mite
+look
+take item_ash_mite_gel
 quests
 quit
 ```
@@ -35,6 +37,11 @@ quit
 - 移动房间会自动结束对话
 
 老陈会介绍微光边站的历史，并暗示观测站里有灰壳兽。
+
+## 怪物战利品
+
+灰壳兽首次被击败后会在当前房间掉落一份 `item_ash_mite_gel`。使用 `look` 查看掉落，
+再用 `take item_ash_mite_gel` 拾取；它是一件可用的原创消耗品。
 
 ## 物品交互
 

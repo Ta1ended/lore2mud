@@ -143,12 +143,17 @@ null` 属于非法内容，加载器拒绝内容包。
   "max_hp": 8,
   "attack": 3,
   "defense": 1,
-  "experience_reward": 12
+  "experience_reward": 12,
+  "loot_item_id": "item_training_core"
 }
 ```
 
 `room_id` 必须与对应房间的 `monster_ids` 一致。所有数值必须是非负整数，
 `max_hp` 与 `attack` 至少为 1。
+
+`loot_item_id` 是可选稳定 ID。指定时必须引用存在、初始未放置在房间中的物品，且该物品
+不能同时作为对话奖励或另一个怪物的战利品。怪物首次被击败时，战利品会放入当前房间；
+它可以是消耗品，玩家仍通过现有 `take` / `use` 指令处理。
 
 ## 角色与任务
 

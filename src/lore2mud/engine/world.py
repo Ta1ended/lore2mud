@@ -32,6 +32,13 @@ class QuestOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class LootOutcome:
+    """One item placed in the room after a monster defeat."""
+    item_id: str
+    item_name: str
+
+
+@dataclass(frozen=True, slots=True)
 class UseOutcome:
     """Result of using a consumable item."""
     item_id: str
@@ -77,6 +84,7 @@ class AttackOutcome:
     combat: CombatRound
     level_gains: tuple[LevelGain, ...] = ()
     quest_outcome: QuestOutcome | None = None
+    loot_item: LootOutcome | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -171,6 +179,7 @@ class World:
                 attack=monster.attack,
                 defense=monster.defense,
                 experience_reward=monster.experience_reward,
+                loot_item_id=monster.loot_item_id,
             )
             for monster in pack.monsters.values()
         }
@@ -443,6 +452,19 @@ class World:
             raise WorldRuleError("你已经无法继续战斗。")
 
         monster = self.monsters[monster_id]
+        loot_item: Item | None = None
+        if monster.loot_item_id is not None:
+            loot_item = self.items.get(monster.loot_item_id)
+            if loot_item is None:
+                raise WorldRuleError(
+                    f"怪物 {monster.name} 的战利品不存在："
+                    f"{monster.loot_item_id}"
+                )
+            if self._is_item_placed(loot_item.id):
+                raise WorldRuleError(
+                    f"怪物 {monster.name} 的战利品已在世界中，无法继续战斗。"
+                )
+
         combat = resolve_combat_round(
             self.player, monster,
             player_attack=self.effective_attack,
@@ -450,10 +472,18 @@ class World:
         )
         level_gains: list[LevelGain] = []
         quest_outcome: QuestOutcome | None = None
+        loot_outcome: LootOutcome | None = None
 
         if combat.monster_defeated:
             self.current_room.monster_ids.remove(monster_id)
             level_gains.extend(grant_experience(self.player, monster.experience_reward))
+
+            if loot_item is not None:
+                self.current_room.item_ids.append(loot_item.id)
+                loot_outcome = LootOutcome(
+                    item_id=loot_item.id,
+                    item_name=loot_item.name,
+                )
 
             # Check if this monster completes any accepted quest.
             for qs in self.quest_states.values():
@@ -480,6 +510,7 @@ class World:
             combat=combat,
             level_gains=tuple(level_gains),
             quest_outcome=quest_outcome,
+            loot_item=loot_outcome,
         )
 
     def start_dialogue(self, character_query: str) -> TalkOutcome:
@@ -647,6 +678,12 @@ class World:
             if dialogue.character_id == character_id:
                 return dialogue
         return None
+
+    def _is_item_placed(self, item_id: str) -> bool:
+        """Return whether an item already has a runtime placement."""
+        if item_id in self.player.inventory.item_ids:
+            return True
+        return any(item_id in room.item_ids for room in self.rooms.values())
 
     @staticmethod
     def _resolve_id(

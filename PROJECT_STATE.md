@@ -15,8 +15,10 @@ _Last updated: 2026-07-28_
 任何运行时状态；新增 `save [槽位]` / `load [槽位]`，在默认 `default.json` 之外支持安全的
 命名本地存档槽位。写入端文件系统 `OSError` 现在会被 `SaveLoadService` 转换为带 cause 的
 `SaveLoadError`，CLI 能稳定返回失败文本。新增 `drop <物品ID或名称>`：仅将背包中未装备的
-物品放入当前房间，hand/body 装备必须先 `unequip`，以免隐式改变有效战斗属性。内容包仍为
-v0.2.6、存档格式仍为 v5；现有房间/背包序列化已覆盖丢弃后的物品位置。生产安全门已扩展为
+物品放入当前房间，hand/body 装备必须先 `unequip`，以免隐式改变有效战斗属性。新增可选的
+`loot_item_id`：怪物首次被击败时才把唯一、初始未摆放的战利品放入当前房间，玩家可用现有
+`take` 拾取；`World.attack()` 在战斗变更前预检位置冲突，战利品不会由重复攻击复制。该机制
+沿用现有 room/inventory 存档状态，未升级 save v5；原创内容包现为 v0.2.7。生产安全门已扩展为
 当前 Git 候选与可达历史的双层检查。2026-07-28 切片前，`HEAD`、`origin/main` 和直接查询的
 远端 `main` 都是 `1936e913348d3d46278ffaae2cfabf6502020835`，因此此前“仍为 `6c13fca`、
 尚待发布”的交接表述已确认过期。本地提交按项目负责人指示不自动推送；恢复时必须重新检查
@@ -26,8 +28,8 @@ GPT-5.6-sol 验收。
 ## Completed
 
 - `src/lore2mud/` 实现标准库运行时、双 CLI 入口和领域模块。
-- `examples/original_demo/` 提供三个原创房间、五个物品（一个消耗品、一个武器、
-  一个护甲、一个隐藏对话奖励）、一个怪物、一个角色（老陈）和一个任务。
+- `examples/original_demo/` 提供三个原创房间、六个物品、一个怪物、一个角色（老陈）和一个任务；
+  新增一件仅由该怪物首次击败后掉落的原创消耗品。
 - `pipeline/` 支持 UTF-8/GBK/GB18030、章卷分离、稳定顺序 ID 和 manifest v2。
   私有拆章重建校验通过（字符数 + SHA-256 一致）。
 - `schemas/` 与 `src/lore2mud/content/` 定义并校验内容契约。
@@ -86,6 +88,10 @@ GPT-5.6-sol 验收。
 - 丢弃物品：`World.drop()` 是唯一规则权威，按背包中稳定 ID 或唯一显示名解析物品；所有
   校验完成后才从背包移动到当前房间。缺失、同名歧义、已装备 hand/body 物品均不改变运行时
   状态；成功丢弃不结束活动对话，且 save v5 往返后可再次拾取。
+- 确定性怪物战利品：`MonsterDefinition.loot_item_id` 和运行时 `Monster.loot_item_id`
+  可选且严格校验；它引用的物品必须存在、初始不在房间、不会与对话奖励或另一只怪物重复。
+  `World.attack()` 在击败时把战利品置入当前房间并返回 `LootOutcome`，存活怪物战利品若已在
+  保存的房间/背包状态中出现则拒绝读档。save v5 格式未变。
 
 ## In progress
 
@@ -97,7 +103,9 @@ GPT-5.6-sol 验收。
 
 ## Verification
 
-- `python -m unittest discover -s tests -v` - 400 tests passed (2026-07-28).
+- `python -m unittest discover -s tests -v` - 415 tests passed (2026-07-28).
+- `python -m unittest tests.test_loot -v` - 15 tests passed (2026-07-28), covering
+  loader contracts, one-time placement, state invariance, CLI, and save/load.
 - `python -m unittest tests.test_drop -v` - 11 tests passed (2026-07-28), covering
   ID/name resolution, state invariance, equipped rejection, dialogue preservation,
   CLI rendering, and save/load.
@@ -112,8 +120,8 @@ GPT-5.6-sol 验收。
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `python -m lore2mud validate --content examples/original_demo` - passed (2026-07-28).
 - `git diff --check` - clean (2026-07-28).
-- 本次 Terra 自审验证：完整 400 项测试、历史安全扫描、编译、内容包校验和真实
-  `take → drop → look → take` CLI 试玩均通过（2026-07-28）；这不是独立 Sol 验收。
+- 本次 Terra 自审验证：完整 415 项测试、历史安全扫描、编译、内容包校验和真实
+  `击败 → look → take` CLI 试玩均通过（2026-07-28）；这不是独立 Sol 验收。
 
 ## Key paths
 
@@ -128,6 +136,8 @@ GPT-5.6-sol 验收。
 - `tests/test_inspect.py` - visible-item inspection state-invariance and round-trip coverage.
 - `tests/test_drop.py` - inventory-to-current-room drop, failure invariance, and
   save/load coverage.
+- `tests/test_loot.py` - deterministic monster loot contracts, one-time placement,
+  command rendering, and save/load coverage.
 - `tests/test_save_slots.py` - named-slot safety, isolation, and command coverage.
 - `src/lore2mud/content/loader.py` - schema-like and reference validation.
 - `src/lore2mud/cli.py` - CLI entry point with play/validate subcommands.
@@ -156,3 +166,6 @@ GPT-5.6-sol 验收。
   写入 I/O 错误契约已补齐；审计报告的 43 个 dangling blob 未读取内容，也不受可达历史
   安全扫描覆盖。当前 `drop` 切片仅在项目负责人授权的 Terra 临时流程下自审，不得表述为
   独立 Sol 验收；后续发布前仍须重新核对远端，若远端变动则停止发布并重新审查。
+- 415 项公共回归测试是引擎回归证据，不是私有小说事实层的稳定性或事实准确性认证。
+  下一步必须先做公共仓库的只读核心稳定性 readiness audit；即使结论为 GO，私有小说
+  facts/canon/摘要/派生内容也仍需新的、明确范围授权后才可访问。

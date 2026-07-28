@@ -4,6 +4,14 @@
 
 ### Added
 
+- Added optional deterministic `loot_item_id` monster loot with typed
+  `LootOutcome`: a valid item is placed in the current room exactly once on the
+  monster's first defeat and can then use the existing `take` flow.
+- Added strict loot cross-reference validation (existing and initially unplaced
+  item, no dialogue-reward conflict, and no duplicate monster owner), plus
+  fifteen focused loader, World, CLI, and save/load tests.
+- Added the original-demo `item_ash_mite_gel` consumable as the ash mite's loot
+  and upgraded that public content pack to 0.2.7; save format remains v5.
 - Added `drop <item ID or name>` for moving an unequipped inventory item into
   the current room, with typed `DropOutcome`, stable-ID/unique-name resolution,
   and no save-v5 or content-contract change.
@@ -83,6 +91,8 @@
 
 ### Changed
 
+- Existing saves for original-demo content pack 0.2.6 are rejected by the
+  existing content-pack version check; save JSON format remains v5.
 - `SaveLoadService.save()` now translates filesystem `OSError` into a chained
   `SaveLoadError`, so the `save` command reports a normal failure instead of
   leaking a write exception. Save format v5 and atomic-write behavior are unchanged.

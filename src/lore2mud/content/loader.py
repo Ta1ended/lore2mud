@@ -487,6 +487,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 "attack",
                 "defense",
                 "experience_reward",
+                "loot_item_id",
                 "canon_ref",
                 "adaptation_notes",
             },
@@ -500,6 +501,19 @@ def load_content_pack(path: str | Path) -> ContentPack:
             validator.text(obj, "room_id", location),
             f"{location}.room_id",
         )
+        loot_item_id: str | None = None
+        if "loot_item_id" in obj:
+            raw_loot_item_id = obj["loot_item_id"]
+            if (
+                isinstance(raw_loot_item_id, str)
+                and raw_loot_item_id.strip()
+            ):
+                loot_item_id = validator.stable_id(
+                    raw_loot_item_id,
+                    f"{location}.loot_item_id",
+                )
+            else:
+                validator.text(obj, "loot_item_id", location)
         monster_defs.append(
             MonsterDefinition(
                 id=entity_id,
@@ -522,6 +536,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                     minimum=0,
                     default=0,
                 ),
+                loot_item_id=loot_item_id,
                 metadata=_metadata(obj, location, validator),
             )
         )
@@ -798,6 +813,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
             else:
                 monster_placements[monster_id] = room.id
 
+    loot_item_monsters: dict[str, list[str]] = {}
     for monster in monsters.values():
         if monster.room_id not in rooms:
             validator.issues.append(
@@ -807,6 +823,20 @@ def load_content_pack(path: str | Path) -> ContentPack:
         elif monster_placements.get(monster.id) != monster.room_id:
             validator.issues.append(
                 f"怪物 {monster.id} 的 room_id 与房间 monster_ids 不一致"
+            )
+        loot_item_id = monster.loot_item_id
+        if loot_item_id is None:
+            continue
+        loot_item_monsters.setdefault(loot_item_id, []).append(monster.id)
+        if loot_item_id not in items:
+            validator.issues.append(
+                f"怪物 {monster.id} 的 loot_item_id 引用了不存在的物品："
+                f"{loot_item_id}"
+            )
+        elif loot_item_id in item_placements:
+            validator.issues.append(
+                f"怪物 {monster.id} 的 loot_item_id 物品已放置在房间 "
+                f"{item_placements[loot_item_id]}：{loot_item_id}"
             )
     for character in characters.values():
         if character.room_id not in rooms:
@@ -853,6 +883,15 @@ def load_content_pack(path: str | Path) -> ContentPack:
         if len(option_locations) > 1:
             validator.issues.append(
                 f"物品 {item_id} 被多个对话选项奖励：{option_locations}"
+            )
+    for item_id, monster_ids in loot_item_monsters.items():
+        if len(monster_ids) > 1:
+            validator.issues.append(
+                f"物品 {item_id} 被多个怪物作为战利品：{sorted(monster_ids)}"
+            )
+        if item_id in granted_item_options:
+            validator.issues.append(
+                f"物品 {item_id} 不能同时作为怪物战利品和对话奖励"
             )
     # Track quest→monster mapping for duplicate target check
     quest_target_map: dict[str, list[str]] = {}

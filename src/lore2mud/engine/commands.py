@@ -286,6 +286,11 @@ class CommandProcessor:
                 f"{combat.monster_name} 被击败，你获得 "
                 f"{combat.experience_reward} 点经验。"
             )
+            if outcome.loot_item is not None:
+                lines.append(
+                    f"{outcome.loot_item.item_name} "
+                    f"({outcome.loot_item.item_id}) 掉落在当前房间。"
+                )
         else:
             lines.append(
                 f"{combat.monster_name} 反击，造成 "

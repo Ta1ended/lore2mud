@@ -22,7 +22,8 @@ class ContentLoaderTests(unittest.TestCase):
         self.assertEqual(pack.id, "original_demo")
         self.assertEqual(len(pack.rooms), 3)
         self.assertEqual(len(pack.monsters), 1)
-        self.assertEqual(len(pack.items), 5)
+        self.assertEqual(len(pack.items), 6)
+        self.assertIn("item_ash_mite_gel", pack.items)
         self.assertEqual(pack.start_room_id, "room_ember_wharf")
 
     def test_dangling_room_exit_is_rejected(self) -> None:

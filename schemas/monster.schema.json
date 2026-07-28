@@ -45,6 +45,9 @@
       "type": "integer",
       "minimum": 0
     },
+    "loot_item_id": {
+      "$ref": "common.schema.json#/$defs/stable_id"
+    },
     "canon_ref": {
       "$ref": "common.schema.json#/$defs/canon_ref"
     },
