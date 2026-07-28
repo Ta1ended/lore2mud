@@ -4,6 +4,13 @@
 
 ### Added
 
+- Added deterministic defeat recovery: `World.recover()` teleports a dead player
+  to the start room with full HP; `_require_alive()` unified death gate covers
+  10 mutating World methods; command-layer gate with `_DEAD_ALLOWED` frozenset;
+  `RecoverOutcome` typed result; save/load round-trip verified; 55 new tests.
+- Added `docs/engine_completion_milestones.md` with M1–M8 roadmap from current
+  state to engine feature-complete certification.
+
 - Added optional deterministic `loot_item_id` monster loot with typed
   `LootOutcome`: a valid item is placed in the current room exactly once on the
   monster's first defeat and can then use the existing `take` flow.

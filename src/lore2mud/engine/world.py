@@ -122,11 +122,24 @@ class DialogueEndOutcome:
     dialogue_id: str
 
 
+@dataclass(frozen=True, slots=True)
+class RecoverOutcome:
+    """Result of recovering from defeat."""
+    start_room_id: str
+    room_name: str
+    hp: int
+    max_hp: int
+
+
+_DEAD_ERROR = "你已经倒下了。使用 recover 恢复，或 load 读档。"
+
+
 @dataclass(slots=True)
 class World:
     pack_id: str
     pack_name: str
     pack_version: str
+    start_room_id: str
     rooms: dict[str, Room]
     items: dict[str, Item]
     monsters: dict[str, Monster]
@@ -219,6 +232,7 @@ class World:
             pack_id=pack.id,
             pack_name=pack.name,
             pack_version=pack.version,
+            start_room_id=pack.start_room_id,
             rooms=rooms,
             items=items,
             monsters=monsters,
@@ -246,7 +260,30 @@ class World:
     def current_room(self) -> Room:
         return self.rooms[self.player.room_id]
 
+    def _require_alive(self) -> None:
+        """Gate: reject all modifying actions when the player is dead."""
+        if not self.player.is_alive:
+            raise WorldRuleError(_DEAD_ERROR)
+
+    def recover(self) -> RecoverOutcome:
+        """Recover a dead player: restore full HP, move to start room, clear dialogue.
+
+        Only callable when HP == 0.
+        """
+        if self.player.is_alive:
+            raise WorldRuleError("你尚未倒下，无需恢复。")
+        self.player.room_id = self.start_room_id
+        self.player.hp = self.player.max_hp
+        self.active_dialogue = None
+        return RecoverOutcome(
+            start_room_id=self.start_room_id,
+            room_name=self.rooms[self.start_room_id].name,
+            hp=self.player.hp,
+            max_hp=self.player.max_hp,
+        )
+
     def move(self, direction: str) -> Room:
+        self._require_alive()
         normalized = direction.casefold()
         exit_def = self.current_room.exits.get(normalized)
         if exit_def is None:
@@ -266,6 +303,7 @@ class World:
         return self.current_room
 
     def take(self, item_query: str) -> Item:
+        self._require_alive()
         item_id = self._resolve_id(
             item_query,
             self.current_room.item_ids,
@@ -283,6 +321,7 @@ class World:
 
     def drop(self, item_query: str) -> DropOutcome:
         """Drop one unequipped inventory item into the current room."""
+        self._require_alive()
         item_id = self._resolve_id(
             item_query,
             self.player.inventory.item_ids,
@@ -335,6 +374,7 @@ class World:
         Raises WorldRuleError for non-usable items, missing items,
         dead player, or full HP.
         """
+        self._require_alive()
         # Resolve item from inventory.
         item_id = self._resolve_id(
             item_query,
@@ -351,9 +391,6 @@ class World:
         if item.heal_amount is None:
             raise WorldRuleError(f"物品 {item.name} 无法使用。")
 
-        if not self.player.is_alive:
-            raise WorldRuleError("你已经倒下了，无法使用。")
-
         missing_hp = self.player.max_hp - self.player.hp
         if missing_hp <= 0:
             raise WorldRuleError("你已经满血了。")
@@ -369,6 +406,7 @@ class World:
 
     def equip(self, item_query: str) -> EquipOutcome:
         """Equip an item from the player's inventory."""
+        self._require_alive()
         item_id = self._resolve_id(
             item_query,
             self.player.inventory.item_ids,
@@ -418,6 +456,7 @@ class World:
 
     def unequip(self, slot: str = "hand") -> UnequipOutcome:
         """Unequip the item in the specified slot (default: hand)."""
+        self._require_alive()
         if slot == "hand":
             if self.equipped.hand is None:
                 raise WorldRuleError("hand 没有装备中的物品。")
@@ -440,6 +479,7 @@ class World:
         )
 
     def attack(self, monster_query: str) -> AttackOutcome:
+        self._require_alive()
         monster_id = self._resolve_id(
             monster_query,
             self.current_room.monster_ids,
@@ -448,8 +488,6 @@ class World:
         )
         if monster_id is None:
             raise WorldRuleError(f"这里没有可攻击的 {monster_query}。")
-        if not self.player.is_alive:
-            raise WorldRuleError("你已经无法继续战斗。")
 
         monster = self.monsters[monster_id]
         loot_item: Item | None = None
@@ -515,6 +553,7 @@ class World:
 
     def start_dialogue(self, character_query: str) -> TalkOutcome:
         """Start dialogue with a character in the current room."""
+        self._require_alive()
         room_char_ids = [
             c.id for c in self.characters.values()
             if c.room_id == self.player.room_id
@@ -583,6 +622,7 @@ class World:
 
     def select_option(self, index: int) -> TalkOutcome:
         """Select a dialogue option (1-indexed)."""
+        self._require_alive()
         if self.active_dialogue is None:
             raise WorldRuleError("你没有在和任何人对话。")
 
@@ -658,6 +698,7 @@ class World:
 
     def end_dialogue(self) -> DialogueEndOutcome:
         """Explicitly end the current dialogue."""
+        self._require_alive()
         if self.active_dialogue is None:
             raise WorldRuleError("你没有在和任何人对话。")
         dialogue_id = self.active_dialogue.dialogue_id

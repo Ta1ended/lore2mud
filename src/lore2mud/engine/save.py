@@ -607,6 +607,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         pack_id=pack.id,
         pack_name=pack.name,
         pack_version=pack.version,
+        start_room_id=pack.start_room_id,
         rooms=rooms,
         items={
             item_id: Item(

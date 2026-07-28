@@ -368,3 +368,34 @@
   `tests/`, `scripts/check_repo_safety.py`, and public original demo evidence
   verified on 2026-07-28.
 - Supersedes: DEC-0017's readiness-only activation wording.
+
+## DEC-0019: Deterministic defeat recovery with unified death gate
+
+- Date: 2026-07-28
+- Status: Accepted
+- Context: Player death (HP=0) left the game in an unrecoverable state — only
+  `load` could restore playability. Individual methods had inconsistent death
+  checks with different error messages, and `attack()`/`use()` had their own
+  `is_alive` guards that could drift from the unified rule.
+- Decision: (a) Add `_require_alive()` private method on `World` that ALL
+  mutating public methods call first, before any validation or resolution.
+  Replace the old per-method `is_alive` checks in `attack()` and `use()` with
+  the single gate. (b) Add `World.recover()` returning `RecoverOutcome`
+  (start_room_id, room_name, hp, max_hp); it rejects alive players and
+  atomically sets room_id=start_room_id, hp=max_hp, active_dialogue=None.
+  (c) Add `start_room_id: str` field to `World`, sourced from
+  `ContentPack.start_room_id` in both constructor sites
+  (`World.from_content_pack()` and `save.py _validate_and_build_world()`).
+  NOT serialized in save JSON — reconstructed from ContentPack on load.
+  (d) CommandProcessor adds a second gate after bare-selection/bye routing
+  but before normal dispatch, using `_DEAD_ALLOWED` frozenset (look, inspect,
+  status, inventory, quests, help, save, load, recover, quit, exit).
+  (e) Combat failure text updated to mention recover/load options.
+- Consequences: Death is recoverable without save/load. The unified gate
+  eliminates inconsistent error messages. `recover` is a game rule in World,
+  not a CLI concern. Future death-related mechanics (e.g. penalties, respawn
+  timers) can extend `recover()` without touching the gate. save format
+  remains v5 — `start_room_id` is reconstructed, not stored.
+- Evidence: `src/lore2mud/engine/world.py`, `src/lore2mud/engine/commands.py`,
+  `src/lore2mud/engine/save.py`, `tests/test_recover.py`.
+- Supersedes: None.

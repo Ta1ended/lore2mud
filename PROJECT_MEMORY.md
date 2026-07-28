@@ -2,8 +2,8 @@
 
 _Checkpoint ref: HEAD — 恢复时运行 `git rev-parse HEAD` 获取当前提交。_
 
-This file is a compact restart guide for GPT-5.6-sol, Codex (GPT-5.6-terra), or a
-future Codex session.
+This file is a compact restart guide for GPT-5.6-sol, Hermes agent, or a
+future agent session.
 Repository state, tests, and current files are authoritative if this file becomes
 stale.
 
@@ -33,13 +33,14 @@ stale.
   ahead/behind 为 `2/0`。结论为仅对公共原创内容扩展的 `CONDITIONAL GO`；不推送。
 - Functional checkpoint: held-item exit gates, read-only `look` gate status,
   read-only visible-item inspection, safe named local save slots, a write-I/O
-  error contract, `drop` for unequipped inventory items, and deterministic
-  single-item monster loot are implemented;
+  error contract, `drop` for unequipped inventory items, deterministic
+  single-item monster loot, and deterministic defeat recovery (`World.recover()`
+  + `_require_alive()` unified death gate) are implemented;
   always inspect the live working tree before relying on this checkpoint.
 - 2026-07-28 public-history cleanup baseline: `96de7b2`（现为 `eafe70e`
   的祖先）；任何后续历史操作前仍须重新检查实时远端。
 - 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励 + 可见物品查看 + 命名存档槽位 +
-  写入错误契约 + 丢弃物品 + 确定性怪物战利品 已完成
+  写入错误契约 + 丢弃物品 + 确定性怪物战利品 + 确定性死亡恢复(M1) 已完成
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
 - The private novel corpus and split chapters are outside the repository under:
@@ -48,17 +49,19 @@ stale.
   reconstruction matched in character count and SHA-256.
 - The game engine has versioned local save/load (v5), deterministic quest flow,
   consumable items, hand+body equipment, item dropping, branching NPC dialogue,
-  and one typed dialogue item-reward effect.
+  one typed dialogue item-reward effect, and deterministic defeat recovery.
 - No Agent should start background work automatically when the project is resumed.
 
 ## Verified facts
 
-- Full project suite: 415 tests passed (2026-07-28) during the public core
-  readiness audit.
+- Full project suite: 470 tests passed (2026-07-28) after M1 recovery.
 - Focused readiness suite: 248 tests covering content loading, save/load and
   slots, dialogue, locked exits, drop, inspect, loot, and repository safety
   passed (2026-07-28). Compile, original-demo validation, history safety scan,
   and a real public CLI loop also passed.
+- `tests/test_recover.py`: 55 tests cover recover success (12), recover
+  failure/alive rejection (7), World death gate invariance (12), command-layer
+  gate (15), and save/load round-trip (6).
 - `tests/test_loot.py`: 15 tests cover optional-field parsing, invalid and
   duplicate references, dialogue conflicts, one-time room placement, attack
   failure invariance, CLI rendering, and save/load validation.
@@ -123,8 +126,8 @@ stale.
   reward, and is placed in the current room only when that monster is first
   defeated. `World.attack()` remains the authoritative transition and returns a
   typed `LootOutcome`; save format v5 reuses existing room/inventory placement.
-- Under the project owner's temporary GPT-5.6-terra exception, Terra self-audited
-  and executed the `drop` and deterministic monster-loot slices. The loot slice
+- Under the project owner's temporary Hermes agent exception, agent self-audited
+  and executed the `drop`, deterministic monster-loot, and M1 recovery slices. The loot slice
   reran 15 focused tests, all 415 tests, history safety scan, compile, content
   validation, and a real defeat/loot/take CLI smoke on 2026-07-28. This is not
   an independent GPT-5.6-sol acceptance.
@@ -133,7 +136,8 @@ stale.
   the current slice closes it. The audit reported 43 dangling blobs without reading
   their contents; reachable-history scanning does not cover such objects. It also
   did not refresh the live GitHub server state.
-- Content pack version: 0.2.7; save format version: 5.
+- Content pack version: 0.2.7; save format version: 5; M1 recovery does not
+  change either version (start_room_id is reconstructed from ContentPack).
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.
 - Private split reconstruction matched the decoded source in character count and
@@ -149,7 +153,7 @@ or background processing.
 ## Pause rule
 
 To pause safely:
-1. Stop the current Codex task.
+1. Stop the current agent task.
 2. Do not start another model call or long-running corpus scan.
 3. Run `git status --short`.
 4. Sync `PROJECT_MEMORY.md` 及四个交接文件（`PROJECT_STATE.md`、

@@ -26,10 +26,17 @@ HELP_TEXT = """可用指令：
   bye                   结束当前对话（对话中）
   save [槽位]           保存游戏（默认 default）
   load [槽位]           读取存档（默认 default）
+  recover               恢复倒下的角色
   help                  查看帮助
   quit                  退出游戏"""
 
 _BARE_SELECTION = re.compile(r'^[1-9][0-9]{0,4}$')
+
+_DEAD_ALLOWED = frozenset({
+    "look", "inspect", "status", "inventory", "inv", "i",
+    "quests", "help", "save", "load", "recover",
+    "quit", "exit",
+})
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +72,12 @@ class CommandProcessor:
                 if command == "bye":
                     return self._bye()
 
+            # Death gate: only allow read-only and recovery commands
+            if not self.world.player.is_alive:
+                if command not in _DEAD_ALLOWED:
+                    from lore2mud.engine.world import _DEAD_ERROR
+                    return CommandResult(_DEAD_ERROR)
+
             if command == "look":
                 return CommandResult(self._look())
             if command == "inspect":
@@ -95,6 +108,8 @@ class CommandProcessor:
                 return self._save(arguments)
             if command == "load":
                 return self._load(arguments)
+            if command == "recover":
+                return self._recover(arguments)
             if command == "help":
                 return CommandResult(HELP_TEXT)
             if command in {"quit", "exit"}:
@@ -304,7 +319,10 @@ class CommandProcessor:
         for gain in outcome.level_gains:
             lines.append(f"你升到了 {gain.new_level} 级！")
         if combat.player_defeated:
-            lines.append("你倒下了。")
+            lines.append(
+                "你倒下了。使用 recover 回到起始房间并恢复，"
+                "或使用 load 读取存档。"
+            )
         return CommandResult("\n".join(lines))
 
     def _talk(self, arguments: list[str]) -> CommandResult:
@@ -368,3 +386,12 @@ class CommandProcessor:
             )
         except SaveLoadError as exc:
             return CommandResult(f"读档失败：{exc}")
+
+    def _recover(self, arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：recover")
+        outcome = self.world.recover()
+        return CommandResult(
+            f"你已恢复，在 {outcome.room_name} 醒来。"
+            f"生命：{outcome.hp}/{outcome.max_hp}"
+        )
