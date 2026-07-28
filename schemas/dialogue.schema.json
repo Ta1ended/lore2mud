@@ -49,6 +49,9 @@
                 },
                 "next_node_id": {
                   "type": ["string", "null"]
+                },
+                "grant_item_id": {
+                  "$ref": "common.schema.json#/$defs/stable_id"
                 }
               }
             }

@@ -27,5 +27,11 @@
     "slot": "body",
     "defense_bonus": 3,
     "adaptation_notes": "本仓库原创演示护甲。"
+  },
+  {
+    "id": "item_chen_token",
+    "name": "旧铜牌",
+    "description": "陈伯交给你的旧铜牌，边缘刻着模糊的路线记号。",
+    "adaptation_notes": "本仓库原创演示对话奖励物品。"
   }
 ]

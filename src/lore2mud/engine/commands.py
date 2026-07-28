@@ -283,6 +283,11 @@ class CommandProcessor:
     @staticmethod
     def _render_talk(outcome: "TalkOutcome") -> str:
         lines: list[str] = []
+        if outcome.granted_item is not None:
+            lines.append(
+                f"你获得了 {outcome.granted_item.item_name} "
+                f"({outcome.granted_item.item_id})。"
+            )
         if outcome.node_text is not None:
             lines.append(f"[{outcome.character_name}] {outcome.node_text}")
         if outcome.options:

@@ -72,6 +72,13 @@ class DialogueOptionSummary:
 
 
 @dataclass(frozen=True, slots=True)
+class DialogueItemGrant:
+    """One item awarded atomically by a dialogue option."""
+    item_id: str
+    item_name: str
+
+
+@dataclass(frozen=True, slots=True)
 class TalkOutcome:
     """Result of starting or advancing a dialogue."""
     character_id: str
@@ -81,6 +88,7 @@ class TalkOutcome:
     node_text: str | None = None
     options: tuple[DialogueOptionSummary, ...] = ()
     ended: bool = False
+    granted_item: DialogueItemGrant | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -483,6 +491,25 @@ class World:
 
         option = node.options[index - 1]
         character = self.characters[dialogue.character_id]
+        granted_item: DialogueItemGrant | None = None
+        if option.grant_item_id is not None:
+            item = self.items.get(option.grant_item_id)
+            if item is None:
+                raise WorldRuleError(
+                    f"对话奖励物品 {option.grant_item_id!r} 不存在。"
+                )
+            if item.heal_amount is not None:
+                raise WorldRuleError("对话奖励不能是消耗品。")
+            if item.id in self.player.inventory.item_ids:
+                raise WorldRuleError(f"你已经拥有 {item.name}。")
+            if not self.player.inventory.can_add:
+                raise WorldRuleError("背包已满，无法获得对话奖励。")
+            granted_item = DialogueItemGrant(item.id, item.name)
+
+        # All reward checks completed; no failure below this line may leave
+        # dialogue state changed without also granting the item.
+        if granted_item is not None:
+            self.player.inventory.add(granted_item.item_id)
 
         if option.next_node_id is None:
             self.active_dialogue = None
@@ -491,6 +518,7 @@ class World:
                 character_name=character.name,
                 dialogue_id=dialogue.id,
                 ended=True,
+                granted_item=granted_item,
             )
 
         next_node = dialogue.nodes[option.next_node_id]
@@ -510,6 +538,7 @@ class World:
                     for opt in next_node.options
                 ),
                 ended=False,
+                granted_item=granted_item,
             )
         else:
             self.active_dialogue = None
@@ -521,6 +550,7 @@ class World:
                 node_text=next_node.text,
                 options=(),
                 ended=True,
+                granted_item=granted_item,
             )
 
     def end_dialogue(self) -> DialogueEndOutcome:

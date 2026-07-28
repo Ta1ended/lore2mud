@@ -18,6 +18,7 @@ from lore2mud.engine.save import (
     _serialize_world,
 )
 from lore2mud.engine.world import (
+    DialogueItemGrant,
     DialogueEndOutcome,
     TalkOutcome,
     World,
@@ -49,6 +50,13 @@ class ContentLoadingTests(unittest.TestCase):
         dlg = pack.dialogues["dialogue_elder_chen"]
         self.assertEqual(dlg.character_id, "character_elder_chen")
         self.assertIn("node_greeting", dlg.nodes)
+
+    def test_reward_option_loads(self) -> None:
+        pack = load_content_pack(DEMO_PATH)
+        option = pack.dialogues["dialogue_elder_chen"].nodes[
+            "node_observatory"
+        ].options[1]
+        self.assertEqual(option.grant_item_id, "item_chen_token")
 
     def test_empty_dialogues_array_valid(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -292,6 +300,75 @@ class ContentLoadingTests(unittest.TestCase):
             opt = pack.dialogues["d1"].nodes["n1"].options[0]
             self.assertIsNone(opt.next_node_id)
 
+    def test_reward_item_must_exist(self) -> None:
+        self._assert_invalid_grant("item_missing")
+
+    def test_reward_item_must_be_nonempty_stable_id(self) -> None:
+        self._assert_invalid_grant("")
+        self._assert_invalid_grant("Bad-ID")
+
+    def test_reward_item_rejects_non_string(self) -> None:
+        self._assert_invalid_grant(123)
+        self._assert_invalid_grant(None)
+
+    def test_reward_item_cannot_be_consumable(self) -> None:
+        self._assert_invalid_grant("item_linglu_pill")
+
+    def test_reward_item_cannot_be_placed_in_room(self) -> None:
+        self._assert_invalid_grant("item_spark_lantern")
+
+    def test_reward_item_cannot_be_granted_by_multiple_options(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            pack_path = Path(td) / "pack"
+            shutil.copytree(DEMO_PATH, pack_path)
+            dialogues = json.loads(
+                (pack_path / "dialogues.json").read_text("utf-8")
+            )
+            dialogues[0]["nodes"][0]["options"][0]["grant_item_id"] = (
+                "item_chen_token"
+            )
+            (pack_path / "dialogues.json").write_text(
+                json.dumps(dialogues, ensure_ascii=False), "utf-8"
+            )
+            with self.assertRaises(ContentValidationError) as ctx:
+                load_content_pack(pack_path)
+            self.assertIn("多个对话选项", str(ctx.exception))
+
+    def test_reward_validation_errors_are_aggregated(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            pack_path = Path(td) / "pack"
+            shutil.copytree(DEMO_PATH, pack_path)
+            dialogues = json.loads(
+                (pack_path / "dialogues.json").read_text("utf-8")
+            )
+            dialogues[0]["nodes"][0]["options"][0]["grant_item_id"] = (
+                "item_chen_token"
+            )
+            dialogues[0]["nodes"][0]["options"][1]["grant_item_id"] = (
+                "item_linglu_pill"
+            )
+            (pack_path / "dialogues.json").write_text(
+                json.dumps(dialogues, ensure_ascii=False), "utf-8"
+            )
+            with self.assertRaises(ContentValidationError) as ctx:
+                load_content_pack(pack_path)
+            self.assertIn("多个对话选项", str(ctx.exception))
+            self.assertIn("消耗品", str(ctx.exception))
+
+    def _assert_invalid_grant(self, value: object) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            pack_path = Path(td) / "pack"
+            shutil.copytree(DEMO_PATH, pack_path)
+            dialogues = json.loads(
+                (pack_path / "dialogues.json").read_text("utf-8")
+            )
+            dialogues[0]["nodes"][0]["options"][0]["grant_item_id"] = value
+            (pack_path / "dialogues.json").write_text(
+                json.dumps(dialogues, ensure_ascii=False), "utf-8"
+            )
+            with self.assertRaises(ContentValidationError):
+                load_content_pack(pack_path)
+
 
 class WorldDialogueNormalTests(unittest.TestCase):
     """B. World dialogue tests — normal paths."""
@@ -314,6 +391,7 @@ class WorldDialogueNormalTests(unittest.TestCase):
         o = w.select_option(1)  # 你是谁？
         self.assertFalse(o.ended)
         self.assertIn("陈伯", o.node_text)
+        self.assertIsNone(o.granted_item)
 
     def test_select_farewell_option_ends(self) -> None:
         w = _world_at_chen()
@@ -394,6 +472,133 @@ class WorldDialogueNormalTests(unittest.TestCase):
         self.assertIsNotNone(w.active_dialogue)
         w.move("west")
         self.assertIsNone(w.active_dialogue)
+
+
+class DialogueItemGrantWorldTests(unittest.TestCase):
+    """Dialogue item grants are atomic and are the only dialogue side effect."""
+
+    @staticmethod
+    def _at_reward_option() -> World:
+        world = _world_at_chen()
+        world.start_dialogue("character_elder_chen")
+        world.select_option(1)
+        world.select_option(1)
+        return world
+
+    def test_ending_option_grants_hidden_item(self) -> None:
+        world = self._at_reward_option()
+
+        outcome = world.select_option(2)
+
+        self.assertTrue(outcome.ended)
+        self.assertIsInstance(outcome.granted_item, DialogueItemGrant)
+        self.assertEqual(outcome.granted_item.item_id, "item_chen_token")
+        self.assertEqual(outcome.granted_item.item_name, "旧铜牌")
+        self.assertIn("item_chen_token", world.player.inventory.item_ids)
+        self.assertIsNone(world.active_dialogue)
+
+    def test_full_inventory_rejects_without_state_change(self) -> None:
+        world = self._at_reward_option()
+        world.player.inventory.item_ids = [f"item_{index}" for index in range(10)]
+        inventory_before = list(world.player.inventory.item_ids)
+        rooms_before = {key: list(room.item_ids) for key, room in world.rooms.items()}
+        equipped_before = (world.equipped.hand, world.equipped.body)
+        quests_before = dict(world.quest_states)
+        dialogue_before = world.active_dialogue
+
+        with self.assertRaises(WorldRuleError) as ctx:
+            world.select_option(2)
+
+        self.assertIn("背包已满", str(ctx.exception))
+        self.assertEqual(world.player.inventory.item_ids, inventory_before)
+        self.assertEqual(
+            {key: list(room.item_ids) for key, room in world.rooms.items()},
+            rooms_before,
+        )
+        self.assertEqual((world.equipped.hand, world.equipped.body), equipped_before)
+        self.assertEqual(dict(world.quest_states), quests_before)
+        self.assertEqual(world.active_dialogue, dialogue_before)
+
+    def test_repeated_reward_selection_is_rejected_without_state_change(self) -> None:
+        from lore2mud.content.models import (
+            DialogueDefinition,
+            DialogueNode,
+            DialogueOption,
+        )
+
+        world = _world_at_chen()
+        world.characters["char_repeat"] = Character(
+            "char_repeat", "循环者", "desc", "room_glassgrass_path"
+        )
+        world.dialogue_defs["dialogue_repeat"] = DialogueDefinition(
+            "dialogue_repeat",
+            "char_repeat",
+            "node_repeat",
+            {
+                "node_repeat": DialogueNode(
+                    "node_repeat",
+                    "再试一次。",
+                    (
+                        DialogueOption(
+                            "opt_repeat",
+                            "领取铜牌",
+                            "node_repeat",
+                            "item_chen_token",
+                        ),
+                    ),
+                )
+            },
+        )
+        world.start_dialogue("char_repeat")
+        world.select_option(1)
+        dialogue_before = world.active_dialogue
+
+        with self.assertRaises(WorldRuleError) as ctx:
+            world.select_option(1)
+
+        self.assertIn("已经拥有", str(ctx.exception))
+        self.assertEqual(world.player.inventory.item_ids, ["item_chen_token"])
+        self.assertEqual(world.active_dialogue, dialogue_before)
+
+    def test_reward_can_end_at_terminal_node(self) -> None:
+        from lore2mud.content.models import (
+            DialogueDefinition,
+            DialogueNode,
+            DialogueOption,
+        )
+
+        world = _world_at_chen()
+        world.characters["char_terminal"] = Character(
+            "char_terminal", "终端者", "desc", "room_glassgrass_path"
+        )
+        world.dialogue_defs["dialogue_terminal_reward"] = DialogueDefinition(
+            "dialogue_terminal_reward",
+            "char_terminal",
+            "node_start",
+            {
+                "node_start": DialogueNode(
+                    "node_start",
+                    "拿好。",
+                    (
+                        DialogueOption(
+                            "opt_take",
+                            "收下",
+                            "node_terminal",
+                            "item_chen_token",
+                        ),
+                    ),
+                ),
+                "node_terminal": DialogueNode("node_terminal", "再会。", ()),
+            },
+        )
+        world.start_dialogue("char_terminal")
+
+        outcome = world.select_option(1)
+
+        self.assertTrue(outcome.ended)
+        self.assertEqual(outcome.node_id, "node_terminal")
+        self.assertEqual(outcome.granted_item.item_id, "item_chen_token")
+        self.assertIn("item_chen_token", world.player.inventory.item_ids)
 
 
 class WorldDialogueFailureTests(unittest.TestCase):
@@ -682,6 +887,18 @@ class SaveLoadDialogueTests(unittest.TestCase):
             loaded.active_dialogue.current_node_id, node_before
         )
 
+    def test_save_load_round_trip_preserves_dialogue_reward_item(self) -> None:
+        svc = self._service()
+        self.world.select_option(1)
+        self.world.select_option(1)
+        self.world.select_option(2)
+        svc.save(self.world)
+
+        loaded = svc.load()
+
+        self.assertIn("item_chen_token", loaded.player.inventory.item_ids)
+        self.assertIsNone(loaded.active_dialogue)
+
 class SaveTimeValidationTests(unittest.TestCase):
     """Tests that invalid active_dialogue is rejected at save time."""
 
@@ -845,6 +1062,17 @@ class CommandIntegrationTests(unittest.TestCase):
         self.cmd.execute("talk character_elder_chen")
         r = self.cmd.execute("1")
         self.assertIn("陈伯", r.text)
+
+    def test_reward_option_renders_item_line(self) -> None:
+        self.cmd.execute("talk character_elder_chen")
+        self.cmd.execute("1")
+        self.cmd.execute("1")
+
+        result = self.cmd.execute("2")
+
+        self.assertIn("你获得了 旧铜牌 (item_chen_token)。", result.text)
+        self.assertIn("对话结束", result.text)
+        self.assertIn("item_chen_token", self.world.player.inventory.item_ids)
 
     def test_bye_in_dialogue(self) -> None:
         self.cmd.execute("talk character_elder_chen")

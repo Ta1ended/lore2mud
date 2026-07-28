@@ -35,7 +35,7 @@
         "text": "你说那个观测站？里面有只灰壳兽霸占着。那东西不大，但壳很硬。如果你要去，小心点。",
         "options": [
           {"id": "opt_back3", "text": "（换个话题）", "next_node_id": "node_greeting"},
-          {"id": "opt_bye4", "text": "多谢提醒，告辞。", "next_node_id": null}
+          {"id": "opt_bye4", "text": "多谢提醒，告辞。", "next_node_id": null, "grant_item_id": "item_chen_token"}
         ]
       }
     ],

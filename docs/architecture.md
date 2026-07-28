@@ -92,7 +92,7 @@ take item_spark_lantern
 内容定义（不可变）
   DialogueDefinition（对话树）
   → DialogueNode（节点 + 台词）
-  → DialogueOption（选项 + next_node_id）
+  → DialogueOption（选项 + next_node_id + 可选 grant_item_id）
 
 运行时状态（World 持有）
   characters: dict[str, Character]          # 角色位置由 room_id 决定
@@ -110,8 +110,9 @@ bye。结束选项（`next_node_id=null`）则立即结束对话。
 
 ### 状态不变性
 
-对话操作不修改玩家 HP、经验、物品、装备、任务状态或房间布局。
-唯一可变状态是 `World.active_dialogue`。
+对话操作不修改玩家 HP、经验、装备、任务状态或房间布局。带 `grant_item_id` 的
+选项是唯一例外：`World.select_option()` 在变更对话状态前检查背包容量和重复拥有，
+然后原子加入一个经内容校验的普通物品；失败时背包与 `active_dialogue` 均不变。
 
 ### 存档
 

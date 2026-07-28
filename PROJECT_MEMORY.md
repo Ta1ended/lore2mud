@@ -26,7 +26,7 @@ stale.
   inspect the live status before relying on this checkpoint.
 - 2026-07-28 public-history cleanup baseline: `96de7b2`; always re-check
   `git status --short --branch` and the live remote before a release operation.
-- 功能状态：消耗品 + 装备(hand+body) + 对话系统 已完成
+- 功能状态：消耗品 + 装备(hand+body) + 对话物品奖励系统 已完成
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
 - The private novel corpus and split chapters are outside the repository under:
@@ -34,14 +34,15 @@ stale.
 - The preprocessing pipeline is complete and verified; original source
   reconstruction matched in character count and SHA-256.
 - The game engine has versioned local save/load (v5), deterministic quest flow,
-  consumable items, hand+body equipment, and branching NPC dialogue.
+  consumable items, hand+body equipment, branching NPC dialogue, and one typed
+  dialogue item-reward effect.
 - No Agent should start background work automatically when the project is resumed.
 
 ## Verified facts
 
-- Full project suite: 334 tests passed (2026-07-28).
-- tests/test_dialogue.py: 77 tests (18 loading, 8 normal, 7 failure, 8 invariance,
-  11 save/load, 3 save-time, 6 failure-invariance, 16 command integration).
+- Full project suite: 348 tests passed (2026-07-28).
+- tests/test_dialogue.py: 91 tests, including reward loading, atomic success and
+  failure paths, terminal/end behavior, save/load, and command rendering.
 - Repository safety check: passed.
 - The production safety gate scans current Git candidates (including force-added
   ignored files) and, with `--history`, all reachable Git tree paths and blobs.
@@ -59,11 +60,15 @@ stale.
 - Dialogue system: talk command, bare integer selection (max 5 digits), bye,
   terminal node auto-end, character lookup, World state invariance, save v5
   round-trip, v4 save rejection, save-time validation, failure invariance: passed.
+- Dialogue reward: `grant_item_id` is optional but, when present, must be one
+  unique, unplaced, non-consumable stable item ID. `World.select_option()` checks
+  `Inventory.can_add` and duplicate ownership before `Inventory.add`, then returns
+  a typed `DialogueItemGrant`; save format remains v5 and demo pack is 0.2.5.
 - Save format v5 loading rejects unknown fields at the top level, `content_pack`,
   `player`, every room, every monster, `quest_states`, `equipped`, and
   `active_dialogue`; validation completes before a replacement `World` is built.
 - Schema: 9 allOf rules including hand→no defense, body→no attack: passed.
-- Content pack version: 0.2.4; save format version: 5.
+- Content pack version: 0.2.5; save format version: 5.
 - git diff --check: clean.
 - Private split: manifest v2, explicit GBK decoding, stable sequential IDs, volume
   labels, duplicate source chapter labels allowed.

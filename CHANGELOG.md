@@ -4,6 +4,10 @@
 
 ### Added
 
+- Added one typed dialogue item-reward effect: `DialogueOption.grant_item_id`,
+  `DialogueItemGrant`, and `TalkOutcome.granted_item`.
+- Added strict cross-file validation for dialogue rewards and one hidden original
+  demo reward item (`item_chen_token`); upgraded the demo content pack to 0.2.5.
 - Added a two-layer repository safety gate: current Git candidates (including
   force-added ignored files) plus optional reachable-history path/blob scanning.
 - Added limited private-key, GitHub, AWS, and Slack credential-pattern detection;
@@ -51,6 +55,8 @@
 
 ### Changed
 
+- Dialogue selection now atomically awards a validated item before advancing or
+  ending, and rejects a full inventory or duplicate reward without state changes.
 - Tightened save format v5 loading: top-level, `content_pack`, `player`, room, and
   monster objects now reject unknown fields before a replacement `World` is built.
 - Replaced the former agent-specific workflow reference with the production workflow and

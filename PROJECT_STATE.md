@@ -8,14 +8,14 @@ _Last updated: 2026-07-28_
 
 ## Current status
 装备系统已实现 hand 和 body 双槽位，存档格式升级至 v5。对话系统已实现——
-原创 NPC 老陈带有确定性分支对话，内容包版本升至 0.2.4。生产安全门已扩展为
+原创 NPC 老陈带有确定性分支对话和一次性普通物品奖励，内容包版本升至 0.2.5。生产安全门已扩展为
 当前 Git 候选与可达历史的双层检查。
 
 ## Completed
 
 - `src/lore2mud/` 实现标准库运行时、双 CLI 入口和领域模块。
-- `examples/original_demo/` 提供三个原创房间、四个物品（一个消耗品、一个武器、
-  一个护甲）、一个怪物、一个角色（老陈）和一个任务。
+- `examples/original_demo/` 提供三个原创房间、五个物品（一个消耗品、一个武器、
+  一个护甲、一个隐藏对话奖励）、一个怪物、一个角色（老陈）和一个任务。
 - `pipeline/` 支持 UTF-8/GBK/GB18030、章卷分离、稳定顺序 ID 和 manifest v2。
   私有拆章重建校验通过（字符数 + SHA-256 一致）。
 - `schemas/` 与 `src/lore2mud/content/` 定义并校验内容契约。
@@ -48,7 +48,11 @@ _Last updated: 2026-07-28_
   `TalkOutcome`/`DialogueEndOutcome` 结构化结果、终端节点自动结束、
   `look` 显示角色、save v5（`active_dialogue` 必填 + 严格拒绝）、
   内容包 v0.2.4、77 项新测试。
-- 内容包版本升至 0.2.4；存档格式升至 v5。
+- 对话物品奖励：`DialogueOption.grant_item_id`、`DialogueItemGrant` 和
+  `TalkOutcome.granted_item`；加载器拒绝未知、空、非稳定、消耗品、房间摆放和重复
+  奖励引用。`World.select_option()` 使用背包契约原子发放，失败不改变任何游戏状态；
+  原创 `item_chen_token` 由老陈观测站对话结束选项发放。
+- 内容包版本升至 0.2.5；存档格式保持 v5。
 
 ## In progress
 
@@ -60,9 +64,9 @@ _Last updated: 2026-07-28_
 
 ## Verification
 
-- `python -m unittest discover -s tests -v` - 334 tests passed (2026-07-28).
-- tests/test_dialogue.py: 77 tests (18 loading, 8 normal, 7 failure, 8 invariance,
-  11 save/load, 3 save-time, 6 failure invariance, 16 command integration).
+- `python -m unittest discover -s tests -v` - 348 tests passed (2026-07-28).
+- tests/test_dialogue.py: 91 tests, including typed item reward loading, state
+  invariance, save/load and CLI rendering.
 - `python scripts/check_repo_safety.py` - passed (2026-07-28).
 - `python scripts/check_repo_safety.py --history` - required for CI/release;
   records only limited path and credential pattern detection, not a complete secret audit.
@@ -92,7 +96,8 @@ _Last updated: 2026-07-28_
   decisions.
 - The one-target-monster-per-quest constraint will need revisiting if shared-target
   quests are ever needed.
-- Dialogue currently has no numeric effects (no items, no quests triggered).
+- Dialogue grants only one typed item effect; quest triggers, experience effects,
+  generic effect dictionaries, item dropping and repeatable rewards remain out of scope.
 - Private corpus summaries, canon facts and game adaptation content have not been
   generated or reviewed.
 - The provider's privacy claim about model visibility is not independently verified;

@@ -81,6 +81,7 @@ class DialogueOption:
     id: str
     text: str
     next_node_id: str | None = None
+    grant_item_id: str | None = None
 
 
 @dataclass(frozen=True, slots=True)

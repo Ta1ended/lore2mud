@@ -628,7 +628,9 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 oloc = f"{nloc}.options[{oi}]"
                 opt_obj = validator.object(opt_obj, oloc)
                 validator.keys(
-                    opt_obj, {"id", "text", "next_node_id"}, oloc
+                    opt_obj,
+                    {"id", "text", "next_node_id", "grant_item_id"},
+                    oloc,
                 )
                 oid = validator.stable_id(
                     validator.text(opt_obj, "id", oloc), f"{oloc}.id"
@@ -644,11 +646,29 @@ def load_content_pack(path: str | Path) -> ContentPack:
                         f"{oloc}.next_node_id 必须是非空字符串或 null"
                     )
                     next_id = None
+                grant_item_id: str | None = None
+                if "grant_item_id" in opt_obj:
+                    raw_grant_item_id = opt_obj["grant_item_id"]
+                    if (
+                        isinstance(raw_grant_item_id, str)
+                        and raw_grant_item_id.strip()
+                    ):
+                        grant_item_id = validator.stable_id(
+                            raw_grant_item_id,
+                            f"{oloc}.grant_item_id",
+                        )
+                    else:
+                        validator.text(opt_obj, "grant_item_id", oloc)
                 if oid in opt_ids_seen:
                     validator.issues.append(f"{nloc} 选项 ID 重复：{oid}")
                 opt_ids_seen.add(oid)
                 opts.append(
-                    DialogueOption(id=oid, text=otxt, next_node_id=next_id)
+                    DialogueOption(
+                        id=oid,
+                        text=otxt,
+                        next_node_id=next_id,
+                        grant_item_id=grant_item_id,
+                    )
                 )
 
             if nid in node_map:
@@ -741,11 +761,45 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 f"角色 {character.id} 的 room_id 引用了不存在的房间："
                 f"{character.room_id}"
             )
+    granted_item_options: dict[str, list[str]] = {}
     for dialogue in dialogues.values():
         if dialogue.character_id not in characters:
             validator.issues.append(
                 f"对话 {dialogue.id} 的 character_id 引用了不存在的角色："
                 f"{dialogue.character_id}"
+            )
+        for node in dialogue.nodes.values():
+            for option in node.options:
+                grant_item_id = option.grant_item_id
+                if grant_item_id is None:
+                    continue
+                option_location = (
+                    f"对话 {dialogue.id} 节点 {node.id} 选项 {option.id}"
+                )
+                granted_item_options.setdefault(grant_item_id, []).append(
+                    option_location
+                )
+                item = items.get(grant_item_id)
+                if item is None:
+                    validator.issues.append(
+                        f"{option_location} 的 grant_item_id 引用了不存在的物品："
+                        f"{grant_item_id}"
+                    )
+                    continue
+                if item.heal_amount is not None:
+                    validator.issues.append(
+                        f"{option_location} 的 grant_item_id 不能引用消耗品："
+                        f"{grant_item_id}"
+                    )
+                if grant_item_id in item_placements:
+                    validator.issues.append(
+                        f"{option_location} 的 grant_item_id 物品已放置在房间 "
+                        f"{item_placements[grant_item_id]}：{grant_item_id}"
+                    )
+    for item_id, option_locations in granted_item_options.items():
+        if len(option_locations) > 1:
+            validator.issues.append(
+                f"物品 {item_id} 被多个对话选项奖励：{option_locations}"
             )
     # Track quest→monster mapping for duplicate target check
     quest_target_map: dict[str, list[str]] = {}
