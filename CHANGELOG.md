@@ -85,13 +85,13 @@
 
 ### Verified
 
-- Codex locally verified M6 (not independent acceptance): 22
-  `tests.test_examine_help` cases, 187 focused M6/inspect/commands/recover/dialogue
-  cases, and 591 full unittest cases passed. Compileall, original-demo validation,
-  history safety scanning, `git diff --check`, and a real external-save-directory
-  CLI flow passed; the CLI covered room/item/character/monster examine, typed
-  missing feedback, `help examine`, dialogue-preserving `examine 1`, save/load,
-  and confirmed save v7 with content pack 0.6.0.
+- GPT-5.6-sol independently accepted M6 as GO with no findings, using
+  `53a071f` as the baseline. Accepted evidence is 22 M6 tests, 187 focused
+  M6/inspect/commands/recover/dialogue regressions, and 591 full unittest cases;
+  compileall, original-demo validation, history safety, `git diff --check`, the
+  11-file scope relative to `f0acd3f`, and an external-save-directory CLI/save v7
+  flow also passed. The GO closes M6 only; M7 and push still require separate
+  project-owner authorization.
 - GPT-5.6-sol independently accepted the integrated M4+M5 slice as GO. The
   focused re-review closed the first-review M5 empty-stack `stack_limit` P1 in
   `59ca3cd` with no findings; accepted evidence is 25 focused M4/M5 tests, 569

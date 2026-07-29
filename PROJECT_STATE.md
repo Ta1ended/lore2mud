@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-29（M6 已本地实现并验证，等待 GPT-5.6-sol 独立验收）_
+_Last updated: 2026-07-29（M6 已由 GPT-5.6-sol 独立验收 GO；未授权 M7 或 push）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -17,11 +17,12 @@ M4+M5 已由 Codex 实现，并由 GPT-5.6-sol 于 2026-07-29 独立验收 GO（
 首次验收发现 M5 空栈买入绕过 `stack_limit` 的 P1；Codex 在 `59ca3cd` 修正后，聚焦复验
 确认 P1 已关闭、无 findings。
 
-项目负责人随后明确授权 M6。Codex 已本地实现 `World.examine()` 三分支 frozen typed
+项目负责人随后明确授权 M6。Codex 在 `53a071f` 已实现 `World.examine()` 三分支 frozen typed
 outcomes、公开 `examine`、兼容 `inspect`、集中 `CommandSpec` 路由/帮助/死亡元数据和
 `help [command]`（DEC-0029）。查看范围仅限当前房间物品、背包物品、当前房间怪物与角色；
-跨类型同名或重复 ID 必须显式限定类型，歧义夹具只存在于测试内存。M6 尚未经过
-GPT-5.6-sol 独立验收，不能表述为 GO；M7 未开始。
+跨类型同名或重复 ID 必须显式限定类型，歧义夹具只存在于测试内存。GPT-5.6-sol 已于
+2026-07-29 对 M6 独立验收 GO、无 findings（DEC-0030）。该封板仅覆盖 M6；M7 未开始，
+且本次不授权 M7 或 push。
 
 当前公开契约仍为 content pack 0.6.0、save v7、强类型有序 `DialogueEffect`、World-owned
 `flags`、非负 `coins` 和冻结的固定无限商店目录。`World` 预检并原子执行 effects/买入；
@@ -29,11 +30,14 @@ GPT-5.6-sol 独立验收，不能表述为 GO；M7 未开始。
 或交易。`shop`/`buy`/`sell` 不引入可变库存。M6 未改变 Schema、内容包或存档契约；M7–M8
 未开始。
 
-独立验收记录的证据为 12 项 M4 专项、13 项 M5 专项和 569 项全量 unittest，以及
+M4+M5 独立验收记录的证据为 12 项 M4 专项、13 项 M5 专项和 569 项全量 unittest，以及
 compileall、original_demo 校验、历史安全扫描、diff 检查和仓库外 CLI 流程。CLI 精确覆盖
 “拾取 3 → 卖出 3 → 买入 6 被拒绝 → save/load”：金币保持 26、背包没有非法栈、v7 存档可读；
-M4 effects 不重放，v6 与旧内容包存档继续拒绝。Git/远端状态必须在提交后重新核实；唯一下一动作
-见 `NEXT_TASK.md`。
+M4 effects 不重放，v6 与旧内容包存档继续拒绝。M6 独立验收证据为 22 项专项、187 项聚焦和
+591 项全量 unittest，以及 compileall、original_demo 校验、历史安全扫描、diff、相对
+`f0acd3f` 的 11 文件范围和仓库外 CLI/save v7；均通过且无 findings。验收时 main 工作树
+干净、ahead/behind 为 1/0，直查远端 main 为 `f0acd3f`；发布或 push 前必须再次直查。
+唯一下一动作见 `NEXT_TASK.md`。
 
 ## Historical current-status snapshot (2026-07-28, pre-M2; not current)
 
@@ -147,11 +151,15 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - M4 强类型对话效果和 M5 固定金币商店由 Codex 实现，并由 GPT-5.6-sol 独立验收 GO。
   M5 首次验收的空栈超 `stack_limit` P1 已由 `59ca3cd` 修正并在聚焦复验中关闭；save v7、
   content pack 0.6.0、固定无库存目录和 M4 effects/load 不重放契约保持不变。
+- M6 `examine`、`help [command]` 和集中 `CommandSpec` 注册表由 Codex 在 `53a071f`
+  实现，并由 GPT-5.6-sol 独立验收 GO（DEC-0030），无 findings。可见性、跨类型歧义、
+  `inspect` 兼容、死亡/对话边界和只读状态不变性均已封板；M6 未改变 Schema、内容包 0.6.0
+  或 save v7。
 
 ## In progress
 
-- M6 已由 Codex 本地实现、验证并准备提交；唯一下一动作是提交真实差异和证据给
-  GPT-5.6-sol 独立验收。独立 GO 前不得开始 M7。
+- 没有功能切片正在进行。唯一下一动作是等待项目负责人明确授权下一项纵向切片；不得自行
+  开始 M7 或 push。
 
 ## Blockers
 
@@ -159,10 +167,11 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## Verification
 
-- M6 本地验证（2026-07-29，非独立验收）：22 项 `tests.test_examine_help`、187 项
-  M6/inspect/commands/recover/dialogue 聚焦回归和 591 项全量 unittest 通过；compileall、
-  original_demo 校验、历史安全扫描及 `git diff --check` 通过。仓库外 CLI 覆盖房间、物品、
-  角色和怪物查看、类型化缺失错误、`help examine`、活动对话中的 `examine 1`、save/load；
+- M6 独立验收 GO（2026-07-29，GPT-5.6-sol）：对 `53a071f` 的 22 项
+  `tests.test_examine_help`、187 项 M6/inspect/commands/recover/dialogue 聚焦回归和
+  591 项全量 unittest 通过；compileall、original_demo 校验、历史安全扫描、`git diff --check`、
+  相对 `f0acd3f` 的 11 文件范围和仓库外 CLI/save v7 都通过，无 findings。CLI 覆盖房间、
+  物品、角色和怪物查看、类型化缺失错误、`help examine`、活动对话中的 `examine 1`、save/load；
   保存文件仍为 v7、内容包仍为 0.6.0。
 - M4+M5 独立验收 GO（2026-07-29，GPT-5.6-sol）：首次 M5 空栈 `buy` ×6 超
   `stack_limit=5` 的 P1 已由 `59ca3cd` 修正并关闭，聚焦复验无 findings。12 项 M4 专项、
@@ -246,9 +255,10 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - M4's four effect kinds and M5's fixed-price shop scope are closed; new effect kinds,
   dialogue currency effects, dynamic pricing, discounts, stock, or post-M6 command
   changes require a separately approved vertical slice.
-- M6 is locally complete but not independently accepted. The `CommandSpec` registry
-  intentionally centralizes current CLI routes; future commands must add their route,
-  help, aliases, and death rule together and extend the bidirectional consistency test.
+- M6 is independently accepted. The `CommandSpec` registry intentionally centralizes
+  current CLI routes; future commands must add their route, help, aliases, and death
+  rule together and extend the bidirectional consistency test in a separately
+  authorized vertical slice.
 - `drop` can deliberately leave a gate item in the current room and therefore block
   a gated exit until the player takes it again; this is explicit player intent.
   Equipped items are intentionally rejected instead of silently changing combat stats.

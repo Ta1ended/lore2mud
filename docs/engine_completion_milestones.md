@@ -1,6 +1,6 @@
 # Engine Completion Milestones
 
-_Last updated: 2026-07-29（M4+M5 已由 GPT-5.6-sol 独立验收 GO）_
+_Last updated: 2026-07-29（M6 已由 GPT-5.6-sol 独立验收 GO；M7 未授权）_
 
 本文件定义公共引擎从当前状态到功能完备的里程碑路线。每个里程碑是一个可独立验证的
 纵向切片，完成后更新本文件和相关交接记录。
@@ -148,9 +148,9 @@ _Last updated: 2026-07-29（M4+M5 已由 GPT-5.6-sol 独立验收 GO）_
 
 ## M6: Examine、帮助和错误反馈
 
-- **状态**: Codex 已本地实现并验证；等待 GPT-5.6-sol 独立验收，不得表述为 GO。
+- **状态**: GPT-5.6-sol 已完成独立验收，结论 GO、无 findings。
 - **执行者**: Codex。
-- **验收者**: GPT-5.6-sol（待独立验收）。
+- **验收者**: GPT-5.6-sol。
 - **强制完成条件**:
   - `examine` 成为公开命令，并与 `inspect` 兼容。
   - 可以查看当前可见的房间物品、背包物品、怪物、角色和当前房间摘要。
@@ -166,8 +166,12 @@ _Last updated: 2026-07-29（M4+M5 已由 GPT-5.6-sol 独立验收 GO）_
     `help [command]` 和死亡允许集合，DEC-0020 门禁顺序不变。
   - 22 项 M6、187 项聚焦和 591 项全量 unittest 通过；compileall、内容包校验、历史安全
     扫描、diff 检查及仓库外 CLI 通过。original_demo 保持 0.6.0，save 保持 v7。
+- **GPT-5.6-sol 独立验收封板**:
+  - 基线为 `53a071f`；相对 `f0acd3f` 的既定 11 文件范围一致，所有验收项通过、无 findings。
+  - 验收覆盖 typed visible examine、`inspect` 兼容、`help [command]`、注册表/路由/死亡规则
+    双向一致、死亡与对话边界、只读状态不变性，以及仓库外 CLI/save v7。
 - **边界**: 跨类型歧义夹具只在测试内存构造；未修改 Schema、原创内容 JSON、内容包版本、
-  save 契约或依赖。M7 未开始。
+  save 契约或依赖。M7 未开始，仍须项目负责人另行明确授权；本次不授权 push。
 
 ## M7: 原创内容规模验收
 

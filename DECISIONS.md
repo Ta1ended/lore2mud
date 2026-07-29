@@ -658,3 +658,30 @@
   `docs/engine_completion_milestones.md`.
 - Supersedes: The M6-planning-only state; DEC-0020 death-gate ordering and the
   legacy inspect contract remain in force.
+
+## DEC-0030: M6 independent acceptance — GO
+
+- Date: 2026-07-29
+- Status: Accepted
+- Context: Codex implemented the project-owner-authorized M6 public-engine slice
+  in `53a071f`. The independent review checked the visibility boundary, typed
+  ambiguity behavior, exact error/help text, registry-to-route consistency, death
+  and dialogue ordering, read-only invariance, and external CLI/save behavior.
+- Decision: Record M6 `examine`, `help [command]`, and the centralized
+  `CommandSpec` registry as independently accepted GO by GPT-5.6-sol, with no
+  findings. Accepted evidence is 22 M6 tests, 187 focused
+  M6/inspect/commands/recover/dialogue regressions, 591 full unittest cases,
+  compileall, original-demo validation, history safety, `git diff --check`, the
+  verified 11-file scope relative to `f0acd3f`, and an external-save-directory
+  CLI/save v7 flow.
+- Consequences: M6 is complete and its contracts in DEC-0029 remain in force.
+  M6 changes no Schema, dependency, content-pack data/version, or save data/version;
+  original_demo remains 0.6.0 and saves remain v7. M7 is unstarted and needs a
+  separate explicit project-owner authorization. This decision does not authorize
+  push; direct remote state must be checked again before publishing.
+- Evidence: `53a071f`, `tests/test_examine_help.py`, `tests/test_inspect.py`,
+  `src/lore2mud/engine/world.py`, `src/lore2mud/engine/commands.py`,
+  `docs/engine_completion_milestones.md`, `PROJECT_STATE.md`.
+- Supersedes: Only the independent-acceptance-pending status in DEC-0029; the
+  DEC-0029 contracts, DEC-0020 death-gate ordering, and legacy `inspect` contract
+  remain in force.
