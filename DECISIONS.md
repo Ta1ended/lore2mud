@@ -766,3 +766,34 @@
 - Supersedes: Only the M7.2 awaiting-authorization status in `NEXT_TASK.md` and
   related current snapshots. M7.1's GO record and all M1–M6 contracts remain in
   force.
+
+## DEC-0034: M7.2 and M7 independent acceptance — GO
+
+- Date: 2026-07-30
+- Status: Accepted
+- Context: Codex completed the project-owner-authorized M7.2 public-content scale
+  slice in `147633e`. GPT-5.6-sol independently reviewed it relative to the M7.1
+  acceptance-record baseline `5497859` and supplied an M7.2 GO plus overall M7 GO
+  conclusion with no findings.
+- Decision: Record M7.2 and the complete M7 milestone as independently accepted GO
+  by GPT-5.6-sol. The acceptance covers one 22-file content, test, and public-doc
+  commit; `src/`, Schema, dependency files, and private-material paths are all 0.
+  The public demo reaches 8/8 rooms, 4/4 monsters, and 7 quests while retaining
+  content-pack 0.8.0 and save v7.
+- Consequences: M7 is complete. This does not declare the public engine complete:
+  M8 is unstarted and requires a separate project-owner authorization. No engine,
+  Schema, command, item, loot, dialogue, shop, dependency, or save-format contract
+  changed. This decision does not authorize push.
+- Evidence: 23 M7/loot focused tests; 599 full unittest cases; graph and unique-
+  target audits; compileall; `lore2mud validate --content examples/original_demo`;
+  `check_repo_safety.py --history`; `git diff --check`; real CLI/save; and defeat
+  recovery all passed. The v7/0.8.0 save confirmed the player in a new room, both
+  new monsters HP=0 and removed, and `quest_clear_mist_crawler` plus
+  `quest_clear_prism_sentinel` completed. At acceptance direct remote `main` was
+  `f0acd3f` and no push occurred. This session's local `origin/main` remains
+  `f0acd3f`, but its direct CLI remote lookup could not refresh because of a network
+  connection failure; GitHub Desktop Fetch must confirm no incoming commits before
+  any later publishing decision.
+- Supersedes: Only DEC-0033's independent-acceptance-pending status and related
+  current handoff snapshots. DEC-0033's content, 0.8.0/v7, and boundary contracts,
+  DEC-0032's M7.1 record, and all M1–M6 decisions remain in force.

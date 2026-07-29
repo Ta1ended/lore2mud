@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-30（M7.2 已本地实现并验证；M7 等待 GPT-5.6-sol 独立验收）_
+_Last updated: 2026-07-30（M7.2 与 M7 已独立验收 GO；M8 未开始）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -25,15 +25,16 @@ outcomes、公开 `examine`、兼容 `inspect`、集中 `CommandSpec` 路由/帮
 Codex 在 M7.1 只扩充完全原创内容：新增碎讯支线、火花巡兽和观测站触发的清除任务
 （DEC-0031）。GPT-5.6-sol 已于 2026-07-30 对 M7.1 独立验收 GO、无 findings（DEC-0032）。
 项目负责人随后授权 M7.2 的较大纯内容扩容包：Codex 新增四个原创房间、两只怪物和两条
-唯一怪物目标任务（DEC-0033）。该切片已本地实现并验证；M7 仍进行中，独立验收前不得表述为
-M7 GO，也不得开始 M8 或 push。
+唯一怪物目标任务（DEC-0033）。GPT-5.6-sol 已于 2026-07-30 对 `147633e` 相对 `5497859`
+完成独立验收：M7.2 GO、整体 M7 GO，均无 findings（DEC-0034）。该 GO 仅封板 M7 原创
+内容规模；公共引擎尚未完成，M8 未开始，也未授权 push。
 
 当前公开契约为 content pack 0.8.0、save v7、强类型有序 `DialogueEffect`、World-owned
 `flags`、非负 `coins` 和冻结的固定无限商店目录。`World` 预检并原子执行 effects/买入；
 `accept_quest` 显式重复会整体失败；`load` 只恢复状态，绝不重放效果、自动接取、检查、奖励
 或交易。`shop`/`buy`/`sell` 不引入可变库存。M7.2 未改变 Schema、引擎、命令或 save v7；
 0.7.0 内容包存档由既有版本检查拒绝。original_demo 现有 8/8 房间、4/4 怪物和 7 条任务，
-已在本地达到 M7 内容规模条件，但 M7 仍须独立验收。
+M7 内容规模条件已由独立验收确认满足；这不等同于公共引擎完成。
 
 M4+M5 独立验收记录的证据为 12 项 M4 专项、13 项 M5 专项和 569 项全量 unittest，以及
 compileall、original_demo 校验、历史安全扫描、diff 检查和仓库外 CLI 流程。CLI 精确覆盖
@@ -50,13 +51,15 @@ compileall、original_demo 校验、历史安全扫描、diff 检查和仓库外
 M7.2 的本地证据为 8 项 M7 场景测试、15 项 loot 回归和 599 项全量 unittest，以及 compileall、
 original_demo 校验、历史安全扫描、diff 检查和仓库外 CLI/save v7；均通过。CLI 完成两条新分支、
 两只新怪物、两条新任务和 save/load，保存中 pack 为 0.8.0、玩家位于余辉信标台、两只新怪物
-HP 为 0 且均已从房间移除。M7 当前为 8/8 房间、4/4 怪物、7 条任务；唯一下一动作见
-`NEXT_TASK.md`。
+HP 为 0 且均已从房间移除。GPT-5.6-sol 的独立验收随后核对 22 个内容、测试和公开文档文件，
+确认 `src/`、Schema、依赖与私有资料路径均为 0；23 项 M7/loot 聚焦、599 项全量、图与唯一性
+审计、compileall、内容校验、安全扫描、diff、真实 CLI/save 与死亡恢复均通过，无 findings。M7
+当前为 8/8 房间、4/4 怪物、7 条任务，已独立验收 GO；唯一下一动作见 `NEXT_TASK.md`。
 
 ## Historical current-status snapshot (2026-07-28, pre-M2; not current)
 
 > 下列快照保留当时的 save v5、0.2.7、旧 Git 与旧执行流程事实；当前状态以上文
-> v7、0.8.0、M7.2 本地验证待独立验收（M7 进行中）、M7.1/M4+M5 GO、M3/M2 GO 和
+> v7、0.8.0、M7 独立验收 GO、M7.1/M4+M5 GO、M3/M2 GO 和
 > Codex 执行模式为准。
 
 装备系统已实现 hand 和 body 双槽位，存档格式为 v5。对话系统已实现——原创 NPC 老陈带有
@@ -83,7 +86,7 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 ## Completed
 
 > 历史记录说明：本节中 save v3–v5、内容包 0.2.x、旧 API 名称、旧测试数和旧 Git
-> 状态均为对应切片当时的事实；当前契约以“Current status”的 v7、0.8.0 和 M7.2 本地验证状态为准。
+> 状态均为对应切片当时的事实；当前契约以“Current status”的 v7、0.8.0 和 M7 独立验收状态为准。
 
 - `src/lore2mud/` 实现标准库运行时、双 CLI 入口和领域模块。
 - `examples/original_demo/` 提供八个原创房间、六个物品、四只怪物、一个角色（老陈）和七条
@@ -173,23 +176,30 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- M7.2 内容规模扩容已本地实现并验证；M7 当前为 8/8 房间、4/4 怪物、7 条任务。唯一下一动作
-  是由 GPT-5.6-sol 独立验收 M7.2 的规模、内容边界、任务结算和 0.8.0/v7 兼容。验收前不得宣布
-  M7 GO、开始 M8 或 push。
+- 当前没有正在实施的功能切片。M7 当前为 8/8 房间、4/4 怪物、7 条任务，已由 GPT-5.6-sol
+  独立验收 GO。唯一下一动作是等待项目负责人通过 GitHub Desktop Fetch 确认无 incoming commits，
+  再明确决定是否授权 push；不得开始 M8 或其他功能切片。
 
 ## Blockers
 
-- None.
+- 发布被项目负责人明确暂缓；本次 CLI 无法刷新直接远端连接，须以 GitHub Desktop Fetch 结果为准。
 
 ## Verification
 
-- M7.2 本地验证（2026-07-30，非独立验收）：新增 4 个房间、2 只怪物、2 条唯一怪物目标任务，
+- M7.2 与 M7 独立验收 GO（2026-07-30，GPT-5.6-sol，无 findings）：相对 `5497859` 的
+  `147633e` 为 1 个提交、22 个内容、测试和公开文档文件，`src/`、Schema、依赖文件和私有资料
+  路径均为 0。23 项 M7/loot 聚焦、599 项全量 unittest、图与唯一性审计、compileall、
+  original_demo 内容校验、`check_repo_safety.py --history` 和 `git diff --check` 通过。真实 CLI/
+  save 和死亡恢复通过；v7/0.8.0 存档确认玩家位于新增房间，两只新增怪物 HP=0 且已移除，
+  `quest_clear_mist_crawler` 与 `quest_clear_prism_sentinel` 均已完成。验收时直查远端 `main`
+  为 `f0acd3f`，未 push；M7 GO 不等同公共引擎完成。
+- M7.2 本地验证（2026-07-30，独立验收前）：新增 4 个房间、2 只怪物、2 条唯一怪物目标任务，
   内容包为 0.8.0、save 保持 v7，旧 0.7.0 内容包存档被拒绝。8 项
   `tests.test_m7_second_encounter` / `tests.test_m7_content_scale`、15 项 `tests.test_loot`
   和 599 项全量 unittest 通过；compileall、original_demo 校验、`check_repo_safety.py --history`
   与 `git diff --check` 通过。仓库外 CLI 完成“装备 → 击败灰壳兽 → 击败火花巡兽 → 断轨岔口 →
   雾凝机井 → 击败雾核潜行者 → 余辉信标台 → 击败棱镜哨卫 → save/load”；存档确认 v7、0.8.0、
-  玩家位于余辉信标台、两只新怪物 HP 为 0 且已移除、两条新任务完成。M7 尚待独立验收。
+  玩家位于余辉信标台、两只新怪物 HP 为 0 且已移除、两条新任务完成。该本地证据随后获得独立验收。
 - M7.1 独立验收 GO（2026-07-30，GPT-5.6-sol，无 findings）：相对 `086cda8` 的 `9786325`
   为 1 个提交、22 文件、+333/-55；`src/`、`schemas/`、依赖文件和私有资料路径均为 0。19 项
   M7/loot 聚焦与 595 项全量 unittest 通过；compileall、original_demo 校验、
@@ -294,10 +304,11 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   current CLI routes; future commands must add their route, help, aliases, and death
   rule together and extend the bidirectional consistency test in a separately
   authorized vertical slice.
-- M7.2 locally reaches all M7 content-scale counts (eight rooms, four monsters, and
-  seven quests) without a new engine contract. It cannot be described as M7
-  completion until GPT-5.6-sol independently accepts the scale slice; M8 and push
-  remain outside this authorization.
+- M7.2 reaches all M7 content-scale counts (eight rooms, four monsters, and seven
+  quests) without a new engine contract and is independently accepted together with
+  M7. This does not complete the public engine: M8 and push remain outside the
+  current authorization, and GitHub Desktop Fetch must confirm no incoming commits
+  before any publication decision.
 - `drop` can deliberately leave a gate item in the current room and therefore block
   a gated exit until the player takes it again; this is explicit player intent.
   Equipped items are intentionally rejected instead of silently changing combat stats.

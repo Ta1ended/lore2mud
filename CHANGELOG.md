@@ -103,6 +103,15 @@
 
 ### Verified
 
+- GPT-5.6-sol independently accepted M7.2 and the complete M7 milestone as GO with
+  no findings (2026-07-30). Relative to `5497859`, `147633e` is one 22-file
+  content/test/public-document commit with zero `src/`, Schema, dependency, or
+  private-material-path changes. Accepted evidence: 23 M7/loot focused tests, 599
+  full unittest cases, topology and unique-target audits, compileall, original-demo
+  validation, history safety, `git diff --check`, and real CLI/save plus defeat
+  recovery. The v7/0.8.0 save confirmed the player in a new room, both new monsters
+  at HP 0 and removed, and both new quests complete; direct remote `main` was
+  `f0acd3f` at acceptance and no push occurred.
 - Codex locally verified M7.2 (not independent acceptance): 8 M7 scenario tests,
   15 loot regressions, and 599 full unittest cases passed, along with compileall,
   original-demo validation, history safety, and `git diff --check`. An
