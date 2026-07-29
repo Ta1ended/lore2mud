@@ -118,6 +118,8 @@ python pipeline/split_novel.py D:\PrivateNovel\book.txt novel\chapters --encodin
 
 模型不得自行补全原文没有的事实。提取结果仍是候选，不直接成为 canon。
 
+逐章提取的候选格式规范见 [fact_candidate_format.md](fact_candidate_format.md)。
+
 ## 第三步：实体归并
 
 中央注册表负责稳定 ID。子 Agent 可以并行提取候选，但不能各自永久决定实体

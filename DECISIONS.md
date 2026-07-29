@@ -848,3 +848,38 @@
   related M8 P2 handoff condition. The `f486e12` audit baseline, `6510e2d` audit
   record, `6502a72` correction, all prior milestone contracts, and all historical
   acceptance evidence remain in force.
+
+## DEC-0037: Phase 1.0 fact-candidate document validation contract
+
+- Date: 2026-07-30
+- Status: Implemented locally; GPT-5.6-sol independent acceptance pending.
+- Context: After M1–M8 public-engine completion (DEC-0036) and a Phase 0
+  readiness audit (NO-GO), Phase 0.1 revised the fact-candidate contract.
+  The project owner authorized Phase 1.0: implement the v1 document envelope,
+  frozen dataclass models, standard-library validator, JSON Schema, tests, and
+  public documentation using only fictional test fixtures.
+- Decision: (a) Implement `pipeline/fact_candidates.py` as a single module in
+  `pipeline/`, not in `src/lore2mud/`. (b) v1 is a document envelope with
+  `format_version`, `source_chapter`, `extracted_by`, and `candidates[]`.
+  (c) Each candidate has `candidate_id` (stable ID, document-unique),
+  `entity_type` (6-way enum), `proposed_entity_id` (optional proposal, not
+  authoritative), `display_name`, `aliases` (NFKC+casefold+strip dedup within
+  candidate only, originals preserved), and `claims[]`. (d) Each claim has
+  `claim_id` (stable ID, candidate-unique), `predicate` (stable ID), `value`
+  (5-branch tagged union: text/relation/numeric/boolean/enum), `source_chapters`
+  (exactly `[document.source_chapter]`), `source_support` (explicit|inferred),
+  `certainty` (certain|uncertain), and `inference_basis` (required when inferred,
+  null otherwise). (e) relation value uses `candidate_ref` referencing same-document
+  `candidate_id`; numeric rejects bool/NaN/±Inf; boolean rejects int 0/1; enum
+  uses stable ID. (f) JSON Schema (draft 2020-12) expresses structural constraints;
+  Python adds semantic checks the schema cannot express. (g) v1 excludes confidence,
+  timestamps, review status, conflict references, canon promotion, and entity
+  registry. (h) 119 focused tests and 718 full tests pass.
+- Consequences: The public fact-candidate format is defined and validated.
+  Manifest cross-file checking, review decisions, canon writing, model
+  integration, and entity ID registry remain for future slices. This does not
+  authorize reading private material.
+- Evidence: `pipeline/fact_candidates.py`, `schemas/fact_candidate.schema.json`,
+  `tests/test_fact_candidates.py`, `tests/fixtures/fact_candidates/`,
+  `docs/fact_candidate_format.md`, `docs/novel_pipeline.md`.
+- Supersedes: None.

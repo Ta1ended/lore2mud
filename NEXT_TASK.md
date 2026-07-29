@@ -1,20 +1,21 @@
 # Next Task
 
-_Last updated: 2026-07-30（M8 独立验收 GO；M1–M8 交接封板）_
+_Last updated: 2026-07-30（Phase 1.0 实现完成；独立验收待定）_
 
 ## Single next action
 
-等待项目负责人对后续工作给出新的、明确且范围受限的授权；在授权前不开始 M9、任何新功能或私有小说事实层工作。
+交回 GPT-5.6-sol 独立验收 Phase 1.0 fact-candidate document validation contract（DEC-0037）。
+验收通过前不得开始 Phase 1.1 或任何后续切片。
 
 ## Boundaries
 
-- M8 已由 GPT-5.6-sol 独立验收 GO，Git 快照 P2 已关闭、无新增 findings（DEC-0036）；M1–M8
-  范围内公共引擎已完成。original_demo 保持 8/8 房间、4/4 怪物和 7 条任务。
-- 技术审计基线为 `f486e12`，审计记录为 `6510e2d`，P2 修正为 `6502a72`。M8 验收时本地
-  `HEAD=origin/main=6502a72`、工作树干净、ahead/behind 为 0/0；GitHub Desktop push 已反映到本地
-  跟踪分支，命令行远端直查本轮超时。任何后续交接提交后都必须实时复查 Git。
-- M8 GO 仅封板公共引擎 M1–M8 路线；不得据此开始 M9、其他功能、发布操作或私有小说事实层工作。
+- Phase 1.0 实现位于 `pipeline/fact_candidates.py`，不涉及 `src/`、现有 Schema、
+  original_demo 或 save 格式。
+- 119 项聚焦测试和 718 项全量测试通过；compileall、内容校验、安全扫描和 diff 检查均通过。
+- 新增 5 个文件，更新 6 个文件（详见 DEC-0037）。
+- 实现完成不等于独立验收 GO。
 
 ## Queue
 
-- 无排队实施项；任何后续事项均须项目负责人重新明确授权。
+- 无排队实施项；后续事项（manifest 跨文件校验、审核、归并、canon、模型调用）
+  均须独立验收通过后由项目负责人重新明确授权。

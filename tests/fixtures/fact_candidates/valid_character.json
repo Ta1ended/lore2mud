@@ -1,0 +1,98 @@
+{
+  "format_version": 1,
+  "source_chapter": "chapter_000001",
+  "extracted_by": "test-extractor/v1",
+  "candidates": [
+    {
+      "candidate_id": "character_fog_villager",
+      "entity_type": "character",
+      "proposed_entity_id": "character_fog_villager",
+      "display_name": "雾岭村民",
+      "aliases": ["老村民", "村民"],
+      "claims": [
+        {
+          "claim_id": "claim_fog_villager_origin",
+          "predicate": "origin",
+          "value": {
+            "kind": "text",
+            "text": "出身于雾岭小村。"
+          },
+          "source_chapters": ["chapter_000001"],
+          "source_support": "explicit",
+          "certainty": "certain",
+          "inference_basis": null
+        },
+        {
+          "claim_id": "claim_fog_villager_age",
+          "predicate": "age",
+          "value": {
+            "kind": "numeric",
+            "number": 42,
+            "unit": "years"
+          },
+          "source_chapters": ["chapter_000001"],
+          "source_support": "inferred",
+          "certainty": "uncertain",
+          "inference_basis": "文中提到他孙子已成年，推测年龄约四十出头。"
+        },
+        {
+          "claim_id": "claim_fog_villager_alive",
+          "predicate": "is_alive",
+          "value": {
+            "kind": "boolean",
+            "flag": true
+          },
+          "source_chapters": ["chapter_000001"],
+          "source_support": "explicit",
+          "certainty": "certain",
+          "inference_basis": null
+        },
+        {
+          "claim_id": "claim_fog_villager_role",
+          "predicate": "role",
+          "value": {
+            "kind": "enum",
+            "enum_value": "elder"
+          },
+          "source_chapters": ["chapter_000001"],
+          "source_support": "explicit",
+          "certainty": "certain",
+          "inference_basis": null
+        }
+      ]
+    },
+    {
+      "candidate_id": "location_fog_ridge",
+      "entity_type": "location",
+      "proposed_entity_id": null,
+      "display_name": "雾岭小村",
+      "aliases": ["雾岭"],
+      "claims": [
+        {
+          "claim_id": "claim_fog_ridge_type",
+          "predicate": "location_type",
+          "value": {
+            "kind": "enum",
+            "enum_value": "village"
+          },
+          "source_chapters": ["chapter_000001"],
+          "source_support": "explicit",
+          "certainty": "certain",
+          "inference_basis": null
+        },
+        {
+          "claim_id": "claim_fog_villager_lives_here",
+          "predicate": "inhabited_by",
+          "value": {
+            "kind": "relation",
+            "candidate_ref": "character_fog_villager"
+          },
+          "source_chapters": ["chapter_000001"],
+          "source_support": "explicit",
+          "certainty": "certain",
+          "inference_basis": null
+        }
+      ]
+    }
+  ]
+}

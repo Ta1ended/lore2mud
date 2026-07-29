@@ -20,8 +20,8 @@ stale.
 
 - Repository: `lore2mud`; branch: `main`.
 - Current execution mode: GPT-5.6-sol reviews scope and architecture and performs
-  independent acceptance; Codex is the sole executor; the project owner manually
-  transfers prompts and completion reports between the two conversations.
+  independent acceptance; Hermes is the sole executor for Phase 1.0; the project
+  owner manually transfers prompts and completion reports between the two conversations.
 - M7.2 independent acceptance compares
   `147633e0f139c9bc04919d8f69e75666e511fadc` with baseline
   `549785912418bff56d1521437a51c25718edbc34`; M7.1's independently accepted
@@ -84,6 +84,13 @@ stale.
   now eight rooms, four monsters, and seven quests. The M7 scale conditions and M8
   public-engine audit are independently accepted GO; this completes only the M1–M8
   public-engine roadmap scope and does not authorize subsequent work.
+- Phase 1.0 fact-candidate validation implemented by Hermes (2026-07-30):
+  `pipeline/fact_candidates.py` with frozen dataclass models (document envelope,
+  candidate, claim, 5-branch value tagged union), stable-ID regex, NFKC alias
+  dedup, relation cross-reference, `FactCandidateValidationError`. JSON Schema
+  at `schemas/fact_candidate.schema.json` (draft 2020-12). 119 focused tests
+  and 718 full tests pass, compileall, content validation, safety scan, and
+  diff check clean. Pending GPT-5.6-sol independent acceptance (DEC-0037).
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

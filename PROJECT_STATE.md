@@ -182,15 +182,26 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 无活动实施切片。M1–M8 范围内公共引擎已由 GPT-5.6-sol 独立验收封板；唯一下一动作是等待
-  项目负责人对任何后续工作给出新的、明确且范围受限的授权。
+- Phase 1.0 fact-candidate document validation contract已由 Hermes 实现，
+  等待 GPT-5.6-sol 独立验收（DEC-0037）。实现位于 `pipeline/fact_candidates.py`，
+  不涉及 `src/`、现有 Schema、original_demo 或 save 格式。119 项聚焦测试和
+  718 项全量测试通过；compileall、内容校验、安全扫描和 diff 检查均通过。
 
 ## Blockers
 
-- 无技术阻塞；后续工作受项目负责人新的明确授权门槛约束。
+- 无技术阻塞；Phase 1.0 独立验收后方可开始后续切片。
 
 ## Verification
 
+- Phase 1.0 local verification（2026-07-30，Hermes，独立验收待定）：
+  119 项 `tests.test_fact_candidates` 聚焦测试通过；718 项全量 unittest 通过；
+  compileall、`lore2mud validate --content examples/original_demo`、
+  `check_repo_safety.py --history`、`git diff --check` 全部通过。新增 5 个文件
+  （`pipeline/fact_candidates.py`、`schemas/fact_candidate.schema.json`、
+  `tests/test_fact_candidates.py`、`tests/fixtures/fact_candidates/valid_character.json`、
+  `docs/fact_candidate_format.md`）；更新 6 个文件（`docs/novel_pipeline.md`、
+  `CHANGELOG.md`、`DECISIONS.md`、`PROJECT_MEMORY.md`、`PROJECT_STATE.md`、
+  `NEXT_TASK.md`）；`src/`、现有 Schema、original_demo、save 格式和依赖未修改。
 - M8 独立验收 GO（2026-07-30，GPT-5.6-sol）：聚焦复核关闭 Git 快照 P2、无新增 findings，
   并确认 M1–M8 范围内公共引擎完成。599 项全量 unittest、compileall、original-demo 内容校验、
   `check_repo_safety.py --history`、`git diff --check` 和 `git fsck --full --no-dangling` 全部通过；

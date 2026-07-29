@@ -2,6 +2,26 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added v1 fact-candidate document validation contract: `pipeline/fact_candidates.py`
+  with frozen dataclass models (`FactCandidateDocument`, `Candidate`, `Claim`,
+  five value branches), stable-ID regex, NFKC alias dedup, relation cross-reference,
+  and `FactCandidateValidationError`.
+- Added `schemas/fact_candidate.schema.json` (draft 2020-12, `additionalProperties`
+  false, `oneOf` tagged union). Schema expresses structural constraints; Python adds
+  semantic checks (dedup, cross-reference, NFKC, bool/int, finite float).
+- Added `tests/test_fact_candidates.py` with 119 focused tests covering all value
+  branches, unknown fields, missing fields, bool/int, NaN/Inf, alias dedup,
+  relation dangling ref, chapter mismatch, inference_basis conditionals, frozen
+  return types, and issues-order determinism.
+- Added `tests/fixtures/fact_candidates/valid_character.json` — a fully fictional
+  fixture with two candidates (character + location), four value branches, and a
+  relation cross-reference.
+- Added `docs/fact_candidate_format.md` documenting the v1 envelope, candidate,
+  claim, evidence dimensions, value branches, stable ID rules, and schema/Python
+  boundary.
+
 ### Changed
 
 - Expanded the fully original demo to content-pack 0.8.0 with M7.2: four more

@@ -1,0 +1,183 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/fact_candidate.schema.json",
+  "title": "Fact Candidate Document v1",
+  "description": "A v1 document envelope containing fact candidates extracted from a single chapter. This schema expresses structural constraints; Python adds semantic checks (dedup, cross-reference, NFKC alias normalization).",
+  "type": "object",
+  "required": ["format_version", "source_chapter", "extracted_by", "candidates"],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {
+      "type": "integer",
+      "const": 1,
+      "description": "Must be exactly 1."
+    },
+    "source_chapter": {
+      "type": "string",
+      "pattern": "^chapter_[0-9]{6}$",
+      "description": "The chapter this document's candidates were extracted from."
+    },
+    "extracted_by": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Identifier of the extraction tool or model."
+    },
+    "candidates": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/candidate" },
+      "description": "Non-empty array of fact candidates."
+    }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$",
+      "minLength": 1,
+      "description": "Lowercase ASCII identifier: letter start, letters/digits/underscores."
+    },
+    "candidate": {
+      "type": "object",
+      "required": [
+        "candidate_id", "entity_type", "proposed_entity_id",
+        "display_name", "aliases", "claims"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": { "$ref": "#/$defs/stable_id" },
+        "entity_type": {
+          "type": "string",
+          "enum": ["character", "location", "organization", "skill", "item", "event"]
+        },
+        "proposed_entity_id": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/stable_id" }
+          ],
+          "description": "Optional proposed stable ID; null if not proposed."
+        },
+        "display_name": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Non-empty display name."
+        },
+        "aliases": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Required array (may be empty). Each alias non-empty. Python checks NFKC dedup."
+        },
+        "claims": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/claim" },
+          "description": "Non-empty array of claims."
+        }
+      }
+    },
+    "claim": {
+      "type": "object",
+      "required": [
+        "claim_id", "predicate", "value", "source_chapters",
+        "source_support", "certainty", "inference_basis"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "claim_id": { "$ref": "#/$defs/stable_id" },
+        "predicate": { "$ref": "#/$defs/stable_id" },
+        "value": { "$ref": "#/$defs/claim_value" },
+        "source_chapters": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^chapter_[0-9]{6}$"
+          },
+          "minItems": 1,
+          "maxItems": 1,
+          "description": "Must be a single-element array matching document.source_chapter."
+        },
+        "source_support": {
+          "type": "string",
+          "enum": ["explicit", "inferred"]
+        },
+        "certainty": {
+          "type": "string",
+          "enum": ["certain", "uncertain"]
+        },
+        "inference_basis": {
+          "oneOf": [
+            { "type": "null" },
+            { "type": "string", "minLength": 1 }
+          ],
+          "description": "Required non-null when source_support=inferred; must be null otherwise."
+        }
+      }
+    },
+    "claim_value": {
+      "description": "Tagged union with 'kind' discriminator.",
+      "oneOf": [
+        { "$ref": "#/$defs/text_value" },
+        { "$ref": "#/$defs/relation_value" },
+        { "$ref": "#/$defs/numeric_value" },
+        { "$ref": "#/$defs/boolean_value" },
+        { "$ref": "#/$defs/enum_value" }
+      ]
+    },
+    "text_value": {
+      "type": "object",
+      "required": ["kind", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "text" },
+        "text": { "type": "string", "minLength": 1 }
+      }
+    },
+    "relation_value": {
+      "type": "object",
+      "required": ["kind", "candidate_ref"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "relation" },
+        "candidate_ref": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "numeric_value": {
+      "type": "object",
+      "required": ["kind", "number", "unit"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "numeric" },
+        "number": {
+          "type": "number",
+          "description": "int or float; Python rejects bool and NaN/Inf."
+        },
+        "unit": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/stable_id" }
+          ]
+        }
+      }
+    },
+    "boolean_value": {
+      "type": "object",
+      "required": ["kind", "flag"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "boolean" },
+        "flag": { "type": "boolean" }
+      }
+    },
+    "enum_value": {
+      "type": "object",
+      "required": ["kind", "enum_value"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "enum" },
+        "enum_value": { "$ref": "#/$defs/stable_id" }
+      }
+    }
+  }
+}
