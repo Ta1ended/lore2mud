@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-29（M4+M5 已由 GPT-5.6-sol 独立验收 GO）_
+_Last updated: 2026-07-29（M6 已本地实现并验证，等待 GPT-5.6-sol 独立验收）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -15,12 +15,19 @@ M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立�
 
 M4+M5 已由 Codex 实现，并由 GPT-5.6-sol 于 2026-07-29 独立验收 GO（DEC-0028）。
 首次验收发现 M5 空栈买入绕过 `stack_limit` 的 P1；Codex 在 `59ca3cd` 修正后，聚焦复验
-确认 P1 已关闭、无 findings。M4 无独立阻塞项；该 GO 仅封板 M4+M5，不授权 M6。
+确认 P1 已关闭、无 findings。
+
+项目负责人随后明确授权 M6。Codex 已本地实现 `World.examine()` 三分支 frozen typed
+outcomes、公开 `examine`、兼容 `inspect`、集中 `CommandSpec` 路由/帮助/死亡元数据和
+`help [command]`（DEC-0029）。查看范围仅限当前房间物品、背包物品、当前房间怪物与角色；
+跨类型同名或重复 ID 必须显式限定类型，歧义夹具只存在于测试内存。M6 尚未经过
+GPT-5.6-sol 独立验收，不能表述为 GO；M7 未开始。
 
 当前公开契约仍为 content pack 0.6.0、save v7、强类型有序 `DialogueEffect`、World-owned
 `flags`、非负 `coins` 和冻结的固定无限商店目录。`World` 预检并原子执行 effects/买入；
 `accept_quest` 显式重复会整体失败；`load` 只恢复状态，绝不重放效果、自动接取、检查、奖励
-或交易。`shop`/`buy`/`sell` 不引入可变库存，M6–M8 未开始。
+或交易。`shop`/`buy`/`sell` 不引入可变库存。M6 未改变 Schema、内容包或存档契约；M7–M8
+未开始。
 
 独立验收记录的证据为 12 项 M4 专项、13 项 M5 专项和 569 项全量 unittest，以及
 compileall、original_demo 校验、历史安全扫描、diff 检查和仓库外 CLI 流程。CLI 精确覆盖
@@ -143,8 +150,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 没有新的功能实现正在进行。唯一下一动作是等待项目负责人明确授权下一项纵向切片；
-  不得开始 M6 或其他功能实现。
+- M6 已由 Codex 本地实现、验证并准备提交；唯一下一动作是提交真实差异和证据给
+  GPT-5.6-sol 独立验收。独立 GO 前不得开始 M7。
 
 ## Blockers
 
@@ -152,6 +159,11 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## Verification
 
+- M6 本地验证（2026-07-29，非独立验收）：22 项 `tests.test_examine_help`、187 项
+  M6/inspect/commands/recover/dialogue 聚焦回归和 591 项全量 unittest 通过；compileall、
+  original_demo 校验、历史安全扫描及 `git diff --check` 通过。仓库外 CLI 覆盖房间、物品、
+  角色和怪物查看、类型化缺失错误、`help examine`、活动对话中的 `examine 1`、save/load；
+  保存文件仍为 v7、内容包仍为 0.6.0。
 - M4+M5 独立验收 GO（2026-07-29，GPT-5.6-sol）：首次 M5 空栈 `buy` ×6 超
   `stack_limit=5` 的 P1 已由 `59ca3cd` 修正并关闭，聚焦复验无 findings。12 项 M4 专项、
   13 项 M5 专项、569 项全量 unittest、compileall、original_demo 校验、历史安全扫描和
@@ -212,6 +224,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - `tests/test_dialogue_effects.py` - M4 union, atomicity, flags, outcomes, and v7 coverage.
 - `tests/test_shop.py` - M5 catalogs, trade atomicity, coins, CLI, and save coverage.
 - `tests/test_inspect.py` - visible-item inspection state-invariance and round-trip coverage.
+- `tests/test_examine_help.py` - M6 typed visibility, ambiguity, exact help/error
+  contracts, death/dialogue boundaries, and complete read-only invariance.
 - `tests/test_drop.py` - inventory-to-current-room drop, failure invariance, and
   save/load coverage.
 - `tests/test_loot.py` - deterministic monster loot contracts, one-time placement,
@@ -230,8 +244,11 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - The one-target-monster-per-quest constraint will need revisiting if shared-target
   quests are ever needed.
 - M4's four effect kinds and M5's fixed-price shop scope are closed; new effect kinds,
-  dialogue currency effects, dynamic pricing, discounts, stock, or M6 error-system
+  dialogue currency effects, dynamic pricing, discounts, stock, or post-M6 command
   changes require a separately approved vertical slice.
+- M6 is locally complete but not independently accepted. The `CommandSpec` registry
+  intentionally centralizes current CLI routes; future commands must add their route,
+  help, aliases, and death rule together and extend the bidirectional consistency test.
 - `drop` can deliberately leave a gate item in the current room and therefore block
   a gated exit until the player takes it again; this is explicit player intent.
   Equipped items are intentionally rejected instead of silently changing combat stats.

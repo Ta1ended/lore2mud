@@ -148,7 +148,9 @@ _Last updated: 2026-07-29（M4+M5 已由 GPT-5.6-sol 独立验收 GO）_
 
 ## M6: Examine、帮助和错误反馈
 
-- **状态**: 规划中。
+- **状态**: Codex 已本地实现并验证；等待 GPT-5.6-sol 独立验收，不得表述为 GO。
+- **执行者**: Codex。
+- **验收者**: GPT-5.6-sol（待独立验收）。
 - **强制完成条件**:
   - `examine` 成为公开命令，并与 `inspect` 兼容。
   - 可以查看当前可见的房间物品、背包物品、怪物、角色和当前房间摘要。
@@ -157,6 +159,15 @@ _Last updated: 2026-07-29（M4+M5 已由 GPT-5.6-sol 独立验收 GO）_
   - `help [command]` 显示语法、参数、上下文限制和死亡限制。
   - 参数错误、目标不存在、目标歧义、状态不允许返回稳定原因或用法文本。
   - 错误路径必须证明运行时状态不变。
+- **Codex 本地实现与验证证据**:
+  - `World.examine()` 返回 frozen item/monster/character tagged outcomes；只解析当前房间、
+    背包和当前房间角色/怪物。跨类型同名或重复 ID 要求类型限定，同类型重名要求稳定 ID。
+  - `inspect` 保持物品专用兼容；`CommandSpec` 同时驱动真实路由、别名、总帮助、
+    `help [command]` 和死亡允许集合，DEC-0020 门禁顺序不变。
+  - 22 项 M6、187 项聚焦和 591 项全量 unittest 通过；compileall、内容包校验、历史安全
+    扫描、diff 检查及仓库外 CLI 通过。original_demo 保持 0.6.0，save 保持 v7。
+- **边界**: 跨类型歧义夹具只在测试内存构造；未修改 Schema、原创内容 JSON、内容包版本、
+  save 契约或依赖。M7 未开始。
 
 ## M7: 原创内容规模验收
 

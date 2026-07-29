@@ -53,6 +53,8 @@ python -m lore2mud validate --content examples/original_demo
 
 ```text
 look
+examine
+examine item item_spark_lantern
 inspect item_spark_lantern
 take item_spark_lantern
 take item_linglu_pill 2
@@ -70,13 +72,19 @@ quests
 status
 load lantern_run
 help
+help examine
 quit
 ```
 
 ## 当前能力
 
 - `look`：查看当前房间、出口、物品、怪物和角色；门禁出口会显示所需物品的名称、稳定 ID 与当前是否持有，普通出口保持只显示方向。
-- `inspect <ID或名称>`：只读查看当前房间或背包中物品的稳定 ID 与描述；不能查看其他房间或尚未获得的奖励物品。
+- `examine` / `examine room|here`：只读查看当前房间摘要；`examine <ID或名称>` 可在当前
+  房间物品、背包物品、当前房间怪物和角色之间解析目标。跨类型同名或重复稳定 ID 时，使用
+  `examine item|monster|character <ID或名称>` 显式限定；同一类型内重名时使用稳定 ID。
+  其他房间及尚未取得的奖励不可见。
+- `inspect <ID或名称>`：保留兼容的物品专用查看，只解析当前房间或背包物品，并保持原有
+  `InspectItemOutcome` 与输出格式。
 - `go <方向>`：沿内容包声明的出口移动；门禁出口要求背包持有指定物品，不消耗该物品。
 - `take <ID或名称> [数量]`：拾取房间内物品（数量可选，默认 1）。
 - `drop <ID或名称> [数量]`：将背包中未装备的物品放入当前房间（数量可选，默认 1）。
@@ -95,6 +103,8 @@ quit
 - `talk <ID或名称>`：与角色对话，显示台词和编号选项。
 - `<数字>`：选择对话选项（对话中可用）。
 - `bye`：结束当前对话（对话中可用）。
+- `help [command]`：无参数列出所有真实路由；指定命令或别名时显示语法、参数、上下文限制
+  和死亡限制。帮助、路由和死亡允许信息来自同一个命令注册表。
 - 对话选项必须声明有序 `effects`；首批强类型效果是 `grant_item`、`grant_experience`、
   `accept_quest` 与 `set_flag`。World 预检整组效果后原子执行，并按效果顺序渲染结果。
 - `shop`：只读查看当前房间的固定无限目录；`buy <ID或名称> [数量]` 与

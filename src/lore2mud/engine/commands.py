@@ -13,6 +13,9 @@ from lore2mud.content.models import (
 )
 from lore2mud.engine.world import (
     AcceptQuestEffectOutcome,
+    ExamineCharacterOutcome,
+    ExamineItemOutcome,
+    ExamineMonsterOutcome,
     GrantExperienceEffectOutcome,
     GrantItemEffectOutcome,
     QuestOutcome,
@@ -21,38 +24,7 @@ from lore2mud.engine.world import (
     WorldRuleError,
 )
 
-HELP_TEXT = """可用指令：
-  look                        查看当前房间
-  inspect <物品ID或名称>       查看当前房间或背包中的物品详情
-  go <方向>                   移动，例如 go north
-  take <物品ID或名称> [数量]   拾取物品（数量可选，默认 1）
-  drop <物品ID或名称> [数量]   放下背包中的未装备物品
-  use <物品ID或名称> [数量]    使用消耗品
-  equip <物品ID或名称>         装备物品
-  unequip [hand|body]          卸下装备（默认 hand）
-  inventory                    查看背包
-  quests                       查看任务
-  status                       查看角色状态
-  shop                         查看当前房间商店
-  buy <物品ID或名称> [数量]    从当前商店购买物品
-  sell <物品ID或名称> [数量]   向当前商店出售未装备物品
-  attack <怪物ID或名称>         攻击怪物
-  talk <角色ID或名称>           与角色对话
-  <数字>                       选择对话选项（对话中）
-  bye                          结束当前对话（对话中）
-  save [槽位]                  保存游戏（默认 default）
-  load [槽位]                  读取存档（默认 default）
-  recover                      恢复倒下的角色
-  help                         查看帮助
-  quit                         退出游戏"""
-
 _BARE_SELECTION = re.compile(r'^[1-9][0-9]{0,4}$')
-
-_DEAD_ALLOWED = frozenset({
-    "look", "inspect", "status", "inventory", "inv", "i",
-    "quests", "shop", "help", "save", "load", "recover",
-    "quit", "exit",
-})
 
 # Numeric style patterns for quantity parsing
 _UNSIGNED_INT = re.compile(r'^[0-9]+$')
@@ -130,6 +102,172 @@ class CommandResult:
     should_quit: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class CommandSpec:
+    """One authoritative route and help contract."""
+
+    name: str
+    syntax: str
+    summary: str
+    parameters: str
+    context: str
+    allowed_when_dead: bool
+    handler_name: str | None
+    aliases: tuple[str, ...] = ()
+
+
+COMMAND_SPECS = (
+    CommandSpec(
+        "look", "look", "查看当前房间", "无。",
+        "只读显示当前房间摘要；活动对话保持不变。", True, "_command_look",
+    ),
+    CommandSpec(
+        "examine",
+        "examine [room|here|<目标ID或名称>|item <物品ID或名称>|"
+        "monster <怪物ID或名称>|character <角色ID或名称>]",
+        "查看当前可见目标或房间摘要",
+        "无参数、room 或 here 查看当前房间；可用类型限定消除歧义。",
+        "仅可见当前房间物品、背包物品、当前房间怪物和角色；只读且不结束对话。",
+        True,
+        "_examine",
+    ),
+    CommandSpec(
+        "inspect", "inspect <物品ID或名称>", "兼容的物品专用查看",
+        "一个可含空格的物品稳定 ID 或名称。",
+        "仅查看当前房间或背包物品；只读且不结束对话。", True, "_inspect",
+    ),
+    CommandSpec(
+        "go", "go <方向>", "沿当前房间出口移动",
+        "一个方向，例如 north。", "方向必须是当前房间出口。", False, "_go",
+    ),
+    CommandSpec(
+        "take", "take <物品ID或名称> [数量]", "拾取当前房间物品",
+        "物品查询可含空格；数量省略时为 1，必须是正整数。",
+        "目标必须在当前房间，背包必须可容纳。", False, "_take",
+    ),
+    CommandSpec(
+        "drop", "drop <物品ID或名称> [数量]", "放下背包物品",
+        "物品查询可含空格；数量省略时为 1，必须是正整数。",
+        "目标必须在背包且未装备。", False, "_drop",
+    ),
+    CommandSpec(
+        "use", "use <物品ID或名称> [数量]", "使用消耗品",
+        "物品查询可含空格；数量省略时为 1，必须是正整数。",
+        "目标必须是背包中的未装备消耗品，且角色必须有生命损失。", False, "_use",
+    ),
+    CommandSpec(
+        "equip", "equip <物品ID或名称>", "装备物品",
+        "一个可含空格的物品稳定 ID 或名称。",
+        "目标必须是背包中数量为 1 的 hand 或 body 装备。", False, "_equip",
+    ),
+    CommandSpec(
+        "unequip", "unequip [hand|body]", "卸下装备",
+        "可选槽位为 hand 或 body；省略时为 hand。",
+        "指定槽位必须已有装备。", False, "_unequip",
+    ),
+    CommandSpec(
+        "inventory", "inventory", "查看背包", "无。",
+        "只读；别名 inv、i。", True, "_command_inventory", ("inv", "i"),
+    ),
+    CommandSpec(
+        "quests", "quests", "查看已接取任务", "无。",
+        "只读显示当前任务状态。", True, "_command_quests",
+    ),
+    CommandSpec(
+        "status", "status", "查看角色状态", "无。",
+        "只读显示属性、金币和 flags。", True, "_command_status",
+    ),
+    CommandSpec(
+        "shop", "shop", "查看当前房间商店", "无。",
+        "当前房间必须有商店；只读且不结束对话。", True, "_shop",
+    ),
+    CommandSpec(
+        "buy", "buy <物品ID或名称> [数量]", "从当前商店购买",
+        "物品查询可含空格；数量省略时为 1，必须是正整数。",
+        "当前房间必须有商店，并满足目录、金币、容量和栈上限规则。", False, "_buy",
+    ),
+    CommandSpec(
+        "sell", "sell <物品ID或名称> [数量]", "向当前商店出售",
+        "物品查询可含空格；数量省略时为 1，必须是正整数。",
+        "当前房间必须有商店，目标必须在背包、可售且未装备。", False, "_sell",
+    ),
+    CommandSpec(
+        "attack", "attack <怪物ID或名称>", "攻击当前房间怪物",
+        "一个可含空格的怪物稳定 ID 或名称。",
+        "目标必须是当前房间仍存活的怪物。", False, "_attack",
+    ),
+    CommandSpec(
+        "talk", "talk <角色ID或名称>", "与当前房间角色对话",
+        "一个可含空格的角色稳定 ID 或名称。",
+        "目标必须在当前房间且拥有对话；切换目标会结束旧对话。", False, "_talk",
+    ),
+    CommandSpec(
+        "<数字>", "<数字>", "选择活动对话选项", "1 至 99999 的十进制整数。",
+        "仅在活动对话中可用；带其他参数不会被解析为选项。", False, None,
+    ),
+    CommandSpec(
+        "bye", "bye", "结束活动对话", "无。",
+        "仅在活动对话中可用。", False, "_bye",
+    ),
+    CommandSpec(
+        "save", "save [槽位]", "保存游戏", "可选安全槽位名；省略时为 default。",
+        "需要可用的存档服务。", True, "_save",
+    ),
+    CommandSpec(
+        "load", "load [槽位]", "读取存档", "可选安全槽位名；省略时为 default。",
+        "需要可用的存档服务及有效存档；成功后替换整个 World。", True, "_load",
+    ),
+    CommandSpec(
+        "recover", "recover", "恢复倒下的角色", "无。",
+        "仅在角色倒下时可用。", True, "_recover",
+    ),
+    CommandSpec(
+        "help", "help [command]", "查看总帮助或单条指令帮助",
+        "可选一个指令名或别名。", "只读。", True, "_help",
+    ),
+    CommandSpec(
+        "quit", "quit", "退出游戏", "无。", "别名 exit。",
+        True, "_quit", ("exit",),
+    ),
+)
+
+
+_SELECTION_SPEC = next(spec for spec in COMMAND_SPECS if spec.name == "<数字>")
+
+
+def _build_command_map() -> dict[str, CommandSpec]:
+    routes: dict[str, CommandSpec] = {}
+    for spec in COMMAND_SPECS:
+        if spec.handler_name is None:
+            continue
+        for token in (spec.name, *spec.aliases):
+            normalized = token.casefold()
+            if normalized in routes:
+                raise RuntimeError(f"重复命令路由：{token}")
+            routes[normalized] = spec
+    return routes
+
+
+_COMMAND_BY_TOKEN = _build_command_map()
+_HELP_BY_TOKEN = dict(_COMMAND_BY_TOKEN)
+_HELP_BY_TOKEN[_SELECTION_SPEC.name] = _SELECTION_SPEC
+_DEAD_ALLOWED = frozenset(
+    token
+    for token, spec in _COMMAND_BY_TOKEN.items()
+    if spec.allowed_when_dead
+)
+
+
+def _render_help_index() -> str:
+    lines = ["可用指令："]
+    lines.extend(f"  {spec.syntax} — {spec.summary}" for spec in COMMAND_SPECS)
+    lines.append("使用 help <command> 查看语法、参数和限制。")
+    return "\n".join(lines)
+
+
+HELP_TEXT = _render_help_index()
+
+
 class CommandProcessor:
     def __init__(
         self,
@@ -150,64 +288,38 @@ class CommandProcessor:
         command = parts[0].casefold()
         arguments = parts[1:]
         try:
-            # Death gate: only allow read-only and recovery commands.
+            # Preserve DEC-0020 ordering: death gates before dialogue routing
+            # and before unknown-command feedback. The allowlist is derived
+            # from the same registry that owns routes and help.
             if not self.world.player.is_alive:
                 if command not in _DEAD_ALLOWED:
                     from lore2mud.engine.world import _DEAD_ERROR
                     return CommandResult(_DEAD_ERROR)
 
-            # Bare integer selection in active dialogue
-            if self.world.active_dialogue is not None and len(parts) == 1:
-                if _BARE_SELECTION.fullmatch(parts[0]):
+            if len(parts) == 1 and _BARE_SELECTION.fullmatch(parts[0]):
+                if self.world.active_dialogue is not None:
                     return self._select_option(int(parts[0]))
-                if command == "bye":
-                    return self._bye()
+                return CommandResult(
+                    f"未知指令：{parts[0]}。使用 help 查看帮助。"
+                )
 
-            if command == "look":
-                return CommandResult(self._look())
-            if command == "inspect":
-                return self._inspect(arguments)
-            if command == "go":
-                return self._go(arguments)
-            if command == "take":
-                return self._take(arguments)
-            if command == "drop":
-                return self._drop(arguments)
-            if command == "use":
-                return self._use(arguments)
-            if command == "equip":
-                return self._equip(arguments)
-            if command == "unequip":
-                return self._unequip(arguments)
-            if command in {"inventory", "inv", "i"}:
-                return CommandResult(self._inventory())
-            if command == "quests":
-                return CommandResult(self._quests())
-            if command == "status":
-                return CommandResult(self._status())
-            if command == "shop":
-                return self._shop(arguments)
-            if command == "buy":
-                return self._buy(arguments)
-            if command == "sell":
-                return self._sell(arguments)
-            if command == "attack":
-                return self._attack(arguments)
-            if command == "talk":
-                return self._talk(arguments)
-            if command == "save":
-                return self._save(arguments)
-            if command == "load":
-                return self._load(arguments)
-            if command == "recover":
-                return self._recover(arguments)
-            if command == "help":
-                return CommandResult(HELP_TEXT)
-            if command in {"quit", "exit"}:
-                return CommandResult("游戏结束。", should_quit=True)
-            return CommandResult(f"未知指令：{parts[0]}。使用 help 查看帮助。")
+            if command == "bye" and self.world.active_dialogue is None:
+                return CommandResult(
+                    f"未知指令：{parts[0]}。使用 help 查看帮助。"
+                )
+
+            spec = _COMMAND_BY_TOKEN.get(command)
+            if spec is None or spec.handler_name is None:
+                return CommandResult(f"未知指令：{parts[0]}。使用 help 查看帮助。")
+            handler = getattr(self, spec.handler_name)
+            return handler(arguments)
         except WorldRuleError as exc:
             return CommandResult(str(exc))
+
+    def _command_look(self, arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：look")
+        return CommandResult(self._look())
 
     def _look(self) -> str:
         room = self.world.current_room
@@ -286,7 +398,7 @@ class CommandProcessor:
         return "\n".join(hints)
 
     def _go(self, arguments: list[str]) -> CommandResult:
-        if len(arguments) != 1:
+        if len(arguments) != 1 or not arguments[0].strip():
             return CommandResult("用法：go <方向>")
         outcome = self.world.move_with_outcome(arguments[0])
         lines = [f"你来到 {outcome.room.name}。"]
@@ -321,10 +433,63 @@ class CommandProcessor:
             )
         return CommandResult(f"你放下了 {outcome.item_name}。")
 
-    def _inspect(self, arguments: list[str]) -> CommandResult:
+    def _examine(self, arguments: list[str]) -> CommandResult:
+        usage = f"用法：{_COMMAND_BY_TOKEN['examine'].syntax}"
         if not arguments:
+            return CommandResult(self._look())
+
+        selector = arguments[0].casefold()
+        if selector in {"room", "here"}:
+            if len(arguments) != 1:
+                return CommandResult(usage)
+            return CommandResult(self._look())
+
+        target_type = None
+        query_arguments = arguments
+        if selector in {"item", "monster", "character"}:
+            target_type = selector
+            query_arguments = arguments[1:]
+            if not query_arguments or not " ".join(query_arguments).strip():
+                labels = {
+                    "item": "物品ID或名称",
+                    "monster": "怪物ID或名称",
+                    "character": "角色ID或名称",
+                }
+                return CommandResult(
+                    f"用法：examine {selector} <{labels[selector]}>"
+                )
+
+        query = " ".join(query_arguments).strip()
+        if not query:
+            return CommandResult(usage)
+        outcome = self.world.examine(query, target_type)  # type: ignore[arg-type]
+        return CommandResult(self._render_examine(outcome))
+
+    @staticmethod
+    def _render_examine(outcome: object) -> str:
+        if isinstance(outcome, ExamineItemOutcome):
+            return (
+                f"{outcome.item_name} [{outcome.item_id}]\n"
+                f"{outcome.description}"
+            )
+        if isinstance(outcome, ExamineMonsterOutcome):
+            return (
+                f"{outcome.monster_name} [{outcome.monster_id}]\n"
+                f"{outcome.description}\n"
+                f"生命：{outcome.hp}/{outcome.max_hp}"
+            )
+        if isinstance(outcome, ExamineCharacterOutcome):
+            return (
+                f"{outcome.character_name} [{outcome.character_id}]\n"
+                f"{outcome.description}"
+            )
+        raise AssertionError(f"未知 examine 结果：{outcome!r}")
+
+    def _inspect(self, arguments: list[str]) -> CommandResult:
+        query = " ".join(arguments).strip()
+        if not query:
             return CommandResult("用法：inspect <物品ID或名称>")
-        outcome = self.world.inspect_item(" ".join(arguments))
+        outcome = self.world.inspect_item(query)
         return CommandResult(
             f"{outcome.item_name} [{outcome.item_id}]\n{outcome.description}"
         )
@@ -346,9 +511,10 @@ class CommandProcessor:
         )
 
     def _equip(self, arguments: list[str]) -> CommandResult:
-        if not arguments:
+        query = " ".join(arguments).strip()
+        if not query:
             return CommandResult("用法：equip <物品ID或名称>")
-        outcome = self.world.equip(" ".join(arguments))
+        outcome = self.world.equip(query)
         return CommandResult(f"你装备了 {outcome.item_name}。")
 
     def _unequip(self, arguments: list[str]) -> CommandResult:
@@ -376,6 +542,11 @@ class CommandProcessor:
                 lines.append(f"- {item.name} ({s.item_id})")
         return "\n".join(lines)
 
+    def _command_inventory(self, arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：inventory")
+        return CommandResult(self._inventory())
+
     def _quests(self) -> str:
         if not self.world.quest_states:
             return "当前没有已接取的任务。"
@@ -393,6 +564,11 @@ class CommandProcessor:
             else:
                 lines.append(f"  奖励：{qdef.reward_experience} 经验")
         return "\n".join(lines)
+
+    def _command_quests(self, arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：quests")
+        return CommandResult(self._quests())
 
     def _quest_target_text(self, qdef: object) -> str:
         if isinstance(qdef, MonsterDefeatedQuestDefinition):
@@ -434,6 +610,11 @@ class CommandProcessor:
             f"金币：{player.coins}\n"
             f"flags：{flags_text}"
         )
+
+    def _command_status(self, arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：status")
+        return CommandResult(self._status())
 
     def _shop(self, arguments: list[str]) -> CommandResult:
         if arguments:
@@ -488,9 +669,10 @@ class CommandProcessor:
         )
 
     def _attack(self, arguments: list[str]) -> CommandResult:
-        if not arguments:
+        query = " ".join(arguments).strip()
+        if not query:
             return CommandResult("用法：attack <怪物ID或名称>")
-        outcome = self.world.attack(" ".join(arguments))
+        outcome = self.world.attack(query)
         combat = outcome.combat
         lines = [
             f"你对 {combat.monster_name} 造成 {combat.damage_to_monster} 点伤害。"
@@ -527,16 +709,19 @@ class CommandProcessor:
         return CommandResult("\n".join(lines))
 
     def _talk(self, arguments: list[str]) -> CommandResult:
-        if not arguments:
+        query = " ".join(arguments).strip()
+        if not query:
             return CommandResult("用法：talk <角色ID或名称>")
-        outcome = self.world.start_dialogue(" ".join(arguments))
+        outcome = self.world.start_dialogue(query)
         return CommandResult(self._render_talk(outcome))
 
     def _select_option(self, index: int) -> CommandResult:
         outcome = self.world.select_option(index)
         return CommandResult(self._render_talk(outcome))
 
-    def _bye(self) -> CommandResult:
+    def _bye(self, arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：bye")
         outcome = self.world.end_dialogue()
         return CommandResult(
             f"你与{outcome.character_name}的对话结束了。"
@@ -644,3 +829,36 @@ class CommandProcessor:
             f"你已恢复，在 {outcome.room_name} 醒来。"
             f"生命：{outcome.hp}/{outcome.max_hp}"
         )
+
+    def _help(self, arguments: list[str]) -> CommandResult:
+        if len(arguments) > 1:
+            return CommandResult("用法：help [command]")
+        if not arguments:
+            return CommandResult(HELP_TEXT)
+
+        query = arguments[0].casefold()
+        if _BARE_SELECTION.fullmatch(query):
+            spec = _SELECTION_SPEC
+        else:
+            spec = _HELP_BY_TOKEN.get(query)
+        if spec is None:
+            return CommandResult(
+                f"没有该指令的帮助：{arguments[0]}。使用 help 查看全部指令。"
+            )
+
+        lines = [f"指令：{spec.name}", f"语法：{spec.syntax}"]
+        if spec.aliases:
+            lines.append(f"别名：{', '.join(spec.aliases)}")
+        lines.extend((
+            f"参数：{spec.parameters}",
+            f"上下文限制：{spec.context}",
+            "死亡限制：倒下时可用。" if spec.allowed_when_dead else
+            "死亡限制：倒下时不可用；请先 recover 或 load。",
+        ))
+        return CommandResult("\n".join(lines))
+
+    @staticmethod
+    def _quit(arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：quit")
+        return CommandResult("游戏结束。", should_quit=True)

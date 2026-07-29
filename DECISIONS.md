@@ -623,3 +623,38 @@
   `tests/test_shop.py`, `docs/engine_completion_milestones.md`,
   `PROJECT_STATE.md`.
 - Supersedes: Only the independent-acceptance-pending status in DEC-0027.
+
+## DEC-0029: M6 typed visible examine and authoritative command help
+
+- Date: 2026-07-29
+- Status: Implemented locally; GPT-5.6-sol independent acceptance pending.
+- Context: The project owner explicitly authorized M6 after a read-only design
+  review identified three drift risks: help versus real routes and death gates,
+  exact `examine` reserved-word/numeric behavior, and cross-type ambiguity
+  fixtures accidentally leaking into the public demo.
+- Decision: (a) `World.examine()` is the visibility and ambiguity authority and
+  returns a frozen `ExamineItemOutcome` / `ExamineMonsterOutcome` /
+  `ExamineCharacterOutcome` union. It searches only current-room items, backpack
+  items, current-room monsters, and current-room characters; unique exact IDs
+  precede unique names, while cross-type duplicate names or IDs require an
+  explicit type. (b) `examine`, `examine room`, and `examine here` reuse the
+  current room summary; `item`, `monster`, and `character` are case-insensitive
+  first-argument selectors. Reserved room words with extra arguments and empty
+  typed targets return fixed usage text. (c) `inspect` remains the item-only
+  compatibility API and output. (d) A frozen `CommandSpec` registry owns literal
+  routes, aliases, summary/detail help, and death permission metadata. The death
+  allowlist is derived from it while DEC-0020 ordering remains unchanged.
+  (e) Bare integers retain the historical dialogue-only route; `examine 1`
+  always treats `1` as a target and preserves any active dialogue. (f) All
+  examine/help operations and failures are read-only. Cross-type duplicate-name
+  and duplicate-ID fixtures exist only in test memory.
+- Consequences: M6 changes no JSON contract, Schema, dependency, content-pack
+  data/version, or save data/version; original_demo remains 0.6.0 and saves
+  remain v7. The local implementation is not M6 GO until GPT-5.6-sol independently
+  reviews it. M7 remains unstarted and unauthorized.
+- Evidence: `src/lore2mud/engine/world.py`,
+  `src/lore2mud/engine/commands.py`, `tests/test_examine_help.py`,
+  `tests/test_inspect.py`, `docs/architecture.md`,
+  `docs/engine_completion_milestones.md`.
+- Supersedes: The M6-planning-only state; DEC-0020 death-gate ordering and the
+  legacy inspect contract remain in force.

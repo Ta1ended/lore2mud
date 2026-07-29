@@ -109,6 +109,43 @@ class InspectItemOutcome:
 
 
 @dataclass(frozen=True, slots=True)
+class ExamineItemOutcome:
+    """Typed read-only details for a visible item."""
+
+    item_id: str
+    item_name: str
+    description: str
+    kind: Literal["item"] = field(init=False, default="item")
+
+
+@dataclass(frozen=True, slots=True)
+class ExamineMonsterOutcome:
+    """Typed read-only details for a monster in the current room."""
+
+    monster_id: str
+    monster_name: str
+    description: str
+    hp: int
+    max_hp: int
+    kind: Literal["monster"] = field(init=False, default="monster")
+
+
+@dataclass(frozen=True, slots=True)
+class ExamineCharacterOutcome:
+    """Typed read-only details for a character in the current room."""
+
+    character_id: str
+    character_name: str
+    description: str
+    kind: Literal["character"] = field(init=False, default="character")
+
+
+ExamineOutcome = (
+    ExamineItemOutcome | ExamineMonsterOutcome | ExamineCharacterOutcome
+)
+
+
+@dataclass(frozen=True, slots=True)
 class EquipOutcome:
     """Result of equipping an item."""
     item_id: str
@@ -768,31 +805,166 @@ class World:
                 coins=self.player.coins,
             )
 
-    def inspect_item(self, item_query: str) -> InspectItemOutcome:
-        """Return details for an item in the current room or inventory."""
-        available: list[tuple[str, int]] = []
+    def _visible_item_ids(self) -> list[str]:
+        """Return visible item IDs once, in room-then-inventory order."""
+        available: list[str] = []
         seen: set[str] = set()
         for s in self.current_room.item_stacks:
             if s.item_id not in seen:
-                available.append((s.item_id, s.quantity))
+                available.append(s.item_id)
                 seen.add(s.item_id)
         for s in self.player.inventory.stacks:
             if s.item_id not in seen:
-                available.append((s.item_id, s.quantity))
+                available.append(s.item_id)
                 seen.add(s.item_id)
+        return available
 
-        available_ids = [item_id for item_id, _ in available]
-        item_id = self._resolve_id_from_ids(
-            item_query, available_ids, self.items, kind="物品"
+    def _visible_monster_ids(self) -> list[str]:
+        """Return monster IDs currently placed in the player's room."""
+        return list(self.current_room.monster_ids)
+
+    def _visible_character_ids(self) -> list[str]:
+        """Return character IDs currently placed in the player's room."""
+        return [
+            character.id
+            for character in self.characters.values()
+            if character.room_id == self.player.room_id
+        ]
+
+    def _build_examine_outcome(
+        self,
+        target_type: Literal["item", "monster", "character"],
+        target_id: str,
+    ) -> ExamineOutcome:
+        if target_type == "item":
+            item = self.items[target_id]
+            return ExamineItemOutcome(
+                item_id=item.id,
+                item_name=item.name,
+                description=item.description,
+            )
+        if target_type == "monster":
+            monster = self.monsters[target_id]
+            assert monster.hp is not None
+            return ExamineMonsterOutcome(
+                monster_id=monster.id,
+                monster_name=monster.name,
+                description=monster.description,
+                hp=monster.hp,
+                max_hp=monster.max_hp,
+            )
+        character = self.characters[target_id]
+        return ExamineCharacterOutcome(
+            character_id=character.id,
+            character_name=character.name,
+            description=character.description,
         )
-        if item_id is None:
-            raise WorldRuleError(f"这里或背包中没有 {item_query}。")
 
-        item = self.items[item_id]
+    def examine(
+        self,
+        target_query: str,
+        target_type: Literal["item", "monster", "character"] | None = None,
+    ) -> ExamineOutcome:
+        """Resolve one currently visible entity without changing runtime state.
+
+        An explicit ``target_type`` limits both visibility and ambiguity to that
+        branch. Untyped queries prefer an exact stable ID; duplicate exact IDs or
+        duplicate names across visible branches require an explicit type.
+        """
+        normalized = target_query.strip().casefold()
+        if not normalized:
+            raise WorldRuleError("查看目标不能为空。")
+
+        visible_by_type: dict[
+            Literal["item", "monster", "character"],
+            tuple[list[str], dict[str, object], str, str],
+        ] = {
+            "item": (
+                self._visible_item_ids(),
+                self.items,
+                "物品",
+                f"这里或背包中没有 {target_query}。",
+            ),
+            "monster": (
+                self._visible_monster_ids(),
+                self.monsters,
+                "怪物",
+                f"这里没有怪物 {target_query}。",
+            ),
+            "character": (
+                self._visible_character_ids(),
+                self.characters,
+                "角色",
+                f"这里没有角色 {target_query}。",
+            ),
+        }
+
+        if target_type is not None:
+            if target_type not in visible_by_type:
+                raise WorldRuleError(f"查看目标类型无效：{target_type}。")
+            available_ids, entities, kind, missing_error = visible_by_type[target_type]
+            target_id = self._resolve_id_from_ids(
+                target_query, available_ids, entities, kind=kind
+            )
+            if target_id is None:
+                raise WorldRuleError(missing_error)
+            return self._build_examine_outcome(target_type, target_id)
+
+        exact_matches: list[tuple[
+            Literal["item", "monster", "character"], str
+        ]] = []
+        for kind, (available_ids, _, _, _) in visible_by_type.items():
+            exact_matches.extend(
+                (kind, target_id)
+                for target_id in available_ids
+                if target_id.casefold() == normalized
+            )
+        if len(exact_matches) == 1:
+            return self._build_examine_outcome(*exact_matches[0])
+        if len(exact_matches) > 1:
+            raise WorldRuleError(
+                "目标不唯一，请使用类型限定："
+                "examine item|monster|character <目标ID或名称>。"
+            )
+
+        name_matches: list[tuple[
+            Literal["item", "monster", "character"], str
+        ]] = []
+        for kind, (available_ids, entities, _, _) in visible_by_type.items():
+            name_matches.extend(
+                (kind, target_id)
+                for target_id in available_ids
+                if getattr(entities[target_id], "name", "").casefold() == normalized
+            )
+        if len(name_matches) == 1:
+            return self._build_examine_outcome(*name_matches[0])
+        if len(name_matches) > 1:
+            matched_types = {kind for kind, _ in name_matches}
+            if len(matched_types) == 1:
+                labels = {
+                    "item": "物品",
+                    "monster": "怪物",
+                    "character": "角色",
+                }
+                only_type = next(iter(matched_types))
+                raise WorldRuleError(
+                    f"{labels[only_type]}名称不唯一，请使用稳定 ID。"
+                )
+            raise WorldRuleError(
+                "目标不唯一，请使用类型限定："
+                "examine item|monster|character <目标ID或名称>。"
+            )
+        raise WorldRuleError(f"这里看不到 {target_query}。")
+
+    def inspect_item(self, item_query: str) -> InspectItemOutcome:
+        """Return legacy item-only details for the current room or inventory."""
+        outcome = self.examine(item_query, "item")
+        assert isinstance(outcome, ExamineItemOutcome)
+
         return InspectItemOutcome(
-            item_id=item_id,
-            item_name=item.name,
-            description=item.description,
+            item_id=outcome.item_id,
+            item_name=outcome.item_name,
+            description=outcome.description,
         )
 
     def use(self, item_query: str, quantity: int = 1) -> UseOutcome:

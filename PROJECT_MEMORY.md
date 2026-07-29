@@ -30,7 +30,8 @@ stale.
   could create a new stack above its `stack_limit`, allowing a save that its own
   v7 loader rejects. Codex corrected that one M5 P1 in `59ca3cd`; GPT-5.6-sol's
   focused re-review found no findings and independently accepted M4+M5 GO on
-  2026-07-29. M6 or any other feature implementation remains unauthorized.
+  2026-07-29. The project owner then explicitly authorized M6; Codex has locally
+  implemented and verified it, but GPT-5.6-sol independent acceptance is pending.
 - Current public-engine contract: content pack 0.6.0; save v7; typed
   `ItemStackDefinition`/`ItemStack`; quantity-aware `take`/`drop`/`use`;
   required ordered dialogue effects; World-owned flags; nonnegative coins; and
@@ -47,6 +48,13 @@ stale.
   whole-list preflighted and atomic; explicit duplicate acceptance rejects the
   option; loading v7 restores state only and never replays effects, tasks,
   rewards, or trades.
+- M6 adds `World.examine()` with frozen item/monster/character outcomes, current-
+  visibility-only resolution, public `examine`, compatible item-only `inspect`,
+  and one frozen `CommandSpec` registry for real routes, help, aliases, and death
+  permission. Exact-ID resolution precedes names; cross-type duplicate IDs or
+  names require an explicit type. `examine` and `help` are read-only, preserve
+  active dialogue, and remain available when dead. M6 changes no content or save
+  contract; M7 remains unstarted and unauthorized.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).
@@ -104,6 +112,13 @@ stale.
 
 ## Verified current facts
 
+- Codex locally verified M6 (not independent acceptance): 22 M6 tests, 187
+  focused inspect/commands/recover/dialogue regressions, and 591 full tests passed,
+  together with compileall, original-demo validation, history safety, diff checking,
+  and an external-save-directory CLI flow. The CLI proved room/item/character/
+  monster examine, typed missing errors, detailed help, dialogue-preserving numeric
+  target handling, and v7/0.6.0 save/load. Cross-type ambiguity fixtures are test-
+  memory-only. Submit this evidence to GPT-5.6-sol before any M7 work.
 - GPT-5.6-sol independently accepted M4+M5 as GO (2026-07-29). The first
   review's empty-stack `stack_limit` P1 was fixed in `59ca3cd`; the focused
   re-review found no findings.
@@ -124,8 +139,8 @@ stale.
   earlier world without replaying effects; independent v6/0.6 and v7/0.4 loads
   were rejected for format and content-pack version respectively.
 - M1, M2, and M3 retain their historical GPT-5.6-sol independent GO decisions;
-  M4+M5 are also independently accepted GO (DEC-0028). M6 remains unstarted and
-  requires explicit project-owner authorization.
+  M4+M5 are also independently accepted GO (DEC-0028). M6 is locally implemented
+  under explicit authorization but is not GO until independent acceptance.
 
 ## Dated historical verification evidence (not current contracts)
 

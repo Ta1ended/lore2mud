@@ -4,6 +4,11 @@
 
 ### Changed
 
+- Replaced separately maintained command routing, summary help, and death
+  allowlist metadata with one frozen `CommandSpec` registry. `help [command]`
+  now reports syntax, parameters, context restrictions, and death restrictions;
+  DEC-0020 death-gate ordering and dialogue-only bare-number behavior remain
+  compatible.
 - Documented the current execution workflow: GPT-5.6-sol is the scope/architecture
   reviewer and independent acceptor; Codex is the sole executor; the project owner
   manually transfers prompts and completion reports between the two conversations.
@@ -23,6 +28,14 @@
 
 ### Added
 
+- Added M6 `examine`: no argument, `room`, and `here` render the current room;
+  untyped or `item` / `monster` / `character` queries inspect only currently
+  visible entities. World returns frozen typed outcomes, resolves exact IDs
+  before names, and requires a type qualifier for cross-type ambiguity.
+- Added 22 M6 tests covering typed results, room/backpack/current-room visibility,
+  hidden rewards, in-memory-only duplicate-name/duplicate-ID ambiguity, reserved
+  words, empty and numeric targets, dialogue/death boundaries, stable help/error
+  text, registry consistency, and complete failure-state invariance.
 - Added the M4 frozen dialogue-effect tagged union: `grant_item`,
   `grant_experience`, `accept_quest`, and `set_flag`. Options require an ordered
   `effects` list; strict loader/schema validation rejects legacy fields, mixed
@@ -72,6 +85,13 @@
 
 ### Verified
 
+- Codex locally verified M6 (not independent acceptance): 22
+  `tests.test_examine_help` cases, 187 focused M6/inspect/commands/recover/dialogue
+  cases, and 591 full unittest cases passed. Compileall, original-demo validation,
+  history safety scanning, `git diff --check`, and a real external-save-directory
+  CLI flow passed; the CLI covered room/item/character/monster examine, typed
+  missing feedback, `help examine`, dialogue-preserving `examine 1`, save/load,
+  and confirmed save v7 with content pack 0.6.0.
 - GPT-5.6-sol independently accepted the integrated M4+M5 slice as GO. The
   focused re-review closed the first-review M5 empty-stack `stack_limit` P1 in
   `59ca3cd` with no findings; accepted evidence is 25 focused M4/M5 tests, 569

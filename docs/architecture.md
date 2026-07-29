@@ -117,14 +117,26 @@ move_with_outcome / take / attack / select_option(effects) / buy
 出口所需物品及“未持有”或“已持有”状态；它不复刻、放宽或执行门禁规则。门禁的唯一
 规则权威仍是 `World.move()`，因此这只是展示行为，不是内容或存档契约变更。
 
-### 可见物品查看
+### 可见目标查看与命令帮助
 
-`World.inspect_item()` 只从当前房间 typed stacks 和玩家背包 typed stacks 的并集解析
-稳定 ID 或唯一显示名称，
-并返回带稳定 ID、名称和描述的 `InspectItemOutcome`。其他房间的物品和尚未获得的对话
-奖励不在可见范围；同名可见物品要求使用稳定 ID。`CommandProcessor.inspect` 只渲染该
-结果，不直接读取或修改状态。查看不会改变房间、背包、装备、任务、活动对话或怪物，且
-不新增内容包或 save v7 契约。
+`World.examine(query, target_type=None)` 是可见实体解析权威。物品候选只来自当前房间 typed
+stacks 与玩家背包 typed stacks；怪物候选只来自当前房间的 `monster_ids`；角色候选只来自
+`room_id` 等于玩家当前房间的角色。无类型查询先匹配唯一稳定 ID，再匹配唯一显示名称；同一
+查询跨可见类型匹配多个名称或重复稳定 ID 时，必须用 `item`、`monster` 或 `character`
+限定；同一类型内多个名称匹配则必须使用稳定 ID。其他房间、未掉落战利品和未取得的
+对话奖励不会成为候选。
+
+三个 frozen tagged 结果为 `ExamineItemOutcome`、`ExamineMonsterOutcome` 和
+`ExamineCharacterOutcome`。命令层只解析 `examine` 语法并渲染结果；无参数、`room`、`here`
+复用现有 `look` 房间摘要。`World.inspect_item()` 仍是物品专用兼容 API，返回原有
+`InspectItemOutcome`；`inspect` 的成功输出和缺失错误保持兼容。所有查看分支在死亡和活动
+对话中均可用且只读，不改变房间、玩家、金币、背包、装备、任务、flags、怪物或活动对话。
+
+`CommandSpec` 注册表同时定义真实文字路由、别名、总帮助、`help [command]` 详细帮助和
+死亡允许元数据。死亡门禁继续遵循 DEC-0020：先于对话数字选择和未知命令判断；允许集合从
+注册表派生，避免帮助、路由和门禁分别维护。裸数字仍只在活动对话中选择选项，对话外保持
+原有未知命令行为；`examine 1` 始终把 `1` 当作查看目标。M6 不改变内容定义、Schema、
+original_demo 0.6.0 或 save v7。
 
 ## 原作事实与游戏规则
 
