@@ -477,3 +477,42 @@
   `src/lore2mud/engine/commands.py`, `src/lore2mud/content/loader.py`,
   `tests/test_item_stacks.py`, `schemas/`.
 - Supersedes: None.
+
+## DEC-0023: M2 independent acceptance — GO
+
+- Date: 2026-07-29
+- Status: Accepted
+- Context: M2 typed stacks was implemented by Hermes agent in `3161d52`, with
+  contract and handoff synchronization in `1ee0b30`. GPT-5.6-sol independently
+  reviewed the implementation and acceptance evidence.
+- Decision: Record M2 as independently accepted, GO. Evidence: 530 full unittest
+  cases, 56 `tests.test_item_stacks` cases, compileall, original_demo validation,
+  `check_repo_safety.py --history`, `git diff --check`, and the real CLI flow for
+  quantity pickup, injured `use` ×2 restoring to 20/20, combat loot, drop, and
+  save/load. The pre-documentation-closure Git baseline was `main` at `1ee0b30`,
+  clean and synchronized with origin/main and remote main at ahead/behind 0/0.
+- Consequences: M2 is complete, while the public engine remains in development.
+  The sole next action is a read-only M3 proposal for GPT-5.6-sol review; no M3
+  implementation is authorized by this decision.
+- Evidence: `3161d52`, `1ee0b30`, `tests/test_item_stacks.py`,
+  `docs/engine_completion_milestones.md`.
+- Supersedes: None.
+
+## DEC-0024: Current executor switches from Hermes to Codex
+
+- Date: 2026-07-29
+- Status: Accepted
+- Context: The project needs one explicit current execution path after M2
+  acceptance, while retaining the historical fact that Hermes agent implemented
+  M1 and M2.
+- Decision: GPT-5.6-sol is the advisor for scope and architecture review and the
+  independent acceptor. Codex is the sole executor for approved slices, including
+  code, tests, documentation, handoff files, and local commits. The project owner
+  manually transfers advisor prompts and Codex completion reports between the two
+  conversations. Local commits do not automatically push.
+- Consequences: This switch applies prospectively only. M1/M2 historical
+  implementation records remain attributed to Hermes agent; Codex cannot self-
+  certify independent acceptance.
+- Evidence: `AGENTS.md`, `docs/production_workflow.md`, `PROJECT_MEMORY.md`,
+  `PROJECT_STATE.md`, `NEXT_TASK.md`.
+- Supersedes: None.

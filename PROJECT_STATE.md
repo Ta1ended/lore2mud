@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-29（M2 契约同步返工）_
+_Last updated: 2026-07-29（M2 独立验收 GO；Codex 执行模式）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -9,6 +9,25 @@ _Last updated: 2026-07-29（M2 契约同步返工）_
 通用引擎和原创示例。
 
 ## Current status
+
+M1 死亡/失败处理由 Hermes agent 实现，并由 GPT-5.6-sol 于 2026-07-28 对
+`c329546` 独立验收 GO。M2 typed stacks 由 Hermes agent 实现，并由 GPT-5.6-sol 于
+2026-07-29 独立验收 GO（DEC-0023）；公共引擎仍在开发中。当前内容包为 0.3.0，
+存档为 v6：房间、背包、战利品和对话奖励使用 typed stacks，`take`、`drop`、`use`
+均支持可选数量，v5 存档明确拒绝。当前验收证据为 530 项全量 unittest 和 56 项
+`tests.test_item_stacks`，以及 compileall、original_demo 校验、历史安全扫描、
+`git diff --check` 和完整 M2 CLI 流程通过。
+
+文档封板前的同步基线为 `1ee0b30`：`HEAD`、`origin/main` 与远端 `main` 一致，
+工作树干净，ahead/behind 为 `0/0`。GPT-5.6-sol 负责顾问审查和独立验收；Codex
+是唯一执行者；项目负责人负责人工转交。此基线在创建本地文档提交后须作为历史
+封板基线而非新的实时 HEAD 解释。M3 尚未开始，唯一下一动作见 `NEXT_TASK.md`。
+
+## Historical current-status snapshot (2026-07-28, pre-M2; not current)
+
+> 下列快照保留当时的 save v5、0.2.7、旧 Git 与旧执行流程事实；当前状态以上文
+> v6、0.3.0、530/56、M2 GO 和 Codex 执行模式为准。
+
 装备系统已实现 hand 和 body 双槽位，存档格式为 v5。对话系统已实现——原创 NPC 老陈带有
 确定性分支对话和一次性普通物品奖励；琉草小径西向出口要求持有该铜牌，`look` 会只读显示
 门禁所需物品与持有状态。`inspect` 仅查看当前房间或背包内物品的稳定 ID 和描述，不改变
@@ -32,6 +51,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## Completed
 
+> 历史记录说明：本节中 save v3–v5、内容包 0.2.x、旧 API 名称、旧测试数和旧 Git
+> 状态均为对应切片当时的事实；当前契约以“Current status”的 v6、0.3.0、530/56 为准。
+
 - `src/lore2mud/` 实现标准库运行时、双 CLI 入口和领域模块。
 - `examples/original_demo/` 提供三个原创房间、六个物品、一个怪物、一个角色（老陈）和一个任务；
   新增一件仅由该怪物首次击败后掉落的原创消耗品。
@@ -42,8 +64,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - 安全门覆盖 private novel 的 raw/chapters/summaries/canon/extractions、私有/
   生成内容、存档、模型、索引、数据库、日志、本地配置和有限常见凭据模式；CI 使用
   `--history` 扫描所有可达历史树和 blob。
-- 生产工作流明确 GPT-5.6-sol 为顾问、Hermes agent 为执行者，要求先审
-  数据契约和验收方案，再完成单一纵向切片。
+- 生产工作流明确 GPT-5.6-sol 为顾问、Codex 为唯一执行者，项目负责人负责人工
+  转交；仍要求先审数据契约和验收方案，再完成单一纵向切片。
 - `tests/` 覆盖核心玩法、消耗品、装备（hand+body）、对话系统（91 项）、
   非法内容引用、拆章和安全检查。
 - 私有小说已在仓库外完成一次受控拆章；原文未修改，章节重建校验通过。
@@ -101,14 +123,15 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   59 项测试）已由 GPT-5.6-sol 于 2026-07-28 对 `c329546` 独立验收，结论 GO。
   验收证据：59 项专项 + 474 项全量测试通过、编译、内容校验、安全扫描、真实 CLI 通过。
 - M2 typed stacks（`ItemStackDefinition`/`ItemStack` + `stack_limit` + `item_stacks` +
-  `Inventory.stacks` + `loot_item`/`grant_item` typed stacks + `take/drop/use` 数量 +
-  loot 预检 + save v6 + content pack 0.3.0 + 51 项新测试 + 474 项旧测试迁移）
-  已由 Hermes 实现并自测（527 项测试通过），Schema 和文档已同步，等待 GPT-5.6-sol
-  独立验收。
+  `Inventory.stacks` + typed `loot_item`/`grant_item` + `take/drop/use` 数量 + loot
+  预检 + save v6 + content pack 0.3.0）由 Hermes agent 实现；GPT-5.6-sol 已独立
+  验收 GO。验收证据为 530 项全量、56 项专项测试及既定编译、内容、安全、diff 和 CLI
+  验证。
 
 ## In progress
 
-- M2 等待 GPT-5.6-sol 独立验收。
+- 没有功能实现正在进行。M3 尚未开始；唯一下一动作是准备 M3 的只读实施方案并提交
+  GPT-5.6-sol 审核。
 
 ## Blockers
 
@@ -138,6 +161,11 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - `python -m compileall -q src pipeline scripts tests` - passed (2026-07-28).
 - `python -m lore2mud validate --content examples/original_demo` - passed (2026-07-28).
 - `git diff --check` - clean (2026-07-28).
+- M2 独立验收（2026-07-29，`3161d52` / `1ee0b30`）：530 项全量 unittest、56 项
+  `tests.test_item_stacks` 通过；compileall、original_demo 内容校验、
+  `check_repo_safety.py --history`、`git diff --check` 均通过；真实 CLI 覆盖数量拾取、
+  受伤后 `use` ×2 恢复至 20/20、战斗掉落、丢弃和 save/load。GPT-5.6-sol
+  独立验收结论 GO。
 - M1 独立验收（2026-07-28，`c329546`）：59 项 recover 专项测试通过；474 项全量
   unittest 通过；compileall、original_demo 内容校验、`check_repo_safety.py --history`、
   `git diff --check` 均通过；真实 CLI（倒下 → 移动拒绝 → 死亡存档 → recover → 20/20 →
@@ -147,15 +175,16 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 ## Key paths
 
 - `PROJECT_MEMORY.md` - fresh-session restart instructions and pause rules.
-- `AGENTS.md` - GPT-5.6-sol 顾问与 Hermes agent 执行约束。
-- `docs/production_workflow.md` - GPT-5.6-sol 顾问与 Hermes agent 执行的生产流程。
+- `AGENTS.md` - GPT-5.6-sol 顾问、Codex 唯一执行者与人工转交约束。
+- `docs/production_workflow.md` - GPT-5.6-sol 顾问与 Codex 执行的生产流程。
 - `docs/engine_completion_milestones.md` - M1–M8 引擎完成路线图。
 - `NEXT_TASK.md` - exactly one recommended continuation.
 - `src/lore2mud/engine/world.py` - authoritative runtime state with quest,
   item inspection/use, equipment, and dialogue logic.
-- `src/lore2mud/engine/save.py` - save/load service with safe local slot paths (format v5).
+- `src/lore2mud/engine/save.py` - save/load service with safe local slot paths (format v6).
 - `src/lore2mud/engine/commands.py` - command processor with dialogue rendering and death gate.
 - `tests/test_recover.py` - defeat recovery, death gate invariance, and save/load round-trip.
+- `tests/test_item_stacks.py` - typed-stack contracts, quantities, preflight, and save v6 coverage.
 - `tests/test_inspect.py` - visible-item inspection state-invariance and round-trip coverage.
 - `tests/test_drop.py` - inventory-to-current-room drop, failure invariance, and
   save/load coverage.

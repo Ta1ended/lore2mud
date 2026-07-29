@@ -4,6 +4,9 @@
 
 ### Changed
 
+- Documented the current execution workflow: GPT-5.6-sol is the scope/architecture
+  reviewer and independent acceptor; Codex is the sole executor; the project owner
+  manually transfers prompts and completion reports between the two conversations.
 - Moved command-layer death gate before dialogue routing in `CommandProcessor`
   so that dead players cannot invoke `_select_option` or `_bye` through bare
   numbers or `bye` when `active_dialogue` is set (DEC-0020).
@@ -28,6 +31,13 @@
   definition immutability, quantity parsing, take/drop/use with quantities,
   equipment quantity validation, loot preflight, save v6 round-trip, and
   M1 death gate regression.
+
+### Verified
+
+- GPT-5.6-sol independently accepted M2 typed stacks as GO. Evidence: 530 full
+  unittest cases, 56 `tests.test_item_stacks` cases, compileall, original-demo
+  validation, history safety scan, `git diff --check`, and the quantity pickup,
+  injured use ×2 restoring to 20/20, combat loot, drop, and save/load CLI flow.
 
 ### Added
 

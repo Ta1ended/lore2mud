@@ -25,7 +25,9 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
 
 ### `inventory`
 
-保存稳定物品 ID，不复制物品显示名称。背包容量由内容包的玩家默认值定义。
+内容层用不可变 `ItemStackDefinition(item_id, quantity)` 描述物品数量；运行时房间和
+背包用可变 `ItemStack(item_id, quantity)` 保存稳定 ID 与正整数数量，不复制显示名称。
+`ItemDefinition.stack_limit` 限制每栈数量；背包容量按占用栈位而非物品单位数计算。
 
 ### `content`
 
@@ -33,6 +35,8 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
 
 - 必填字段与基本类型；
 - 稳定 ID 格式和重复 ID；
+- 物品 `stack_limit`、所有 `ItemStack` 的正整数数量、栈上限、装备单件约束与
+  房间/背包/战利品/对话奖励之间的放置规则；
 - 起始房间、出口目标、出口门禁物品、物品、怪物、角色和对话引用；
 - `pack.json`、`rooms.json`、`items.json`、`monsters.json`、`characters.json`、
   `quests.json` 和 `dialogues.json` 七个必需内容文件；
@@ -57,12 +61,12 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
 玩家发出的只是意图。以拾取为例：
 
 ```text
-take item_spark_lantern
+take item_spark_lantern [数量]
   → 解析指令
-  → 确认物品在当前房间
-  → 确认背包有容量
-  → 从房间移除稳定 ID
-  → 向背包加入同一稳定 ID
+  → 解析当前房间的 ItemStack 与正整数数量
+  → 在写入前检查 stack_limit、可合并栈位或可用容量
+  → 原子减少来源栈（清空时移除）
+  → 原子合并到背包目标栈或创建新栈
   → 渲染结果
 ```
 
@@ -74,7 +78,7 @@ take item_spark_lantern
 `required_item_id`。加载器把旧的字符串出口和对象出口统一规范化；`World.move()`
 在修改房间、触发任务或清理活动对话前检查背包。缺少所需物品时，错误同时显示物品名
 和稳定 ID，且不改变任何运行时状态；通过时物品不会被消耗。出口定义属于内容包，
-不写入 save v5 的可变状态。
+不写入 save v6 的可变状态。
 
 `CommandProcessor.look()` 只读取当前房间的出口定义、物品定义和背包 ID，并显示门禁
 出口所需物品及“未持有”或“已持有”状态；它不复刻、放宽或执行门禁规则。门禁的唯一
@@ -82,11 +86,12 @@ take item_spark_lantern
 
 ### 可见物品查看
 
-`World.inspect_item()` 只从当前房间物品和玩家背包的并集解析稳定 ID 或唯一显示名称，
+`World.inspect_item()` 只从当前房间 typed stacks 和玩家背包 typed stacks 的并集解析
+稳定 ID 或唯一显示名称，
 并返回带稳定 ID、名称和描述的 `InspectItemOutcome`。其他房间的物品和尚未获得的对话
 奖励不在可见范围；同名可见物品要求使用稳定 ID。`CommandProcessor.inspect` 只渲染该
 结果，不直接读取或修改状态。查看不会改变房间、背包、装备、任务、活动对话或怪物，且
-不新增内容包或 save v5 契约。
+不新增内容包或 save v6 契约。
 
 ## 原作事实与游戏规则
 
@@ -112,7 +117,7 @@ take item_spark_lantern
 内容定义（不可变）
   DialogueDefinition（对话树）
   → DialogueNode（节点 + 台词）
-  → DialogueOption（选项 + next_node_id + 可选 grant_item）
+  → DialogueOption（选项 + next_node_id + 可选 ItemStackDefinition grant_item）
 
 运行时状态（World 持有）
   characters: dict[str, Character]          # 角色位置由 room_id 决定
@@ -130,14 +135,19 @@ bye。结束选项（`next_node_id=null`）则立即结束对话。
 
 ### 状态不变性
 
-对话操作不修改玩家 HP、经验、装备、任务状态或房间布局。带 `grant_item` 的
-选项是唯一例外：`World.select_option()` 在变更对话状态前检查背包容量和重复拥有，
-然后原子加入一个经内容校验的普通物品；失败时背包与 `active_dialogue` 均不变。
+对话操作不修改玩家 HP、经验、装备、任务状态或房间布局。带 `grant_item` typed stack
+的选项是唯一例外：`World.select_option()` 在变更对话状态前检查数量、stack_limit、
+背包栈位与唯一物品规则，然后原子加入经内容校验的数量；失败时背包与
+`active_dialogue` 均不变。
 
 ### 存档
 
-`active_dialogue` 是 save v5 的必填字段。加载时严格验证：
+`active_dialogue` 是 save v6 的必填字段。save v6 使用 `inventory_stacks` 和每个房间的
+`item_stacks` 数组保存 `{item_id, quantity}`；v5 按格式版本明确拒绝，不做隐式迁移。
+加载时严格验证：
 - 顶层、`content_pack`、`player`、每个房间和每个怪物对象的键集合必须精确匹配；
+- `inventory_stacks` 与 `item_stacks` 中的物品 ID、正整数数量、栈上限、重复栈、
+  容量和装备数量必须与当前内容定义一致；
 - 对话 ID 和节点 ID 必须存在
 - 指向的节点不能是终端节点
 - 角色的 `room_id` 必须与玩家房间一致
@@ -148,7 +158,7 @@ bye。结束选项（`next_node_id=null`）则立即结束对话。
 由 `save <槽位>` / `load <槽位>` 传入，并只映射到保存目录内的 `<槽位>.json`：名称必须是
 1–32 位小写 ASCII 字母、数字、`-` 或 `_`，以字母或数字开头，且拒绝路径片段、扩展名和
 Windows 保留设备名。路径验证发生在序列化、读取或替换世界之前；槽位只选择文件，不改变
-save v5 的 JSON 契约。
+save v6 的 JSON 契约。
 
 `SaveLoadService.save()` 在服务边界把文件系统 `OSError` 转换为带原始异常链的
 `SaveLoadError`，因此 `CommandProcessor` 能将写入失败渲染为正常的“存档失败”文本，

@@ -1,9 +1,11 @@
 # Engine Completion Milestones
 
-_Last updated: 2026-07-29（M2 契约同步返工）_
+_Last updated: 2026-07-29（M2 独立验收 GO；Codex 执行模式）_
 
 本文件定义公共引擎从当前状态到功能完备的里程碑路线。每个里程碑是一个可独立验证的
 纵向切片，完成后更新本文件和相关交接记录。
+本次 M2 文档封板前的同步基线为 `1ee0b30`：`HEAD`、`origin/main` 与远端 `main`
+一致，工作树干净，ahead/behind 为 `0/0`。
 
 ---
 
@@ -19,7 +21,7 @@ _Last updated: 2026-07-29（M2 契约同步返工）_
   - `recover` 回到起始房间、恢复满 HP、清除活动对话。
   - 保留等级、经验、任务、背包、装备、怪物 HP 和世界物品状态。
   - 不重置任务、不恢复怪物、不复制物品或战利品。
-  - 死亡状态可使用 save v5 往返。
+  - 在 `c329546` 的 M1 历史验收时，死亡状态可使用 save v5 往返。
 - **验收证据**:
   - recover 专项测试：59 项通过。
   - 全量 unittest：474 项通过。
@@ -30,12 +32,22 @@ _Last updated: 2026-07-29（M2 契约同步返工）_
   - 真实 CLI：加载受伤状态 → 攻击倒下 → 移动拒绝 → 死亡存档 → recover → 20/20 → 可继续游戏。
   - 验收时 Git：`main`、ahead 2 / behind 0、工作树干净、未 push。
 
-## M2: 全场 typed stacks 物品数量系统
+## M2: 全场 typed stacks 物品数量系统 ✅
 
-- **状态**: 已由 Hermes 实现并完成执行者自测，等待 GPT-5.6-sol 独立验收。
-- **日期**: 2026-07-29
+- **状态**: GPT-5.6-sol 已完成独立验收，结论 GO。
+- **历史执行者**: Hermes agent。
+- **验收者**: GPT-5.6-sol。
+- **日期**: 2026-07-29。
+- **封板前 Git**: `main`、`1ee0b30`、工作树干净、ahead/behind `0/0`、已同步远端；
+  后续文档提交不自动 push。
 - **强制完成条件**: 全部满足（详见下方）。
-- **验收证据**: 525 项测试通过、编译、内容校验、安全扫描、真实 CLI 通过。
+- **验收证据**:
+  - 全量 unittest：530 项通过。
+  - `tests.test_item_stacks`：56 项通过。
+  - compileall、original_demo 内容校验、`check_repo_safety.py --history` 和
+    `git diff --check`：通过。
+  - 真实 CLI：数量拾取、受伤后 `use` ×2 恢复至 20/20、战斗掉落、丢弃和
+    save/load：通过。
   - 内容物品增加 `stack_limit`，默认 1。
   - 房间、背包、战利品、对话奖励统一使用带正整数数量的 `ItemStack`。
   - 容量按占用栈位计算，不按物品单位数计算。
