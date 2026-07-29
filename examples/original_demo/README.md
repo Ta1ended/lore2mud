@@ -29,18 +29,25 @@ attack monster_ash_mite
 look
 take item_ash_mite_gel
 quests
+go east
+attack monster_spark_hound
+attack monster_spark_hound
+attack monster_spark_hound
+quests
 quit
 ```
 
-## 三类任务与一条对话接取任务
+## 三类任务与分段接取任务
 
-演示内容包 0.6.0 在起始房间自动接取三条完全原创任务：
+演示内容包 0.7.0 在起始房间自动接取三条完全原创任务：
 
 - `quest_collect_linglu_pills`：背包中收集 2 枚灵露丸（`collect_item`）。
 - `quest_reach_silent_observatory`：抵达静默观测站（`reach_room`）。
 - `quest_clear_ash_mite`：击败灰壳兽（`monster_defeated`，奖励 15 点经验）。
 - `quest_collect_ash_mite_gel`：收集一份灰壳凝胶（`collect_item`，奖励 5 点经验）。它可由
   老陈的对话提前接取；跳过对话时，进入静默观测站仍会按既有 M3 规则自动接取。
+- `quest_clear_spark_hound`：进入静默观测站后接取，前往其东侧的碎讯支线击败火花巡兽
+  （`monster_defeated`，奖励 18 点经验）。
 
 执行 `quests` 可查看收集进度。拾取、移动、击败怪物、成功对话 `grant_item` 效果和商店买入都会由
 引擎统一检查已接取任务；已经完成的任务不会因丢弃或使用物品而撤销。
@@ -69,6 +76,12 @@ quit
 
 灰壳兽首次被击败后会在当前房间掉落一份 `item_ash_mite_gel`。使用 `look` 查看掉落，
 再用 `take item_ash_mite_gel` 拾取；它是一件可用的原创消耗品。
+
+## 第二个遭遇
+
+从静默观测站向东可抵达碎讯支线。这里的火花巡兽没有引入新机制：它使用现有确定性战斗、
+怪物经验和 `monster_defeated` 任务结算。击败灰壳兽后继续向东，再攻击
+`monster_spark_hound` 三次即可完成该任务。
 
 ## 物品交互
 

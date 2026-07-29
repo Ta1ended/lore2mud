@@ -11,6 +11,7 @@ import unittest
 from pathlib import Path
 
 from lore2mud.content.loader import ContentValidationError, load_content_pack
+from lore2mud.content.models import MonsterDefeatedQuestDefinition
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.save import SaveLoadError, SaveLoadService
 from lore2mud.engine.world import LootOutcome, World, WorldRuleError
@@ -212,9 +213,31 @@ class MonsterLootWorldTests(unittest.TestCase):
         no_loot_mite = replace(
             pack.monsters["monster_ash_mite"], loot_item=None
         )
+        monsters = {"monster_ash_mite": no_loot_mite}
+        rooms = {
+            room_id: replace(
+                room,
+                monster_ids=tuple(
+                    monster_id
+                    for monster_id in room.monster_ids
+                    if monster_id in monsters
+                ),
+            )
+            for room_id, room in pack.rooms.items()
+        }
+        quests = {
+            quest_id: quest
+            for quest_id, quest in pack.quests.items()
+            if not (
+                isinstance(quest, MonsterDefeatedQuestDefinition)
+                and quest.target_monster_id not in monsters
+            )
+        }
         no_loot_pack = replace(
             pack,
-            monsters={"monster_ash_mite": no_loot_mite},
+            rooms=rooms,
+            monsters=monsters,
+            quests=quests,
         )
         world = World.from_content_pack(no_loot_pack)
         world.move("east")

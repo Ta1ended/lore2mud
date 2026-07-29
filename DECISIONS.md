@@ -685,3 +685,28 @@
 - Supersedes: Only the independent-acceptance-pending status in DEC-0029; the
   DEC-0029 contracts, DEC-0020 death-gate ordering, and legacy `inspect` contract
   remain in force.
+
+## DEC-0031: M7.1 second original encounter and content-pack 0.7.0
+
+- Date: 2026-07-29
+- Status: Implemented locally; GPT-5.6-sol independent acceptance pending.
+- Context: After M6 was independently accepted, the project owner explicitly
+  authorized entry into M7. The roadmap's first required M7 content-expansion
+  slice is one second original encounter, not completion of the whole 8-room/
+  4-monster milestone.
+- Decision: Add only `room_shattered_signal_spur`, `monster_spark_hound`, and
+  `quest_clear_spark_hound`. The silent observatory's east exit and the spur's west
+  exit are reciprocal. Entering the observatory accepts the existing-kind
+  `monster_defeated` quest; defeating the hound reuses existing deterministic combat
+  and World-owned quest settlement. Bump original_demo from 0.6.0 to 0.7.0; keep
+  save format v7, with old 0.6.0 content-pack saves rejected by the existing
+  identity/version check.
+- Consequences: No engine, Schema, command, dependency, item, loot, dialogue, shop,
+  or save-format contract changes. The demo is now four rooms, two monsters, and
+  five quests, so M7 remains incomplete and is not GO. No M7.2 or push is authorized
+  until independent acceptance and a separate project-owner authorization.
+- Evidence: `examples/original_demo/pack.json`, `rooms.json`, `monsters.json`,
+  `quests.json`, `tests/test_m7_second_encounter.py`, `tests/test_loot.py`,
+  `docs/engine_completion_milestones.md`, `PROJECT_STATE.md`.
+- Supersedes: Only the M7 planning-only status in the milestone roadmap; M1–M6
+  contracts and their independent acceptance records remain in force.

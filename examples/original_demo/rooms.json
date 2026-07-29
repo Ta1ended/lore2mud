@@ -35,11 +35,25 @@
     "name": "静默观测站",
     "description": "圆顶建筑只剩一圈骨架，一只灰壳兽守在破裂的仪器旁。",
     "exits": {
-      "west": "room_glassgrass_path"
+      "west": "room_glassgrass_path",
+      "east": "room_shattered_signal_spur"
     },
     "item_stacks": [],
     "monster_ids": [
       "monster_ash_mite"
+    ],
+    "adaptation_notes": "本仓库原创演示地点。"
+  },
+  {
+    "id": "room_shattered_signal_spur",
+    "name": "碎讯支线",
+    "description": "脱离主轨的窄台伸入浓雾，断裂信号柱仍不时迸出蓝白火花。",
+    "exits": {
+      "west": "room_silent_observatory"
+    },
+    "item_stacks": [],
+    "monster_ids": [
+      "monster_spark_hound"
     ],
     "adaptation_notes": "本仓库原创演示地点。"
   }

@@ -193,8 +193,8 @@ bye。结束选项（`next_node_id=null`）则立即结束对话。
 `active_dialogue`、`quest_states` 和顶层 `flags` 是 save v7 的必填字段；`player` 还必须
 保存非负整数 `coins`。save v7 使用 `inventory_stacks` 和每个房间的 `item_stacks` 数组保存
 `{item_id, quantity}`，而 `flags` 是稳定 ID 到真正 bool 的映射；每个任务状态仍只有
-`completed`。v6 按格式版本明确拒绝，不做隐式迁移；original_demo 内容包为 0.6.0，因此
-引用 0.4.0 的存档会由内容包版本检查拒绝。
+`completed`。v6 按格式版本明确拒绝，不做隐式迁移；original_demo 内容包为 0.7.0，因此
+引用 0.6.0 的存档会由内容包版本检查拒绝。
 
 加载时只校验并恢复已保存的 `quest_states`、`coins`、`flags` 和其他运行时状态；不执行对话
 effects，不调用任务接取、条件检查、奖励发放或商店交易。商店定义从当前 ContentPack 重建，

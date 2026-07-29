@@ -412,10 +412,10 @@ class HelpRegistryTests(unittest.TestCase):
                 self.assertIn("上下文限制：", detail)
                 self.assertIn("死亡限制：", detail)
 
-    def test_save_and_content_versions_remain_unchanged(self) -> None:
+    def test_save_format_and_content_versions_are_current(self) -> None:
         pack = load_content_pack(DEMO_PATH)
         self.assertEqual(SAVE_FORMAT_VERSION, 7)
-        self.assertEqual(pack.version, "0.6.0")
+        self.assertEqual(pack.version, "0.7.0")
 
 
 if __name__ == "__main__":

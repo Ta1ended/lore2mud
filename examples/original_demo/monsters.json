@@ -10,5 +10,16 @@
     "experience_reward": 12,
     "loot_item": {"item_id": "item_ash_mite_gel", "quantity": 1},
     "adaptation_notes": "本仓库原创演示怪物。"
+  },
+  {
+    "id": "monster_spark_hound",
+    "name": "火花巡兽",
+    "description": "由破损信号线驱动的四足构造，爪尖会迸出短促电弧。",
+    "room_id": "room_shattered_signal_spur",
+    "max_hp": 12,
+    "attack": 4,
+    "defense": 2,
+    "experience_reward": 18,
+    "adaptation_notes": "本仓库原创演示怪物。"
   }
 ]

@@ -4,6 +4,11 @@
 
 ### Changed
 
+- Expanded the fully original demo to content-pack 0.7.0 with the M7.1 second
+  encounter: the fourth room `room_shattered_signal_spur`, the second monster
+  `monster_spark_hound`, and its existing-kind `monster_defeated` quest. Save
+  format remains v7; saves bound to content-pack 0.6.0 are rejected by the
+  existing content-pack version check.
 - Replaced separately maintained command routing, summary help, and death
   allowlist metadata with one frozen `CommandSpec` registry. `help [command]`
   now reports syntax, parameters, context restrictions, and death restrictions;
@@ -28,6 +33,10 @@
 
 ### Added
 
+- Added `tests.test_m7_second_encounter` for content counts/references, the
+  observation-station-to-spur scenario, CLI quest rendering, and v7 rejection of
+  an old 0.6.0 content-pack save. Updated the no-loot test fixture to retain
+  valid quest/monster references as the demo grows.
 - Added M6 `examine`: no argument, `room`, and `here` render the current room;
   untyped or `item` / `monster` / `character` queries inspect only currently
   visible entities. World returns frozen typed outcomes, resolves exact IDs
@@ -85,6 +94,12 @@
 
 ### Verified
 
+- Codex locally verified M7.1 (not independent acceptance): 19 M7/loot focused
+  tests and 595 full unittest cases passed, along with compileall, original-demo
+  validation, history safety, and `git diff --check`. An external-save-directory
+  CLI flow reached the new room, defeated both monsters, completed
+  `quest_clear_spark_hound`, and save/loaded v7/0.7.0 state. M7 remains in
+  progress and requires GPT-5.6-sol independent acceptance before another slice.
 - GPT-5.6-sol independently accepted M6 as GO with no findings, using
   `53a071f` as the baseline. Accepted evidence is 22 M6 tests, 187 focused
   M6/inspect/commands/recover/dialogue regressions, and 591 full unittest cases;

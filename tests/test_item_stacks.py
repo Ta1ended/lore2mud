@@ -322,7 +322,7 @@ class SaveV7Tests(unittest.TestCase):
         import json
         v6_data = {
             "save_format_version": 6,
-            "content_pack": {"id": "original_demo", "version": "0.6.0"},
+            "content_pack": {"id": "original_demo", "version": "0.7.0"},
             "player": {
                 "id": "player_local", "name": "test", "room_id": "room_ember_wharf",
                 "max_hp": 20, "hp": 20, "attack": 5, "defense": 1,

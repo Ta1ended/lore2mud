@@ -40,5 +40,15 @@
     "required_quantity": 1,
     "reward_experience": 5,
     "adaptation_notes": "本仓库原创演示任务。"
+  },
+  {
+    "id": "quest_clear_spark_hound",
+    "name": "清除火花巡兽",
+    "description": "碎讯支线上的火花巡兽阻断了前方的通路。击败它。",
+    "kind": "monster_defeated",
+    "trigger_room_id": "room_silent_observatory",
+    "target_monster_id": "monster_spark_hound",
+    "reward_experience": 18,
+    "adaptation_notes": "本仓库原创演示任务。"
   }
 ]

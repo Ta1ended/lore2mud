@@ -20,10 +20,14 @@ class ContentLoaderTests(unittest.TestCase):
     def test_original_demo_loads(self) -> None:
         pack = load_content_pack(DEMO_PATH)
         self.assertEqual(pack.id, "original_demo")
-        self.assertEqual(len(pack.rooms), 3)
-        self.assertEqual(len(pack.monsters), 1)
+        self.assertEqual(pack.version, "0.7.0")
+        self.assertEqual(len(pack.rooms), 4)
+        self.assertEqual(len(pack.monsters), 2)
+        self.assertEqual(len(pack.quests), 5)
         self.assertEqual(len(pack.items), 6)
         self.assertIn("item_ash_mite_gel", pack.items)
+        self.assertIn("monster_spark_hound", pack.monsters)
+        self.assertIn("quest_clear_spark_hound", pack.quests)
         self.assertEqual(pack.start_room_id, "room_ember_wharf")
 
     def test_dangling_room_exit_is_rejected(self) -> None:

@@ -610,7 +610,7 @@ class QuestDialogueAndSaveTests(unittest.TestCase):
             self.assertEqual(loaded.player.level, 2)
             self.assertEqual(loaded.player.experience, 5)
 
-    def test_v7_rejects_a_save_from_the_old_0_4_content_pack(self) -> None:
+    def test_v7_rejects_a_save_from_the_old_0_6_content_pack(self) -> None:
         pack = load_content_pack(DEMO_PATH)
         world = World.from_content_pack(pack)
         with tempfile.TemporaryDirectory() as td:
@@ -618,7 +618,7 @@ class QuestDialogueAndSaveTests(unittest.TestCase):
             service.save(world)
             save_text = service.save_path.read_text("utf-8")
             service.save_path.write_text(
-                save_text.replace('"version": "0.6.0"', '"version": "0.4.0"'),
+                save_text.replace('"version": "0.7.0"', '"version": "0.6.0"'),
                 encoding="utf-8",
             )
             with self.assertRaises(SaveLoadError) as context:
