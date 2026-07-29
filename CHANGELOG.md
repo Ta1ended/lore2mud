@@ -103,6 +103,13 @@
 
 ### Verified
 
+- GPT-5.6-sol independently accepted M8 as GO after focused review: the Git-snapshot
+  P2 is closed and there are no new findings. This closes the M1–M8 public-engine
+  roadmap scope only; it does not authorize M9, other feature work, or private novel
+  fact-layer access. The technical baseline is `f486e12`, the audit record is
+  `6510e2d`, and the P2 correction is `6502a72`; the acceptance records 599 full
+  unittest cases, compileall, content validation, history safety, diff checking,
+  Git fsck, and the existing focused/save/CLI evidence as passing.
 - Codex completed the read-only M8 public-engine audit baseline on `f486e12`
   after the push was confirmed: 599 full unittest cases, compileall, original-demo
   validation, `check_repo_safety.py --history`, `git diff --check`, and

@@ -37,12 +37,15 @@ stale.
   the second original encounter and GPT-5.6-sol independently accepted M7.1 GO with
   no findings on 2026-07-30 (DEC-0032). The project owner then authorized the larger
   M7.2 content-only scale slice; GPT-5.6-sol independently accepted M7.2 and M7 as
-  GO with no findings on 2026-07-30 (DEC-0034). The project owner then confirmed
-  the audit baseline `f486e12` was pushed. At the M8 independent-review snapshot,
-  `HEAD` is `6510e2d`, while `origin/main` and the directly queried remote `main`
-  are `f486e12`, with ahead/behind `1/0` and a clean worktree. Codex has completed
-  the M8 read-only audit baseline; independent acceptance is pending and the public
-  engine is not yet declared complete. Recheck Git live after any handoff commit.
+  GO with no findings on 2026-07-30 (DEC-0034). The M8 technical audit baseline is
+  `f486e12`, its audit record is `6510e2d`, and `6502a72` corrected the independent-
+  review Git-snapshot P2. GPT-5.6-sol then accepted M8 GO with no new findings
+  (DEC-0036), closing the M1–M8 public-engine roadmap scope. At acceptance, local
+  `HEAD` and `origin/main` are both `6502a72`, the worktree is clean, and
+  ahead/behind is 0/0; GitHub Desktop push is reflected locally, while the command-
+  line direct remote query timed out. Recheck Git live after every handoff commit
+  and before any later publishing decision. M8 GO does not authorize M9, other
+  feature work, or private novel fact-layer access.
 - Current public-engine contract: content pack 0.8.0; save v7; typed
   `ItemStackDefinition`/`ItemStack`; quantity-aware `take`/`drop`/`use`;
   required ordered dialogue effects; World-owned flags; nonnegative coins; and
@@ -78,9 +81,9 @@ stale.
   `monster_prism_sentinel`, and their unique-target monster quests. It reuses the
   same movement, deterministic combat, typed quest, and v7 save contracts; no
   engine, Schema, command, item, loot, or dependency contract changed. The demo is
-  now eight rooms, four monsters, and seven quests. The M7 scale conditions are
-  independently accepted GO; the M8 audit is now authorized but does not declare
-  the public engine complete until its independent review passes.
+  now eight rooms, four monsters, and seven quests. The M7 scale conditions and M8
+  public-engine audit are independently accepted GO; this completes only the M1–M8
+  public-engine roadmap scope and does not authorize subsequent work.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).
@@ -160,9 +163,9 @@ stale.
   --history`, `git diff --check`, and `git fsck --full --no-dangling` passed. A real
   CLI flow completed both M7.2 branches and v7/0.8.0 save/load; a fresh CLI flow
   proved prism-sentinel death, the death gate, `recover`, and v7 save/load back at
-  the start room. The subsequent M8 audit-record commit is `6510e2d`; at review it
-  is ahead of `origin/main`/remote `f486e12` by one commit. GPT-5.6-sol independent
-  acceptance remains pending (DEC-0035).
+  the start room. The subsequent M8 audit-record commit is `6510e2d`, and `6502a72`
+  corrected its P2 Git snapshot. GPT-5.6-sol then independently accepted M8 GO with
+  no new findings (DEC-0036), completing the M1–M8 public-engine roadmap scope only.
 - GPT-5.6-sol independently accepted M7.1 as GO with no findings (2026-07-30):
   relative to `086cda8`, `9786325` is one 22-file `+333/-55` commit and leaves
   `src/`, `schemas/`, dependency files, and private-material paths untouched. 19 M7/loot focused and
@@ -207,8 +210,9 @@ stale.
 - M1, M2, and M3 retain their historical GPT-5.6-sol independent GO decisions;
   M4+M5 are also independently accepted GO (DEC-0028), and M6 is independently
   accepted GO (DEC-0030). M7.1 is independently accepted GO (DEC-0032); M7.2 and
-  M7 are independently accepted GO (DEC-0034). M8 audit baseline is complete and
-  awaits independent acceptance (DEC-0035).
+  M7 are independently accepted GO (DEC-0034); M8 is independently accepted GO
+  (DEC-0036). M1–M8 public-engine scope is complete; there is no active development
+  slice until the project owner provides new, explicit authorization.
 
 ## Dated historical verification evidence (not current contracts)
 

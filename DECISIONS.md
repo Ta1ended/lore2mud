@@ -821,3 +821,30 @@
 - Supersedes: Only the M8-unstarted current handoff status after DEC-0034. DEC-0034
   and all prior milestone contracts and independent acceptance records remain in
   force.
+
+## DEC-0036: M8 independent acceptance — GO; M1–M8 public-engine scope complete
+
+- Date: 2026-07-30
+- Status: GPT-5.6-sol focused re-review GO; the Git-snapshot P2 is closed and there
+  are no new findings.
+- Context: The technical audit baseline is `f486e12`, its audit record is
+  `6510e2d`, and `6502a72` corrected the handoff's stale Git snapshot without
+  changing engine, content, Schema, dependencies, or private-material boundaries.
+- Decision: Record M8 as independently accepted GO and close the M1–M8 public-engine
+  roadmap scope. "Complete" applies only to that public-engine roadmap, not to a new
+  feature roadmap, M9, publishing work, or the private novel fact layer.
+- Consequences: No new implementation is authorized by this record. Any M9 slice,
+  other feature work, or private fact-layer access requires a separate, explicit,
+  scoped project-owner authorization. This decision does not authorize an automatic
+  push.
+- Evidence: 599 full unittest cases, compileall, original-demo validation,
+  `check_repo_safety.py --history`, `git diff --check`, and
+  `git fsck --full --no-dangling` passed. The previously accepted 216 focused,
+  375 save-matrix, and 35 content/CLI/safety-matrix checks plus real CLI evidence
+  remain valid. At acceptance, local `HEAD` and `origin/main` are both `6502a72`,
+  the worktree is clean, and ahead/behind is 0/0; GitHub Desktop push is reflected
+  in the local tracking branch, while the command-line direct remote query timed out.
+- Supersedes: Only DEC-0035's independent-acceptance-pending current status and the
+  related M8 P2 handoff condition. The `f486e12` audit baseline, `6510e2d` audit
+  record, `6502a72` correction, all prior milestone contracts, and all historical
+  acceptance evidence remain in force.
