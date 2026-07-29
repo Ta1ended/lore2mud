@@ -193,8 +193,10 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   unittest、compileall、`lore2mud validate --content examples/original_demo`、
   `check_repo_safety.py --history`、`git diff --check` 与 `git fsck --full --no-dangling` 全部通过。
   真实 CLI 主流程完成 M7.2 两条新分支、save/load v7/0.8.0；另一全新 CLI 进程直达余辉信标台，
-  证明棱镜哨卫击杀玩家后的死亡门禁、`recover`、回到余烬渡台以及 v7 save/load。审计期间无仓库
-  文件修改；`main`、`origin/main` 与远端 `main` 均为 `f486e12`，ahead/behind 为 0/0。
+  证明棱镜哨卫击杀玩家后的死亡门禁、`recover`、回到余烬渡台以及 v7 save/load。审计本身未修改
+  引擎、内容或契约；其后交接记录提交为 `6510e2d`，因此验收快照为 `HEAD=6510e2d`、
+  `origin/main` 与远端 `main=f486e12`、ahead/behind `1/0`、工作树干净。后续交接提交后必须
+  重新实时检查 Git。
 - M7.2 与 M7 独立验收 GO（2026-07-30，GPT-5.6-sol，无 findings）：相对 `5497859` 的
   `147633e` 为 1 个提交、22 个内容、测试和公开文档文件，`src/`、Schema、依赖文件和私有资料
   路径均为 0。23 项 M7/loot 聚焦、599 项全量 unittest、图与唯一性审计、compileall、

@@ -38,9 +38,11 @@ stale.
   no findings on 2026-07-30 (DEC-0032). The project owner then authorized the larger
   M7.2 content-only scale slice; GPT-5.6-sol independently accepted M7.2 and M7 as
   GO with no findings on 2026-07-30 (DEC-0034). The project owner then confirmed
-  push; `f486e12` is now on local `main`, `origin/main`, and the directly queried
-  remote `main`. Codex has completed the M8 read-only audit baseline; independent
-  acceptance is pending and the public engine is not yet declared complete.
+  the audit baseline `f486e12` was pushed. At the M8 independent-review snapshot,
+  `HEAD` is `6510e2d`, while `origin/main` and the directly queried remote `main`
+  are `f486e12`, with ahead/behind `1/0` and a clean worktree. Codex has completed
+  the M8 read-only audit baseline; independent acceptance is pending and the public
+  engine is not yet declared complete. Recheck Git live after any handoff commit.
 - Current public-engine contract: content pack 0.8.0; save v7; typed
   `ItemStackDefinition`/`ItemStack`; quantity-aware `take`/`drop`/`use`;
   required ordered dialogue effects; World-owned flags; nonnegative coins; and
@@ -158,8 +160,9 @@ stale.
   --history`, `git diff --check`, and `git fsck --full --no-dangling` passed. A real
   CLI flow completed both M7.2 branches and v7/0.8.0 save/load; a fresh CLI flow
   proved prism-sentinel death, the death gate, `recover`, and v7 save/load back at
-  the start room. No repository files changed; GPT-5.6-sol independent acceptance
-  remains pending (DEC-0035).
+  the start room. The subsequent M8 audit-record commit is `6510e2d`; at review it
+  is ahead of `origin/main`/remote `f486e12` by one commit. GPT-5.6-sol independent
+  acceptance remains pending (DEC-0035).
 - GPT-5.6-sol independently accepted M7.1 as GO with no findings (2026-07-30):
   relative to `086cda8`, `9786325` is one 22-file `+333/-55` commit and leaves
   `src/`, `schemas/`, dependency files, and private-material paths untouched. 19 M7/loot focused and
