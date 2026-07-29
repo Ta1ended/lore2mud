@@ -412,3 +412,13 @@
 
 ## [0.2.0] - 2026-07-28
 - Deterministic quest flow, versioned save v2, content pack versioning.
+
+### Verified
+
+- GPT-5.6-sol independently accepted Phase 1.0 fact-candidate validation as GO
+  with no remaining findings (DEC-0039). Initial implementation `e2b8136` (119
+  focused, 718 full) was NO-GO; focus fix `3442d2d` closed P1-1 (enum TypeError),
+  P1-2 (numeric int precision), P2 (Schema constraints). Accepted evidence: 131
+  focused tests, 730 full tests, compileall, original-demo validation, safety
+  history scan, and diff check. Local HEAD=`3442d2d`, `origin/main`=`afdb235`,
+  ahead/behind=2/0, not pushed.

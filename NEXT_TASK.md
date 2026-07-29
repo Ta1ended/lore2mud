@@ -1,19 +1,19 @@
 # Next Task
 
-_Last updated: 2026-07-30（Phase 1.0 聚焦修正完成；聚焦复验待定）_
+_Last updated: 2026-07-30（Phase 1.0 独立验收 GO；封板）_
 
 ## Single next action
 
-交回 GPT-5.6-sol 聚焦复验 Phase 1.0 fact-candidate validation（DEC-0037 + DEC-0038）。
-复验通过前不得开始 Phase 1.1 或任何后续切片。
+等待项目负责人对后续工作给出新的、明确且范围受限的授权；在授权前不开始
+Phase 1.1、任何新功能或私有小说事实层工作。
 
 ## Boundaries
 
-- 聚焦修正关闭 P1-1（enum TypeError）、P1-2（numeric int precision）、P2（Schema 约束）。
-- 131 项聚焦测试通过；730 项全量测试通过；compileall、内容校验、安全扫描和 diff 检查均通过。
-- 相对 e2b8136 的 diff 仅含允许文件。
+- Phase 1.0 fact-candidate validation 已由 GPT-5.6-sol 独立验收 GO（DEC-0039），
+  DEC-0038 findings 全部关闭。
+- 本地 HEAD=`3442d2d`，`origin/main`=`afdb235`，ahead/behind=2/0，未 push。
+  push 前须重新直查远端。
 
 ## Queue
 
-- 无排队实施项；后续事项（manifest 跨文件校验、审核、归并、canon、模型调用）
-  均须聚焦复验通过后由项目负责人重新明确授权。
+- 无排队实施项；任何后续事项均须项目负责人重新明确授权。

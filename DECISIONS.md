@@ -915,3 +915,29 @@
 - Evidence: `pipeline/fact_candidates.py`, `schemas/fact_candidate.schema.json`,
   `tests/test_fact_candidates.py`.
 - Supersedes: None.
+
+## DEC-0039: Phase 1.0 independent acceptance — GO; DEC-0038 findings closed
+
+- Date: 2026-07-30
+- Status: Accepted
+- Context: Phase 1.0 initial implementation (`e2b8136`) was independently reviewed
+  as NO-GO with two P1 and one P2 findings (DEC-0037 pending → DEC-0038 fix).
+  The focus fix (`3442d2d`) closed all three findings. GPT-5.6-sol performed a
+  focused re-review of the fix relative to `e2b8136`.
+- Decision: Record Phase 1.0 fact-candidate document validation contract as
+  independently accepted GO by GPT-5.6-sol. All DEC-0038 findings are closed:
+  P1-1 enum TypeError paths sealed, P1-2 numeric int precision preserved,
+  P2 Schema if/then/else and \S pattern added. No remaining blocking findings.
+  Accepted evidence: 131 focused `tests.test_fact_candidates` (1 method/24
+  subTests enum matrix, 5 numeric precision, 6 Schema structure, plus original
+  119), 730 full unittest, compileall, original-demo validation,
+  `check_repo_safety.py --history`, `git diff --check`, and 9-file scope relative
+  to `e2b8136`. Local HEAD=`3442d2d`, `origin/main`=`afdb235`, ahead/behind=2/0,
+  worktree clean, not pushed. Direct remote query was not refreshed this session.
+- Consequences: Phase 1.0 is complete. No new implementation is authorized.
+  Phase 1.1 (manifest cross-file checking), review decisions, canon writing,
+  model integration, or any other work requires a separate, explicit, scoped
+  project-owner authorization. This does not authorize push.
+- Evidence: `pipeline/fact_candidates.py`, `schemas/fact_candidate.schema.json`,
+  `tests/test_fact_candidates.py`, `docs/fact_candidate_format.md`.
+- Supersedes: Only DEC-0037's independent-acceptance-pending status.

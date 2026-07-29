@@ -88,11 +88,13 @@ stale.
   `pipeline/fact_candidates.py` with frozen dataclass models (document envelope,
   candidate, claim, 5-branch value tagged union), stable-ID regex, NFKC alias
   dedup, relation cross-reference, `FactCandidateValidationError`. JSON Schema
-  at `schemas/fact_candidate.schema.json` (draft 2020-12). 119 focused tests
-  and 730 full tests pass, compileall, content validation, safety scan, and
-  diff check clean. GPT-5.6-sol independent acceptance NO-GO (P1-1 enum TypeError,
-  P1-2 numeric precision, P2 Schema constraints). Focus fix in DEC-0038: 131
-  focused tests, all P1/P2 closed. Pending focused re-review.
+  at `schemas/fact_candidate.schema.json` (draft 2020-12). Initial verification:
+  119 focused and 718 full tests, compileall, content validation, safety scan,
+  diff check. Independent acceptance NO-GO (P1-1 enum TypeError, P1-2 numeric
+  precision, P2 Schema constraints). Focus fix `3442d2d` (DEC-0038): 131 focused
+  and 730 full tests. GPT-5.6-sol independently accepted Phase 1.0 GO with no
+  remaining findings (DEC-0039). Local HEAD=`3442d2d`, `origin/main`=`afdb235`,
+  ahead/behind=2/0, not pushed.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

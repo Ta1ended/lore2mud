@@ -182,19 +182,24 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- Phase 1.0 fact-candidate document validation contract已由 Hermes 实现，
-  GPT-5.6-sol 独立验收 NO-GO（P1-1 enum TypeError、P1-2 numeric precision、
-  P2 Schema 约束）。聚焦修正已提交（DEC-0038）：131 项聚焦测试通过，
-  全量 730 项测试通过，compileall、内容校验、安全扫描和 diff 检查均通过。
-  等待 GPT-5.6-sol 聚焦复验。
+- 无活动实施切片。Phase 1.0 fact-candidate validation 已由 GPT-5.6-sol 独立
+  验收 GO（DEC-0039），DEC-0038 findings 全部关闭。任何后续工作须项目负责人
+  新的明确授权。
 
 ## Blockers
 
-- 无技术阻塞；Phase 1.0 独立验收后方可开始后续切片。
+- 无技术阻塞；后续工作受项目负责人新的明确授权门槛约束。
 
 ## Verification
 
-- Phase 1.0 local verification（2026-07-30，Hermes，独立验收待定）：
+- Phase 1.0 independent acceptance GO（2026-07-30，GPT-5.6-sol，DEC-0039）：
+  聚焦复验确认 DEC-0038 三个 findings 全部关闭。131 项聚焦测试、730 项全量
+  unittest、compileall、original-demo 校验、安全历史扫描和 diff 检查通过。
+  9 个文件范围（相对 `e2b8136`）确认。初始实现 `e2b8136`（119 聚焦/718 全量）
+  为 NO-GO；修正 `3442d2d` 为 GO 基线。本地 HEAD=`3442d2d`，
+  `origin/main`=`afdb235`，ahead/behind=2/0，工作树干净，未 push。
+  本轮顾问直查远端因连接重置未刷新；push 前须重新直查。
+- Phase 1.0 local verification（2026-07-30，Hermes）：
   119 项 `tests.test_fact_candidates` 聚焦测试通过；718 项全量 unittest 通过；
   compileall、`lore2mud validate --content examples/original_demo`、
   `check_repo_safety.py --history`、`git diff --check` 全部通过。新增 5 个文件
