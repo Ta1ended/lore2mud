@@ -1,6 +1,6 @@
 # Engine Completion Milestones
 
-_Last updated: 2026-07-29（M3 已由 Codex 本地实现并待 GPT-5.6-sol 独立验收）_
+_Last updated: 2026-07-29（M3 已由 GPT-5.6-sol 独立验收 GO）_
 
 本文件定义公共引擎从当前状态到功能完备的里程碑路线。每个里程碑是一个可独立验证的
 纵向切片，完成后更新本文件和相关交接记录。
@@ -60,9 +60,11 @@ _Last updated: 2026-07-29（M3 已由 Codex 本地实现并待 GPT-5.6-sol 独�
 
 ## M3: 三类任务系统
 
-- **状态**: Codex 已完成本地实现与验证；等待 GPT-5.6-sol 独立验收，尚未标记 GO。
+- **状态**: GPT-5.6-sol 已完成独立验收，结论 GO。
 - **执行者**: Codex。
-- **验收者**: GPT-5.6-sol（待执行）。
+- **验收者**: GPT-5.6-sol。
+- **独立验收封板**: 2026-07-29；实现提交 `dca629b`，唯一 P2 交接修正提交
+  `5527faa`。聚焦复验确认 P2 已关闭，结论为无 findings。
 - **已实现的强制契约**:
   - frozen tagged union 固定为 `monster_defeated.target_monster_id`、
     `reach_room.target_room_id`、`collect_item.target_item_id + required_quantity`；
@@ -86,7 +88,11 @@ _Last updated: 2026-07-29（M3 已由 Codex 本地实现并待 GPT-5.6-sol 独�
   - `tests.test_item_stacks`：56 项通过（M2 回归）。compileall、original_demo 校验、
     `check_repo_safety.py --history` 和 `git diff --check`：通过。
   - 仓库外临时存档目录 CLI：完成 collect/reach/monster 三类任务、战利品拾取、save、
-    读档和状态恢复。独立验收结论仍须由 GPT-5.6-sol 给出。
+    读档和状态恢复。
+- **GPT-5.6-sol 独立验收证据**:
+  - 540 项全量 unittest、31 项 M3 专项和 56 项 M2 stack 回归通过；compileall、
+    original_demo 校验、历史安全扫描与 `git diff --check` 通过。
+  - 仓库外 CLI 覆盖三类任务、战利品、save/load；复验后无 findings。
 
 ## M4: 强类型对话效果
 

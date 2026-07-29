@@ -30,8 +30,9 @@ stale.
 - Current public-engine contract: content pack 0.4.0, unchanged save v6, typed
   `ItemStackDefinition`/`ItemStack`, stack-limit validation, quantity-aware
   `take`/`drop`/`use`, typed loot/dialogue rewards, and v5 save rejection.
-- M3 is locally implemented by Codex and awaits GPT-5.6-sol independent
-  acceptance. `QuestDefinition` is a frozen three-branch union:
+- M3 was implemented by Codex and independently accepted GO by GPT-5.6-sol on
+  2026-07-29 after the focused re-review of `dca629b` and its handoff correction
+  `5527faa`. `QuestDefinition` is a frozen three-branch union:
   `monster_defeated.target_monster_id`, `reach_room.target_room_id`, and
   `collect_item.target_item_id + required_quantity`. World owns acceptance,
   condition checking, reward commit, deterministic quest-ID ordering, and local
@@ -97,8 +98,9 @@ stale.
   branches, mutually exclusive fields, `required_quantity` / stack limits,
   quest-ID ordering, move/take/attack/dialogue rollback, reward-once behavior,
   CLI rendering, and v6 load without task recomputation.
-- M3 independent acceptance is pending. It must not be described as GO until
-  GPT-5.6-sol reviews the real diff and evidence.
+- M3 is independently accepted GO by GPT-5.6-sol (2026-07-29). The focused
+  re-review closed the one P2 handoff finding in `PROJECT_STATE.md`; it reported
+  no remaining findings.
 - M3 compileall, original-demo validation, `check_repo_safety.py --history`,
   `git diff --check`, and real CLI flow passed. The CLI completed collect/reach/
   monster tasks, saved, picked up combat loot, loaded, and restored the saved

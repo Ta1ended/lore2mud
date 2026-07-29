@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-29（M3 由 Codex 本地实现；待 GPT-5.6-sol 独立验收）_
+_Last updated: 2026-07-29（M3 已由 GPT-5.6-sol 独立验收 GO）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -14,7 +14,8 @@ M1 死亡/失败处理由 Hermes agent 实现，并由 GPT-5.6-sol 于 2026-07-2
 `c329546` 独立验收 GO。M2 typed stacks 由 Hermes agent 实现，并由 GPT-5.6-sol 于
 2026-07-29 独立验收 GO（DEC-0023）；这些历史事实不因当前执行者变更而改变。
 
-M3 三类任务系统已由 Codex 本地实现，等待 GPT-5.6-sol 独立验收，尚未标记 GO。
+M3 三类任务系统已由 Codex 实现，并由 GPT-5.6-sol 于 2026-07-29 独立验收 GO
+（DEC-0026）。
 当前内容包为 0.4.0；存档格式仍为 v6，房间、背包、战利品和对话奖励使用 typed
 stacks，`take`、`drop`、`use` 均支持可选数量，v5 存档明确拒绝。M3 固定
 `monster_defeated`、`reach_room`、`collect_item` 三分支任务定义，World 统一负责
@@ -22,10 +23,11 @@ stacks，`take`、`drop`、`use` 均支持可选数量，v5 存档明确拒绝�
 `move_with_outcome()` 获取加性结果。`completed` 是一次性奖励事实；load 只恢复
 `quest_states`，不重新接取、检查或发奖。
 
-本地 M3 验证已通过 540 项全量 unittest、31 项 `tests.test_quest`、保留的 56 项 M2
-专项、compileall、original_demo 校验、历史安全扫描、`git diff --check` 和仓库外存档目录
-CLI 流程（collect/reach/monster、战利品拾取、save/load 恢复）。M2 的 530 项全量 / 56 项
-`tests.test_item_stacks` 及其既定证据仍是 M2 的历史独立验收事实，不能误写为 M3 独立验收。
+M3 的本地验证与独立验收证据包括 540 项全量 unittest、31 项 `tests.test_quest`、保留的
+56 项 M2 专项、compileall、original_demo 校验、历史安全扫描、`git diff --check` 和仓库外
+存档目录 CLI 流程（collect/reach/monster、战利品拾取、save/load 恢复）。聚焦复验关闭了
+`PROJECT_STATE.md` 过期风险表述这一项 P2，结论为无 findings。M2 的 530 项全量 / 56 项
+`tests.test_item_stacks` 及其既定证据仍是 M2 的历史独立验收事实，不能误写为 M3 证据。
 M3 开始前 Git 为本地 `f3e15e6`、`origin/main` 与远端 `main` 为 `1ee0b30`，工作树
 干净、ahead/behind `1/0`；提交前后必须重新核实实时状态。GPT-5.6-sol 负责顾问审查
 和独立验收；Codex 是唯一执行者；项目负责人负责人工转交。唯一下一动作见
@@ -34,7 +36,7 @@ M3 开始前 Git 为本地 `f3e15e6`、`origin/main` 与远端 `main` 为 `1ee0b
 ## Historical current-status snapshot (2026-07-28, pre-M2; not current)
 
 > 下列快照保留当时的 save v5、0.2.7、旧 Git 与旧执行流程事实；当前状态以上文
-> v6、0.4.0、M3 本地实现待验收、M2 GO 和 Codex 执行模式为准。
+> v6、0.4.0、M3 GO、M2 GO 和 Codex 执行模式为准。
 
 装备系统已实现 hand 和 body 双槽位，存档格式为 v5。对话系统已实现——原创 NPC 老陈带有
 确定性分支对话和一次性普通物品奖励；琉草小径西向出口要求持有该铜牌，`look` 会只读显示
@@ -60,7 +62,7 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 ## Completed
 
 > 历史记录说明：本节中 save v3–v5、内容包 0.2.x、旧 API 名称、旧测试数和旧 Git
-> 状态均为对应切片当时的事实；当前契约以“Current status”的 v6、0.4.0 和 M3 待验收状态为准。
+> 状态均为对应切片当时的事实；当前契约以“Current status”的 v6、0.4.0 和 M3 GO 状态为准。
 
 - `src/lore2mud/` 实现标准库运行时、双 CLI 入口和领域模块。
 - `examples/original_demo/` 提供三个原创房间、六个物品、一个怪物、一个角色（老陈）和三类任务；
@@ -135,16 +137,16 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   预检 + save v6 + content pack 0.3.0）由 Hermes agent 实现；GPT-5.6-sol 已独立
   验收 GO。验收证据为 530 项全量、56 项专项测试及既定编译、内容、安全、diff 和 CLI
   验证。
-- M3 三类任务系统由 Codex 实现：frozen `QuestDefinition` tagged union、严格 loader/
+- M3 三类任务系统由 Codex 实现，并由 GPT-5.6-sol 独立验收 GO：frozen `QuestDefinition` tagged union、严格 loader/
   Schema、World 统一的接取/检查/奖励、任务 ID 字典序的 `quest_outcomes` / level gains、
   移动/拾取/战斗/对话奖励的局部回滚、兼容 `World.move() -> Room` 的
-  `move_with_outcome()`、0.4.0 original_demo 和 v6 不重算读档。该实现仅完成本地验证，
-  仍待 GPT-5.6-sol 独立验收。
+  `move_with_outcome()`、0.4.0 original_demo 和 v6 不重算读档。聚焦复验已关闭唯一 P2
+  交接问题，未发现其他问题。
 
 ## In progress
 
-- 没有新的功能实现正在进行。唯一下一动作是提交 M3 真实差异、验证和 CLI 证据给
-  GPT-5.6-sol 独立验收；不得开始 M4。
+- 没有新的功能实现正在进行。唯一下一动作是等待项目负责人明确授权下一项纵向切片；
+  不得开始 M4 或其他功能实现。
 
 ## Blockers
 
@@ -152,10 +154,11 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## Verification
 
-- M3 本地验证（2026-07-29，Codex；独立验收待定）：540 项全量 unittest、31 项
+- M3 独立验收 GO（2026-07-29，GPT-5.6-sol）：540 项全量 unittest、31 项
   `tests.test_quest`、56 项 `tests.test_item_stacks` 通过；compileall、original_demo
   内容校验、`check_repo_safety.py --history`、`git diff --check` 通过；仓库外临时存档
-  目录的 CLI 完成 collect/reach/monster 三类任务、战利品拾取、save、读档和状态恢复。
+  目录的 CLI 完成 collect/reach/monster 三类任务、战利品拾取、save、读档和状态恢复。对
+  `dca629b` 的聚焦复验确认 `5527faa` 已关闭先前唯一 P2，结论为无 findings。
 - 公共核心 readiness audit（2026-07-28）：完整 415 项测试和 248 项聚焦的
   content/save/dialogue/gate/drop/inspect/loot/safety 测试通过；编译、原创内容包校验、
   `check_repo_safety.py --history`、`git diff --check`、`git fsck --full --no-dangling`

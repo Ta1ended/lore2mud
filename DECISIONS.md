@@ -551,3 +551,23 @@
   `examples/original_demo/`.
 - Supersedes: DEC-0008's historical single-monster-task shape only; M1/M2 history
   and save v6 contracts remain intact.
+
+## DEC-0026: M3 independent acceptance — GO
+
+- Date: 2026-07-29
+- Status: Accepted
+- Context: Codex implemented the approved M3 typed-quest slice in `dca629b`.
+  GPT-5.6-sol's first independent review found one P2 handoff inconsistency in
+  `PROJECT_STATE.md`; Codex corrected only that record in `5527faa`.
+- Decision: Record M3 as independently accepted GO by GPT-5.6-sol. The focused
+  re-review found no remaining findings. Accepted evidence is 540 full unittest
+  cases, 31 `tests.test_quest` cases, 56 preserved `tests.test_item_stacks`
+  regressions, compileall, original-demo validation, history safety scanning,
+  `git diff --check`, and the external-save-directory CLI flow.
+- Consequences: M3 is complete. The public engine remains in development; M4 or
+  any other feature implementation requires explicit future authorization. This
+  decision does not change M1/M2 historical attribution to Hermes agent or their
+  own acceptance evidence.
+- Evidence: `dca629b`, `5527faa`, `tests/test_quest.py`,
+  `docs/engine_completion_milestones.md`, `PROJECT_STATE.md`.
+- Supersedes: Only the independent-acceptance-pending status in DEC-0025.

@@ -51,6 +51,12 @@
 
 ### Verified
 
+- GPT-5.6-sol independently accepted the M3 typed quest-condition slice as GO.
+  The focused re-review of the M3 implementation and its `5527faa` handoff
+  correction closed the single P2 `PROJECT_STATE.md` finding with no remaining
+  findings; the accepted evidence is 540 full unittest cases, 31 M3 task cases,
+  56 M2 stack regressions, compileall, original-demo validation, history safety,
+  `git diff --check`, and the external-save-directory CLI save/load flow.
 - Codex completed local M3 verification (not independent acceptance): 540 full
   unittest cases, 31 `tests.test_quest` cases, 56 preserved M2 stack cases,
   compileall, original-demo validation, history safety scan, `git diff --check`,
