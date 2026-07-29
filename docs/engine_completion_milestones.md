@@ -1,6 +1,6 @@
 # Engine Completion Milestones
 
-_Last updated: 2026-07-29（M2 独立验收 GO；Codex 执行模式）_
+_Last updated: 2026-07-29（M3 已由 Codex 本地实现并待 GPT-5.6-sol 独立验收）_
 
 本文件定义公共引擎从当前状态到功能完备的里程碑路线。每个里程碑是一个可独立验证的
 纵向切片，完成后更新本文件和相关交接记录。
@@ -60,16 +60,33 @@ _Last updated: 2026-07-29（M2 独立验收 GO；Codex 执行模式）_
 
 ## M3: 三类任务系统
 
-- **状态**: 规划中。
-- **强制完成条件**:
-  - 支持 `monster_defeated`、`reach_room`、`collect_item`。
-  - 使用带 `kind` 的强类型任务定义。
-  - 不同类型的目标字段互斥且严格校验。
-  - `collect_item` 数量必须为正整数。
-  - 任务奖励只发放一次，规则保持在 World。
-  - 移动、拾取、奖励发放和接取任务后运行幂等进度检查。
-  - 接取时已满足条件应立即完成。
-  - 任务状态可安全 save/load。
+- **状态**: Codex 已完成本地实现与验证；等待 GPT-5.6-sol 独立验收，尚未标记 GO。
+- **执行者**: Codex。
+- **验收者**: GPT-5.6-sol（待执行）。
+- **已实现的强制契约**:
+  - frozen tagged union 固定为 `monster_defeated.target_monster_id`、
+    `reach_room.target_room_id`、`collect_item.target_item_id + required_quantity`；
+    Schema 与 loader 拒绝跨分支字段和未知 kind。
+  - `collect_item` 要求 `1 <= required_quantity <= stack_limit`，完成条件为背包目标
+    栈数量 `>= required_quantity`。
+  - `World` 统一接取、条件判断、一次性奖励和 `QuestOutcome`；同一次动作的跨 kind
+    结果、经验和升级信息按 quest ID 字典序结算。
+  - 进入触发房间、移动、拾取、击败怪物和成功发放对话物品奖励均进行幂等检查；接取时
+    已满足条件会立即完成。
+  - 主动作与任务结算使用局部内存事务；奖励失败会整体回滚，不留下重复奖励、物品、战利品
+    或对话状态的半完成变更。
+  - `World.move()` 保持返回 `Room`；`move_with_outcome()` 是 CLI 的加性结果路径。
+  - `completed` 是奖励已发放的事实；`drop`、`use` 和 load 不撤销或补发。
+  - save format 保持 v6，`QuestState` 仍只有 `completed`；load 只恢复状态、不重新接取、
+    检查或发奖。内容包升至 0.4.0，旧 0.3.0 内容包存档按版本拒绝。
+- **Codex 本地验证证据**:
+  - 全量 unittest：540 项通过。
+  - `tests.test_quest`：31 项通过，覆盖三分支契约、幂等、排序、四条事务回滚、对话奖励、
+    CLI、v6 形状和读档不重算。
+  - `tests.test_item_stacks`：56 项通过（M2 回归）。compileall、original_demo 校验、
+    `check_repo_safety.py --history` 和 `git diff --check`：通过。
+  - 仓库外临时存档目录 CLI：完成 collect/reach/monster 三类任务、战利品拾取、save、
+    读档和状态恢复。独立验收结论仍须由 GPT-5.6-sol 给出。
 
 ## M4: 强类型对话效果
 

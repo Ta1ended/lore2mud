@@ -16,11 +16,14 @@ from lore2mud.content.models import (
     DialogueNode,
     DialogueOption,
     ExitDefinition,
+    CollectItemQuestDefinition,
     ItemDefinition,
     ItemStackDefinition,
+    MonsterDefeatedQuestDefinition,
     MonsterDefinition,
     PlayerDefaults,
     QuestDefinition,
+    ReachRoomQuestDefinition,
     RoomDefinition,
 )
 
@@ -614,24 +617,21 @@ def load_content_pack(path: str | Path) -> ContentPack:
         )
 
     quest_defs: list[QuestDefinition] = []
+    common_quest_keys = {
+        "id",
+        "name",
+        "description",
+        "kind",
+        "trigger_room_id",
+        "reward_experience",
+        "canon_ref",
+        "adaptation_notes",
+    }
     for index, obj in enumerate(
         _load_entity_array(root, "quests.json", validator)
     ):
         location = f"quests.json[{index}]"
-        validator.keys(
-            obj,
-            {
-                "id",
-                "name",
-                "description",
-                "trigger_room_id",
-                "target_monster_id",
-                "reward_experience",
-                "canon_ref",
-                "adaptation_notes",
-            },
-            location,
-        )
+        kind = validator.text(obj, "kind", location)
         entity_id = validator.stable_id(
             validator.text(obj, "id", location),
             f"{location}.id",
@@ -640,10 +640,6 @@ def load_content_pack(path: str | Path) -> ContentPack:
             validator.text(obj, "trigger_room_id", location),
             f"{location}.trigger_room_id",
         )
-        target_monster_id = validator.stable_id(
-            validator.text(obj, "target_monster_id", location),
-            f"{location}.target_monster_id",
-        )
         reward_experience = validator.integer(
             obj,
             "reward_experience",
@@ -651,17 +647,76 @@ def load_content_pack(path: str | Path) -> ContentPack:
             minimum=0,
             default=0,
         )
-        quest_defs.append(
-            QuestDefinition(
-                id=entity_id,
-                name=validator.text(obj, "name", location),
-                description=validator.text(obj, "description", location),
-                trigger_room_id=trigger_room_id,
-                target_monster_id=target_monster_id,
-                reward_experience=reward_experience,
-                metadata=_metadata(obj, location, validator),
+        common = {
+            "id": entity_id,
+            "name": validator.text(obj, "name", location),
+            "description": validator.text(obj, "description", location),
+            "trigger_room_id": trigger_room_id,
+            "reward_experience": reward_experience,
+            "metadata": _metadata(obj, location, validator),
+        }
+
+        if kind == "monster_defeated":
+            validator.keys(
+                obj,
+                common_quest_keys | {"target_monster_id"},
+                location,
             )
-        )
+            target_monster_id = validator.stable_id(
+                validator.text(obj, "target_monster_id", location),
+                f"{location}.target_monster_id",
+            )
+            quest_defs.append(
+                MonsterDefeatedQuestDefinition(
+                    **common,
+                    target_monster_id=target_monster_id,
+                )
+            )
+        elif kind == "reach_room":
+            validator.keys(
+                obj,
+                common_quest_keys | {"target_room_id"},
+                location,
+            )
+            target_room_id = validator.stable_id(
+                validator.text(obj, "target_room_id", location),
+                f"{location}.target_room_id",
+            )
+            quest_defs.append(
+                ReachRoomQuestDefinition(
+                    **common,
+                    target_room_id=target_room_id,
+                )
+            )
+        elif kind == "collect_item":
+            validator.keys(
+                obj,
+                common_quest_keys | {"target_item_id", "required_quantity"},
+                location,
+            )
+            target_item_id = validator.stable_id(
+                validator.text(obj, "target_item_id", location),
+                f"{location}.target_item_id",
+            )
+            required_quantity = validator.integer(
+                obj,
+                "required_quantity",
+                location,
+                minimum=1,
+                default=1,
+            )
+            quest_defs.append(
+                CollectItemQuestDefinition(
+                    **common,
+                    target_item_id=target_item_id,
+                    required_quantity=required_quantity,
+                )
+            )
+        else:
+            validator.keys(obj, common_quest_keys, location)
+            validator.issues.append(
+                f"{location}.kind 必须是 monster_defeated、reach_room 或 collect_item"
+            )
 
     rooms = _unique_map(room_defs, "rooms.json", validator)
     items = _unique_map(item_defs, "items.json", validator)
@@ -968,24 +1023,46 @@ def load_content_pack(path: str | Path) -> ContentPack:
             validator.issues.append(
                 f"物品 {item_id} 被多个怪物作为战利品：{sorted(monster_ids)}"
             )
-    # Track quest→monster mapping for duplicate target check
-    quest_target_map: dict[str, list[str]] = {}
+    # Track (kind, target) so each concrete world condition maps to one quest.
+    quest_target_map: dict[tuple[str, str], list[str]] = {}
     for quest in quests.values():
         if quest.trigger_room_id not in rooms:
             validator.issues.append(
                 f"任务 {quest.id} 的 trigger_room_id 引用了不存在的房间："
                 f"{quest.trigger_room_id}"
             )
-        if quest.target_monster_id not in monsters:
-            validator.issues.append(
-                f"任务 {quest.id} 的 target_monster_id 引用了不存在的怪物："
-                f"{quest.target_monster_id}"
-            )
-        quest_target_map.setdefault(quest.target_monster_id, []).append(quest.id)
-    for monster_id, quest_ids in quest_target_map.items():
+        if isinstance(quest, MonsterDefeatedQuestDefinition):
+            target_id = quest.target_monster_id
+            if target_id not in monsters:
+                validator.issues.append(
+                    f"任务 {quest.id} 的 target_monster_id 引用了不存在的怪物："
+                    f"{target_id}"
+                )
+        elif isinstance(quest, ReachRoomQuestDefinition):
+            target_id = quest.target_room_id
+            if target_id not in rooms:
+                validator.issues.append(
+                    f"任务 {quest.id} 的 target_room_id 引用了不存在的房间："
+                    f"{target_id}"
+                )
+        else:
+            target_id = quest.target_item_id
+            item = items.get(target_id)
+            if item is None:
+                validator.issues.append(
+                    f"任务 {quest.id} 的 target_item_id 引用了不存在的物品："
+                    f"{target_id}"
+                )
+            elif quest.required_quantity > item.stack_limit:
+                validator.issues.append(
+                    f"任务 {quest.id} 的 required_quantity {quest.required_quantity} "
+                    f"超过物品 {target_id} 的栈上限 ({item.stack_limit})"
+                )
+        quest_target_map.setdefault((quest.kind, target_id), []).append(quest.id)
+    for (kind, target_id), quest_ids in quest_target_map.items():
         if len(quest_ids) > 1:
             validator.issues.append(
-                f"怪物 {monster_id} 被多个任务作为目标：{sorted(quest_ids)}"
+                f"{kind} 目标 {target_id} 被多个任务使用：{sorted(quest_ids)}"
             )
 
     if validator.issues:

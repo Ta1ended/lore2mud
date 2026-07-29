@@ -7,12 +7,29 @@
 - Documented the current execution workflow: GPT-5.6-sol is the scope/architecture
   reviewer and independent acceptor; Codex is the sole executor; the project owner
   manually transfers prompts and completion reports between the two conversations.
+- Upgraded the original demo content pack to 0.4.0. Existing 0.3.0 saves are
+  rejected by the existing content-pack version check; save format remains v6.
 - Moved command-layer death gate before dialogue routing in `CommandProcessor`
   so that dead players cannot invoke `_select_option` or `_bye` through bare
   numbers or `bye` when `active_dialogue` is set (DEC-0020).
 
 ### Added
 
+- Added the M3 frozen `QuestDefinition` tagged union with exact
+  `monster_defeated.target_monster_id`, `reach_room.target_room_id`, and
+  `collect_item.target_item_id` plus `required_quantity` branches. Schema and
+  loader reject unknown kinds, mixed target fields, invalid references, duplicate
+  concrete conditions, and collection quantities outside the target stack limit.
+- Added World-owned, stable quest settlement for movement, item pickup, monster
+  defeat, and dialogue item grants. `QuestOutcome` collections and task level gains
+  are ordered by quest ID; `World.move()` retains its `Room` result and the CLI uses
+  additive `move_with_outcome()` results.
+- Added local-memory rollback around M3 action plus settlement commits, so a reward
+  failure restores the corresponding movement, pickup, combat/loot, or dialogue
+  item and state transition.
+- Added original-demo `reach_room` and `collect_item` tasks alongside the existing
+  monster task, and 31 focused M3 task tests for contracts, ordering, rollback,
+  idempotence, dialogue rewards, CLI output, and v6 load behavior.
 - Added typed item stacks: frozen `ItemStackDefinition` in content layer,
   mutable `ItemStack` in runtime. `ItemDefinition.stack_limit` field (default 1).
   Rooms, inventory, loot, and dialogue rewards use typed stacks.
@@ -34,6 +51,11 @@
 
 ### Verified
 
+- Codex completed local M3 verification (not independent acceptance): 540 full
+  unittest cases, 31 `tests.test_quest` cases, 56 preserved M2 stack cases,
+  compileall, original-demo validation, history safety scan, `git diff --check`,
+  and an external-save-directory CLI flow covering all three task kinds, combat
+  loot, save, post-save pickup, and load restoration.
 - GPT-5.6-sol independently accepted M2 typed stacks as GO. Evidence: 530 full
   unittest cases, 56 `tests.test_item_stacks` cases, compileall, original-demo
   validation, history safety scan, `git diff --check`, and the quantity pickup,

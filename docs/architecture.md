@@ -38,6 +38,9 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
 - 物品 `stack_limit`、所有 `ItemStack` 的正整数数量、栈上限、装备单件约束与
   房间/背包/战利品/对话奖励之间的放置规则；
 - 起始房间、出口目标、出口门禁物品、物品、怪物、角色和对话引用；
+- `QuestDefinition` 的三分支 tagged union：`monster_defeated.target_monster_id`、
+  `reach_room.target_room_id` 或 `collect_item.target_item_id` 与
+  `required_quantity`；分支目标字段互斥，收集数量必须在 1 和物品 `stack_limit` 之间；
 - `pack.json`、`rooms.json`、`items.json`、`monsters.json`、`characters.json`、
   `quests.json` 和 `dialogues.json` 七个必需内容文件；
 - 同一实体的重复放置；
@@ -70,7 +73,37 @@ take item_spark_lantern [数量]
   → 渲染结果
 ```
 
-任何失败都发生在修改之前，避免半完成状态。
+可预见的输入、容量和引用失败都发生在修改之前；动作后触发的任务结算若失败，则由
+`World` 的局部事务回滚，避免半完成状态。
+
+### 任务系统
+
+任务内容是不可变的三分支 `QuestDefinition` tagged union；运行时的
+`World.quest_defs` 保存定义，`World.quest_states` 是唯一的可变状态权威。某个
+`QuestState` 的存在表示已经接取，`completed=True` 是“奖励已经成功提交”的一次性事实，
+而不是可由背包、房间或怪物状态反推的缓存。
+
+```text
+进入触发房间 / World.from_content_pack
+  → 按任务 ID 接取尚未接取的定义
+  → 对已接取且未完成的定义按任务 ID 检查条件
+  → 发放经验、标记 completed、生成 QuestOutcome
+
+move_with_outcome / take / attack / select_option(grant_item)
+  → 主动作的全部预检
+  → 局部内存事务：主动作 + 任务结算
+  → quest_outcomes + level_gains（任务 ID 字典序）
+```
+
+条件分别是目标怪物已被击败、玩家当前房间匹配目标房间，以及背包中的目标
+`ItemStack.quantity >= required_quantity`。同一次动作可结算多个不同 kind 的任务，
+结果、经验和升级信息都按 quest ID 字典序稳定排列。任何奖励或结算异常都会回滚该次
+主动作的房间、怪物、玩家、背包、任务、装备和活动对话状态。
+
+`World.move()` 保持历史返回类型 `Room`；需要任务结果的命令层调用加性的
+`World.move_with_outcome()`。`TakeOutcome`、`AttackOutcome` 和带物品奖励的
+`TalkOutcome` 同样携带 `quest_outcomes` 与对应 `level_gains`。`drop` 与 `use` 不会
+重新检查或撤销已完成任务。
 
 ### 门禁出口
 
@@ -135,16 +168,21 @@ bye。结束选项（`next_node_id=null`）则立即结束对话。
 
 ### 状态不变性
 
-对话操作不修改玩家 HP、经验、装备、任务状态或房间布局。带 `grant_item` typed stack
-的选项是唯一例外：`World.select_option()` 在变更对话状态前检查数量、stack_limit、
-背包栈位与唯一物品规则，然后原子加入经内容校验的数量；失败时背包与
-`active_dialogue` 均不变。
+普通对话操作不修改玩家 HP、经验、装备、任务状态或房间布局。带 `grant_item` typed
+stack 的选项是唯一例外：`World.select_option()` 在变更对话状态前检查数量、
+`stack_limit`、背包栈位与唯一物品规则，然后在同一局部事务中加入经内容校验的数量并
+检查 collect_item 任务；失败时背包、任务、经验和 `active_dialogue` 均不变。
 
 ### 存档
 
-`active_dialogue` 是 save v6 的必填字段。save v6 使用 `inventory_stacks` 和每个房间的
-`item_stacks` 数组保存 `{item_id, quantity}`；v5 按格式版本明确拒绝，不做隐式迁移。
-加载时严格验证：
+`active_dialogue` 和 `quest_states` 是 save v6 的必填字段。save v6 使用
+`inventory_stacks` 和每个房间的 `item_stacks` 数组保存 `{item_id, quantity}`；每个
+任务状态仍只有 `completed`，M3 不新增任何存档字段。v5 按格式版本明确拒绝，不做
+隐式迁移；original_demo 内容包升级至 0.4.0，因此引用 0.3.0 的存档也会由既有内容包
+版本检查拒绝。
+
+加载时只校验并恢复已保存的 `quest_states`，不调用任务接取、条件检查或奖励发放。其余
+严格验证包括：
 - 顶层、`content_pack`、`player`、每个房间和每个怪物对象的键集合必须精确匹配；
 - `inventory_stacks` 与 `item_stacks` 中的物品 ID、正整数数量、栈上限、重复栈、
   容量和装备数量必须与当前内容定义一致；

@@ -3,9 +3,31 @@
     "id": "quest_clear_ash_mite",
     "name": "清除灰壳兽",
     "description": "静默观测站里盘踞着一只灰壳兽，它挡住了通往仪器的路。击败它。",
+    "kind": "monster_defeated",
     "trigger_room_id": "room_ember_wharf",
     "target_monster_id": "monster_ash_mite",
     "reward_experience": 15,
+    "adaptation_notes": "本仓库原创演示任务。"
+  },
+  {
+    "id": "quest_reach_silent_observatory",
+    "name": "抵达静默观测站",
+    "description": "沿着琉草小径前进，抵达静默观测站。",
+    "kind": "reach_room",
+    "trigger_room_id": "room_ember_wharf",
+    "target_room_id": "room_silent_observatory",
+    "reward_experience": 0,
+    "adaptation_notes": "本仓库原创演示任务。"
+  },
+  {
+    "id": "quest_collect_linglu_pills",
+    "name": "收集灵露丸",
+    "description": "收集两枚灵露丸，以备探索荒地时使用。",
+    "kind": "collect_item",
+    "trigger_room_id": "room_ember_wharf",
+    "target_item_id": "item_linglu_pill",
+    "required_quantity": 2,
+    "reward_experience": 0,
     "adaptation_notes": "本仓库原创演示任务。"
   }
 ]

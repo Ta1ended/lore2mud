@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Literal, TypeAlias
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,14 +83,55 @@ class CharacterDefinition:
 
 
 @dataclass(frozen=True, slots=True)
-class QuestDefinition:
+class MonsterDefeatedQuestDefinition:
+    """A quest completed when one specific monster has been defeated."""
+
     id: str
     name: str
     description: str
     trigger_room_id: str
     target_monster_id: str
     reward_experience: int
+    kind: Literal["monster_defeated"] = field(
+        init=False, default="monster_defeated"
+    )
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
+
+
+@dataclass(frozen=True, slots=True)
+class ReachRoomQuestDefinition:
+    """A quest completed when the player reaches one specific room."""
+
+    id: str
+    name: str
+    description: str
+    trigger_room_id: str
+    target_room_id: str
+    reward_experience: int
+    kind: Literal["reach_room"] = field(init=False, default="reach_room")
+    metadata: ContentMetadata = field(default_factory=ContentMetadata)
+
+
+@dataclass(frozen=True, slots=True)
+class CollectItemQuestDefinition:
+    """A quest completed when the inventory holds a required item quantity."""
+
+    id: str
+    name: str
+    description: str
+    trigger_room_id: str
+    target_item_id: str
+    required_quantity: int
+    reward_experience: int
+    kind: Literal["collect_item"] = field(init=False, default="collect_item")
+    metadata: ContentMetadata = field(default_factory=ContentMetadata)
+
+
+QuestDefinition: TypeAlias = (
+    MonsterDefeatedQuestDefinition
+    | ReachRoomQuestDefinition
+    | CollectItemQuestDefinition
+)
 
 
 @dataclass(frozen=True, slots=True)

@@ -10,10 +10,11 @@
 look
 take item_crystal_blade
 take item_bronze_scale_mail
-take item_linglu_pill
+take item_linglu_pill 2
 equip item_crystal_blade
 equip item_bronze_scale_mail
 status
+quests
 go east
 talk character_elder_chen
 1
@@ -26,6 +27,17 @@ take item_ash_mite_gel
 quests
 quit
 ```
+
+## 三类任务
+
+演示内容包 0.4.0 在起始房间自动接取三条完全原创任务：
+
+- `quest_collect_linglu_pills`：背包中收集 2 枚灵露丸（`collect_item`）。
+- `quest_reach_silent_observatory`：抵达静默观测站（`reach_room`）。
+- `quest_clear_ash_mite`：击败灰壳兽（`monster_defeated`，奖励 15 点经验）。
+
+执行 `quests` 可查看收集进度。拾取、移动、击败怪物和成功发放对话物品奖励都会由
+引擎统一检查已接取任务；已经完成的任务不会因丢弃或使用物品而撤销。
 
 ## 对话
 

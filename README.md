@@ -55,6 +55,7 @@ python -m lore2mud validate --content examples/original_demo
 look
 inspect item_spark_lantern
 take item_spark_lantern
+take item_linglu_pill 2
 inventory
 save lantern_run
 use item_linglu_pill
@@ -83,8 +84,8 @@ quit
 - `use <ID或名称> [数量]`：使用背包内的消耗品（数量可选，默认 1）。
 - typed stacks：不可变内容 `ItemStackDefinition` 与运行时 `ItemStack` 统一房间、背包、
   战利品和对话奖励；容量按栈位计算，`stack_limit` 限制每栈数量。
-- 当前原创内容包为 0.3.0；本地存档为 v6，使用 `inventory_stacks` 与 `item_stacks`，
-  明确拒绝 v5 存档。
+- 当前原创内容包为 0.4.0；本地存档为 v6，使用 `inventory_stacks` 与 `item_stacks`，
+  明确拒绝 v5 存档；旧 0.3.0 内容包存档也会按内容包版本拒绝。
 - `equip <ID或名称>`：装备 hand 或 body 槽物品。
 - `unequip [hand|body]`：卸下指定槽位；省略时默认为 hand。
 - `save [槽位]` / `load [槽位]`：保存或读取默认 `default` 槽位，或使用一个安全的命名槽位。
@@ -96,10 +97,12 @@ quit
 - `bye`：结束当前对话（对话中可用）。
 - 对话选项可一次性奖励一个未放置的原创普通物品，并在文本中明确显示。
 - `status`：查看生命、等级、经验、攻击和防御。
-- `quests`：查看已接取任务及进度。
+- `quests`：查看已接取任务及进度。任务定义是 `monster_defeated`、`reach_room`、
+  `collect_item` 三分支强类型契约；收集任务以背包数量达到 `required_quantity` 为条件。
 - JSON 内容包结构、类型、稳定 ID 与跨文件引用校验。
 - `validate` 子命令：不启动游戏即可校验内容包，报告所有问题。
-- 原创确定性任务闭环：自动接取、条件推进、经验奖励、存档持久化。
+- 原创确定性任务闭环：自动接取、三类条件推进、按任务 ID 稳定结算、一次性经验奖励和
+  存档持久化；移动 API 保持兼容，CLI 通过加性结果显示任务完成。
 - 保守的中文小说拆章与 manifest 生成工具。
 - Git 候选与可达历史安全检查，阻止私有资料、电子书、常见凭据、数据库、索引、
   存档、日志和异常大文件进入仓库。

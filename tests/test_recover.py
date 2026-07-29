@@ -540,7 +540,7 @@ class SaveLoadRecoverTests(unittest.TestCase):
         self.assertEqual(SAVE_FORMAT_VERSION, 6)
 
     def test_content_pack_version_unchanged(self) -> None:
-        self.assertEqual(self.pack.version, "0.3.0")
+        self.assertEqual(self.pack.version, "0.4.0")
 
 
 if __name__ == "__main__":

@@ -516,3 +516,38 @@
 - Evidence: `AGENTS.md`, `docs/production_workflow.md`, `PROJECT_MEMORY.md`,
   `PROJECT_STATE.md`, `NEXT_TASK.md`.
 - Supersedes: None.
+
+## DEC-0025: M3 typed quest conditions and authoritative settlement
+
+- Date: 2026-07-29
+- Status: Implemented locally; GPT-5.6-sol independent acceptance pending.
+- Context: The approved M3 slice generalizes the historical single monster task
+  without changing save v6 or beginning M4 typed dialogue effects. The system must
+  keep a precise content contract, deterministic multi-task results, and no
+  duplicate reward path across movement, inventory, combat, dialogue, or load.
+- Decision: (a) `QuestDefinition` is a frozen tagged union with exactly
+  `monster_defeated.target_monster_id`, `reach_room.target_room_id`, and
+  `collect_item.target_item_id + required_quantity`; loader and schema reject
+  mixed branch fields. (b) `required_quantity` is an integer from 1 through the
+  referenced item's `stack_limit`; collect completion means inventory quantity is
+  at least that value. (c) `World` exclusively accepts tasks, checks conditions,
+  commits rewards, marks `QuestState.completed`, and emits `quest_outcomes` /
+  task `level_gains`. (d) Multiple eligible tasks settle in lexical quest-ID order.
+  (e) Movement, pickup, terminal combat, and successful dialogue item grants run
+  their primary mutation and task settlement in one local-memory transaction;
+  any failure restores the entire action. (f) `World.move()` retains `Room` as its
+  return value; `move_with_outcome()` is the additive CLI path. (g) `completed`
+  is a one-time reward fact: `drop`, `use`, and load do not revoke or replay it.
+  (h) save v6 and the `QuestState` shape remain unchanged; load restores saved
+  states only, without reacceptance, recheck, or reward. (i) original_demo is
+  content pack 0.4.0, so 0.3.0 saves are rejected by the existing pack-version
+  check.
+- Consequences: New task kinds require an explicit future content/schema/World
+  slice. M4 typed dialogue effects remain out of scope; the existing typed item
+  grant only invokes the unified M3 settlement path after its own validation.
+- Evidence: `src/lore2mud/content/models.py`, `src/lore2mud/content/loader.py`,
+  `schemas/quest.schema.json`, `src/lore2mud/engine/world.py`,
+  `src/lore2mud/engine/commands.py`, `tests/test_quest.py`,
+  `examples/original_demo/`.
+- Supersedes: DEC-0008's historical single-monster-task shape only; M1/M2 history
+  and save v6 contracts remain intact.

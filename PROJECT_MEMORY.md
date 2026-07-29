@@ -22,20 +22,30 @@ stale.
 - Current execution mode: GPT-5.6-sol reviews scope and architecture and performs
   independent acceptance; Codex is the sole executor; the project owner manually
   transfers prompts and completion reports between the two conversations.
-- Documentation-closure baseline (before this local documentation commit):
-  `HEAD`, `origin/main`, and directly queried remote `main` were all
-  `1ee0b3053c541c1c2aa4c5e4339ebeaae62d1622`; the worktree was clean and
-  ahead/behind was `0/0`. Recheck live Git before acting; local commits do not
+- M3 implementation began from local `f3e15e6790043b1ad163d3316cf9fe58e687e921`;
+  `origin/main` and directly queried remote `main` were
+  `1ee0b3053c541c1c2aa4c5e4339ebeaae62d1622`, with a clean worktree and local
+  ahead/behind `1/0`. Recheck live Git before acting; local commits do not
   automatically push.
-- Current public-engine contract: content pack 0.3.0, save v6, typed
+- Current public-engine contract: content pack 0.4.0, unchanged save v6, typed
   `ItemStackDefinition`/`ItemStack`, stack-limit validation, quantity-aware
   `take`/`drop`/`use`, typed loot/dialogue rewards, and v5 save rejection.
+- M3 is locally implemented by Codex and awaits GPT-5.6-sol independent
+  acceptance. `QuestDefinition` is a frozen three-branch union:
+  `monster_defeated.target_monster_id`, `reach_room.target_room_id`, and
+  `collect_item.target_item_id + required_quantity`. World owns acceptance,
+  condition checking, reward commit, deterministic quest-ID ordering, and local
+  rollback; `World.move()` still returns `Room` while `move_with_outcome()` feeds
+  CLI task results. Loading save v6 restores `quest_states` only and never
+  reaccepts, rechecks, or reissues rewards.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).
-- Current acceptance evidence: 530 full unittest cases and 56
-  `tests.test_item_stacks` cases passed; compileall, original-demo validation,
-  history safety scan, `git diff --check`, and the M2 CLI flow passed.
+- Codex local M3 evidence: 540 full unittest cases, 31 `tests.test_quest` cases,
+  56 preserved M2 stack cases, compileall, original-demo validation, history
+  safety scan, `git diff --check`, and an external-save-directory CLI flow passed.
+  M2's historical independent-acceptance evidence remains 530 full cases and 56
+  `tests.test_item_stacks` cases with its own CLI flow.
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo. The private corpus remains outside the repository and is not read
   for public-engine work.
@@ -82,12 +92,20 @@ stale.
 
 ## Verified current facts
 
-- Full project suite: 530 tests passed (2026-07-29).
-- `tests/test_item_stacks.py`: 56 tests passed (2026-07-29), covering typed
-  content/runtime stacks, stack limits, optional quantities, equipment constraints,
-  loot preflight, save v6, M1 death-gate regression, and schema contracts.
-- GPT-5.6-sol independently accepted M2 as GO. Compileall, original-demo
-  validation, history safety scan, `git diff --check`, and the M2 CLI flow passed.
+- Codex local M3 suite: 540 tests passed (2026-07-29).
+- `tests/test_quest.py`: 31 tests passed (2026-07-29), covering all three typed
+  branches, mutually exclusive fields, `required_quantity` / stack limits,
+  quest-ID ordering, move/take/attack/dialogue rollback, reward-once behavior,
+  CLI rendering, and v6 load without task recomputation.
+- M3 independent acceptance is pending. It must not be described as GO until
+  GPT-5.6-sol reviews the real diff and evidence.
+- M3 compileall, original-demo validation, `check_repo_safety.py --history`,
+  `git diff --check`, and real CLI flow passed. The CLI completed collect/reach/
+  monster tasks, saved, picked up combat loot, loaded, and restored the saved
+  inventory, quest states, and level/experience.
+- M2 remains independently accepted GO with its historical 530 full tests and 56
+  `tests.test_item_stacks.py` tests; do not rewrite that historical evidence as
+  current M3 evidence.
 
 ## Dated historical verification evidence (not current contracts)
 

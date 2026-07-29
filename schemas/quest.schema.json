@@ -2,43 +2,85 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.invalid/lore2mud/quest.schema.json",
   "title": "lore2mud quest definition",
-  "type": "object",
-  "additionalProperties": false,
-  "required": [
-    "id",
-    "name",
-    "description",
-    "trigger_room_id",
-    "target_monster_id",
-    "reward_experience"
+  "oneOf": [
+    {"$ref": "#/$defs/monster_defeated"},
+    {"$ref": "#/$defs/reach_room"},
+    {"$ref": "#/$defs/collect_item"}
   ],
-  "properties": {
-    "id": {
-      "$ref": "common.schema.json#/$defs/stable_id"
+  "$defs": {
+    "monster_defeated": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "trigger_room_id",
+        "target_monster_id",
+        "reward_experience"
+      ],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "name": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 1},
+        "kind": {"const": "monster_defeated"},
+        "trigger_room_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "target_monster_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "reward_experience": {"type": "integer", "minimum": 0},
+        "canon_ref": {"$ref": "common.schema.json#/$defs/canon_ref"},
+        "adaptation_notes": {"type": "string"}
+      }
     },
-    "name": {
-      "type": "string",
-      "minLength": 1
+    "reach_room": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "trigger_room_id",
+        "target_room_id",
+        "reward_experience"
+      ],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "name": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 1},
+        "kind": {"const": "reach_room"},
+        "trigger_room_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "target_room_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "reward_experience": {"type": "integer", "minimum": 0},
+        "canon_ref": {"$ref": "common.schema.json#/$defs/canon_ref"},
+        "adaptation_notes": {"type": "string"}
+      }
     },
-    "description": {
-      "type": "string",
-      "minLength": 1
-    },
-    "trigger_room_id": {
-      "$ref": "common.schema.json#/$defs/stable_id"
-    },
-    "target_monster_id": {
-      "$ref": "common.schema.json#/$defs/stable_id"
-    },
-    "reward_experience": {
-      "type": "integer",
-      "minimum": 0
-    },
-    "canon_ref": {
-      "$ref": "common.schema.json#/$defs/canon_ref"
-    },
-    "adaptation_notes": {
-      "type": "string"
+    "collect_item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "description",
+        "kind",
+        "trigger_room_id",
+        "target_item_id",
+        "required_quantity",
+        "reward_experience"
+      ],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "name": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 1},
+        "kind": {"const": "collect_item"},
+        "trigger_room_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "target_item_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "required_quantity": {"type": "integer", "minimum": 1},
+        "reward_experience": {"type": "integer", "minimum": 0},
+        "canon_ref": {"$ref": "common.schema.json#/$defs/canon_ref"},
+        "adaptation_notes": {"type": "string"}
+      }
     }
   }
 }

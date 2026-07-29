@@ -171,25 +171,65 @@ null` 属于非法内容，加载器拒绝内容包。
 角色位置由 `CharacterDefinition.room_id` 唯一决定。`look` 命令自动显示当前
 房间的角色列表。
 
-任务定义触发房间、目标怪物和经验奖励：
+任务定义是一个 frozen tagged union。每个对象都必须有共同字段 `id`、`name`、
+`description`、`kind`、`trigger_room_id` 和 `reward_experience`，并且只能带与
+`kind` 对应的那一组目标字段；不能把其他分支的目标字段混入同一对象。
+
+`monster_defeated` 使用 `target_monster_id`：
 
 ```json
 {
   "id": "quest_clear_mite",
   "name": "清除灰壳兽",
   "description": "前往静默观测站，击败那只灰壳兽。",
+  "kind": "monster_defeated",
   "trigger_room_id": "room_ember_wharf",
   "target_monster_id": "monster_ash_mite",
   "reward_experience": 15
 }
 ```
 
+`reach_room` 使用 `target_room_id`：
+
+```json
+{
+  "id": "quest_reach_observatory",
+  "name": "抵达观测站",
+  "description": "进入静默观测站。",
+  "kind": "reach_room",
+  "trigger_room_id": "room_ember_wharf",
+  "target_room_id": "room_silent_observatory",
+  "reward_experience": 0
+}
+```
+
+`collect_item` 使用 `target_item_id` 和 `required_quantity`：
+
+```json
+{
+  "id": "quest_collect_pills",
+  "name": "收集灵露丸",
+  "description": "在背包中保留两枚灵露丸。",
+  "kind": "collect_item",
+  "trigger_room_id": "room_ember_wharf",
+  "target_item_id": "item_linglu_pill",
+  "required_quantity": 2,
+  "reward_experience": 5
+}
+```
+
 - `trigger_room_id` 引用现有房间。玩家进入该房间或在该房间开始游戏时自动
-  接取任务。
-- `target_monster_id` 引用现有怪物。击败该怪物时任务完成，奖励经验即时发放。
-  当前每个目标怪物最多对应一个任务；内容加载器会拒绝重复的目标怪物引用。
+  接取任务；接取后立即进行一次幂等条件检查。
+- 三个 `kind` 的目标必须分别引用已存在的怪物、房间或物品。相同 `(kind, target)`
+  条件只能属于一个任务；不同 kind 不共享字段。
+- `required_quantity` 必须是整数，满足
+  `1 <= required_quantity <= items[target_item_id].stack_limit`。完成条件是背包中
+  该物品的数量大于或等于这个值。
 - `reward_experience` 是非负整数。
-- 玩家使用 `quests` 指令查看已接取任务及进度。
+- `World` 在移动、拾取、击败怪物和成功发放对话物品奖励后检查已接取任务；同一次
+  动作完成多个任务时，按任务 ID 字典序结算并输出结果。`completed` 表示奖励已成功
+  发放，之后 `drop`、`use` 或读档都不会撤销或补发。
+- 玩家使用 `quests` 指令查看已接取任务及收集任务的当前数量。
 
 ## 对话
 

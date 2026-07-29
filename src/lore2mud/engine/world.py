@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
+from copy import deepcopy
 from dataclasses import dataclass, field
+from typing import Literal
 
 from lore2mud.combat.service import CombatRound, resolve_combat_round
 from lore2mud.content.models import (
     ContentPack,
+    CollectItemQuestDefinition,
     DialogueDefinition,
     ItemStackDefinition,
+    MonsterDefeatedQuestDefinition,
     QuestDefinition,
+    ReachRoomQuestDefinition,
 )
 from lore2mud.engine.models import (
     Character,
@@ -29,9 +36,10 @@ class WorldRuleError(ValueError):
 
 @dataclass(frozen=True, slots=True)
 class QuestOutcome:
-    """Result of a quest completion triggered by an attack."""
+    """One deterministic quest completion owned by ``World``."""
     quest_id: str
     quest_name: str
+    kind: Literal["monster_defeated", "reach_room", "collect_item"]
     reward_experience: int
     level_gains: tuple[LevelGain, ...] = ()
 
@@ -50,6 +58,21 @@ class TakeOutcome:
     item_id: str
     item_name: str
     quantity: int
+    quest_outcomes: tuple[QuestOutcome, ...] = ()
+    level_gains: tuple[LevelGain, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class MoveOutcome:
+    """Additive movement result used by the command layer.
+
+    ``World.move()`` intentionally keeps returning ``Room`` for existing callers;
+    CLI code uses ``World.move_with_outcome()`` when it needs quest results.
+    """
+
+    room: Room
+    quest_outcomes: tuple[QuestOutcome, ...] = ()
+    level_gains: tuple[LevelGain, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -98,8 +121,9 @@ class UnequipOutcome:
 @dataclass(frozen=True, slots=True)
 class AttackOutcome:
     combat: CombatRound
+    combat_level_gains: tuple[LevelGain, ...] = ()
+    quest_outcomes: tuple[QuestOutcome, ...] = ()
     level_gains: tuple[LevelGain, ...] = ()
-    quest_outcome: QuestOutcome | None = None
     loot_item: LootOutcome | None = None
 
 
@@ -129,6 +153,8 @@ class TalkOutcome:
     options: tuple[DialogueOptionSummary, ...] = ()
     ended: bool = False
     granted_item: DialogueItemGrant | None = None
+    quest_outcomes: tuple[QuestOutcome, ...] = ()
+    level_gains: tuple[LevelGain, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -268,12 +294,18 @@ class World:
             characters=characters,
             dialogue_defs=dialogue_defs,
         )
+        # A newly accepted quest can already be satisfied in the starting state.
+        # There is no command action to render here; ``quests`` exposes the
+        # resulting authoritative state.
         world._accept_quests_for_room(pack.start_room_id)
         return world
 
-    def _accept_quests_for_room(self, room_id: str) -> None:
-        """Accept all quests whose trigger_room_id matches *room_id*."""
-        for quest_def in self.quest_defs.values():
+    def _accept_quests_for_room(
+        self, room_id: str
+    ) -> tuple[QuestOutcome, ...]:
+        """Accept triggered quests, then settle all eligible accepted quests."""
+        for quest_id in sorted(self.quest_defs):
+            quest_def = self.quest_defs[quest_id]
             if (
                 quest_def.trigger_room_id == room_id
                 and quest_def.id not in self.quest_states
@@ -281,6 +313,81 @@ class World:
                 self.quest_states[quest_def.id] = QuestState(
                     quest_id=quest_def.id,
                 )
+        return self._settle_eligible_quests()
+
+    def _settle_eligible_quests(self) -> tuple[QuestOutcome, ...]:
+        """Award every newly satisfied accepted quest in stable ID order.
+
+        The caller owns an atomic World mutation. Definitions are fully validated
+        before World construction, so this method has no user-input failure path.
+        """
+        candidates: list[tuple[QuestState, QuestDefinition]] = []
+        for quest_id in sorted(self.quest_states):
+            state = self.quest_states[quest_id]
+            if state.completed:
+                continue
+            quest_def = self.quest_defs[quest_id]
+            if self._quest_condition_met(quest_def):
+                candidates.append((state, quest_def))
+
+        outcomes: list[QuestOutcome] = []
+        for state, quest_def in candidates:
+            gains = tuple(grant_experience(self.player, quest_def.reward_experience))
+            # ``completed`` means the reward commit has completed successfully.
+            state.completed = True
+            outcomes.append(
+                QuestOutcome(
+                    quest_id=quest_def.id,
+                    quest_name=quest_def.name,
+                    kind=quest_def.kind,
+                    reward_experience=quest_def.reward_experience,
+                    level_gains=gains,
+                )
+            )
+        return tuple(outcomes)
+
+    def _quest_condition_met(self, quest_def: QuestDefinition) -> bool:
+        if isinstance(quest_def, MonsterDefeatedQuestDefinition):
+            return not self.monsters[quest_def.target_monster_id].is_alive
+        if isinstance(quest_def, ReachRoomQuestDefinition):
+            return self.player.room_id == quest_def.target_room_id
+        assert isinstance(quest_def, CollectItemQuestDefinition)
+        stack = self.player.inventory.find_stack(quest_def.target_item_id)
+        return stack is not None and stack.quantity >= quest_def.required_quantity
+
+    @staticmethod
+    def _quest_level_gains(
+        outcomes: tuple[QuestOutcome, ...],
+    ) -> tuple[LevelGain, ...]:
+        return tuple(
+            gain
+            for outcome in outcomes
+            for gain in outcome.level_gains
+        )
+
+    @contextmanager
+    def _atomic_mutation(self) -> Iterator[None]:
+        """Rollback all mutable action state if a post-preflight step fails."""
+        snapshot = (
+            deepcopy(self.rooms),
+            deepcopy(self.monsters),
+            deepcopy(self.player),
+            deepcopy(self.quest_states),
+            deepcopy(self.equipped),
+            deepcopy(self.active_dialogue),
+        )
+        try:
+            yield
+        except BaseException:
+            (
+                self.rooms,
+                self.monsters,
+                self.player,
+                self.quest_states,
+                self.equipped,
+                self.active_dialogue,
+            ) = snapshot
+            raise
 
     @property
     def current_room(self) -> Room:
@@ -309,6 +416,11 @@ class World:
         )
 
     def move(self, direction: str) -> Room:
+        """Move while preserving the historical ``Room`` return contract."""
+        return self.move_with_outcome(direction).room
+
+    def move_with_outcome(self, direction: str) -> MoveOutcome:
+        """Move and return additive quest results for the command layer."""
         self._require_alive()
         normalized = direction.casefold()
         exit_def = self.current_room.exits.get(normalized)
@@ -323,10 +435,15 @@ class World:
                     f"向 {direction} 移动需要持有 {item_name} "
                     f"({required_item_id})。"
                 )
-        self.player.room_id = exit_def.target_room_id
-        self._accept_quests_for_room(exit_def.target_room_id)
-        self.active_dialogue = None
-        return self.current_room
+        with self._atomic_mutation():
+            self.player.room_id = exit_def.target_room_id
+            self.active_dialogue = None
+            quest_outcomes = self._accept_quests_for_room(exit_def.target_room_id)
+            return MoveOutcome(
+                room=self.current_room,
+                quest_outcomes=quest_outcomes,
+                level_gains=self._quest_level_gains(quest_outcomes),
+            )
 
     def take(self, item_query: str, quantity: int = 1) -> TakeOutcome:
         self._require_alive()
@@ -354,11 +471,19 @@ class World:
             if self.player.inventory.stack_count >= self.player.inventory.capacity:
                 raise WorldRuleError("背包已经满了。")
 
-        src_stack.quantity -= quantity
-        if src_stack.quantity == 0:
-            self.current_room.item_stacks.remove(src_stack)
-        self.player.inventory.add_stack(item_id, quantity)
-        return TakeOutcome(item_id=item_id, item_name=item.name, quantity=quantity)
+        with self._atomic_mutation():
+            src_stack.quantity -= quantity
+            if src_stack.quantity == 0:
+                self.current_room.item_stacks.remove(src_stack)
+            self.player.inventory.add_stack(item_id, quantity)
+            quest_outcomes = self._settle_eligible_quests()
+            return TakeOutcome(
+                item_id=item_id,
+                item_name=item.name,
+                quantity=quantity,
+                quest_outcomes=quest_outcomes,
+                level_gains=self._quest_level_gains(quest_outcomes),
+            )
 
     def drop(self, item_query: str, quantity: int = 1) -> DropOutcome:
         """Drop items from inventory into the current room."""
@@ -573,63 +698,54 @@ class World:
                             f"战利品无法放置：超过栈上限 ({stack_limit})。"
                         )
 
-        combat = resolve_combat_round(
-            self.player, monster,
-            player_attack=self.effective_attack,
-            player_defense=self.effective_defense,
-        )
-        level_gains: list[LevelGain] = []
-        quest_outcome: QuestOutcome | None = None
-        loot_outcome: LootOutcome | None = None
+        with self._atomic_mutation():
+            combat = resolve_combat_round(
+                self.player, monster,
+                player_attack=self.effective_attack,
+                player_defense=self.effective_defense,
+            )
+            combat_level_gains: tuple[LevelGain, ...] = ()
+            quest_outcomes: tuple[QuestOutcome, ...] = ()
+            loot_outcome: LootOutcome | None = None
 
-        if combat.monster_defeated:
-            self.current_room.monster_ids.remove(monster_id)
-            level_gains.extend(grant_experience(self.player, monster.experience_reward))
-
-            if monster.loot_item is not None:
-                loot_def = monster.loot_item
-                loot_item_id = loot_def.item_id
-                loot_qty = loot_def.quantity
-                existing = self.current_room.find_stack(loot_item_id)
-                if existing is not None:
-                    existing.quantity += loot_qty
-                else:
-                    self.current_room.item_stacks.append(
-                        ItemStack(item_id=loot_item_id, quantity=loot_qty)
-                    )
-                loot_outcome = LootOutcome(
-                    item_id=loot_item_id,
-                    item_name=self.items[loot_item_id].name,
-                    quantity=loot_qty,
+            if combat.monster_defeated:
+                self.current_room.monster_ids.remove(monster_id)
+                combat_level_gains = tuple(
+                    grant_experience(self.player, monster.experience_reward)
                 )
 
-            # Check if this monster completes any accepted quest.
-            for qs in self.quest_states.values():
-                if qs.completed:
-                    continue
-                qdef = self.quest_defs.get(qs.quest_id)
-                if qdef is None:
-                    continue
-                if qdef.target_monster_id == monster_id:
-                    qs.completed = True
-                    quest_level_gains = tuple(
-                        grant_experience(self.player, qdef.reward_experience)
+                if monster.loot_item is not None:
+                    loot_def = monster.loot_item
+                    loot_item_id = loot_def.item_id
+                    loot_qty = loot_def.quantity
+                    existing = self.current_room.find_stack(loot_item_id)
+                    if existing is not None:
+                        existing.quantity += loot_qty
+                    else:
+                        self.current_room.item_stacks.append(
+                            ItemStack(item_id=loot_item_id, quantity=loot_qty)
+                        )
+                    loot_outcome = LootOutcome(
+                        item_id=loot_item_id,
+                        item_name=self.items[loot_item_id].name,
+                        quantity=loot_qty,
                     )
-                    level_gains.extend(quest_level_gains)
-                    quest_outcome = QuestOutcome(
-                        quest_id=qdef.id,
-                        quest_name=qdef.name,
-                        reward_experience=qdef.reward_experience,
-                        level_gains=quest_level_gains,
-                    )
-                    break  # Only one quest per monster.
 
-        return AttackOutcome(
-            combat=combat,
-            level_gains=tuple(level_gains),
-            quest_outcome=quest_outcome,
-            loot_item=loot_outcome,
-        )
+                quest_outcomes = self._settle_eligible_quests()
+
+            return AttackOutcome(
+                combat=combat,
+                combat_level_gains=combat_level_gains,
+                quest_outcomes=quest_outcomes,
+                # Preserve the historical attack-wide aggregate while the
+                # command layer renders combat and quest gains in their
+                # respective deterministic result paths.
+                level_gains=(
+                    combat_level_gains
+                    + self._quest_level_gains(quest_outcomes)
+                ),
+                loot_item=loot_outcome,
+            )
 
     def start_dialogue(self, character_query: str) -> TalkOutcome:
         """Start dialogue with a character in the current room."""
@@ -733,43 +849,51 @@ class World:
                 raise WorldRuleError("背包已满，无法获得对话奖励。")
             granted_item = DialogueItemGrant(item.id, item.name, grant_qty)
 
-        # All reward checks completed; no failure below this line may leave
-        # dialogue state changed without also granting the item.
-        if granted_item is not None:
-            self.player.inventory.add_stack(
-                granted_item.item_id, granted_item.quantity
-            )
+        # All user/content validation is complete before this transaction starts.
+        # A task settlement failure must also roll back the item and dialogue state.
+        with self._atomic_mutation():
+            quest_outcomes: tuple[QuestOutcome, ...] = ()
+            if granted_item is not None:
+                self.player.inventory.add_stack(
+                    granted_item.item_id, granted_item.quantity
+                )
+                quest_outcomes = self._settle_eligible_quests()
+            quest_level_gains = self._quest_level_gains(quest_outcomes)
 
-        if option.next_node_id is None:
-            self.active_dialogue = None
-            return TalkOutcome(
-                character_id=character.id,
-                character_name=character.name,
-                dialogue_id=dialogue.id,
-                ended=True,
-                granted_item=granted_item,
-            )
+            if option.next_node_id is None:
+                self.active_dialogue = None
+                return TalkOutcome(
+                    character_id=character.id,
+                    character_name=character.name,
+                    dialogue_id=dialogue.id,
+                    ended=True,
+                    granted_item=granted_item,
+                    quest_outcomes=quest_outcomes,
+                    level_gains=quest_level_gains,
+                )
 
-        next_node = dialogue.nodes[option.next_node_id]
-        if next_node.options:
-            self.active_dialogue = DialogueState(
-                dialogue_id=dialogue.id,
-                current_node_id=next_node.id,
-            )
-            return TalkOutcome(
-                character_id=character.id,
-                character_name=character.name,
-                dialogue_id=dialogue.id,
-                node_id=next_node.id,
-                node_text=next_node.text,
-                options=tuple(
-                    DialogueOptionSummary(opt.id, opt.text)
-                    for opt in next_node.options
-                ),
-                ended=False,
-                granted_item=granted_item,
-            )
-        else:
+            next_node = dialogue.nodes[option.next_node_id]
+            if next_node.options:
+                self.active_dialogue = DialogueState(
+                    dialogue_id=dialogue.id,
+                    current_node_id=next_node.id,
+                )
+                return TalkOutcome(
+                    character_id=character.id,
+                    character_name=character.name,
+                    dialogue_id=dialogue.id,
+                    node_id=next_node.id,
+                    node_text=next_node.text,
+                    options=tuple(
+                        DialogueOptionSummary(opt.id, opt.text)
+                        for opt in next_node.options
+                    ),
+                    ended=False,
+                    granted_item=granted_item,
+                    quest_outcomes=quest_outcomes,
+                    level_gains=quest_level_gains,
+                )
+
             self.active_dialogue = None
             return TalkOutcome(
                 character_id=character.id,
@@ -780,6 +904,8 @@ class World:
                 options=(),
                 ended=True,
                 granted_item=granted_item,
+                quest_outcomes=quest_outcomes,
+                level_gains=quest_level_gains,
             )
 
     def end_dialogue(self) -> DialogueEndOutcome:

@@ -6,7 +6,12 @@ import re
 import shlex
 from dataclasses import dataclass
 
-from lore2mud.engine.world import World, WorldRuleError
+from lore2mud.content.models import (
+    CollectItemQuestDefinition,
+    MonsterDefeatedQuestDefinition,
+    ReachRoomQuestDefinition,
+)
+from lore2mud.engine.world import QuestOutcome, World, WorldRuleError
 
 HELP_TEXT = """可用指令：
   look                        查看当前房间
@@ -245,7 +250,8 @@ class CommandProcessor:
         """Return a hint line for incomplete quests triggered in this room."""
         room_id = self.world.player.room_id
         hints: list[str] = []
-        for qs in self.world.quest_states.values():
+        for quest_id in sorted(self.world.quest_states):
+            qs = self.world.quest_states[quest_id]
             if qs.completed:
                 continue
             qdef = self.world.quest_defs.get(qs.quest_id)
@@ -260,8 +266,11 @@ class CommandProcessor:
     def _go(self, arguments: list[str]) -> CommandResult:
         if len(arguments) != 1:
             return CommandResult("用法：go <方向>")
-        room = self.world.move(arguments[0])
-        return CommandResult(f"你来到 {room.name}。\n{self._look()}")
+        outcome = self.world.move_with_outcome(arguments[0])
+        lines = [f"你来到 {outcome.room.name}。"]
+        lines.extend(self._render_quest_outcomes(outcome.quest_outcomes))
+        lines.append(self._look())
+        return CommandResult("\n".join(lines))
 
     def _take(self, arguments: list[str]) -> CommandResult:
         query, quantity, error = _parse_quantity(arguments)
@@ -269,10 +278,11 @@ class CommandProcessor:
             return CommandResult(error)
         outcome = self.world.take(query, quantity)
         if outcome.quantity > 1:
-            return CommandResult(
-                f"你拾取了 {outcome.item_name} ×{outcome.quantity}。"
-            )
-        return CommandResult(f"你拾取了 {outcome.item_name}。")
+            lines = [f"你拾取了 {outcome.item_name} ×{outcome.quantity}。"]
+        else:
+            lines = [f"你拾取了 {outcome.item_name}。"]
+        lines.extend(self._render_quest_outcomes(outcome.quest_outcomes))
+        return CommandResult("\n".join(lines))
 
     def _drop(self, arguments: list[str]) -> CommandResult:
         query, quantity, error = _parse_quantity(arguments)
@@ -342,18 +352,34 @@ class CommandProcessor:
         if not self.world.quest_states:
             return "当前没有已接取的任务。"
         lines: list[str] = []
-        for qs in self.world.quest_states.values():
+        for quest_id in sorted(self.world.quest_states):
+            qs = self.world.quest_states[quest_id]
             qdef = self.world.quest_defs.get(qs.quest_id)
             if qdef is None:
                 continue
             status = "已完成" if qs.completed else "进行中"
             lines.append(f"[{status}] {qdef.name}")
-            lines.append(f"  目标：击败 {self.world.monsters[qdef.target_monster_id].name}")
+            lines.append(f"  目标：{self._quest_target_text(qdef)}")
             if qs.completed:
                 lines.append(f"  奖励：{qdef.reward_experience} 经验（已领取）")
             else:
                 lines.append(f"  奖励：{qdef.reward_experience} 经验")
         return "\n".join(lines)
+
+    def _quest_target_text(self, qdef: object) -> str:
+        if isinstance(qdef, MonsterDefeatedQuestDefinition):
+            return f"击败 {self.world.monsters[qdef.target_monster_id].name}"
+        if isinstance(qdef, ReachRoomQuestDefinition):
+            return f"到达 {self.world.rooms[qdef.target_room_id].name}"
+        if isinstance(qdef, CollectItemQuestDefinition):
+            item = self.world.items[qdef.target_item_id]
+            stack = self.world.player.inventory.find_stack(qdef.target_item_id)
+            current = stack.quantity if stack is not None else 0
+            return (
+                f"收集 {item.name} ×{qdef.required_quantity}"
+                f"（当前 {current}/{qdef.required_quantity}）"
+            )
+        raise AssertionError(f"未知任务定义：{qdef!r}")
 
     def _status(self) -> str:
         player = self.world.player
@@ -404,13 +430,9 @@ class CommandProcessor:
                 f"{combat.monster_name} 反击，造成 "
                 f"{combat.damage_to_player} 点伤害。"
             )
-        if outcome.quest_outcome is not None:
-            qo = outcome.quest_outcome
-            lines.append(
-                f"任务完成：{qo.quest_name}！获得 {qo.reward_experience} 经验。"
-            )
-        for gain in outcome.level_gains:
+        for gain in outcome.combat_level_gains:
             lines.append(f"你升到了 {gain.new_level} 级！")
+        lines.extend(self._render_quest_outcomes(outcome.quest_outcomes))
         if combat.player_defeated:
             lines.append(
                 "你倒下了。使用 recover 回到起始房间并恢复，"
@@ -458,7 +480,26 @@ class CommandProcessor:
         ended = getattr(outcome, "ended", False)
         if ended:
             lines.append("对话结束了。")
+        lines.extend(
+            CommandProcessor._render_quest_outcomes(
+                getattr(outcome, "quest_outcomes", ())
+            )
+        )
         return "\n".join(lines)
+
+    @staticmethod
+    def _render_quest_outcomes(
+        outcomes: tuple[QuestOutcome, ...],
+    ) -> list[str]:
+        lines: list[str] = []
+        for outcome in outcomes:
+            lines.append(
+                f"任务完成：{outcome.quest_name}！"
+                f"获得 {outcome.reward_experience} 经验。"
+            )
+            for gain in outcome.level_gains:
+                lines.append(f"你升到了 {gain.new_level} 级！")
+        return lines
 
     def _save(self, arguments: list[str]) -> CommandResult:
         if len(arguments) > 1:
