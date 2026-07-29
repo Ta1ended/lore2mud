@@ -941,3 +941,21 @@
 - Evidence: `pipeline/fact_candidates.py`, `schemas/fact_candidate.schema.json`,
   `tests/test_fact_candidates.py`, `docs/fact_candidate_format.md`.
 - Supersedes: Only DEC-0037's independent-acceptance-pending status.
+
+## DEC-0040: Clarify Phase 1.0 acceptance handoff and supersession
+
+- Date: 2026-07-30
+- Status: Accepted
+- Context: DEC-0039 records that all DEC-0038 findings are closed, while its
+  supersession field names only DEC-0037. The documentation seal also needs to
+  distinguish the acceptance-time Git snapshot from later documentation commits.
+- Decision: Treat DEC-0039 as closing both DEC-0037's independent-acceptance-
+  pending status and DEC-0038's focused-re-review-pending status. Record
+  `3442d2d` only as the acceptance snapshot before its documentation seal; all
+  current Git and remote state must be established by live checks.
+- Consequences: No implementation contract, test result, or private-material
+  boundary changes. Handoff records remain historically precise without
+  presenting a stale snapshot as current state.
+- Evidence: `DEC-0039`, `CHANGELOG.md`, `NEXT_TASK.md`, `PROJECT_MEMORY.md`,
+  `PROJECT_STATE.md`.
+- Supersedes: DEC-0038's focused-re-review-pending status.

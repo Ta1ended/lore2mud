@@ -196,9 +196,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   聚焦复验确认 DEC-0038 三个 findings 全部关闭。131 项聚焦测试、730 项全量
   unittest、compileall、original-demo 校验、安全历史扫描和 diff 检查通过。
   9 个文件范围（相对 `e2b8136`）确认。初始实现 `e2b8136`（119 聚焦/718 全量）
-  为 NO-GO；修正 `3442d2d` 为 GO 基线。本地 HEAD=`3442d2d`，
-  `origin/main`=`afdb235`，ahead/behind=2/0，工作树干净，未 push。
-  本轮顾问直查远端因连接重置未刷新；push 前须重新直查。
+  为 NO-GO；修正 `3442d2d` 为 GO 基线。独立验收时、封板提交前的快照为
+  HEAD=`3442d2d`，`origin/main`=`afdb235`，ahead/behind=2/0，工作树干净，
+  未 push。本轮顾问直查远端因连接重置未刷新；恢复或 push 前须重新直查。
 - Phase 1.0 local verification（2026-07-30，Hermes）：
   119 项 `tests.test_fact_candidates` 聚焦测试通过；718 项全量 unittest 通过；
   compileall、`lore2mud validate --content examples/original_demo`、

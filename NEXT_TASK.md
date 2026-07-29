@@ -11,8 +11,8 @@ Phase 1.1、任何新功能或私有小说事实层工作。
 
 - Phase 1.0 fact-candidate validation 已由 GPT-5.6-sol 独立验收 GO（DEC-0039），
   DEC-0038 findings 全部关闭。
-- 本地 HEAD=`3442d2d`，`origin/main`=`afdb235`，ahead/behind=2/0，未 push。
-  push 前须重新直查远端。
+- 独立验收时、封板提交前的快照为 HEAD=`3442d2d`，`origin/main`=`afdb235`，
+  ahead/behind=2/0，未 push。当前 Git 与远端状态必须在恢复或 push 前实时核实。
 
 ## Queue
 
