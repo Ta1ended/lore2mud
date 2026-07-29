@@ -53,6 +53,8 @@ class SaveRoundTripTests(unittest.TestCase):
         self.assertEqual(loaded.player.defense, self.world.player.defense)
         self.assertEqual(loaded.player.level, self.world.player.level)
         self.assertEqual(loaded.player.experience, self.world.player.experience)
+        self.assertEqual(loaded.player.coins, self.world.player.coins)
+        self.assertEqual(loaded.flags, self.world.flags)
         self.assertEqual(
             [s.item_id for s in loaded.player.inventory.stacks],
             [s.item_id for s in self.world.player.inventory.stacks],
@@ -143,6 +145,19 @@ class SaveRoundTripTests(unittest.TestCase):
         self.assertIn("quest_clear_ash_mite", loaded.quest_states)
         self.assertTrue(loaded.quest_states["quest_clear_ash_mite"].completed)
 
+    def test_round_trip_coins_and_flags(self) -> None:
+        self.world.player.coins = 7
+        self.world.flags = {"flag_alpha": True, "flag_beta": False}
+
+        self.service.save(self.world)
+        loaded = self.service.load()
+
+        self.assertEqual(loaded.player.coins, 7)
+        self.assertEqual(
+            loaded.flags,
+            {"flag_alpha": True, "flag_beta": False},
+        )
+
 
 class SaveIncludesAllMutableStateTests(unittest.TestCase):
     """Verify the serialized data contains all required fields."""
@@ -163,6 +178,7 @@ class SaveIncludesAllMutableStateTests(unittest.TestCase):
         self.assertEqual(player["defense"], 1)
         self.assertEqual(player["level"], 1)
         self.assertEqual(player["experience"], 0)
+        self.assertEqual(player["coins"], 20)
         self.assertEqual(player["inventory_stacks"], [])
 
     def test_save_includes_all_rooms(self) -> None:
@@ -180,7 +196,7 @@ class SaveIncludesAllMutableStateTests(unittest.TestCase):
     def test_save_includes_content_pack_identity(self) -> None:
         data = _serialize_world(self.world)
         self.assertEqual(data["content_pack"]["id"], "original_demo")
-        self.assertEqual(data["content_pack"]["version"], "0.4.0")
+        self.assertEqual(data["content_pack"]["version"], "0.6.0")
         self.assertEqual(data["save_format_version"], SAVE_FORMAT_VERSION)
 
     def test_save_includes_equipped_field(self) -> None:
@@ -189,6 +205,10 @@ class SaveIncludesAllMutableStateTests(unittest.TestCase):
         self.assertIsInstance(data["equipped"], dict)
         self.assertIn("hand", data["equipped"])
         self.assertIsNone(data["equipped"]["hand"])
+
+    def test_save_includes_flags_field(self) -> None:
+        data = _serialize_world(self.world)
+        self.assertEqual(data["flags"], {})
 
 
 class SaveLoadServiceTests(unittest.TestCase):
@@ -424,6 +444,18 @@ class ValidationTests(unittest.TestCase):
         with self.assertRaises(SaveLoadError):
             self._save_and_load(self.valid_data)
 
+    def test_player_coins_missing_negative_bool_and_string_rejected(self) -> None:
+        for value in (None, -1, True, "20"):
+            with self.subTest(value=value):
+                data = _serialize_world(self.world)
+                if value is None:
+                    del data["player"]["coins"]
+                else:
+                    data["player"]["coins"] = value
+                with self.assertRaises(SaveLoadError) as ctx:
+                    self._save_and_load(data)
+                self.assertIn("coins", str(ctx.exception))
+
     def test_bool_as_int_raises(self) -> None:
         """bool is not int."""
         self.valid_data["player"]["hp"] = True
@@ -545,6 +577,24 @@ class ValidationTests(unittest.TestCase):
         with self.assertRaises(SaveLoadError) as ctx:
             self._save_and_load(self.valid_data)
         self.assertIn("未知字段", str(ctx.exception))
+
+    def test_flags_missing_and_invalid_matrix_rejected(self) -> None:
+        cases = (
+            ("missing", None),
+            ("not_object", []),
+            ("bad_id", {"Bad-ID": True}),
+            ("non_bool", {"flag_ok": 1}),
+        )
+        for label, value in cases:
+            with self.subTest(label=label):
+                data = _serialize_world(self.world)
+                if label == "missing":
+                    del data["flags"]
+                else:
+                    data["flags"] = value
+                with self.assertRaises(SaveLoadError) as ctx:
+                    self._save_and_load(data)
+                self.assertIn("flags", str(ctx.exception))
 
     def test_missing_equipped_raises(self) -> None:
         del self.valid_data["equipped"]

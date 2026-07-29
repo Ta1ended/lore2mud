@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-29（M3 已由 GPT-5.6-sol 独立验收 GO）_
+_Last updated: 2026-07-29（M4+M5 本地实现并验证，待 GPT-5.6-sol 独立验收）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -10,33 +10,25 @@ _Last updated: 2026-07-29（M3 已由 GPT-5.6-sol 独立验收 GO）_
 
 ## Current status
 
-M1 死亡/失败处理由 Hermes agent 实现，并由 GPT-5.6-sol 于 2026-07-28 对
-`c329546` 独立验收 GO。M2 typed stacks 由 Hermes agent 实现，并由 GPT-5.6-sol 于
-2026-07-29 独立验收 GO（DEC-0023）；这些历史事实不因当前执行者变更而改变。
+M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
+也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
 
-M3 三类任务系统已由 Codex 实现，并由 GPT-5.6-sol 于 2026-07-29 独立验收 GO
-（DEC-0026）。
-当前内容包为 0.4.0；存档格式仍为 v6，房间、背包、战利品和对话奖励使用 typed
-stacks，`take`、`drop`、`use` 均支持可选数量，v5 存档明确拒绝。M3 固定
-`monster_defeated`、`reach_room`、`collect_item` 三分支任务定义，World 统一负责
-接取、条件检查、奖励和有序结果；`World.move()` 保持返回 `Room`，CLI 通过
-`move_with_outcome()` 获取加性结果。`completed` 是一次性奖励事实；load 只恢复
-`quest_states`，不重新接取、检查或发奖。
+M4+M5 已由 Codex 在基线 `c2a512f59b017625125620dfbb8fdb1fe1a36300` 上本地实现并验证，
+但尚待 GPT-5.6-sol 独立验收。当前公开契约为 content pack 0.6.0、save v7、强类型有序
+`DialogueEffect`、World-owned `flags`、非负 `coins` 和冻结的固定无限商店目录。`World`
+预检并原子执行 effects/买入；`accept_quest` 显式重复会整体失败；`load` 只恢复状态，绝不
+重放效果、自动接取、检查、奖励或交易。`shop`/`buy`/`sell` 不引入可变库存，M6–M8 未开始。
 
-M3 的本地验证与独立验收证据包括 540 项全量 unittest、31 项 `tests.test_quest`、保留的
-56 项 M2 专项、compileall、original_demo 校验、历史安全扫描、`git diff --check` 和仓库外
-存档目录 CLI 流程（collect/reach/monster、战利品拾取、save/load 恢复）。聚焦复验关闭了
-`PROJECT_STATE.md` 过期风险表述这一项 P2，结论为无 findings。M2 的 530 项全量 / 56 项
-`tests.test_item_stacks` 及其既定证据仍是 M2 的历史独立验收事实，不能误写为 M3 证据。
-M3 开始前 Git 为本地 `f3e15e6`、`origin/main` 与远端 `main` 为 `1ee0b30`，工作树
-干净、ahead/behind `1/0`；提交前后必须重新核实实时状态。GPT-5.6-sol 负责顾问审查
-和独立验收；Codex 是唯一执行者；项目负责人负责人工转交。唯一下一动作见
-`NEXT_TASK.md`。
+本地证据为 12 项 M4 专项、12 项 M5 专项、260 项 M1–M3 关键回归和 568 项全量 unittest，
+以及 compileall、original_demo 校验、仓库外 CLI 主流程和两条独立拒绝用例。CLI 证明初始
+20 金币、按顺序写 flag/接取任务/经验/铜牌、重复接取整体拒绝、买二卖一、任务完成、save/load
+恢复 14 金币、flags、背包、任务和固定目录。Git/远端状态必须在提交后重新核实；唯一下一动作
+见 `NEXT_TASK.md`。
 
 ## Historical current-status snapshot (2026-07-28, pre-M2; not current)
 
 > 下列快照保留当时的 save v5、0.2.7、旧 Git 与旧执行流程事实；当前状态以上文
-> v6、0.4.0、M3 GO、M2 GO 和 Codex 执行模式为准。
+> v7、0.6.0、M4+M5 本地验证待独立验收、M3/M2 GO 和 Codex 执行模式为准。
 
 装备系统已实现 hand 和 body 双槽位，存档格式为 v5。对话系统已实现——原创 NPC 老陈带有
 确定性分支对话和一次性普通物品奖励；琉草小径西向出口要求持有该铜牌，`look` 会只读显示
@@ -62,7 +54,7 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 ## Completed
 
 > 历史记录说明：本节中 save v3–v5、内容包 0.2.x、旧 API 名称、旧测试数和旧 Git
-> 状态均为对应切片当时的事实；当前契约以“Current status”的 v6、0.4.0 和 M3 GO 状态为准。
+> 状态均为对应切片当时的事实；当前契约以“Current status”的 v7、0.6.0 和 M4+M5 待独立验收状态为准。
 
 - `src/lore2mud/` 实现标准库运行时、双 CLI 入口和领域模块。
 - `examples/original_demo/` 提供三个原创房间、六个物品、一个怪物、一个角色（老陈）和三类任务；
@@ -145,8 +137,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 没有新的功能实现正在进行。唯一下一动作是等待项目负责人明确授权下一项纵向切片；
-  不得开始 M4 或其他功能实现。
+- 功能实现和本地验证已完成；唯一下一动作是由 GPT-5.6-sol 对 M4+M5 的真实差异、测试、
+  save v7 和 CLI 证据进行独立验收；不得开始 M6。
 
 ## Blockers
 
@@ -154,6 +146,12 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## Verification
 
+- M4+M5 本地验证（2026-07-29，Codex，尚非独立验收）：`tests.test_dialogue_effects` 12 项、
+  `tests.test_shop` 12 项、M1–M3 关键回归 260 项和全量 unittest 568 项通过；compileall、
+  `lore2mud validate`、`check_repo_safety.py --history`、diff 检查和仓库外 CLI 流程通过。
+  CLI 使用外部临时存档目录，覆盖初始 20 金币、effects 顺序、重复接取拒绝、buy ×2/sell ×1、
+  灰壳兽/凝胶任务、save 后交易、load 恢复；独立加载测试确认 v6/0.6 因格式版本拒绝、
+  v7/0.4 因内容包版本拒绝。
 - M3 独立验收 GO（2026-07-29，GPT-5.6-sol）：540 项全量 unittest、31 项
   `tests.test_quest`、56 项 `tests.test_item_stacks` 通过；compileall、original_demo
   内容校验、`check_repo_safety.py --history`、`git diff --check` 通过；仓库外临时存档
@@ -199,12 +197,15 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - `docs/production_workflow.md` - GPT-5.6-sol 顾问与 Codex 执行的生产流程。
 - `docs/engine_completion_milestones.md` - M1–M8 引擎完成路线图。
 - `NEXT_TASK.md` - exactly one recommended continuation.
-- `src/lore2mud/engine/world.py` - authoritative runtime state with quest,
-  item inspection/use, equipment, and dialogue logic.
-- `src/lore2mud/engine/save.py` - save/load service with safe local slot paths (format v6).
-- `src/lore2mud/engine/commands.py` - command processor with dialogue rendering and death gate.
+- `src/lore2mud/engine/world.py` - authoritative state for quests, effects, flags,
+  coins, fixed shops, inventory, equipment, and dialogue.
+- `src/lore2mud/engine/save.py` - strict v7 save/load service with coins and flags.
+- `src/lore2mud/engine/commands.py` - command rendering for effects, shops, status,
+  dialogue, and the death gate.
 - `tests/test_recover.py` - defeat recovery, death gate invariance, and save/load round-trip.
-- `tests/test_item_stacks.py` - typed-stack contracts, quantities, preflight, and save v6 coverage.
+- `tests/test_item_stacks.py` - typed-stack contracts, quantities, preflight, and save v7 coverage.
+- `tests/test_dialogue_effects.py` - M4 union, atomicity, flags, outcomes, and v7 coverage.
+- `tests/test_shop.py` - M5 catalogs, trade atomicity, coins, CLI, and save coverage.
 - `tests/test_inspect.py` - visible-item inspection state-invariance and round-trip coverage.
 - `tests/test_drop.py` - inventory-to-current-room drop, failure invariance, and
   save/load coverage.
@@ -223,8 +224,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   quest kinds; any further quest kind requires an explicit contract and vertical slice.
 - The one-target-monster-per-quest constraint will need revisiting if shared-target
   quests are ever needed.
-- Dialogue grants only one typed item effect; quest triggers, experience effects,
-  generic effect dictionaries, and repeatable rewards remain out of scope.
+- M4's four effect kinds and M5's fixed-price shop scope are closed; new effect kinds,
+  dialogue currency effects, dynamic pricing, discounts, stock, or M6 error-system
+  changes require a separately approved vertical slice.
 - `drop` can deliberately leave a gate item in the current room and therefore block
   a gated exit until the player takes it again; this is explicit player intent.
   Equipped items are intentionally rejected instead of silently changing combat stats.

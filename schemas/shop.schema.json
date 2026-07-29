@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/lore2mud/shop.schema.json",
+  "title": "lore2mud fixed shop catalog",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["id", "name", "room_id", "catalog"],
+    "properties": {
+      "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+      "name": {"type": "string", "minLength": 1},
+      "room_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+      "catalog": {
+        "type": "array",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["item_id", "buy_price", "sell_price"],
+          "properties": {
+            "item_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "buy_price": {"$ref": "common.schema.json#/$defs/positive_integer"},
+            "sell_price": {"$ref": "common.schema.json#/$defs/positive_integer"}
+          }
+        }
+      },
+      "canon_ref": {"$ref": "common.schema.json#/$defs/canon_ref"},
+      "adaptation_notes": {"type": "string"}
+    }
+  }
+}

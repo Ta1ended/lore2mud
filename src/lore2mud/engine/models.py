@@ -54,6 +54,7 @@ class Player:
     defense: int = 1
     level: int = 1
     experience: int = 0
+    coins: int = 0
     hp: int | None = None
     inventory: Inventory = field(default_factory=Inventory)
 

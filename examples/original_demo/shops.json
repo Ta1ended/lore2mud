@@ -1,0 +1,15 @@
+[
+  {
+    "id": "shop_chen_travel_goods",
+    "name": "陈伯的行囊",
+    "room_id": "room_glassgrass_path",
+    "catalog": [
+      {
+        "item_id": "item_linglu_pill",
+        "buy_price": 4,
+        "sell_price": 2
+      }
+    ],
+    "adaptation_notes": "本仓库原创演示商店。"
+  }
+]

@@ -6,17 +6,25 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field
+import re
 from typing import Literal
 
 from lore2mud.combat.service import CombatRound, resolve_combat_round
 from lore2mud.content.models import (
+    AcceptQuestEffect,
     ContentPack,
     CollectItemQuestDefinition,
     DialogueDefinition,
+    DialogueEffect,
+    GrantExperienceEffect,
+    GrantItemEffect,
     ItemStackDefinition,
     MonsterDefeatedQuestDefinition,
     QuestDefinition,
     ReachRoomQuestDefinition,
+    SetFlagEffect,
+    ShopDefinition,
+    ShopListingDefinition,
 )
 from lore2mud.engine.models import (
     Character,
@@ -135,11 +143,48 @@ class DialogueOptionSummary:
 
 
 @dataclass(frozen=True, slots=True)
-class DialogueItemGrant:
-    """One item awarded atomically by a dialogue option."""
+class GrantItemEffectOutcome:
+    """Typed outcome for one ``grant_item`` dialogue effect."""
+
     item_id: str
     item_name: str
     quantity: int
+    quest_outcomes: tuple[QuestOutcome, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class GrantExperienceEffectOutcome:
+    """Typed outcome for one ``grant_experience`` dialogue effect."""
+
+    amount: int
+    level_gains: tuple[LevelGain, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class AcceptQuestEffectOutcome:
+    """Typed outcome for one explicit ``accept_quest`` effect."""
+
+    quest_id: str
+    quest_name: str
+    quest_outcomes: tuple[QuestOutcome, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class SetFlagEffectOutcome:
+    """Typed outcome for a World-owned flag upsert."""
+
+    flag_id: str
+    old_value: bool | None
+    new_value: bool
+    changed: bool
+
+
+DialogueEffectOutcome = (
+    GrantItemEffectOutcome
+    | GrantExperienceEffectOutcome
+    | AcceptQuestEffectOutcome
+    | SetFlagEffectOutcome
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,9 +197,49 @@ class TalkOutcome:
     node_text: str | None = None
     options: tuple[DialogueOptionSummary, ...] = ()
     ended: bool = False
-    granted_item: DialogueItemGrant | None = None
+    effect_outcomes: tuple[DialogueEffectOutcome, ...] = ()
     quest_outcomes: tuple[QuestOutcome, ...] = ()
     level_gains: tuple[LevelGain, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class ShopOutcome:
+    """Read-only view of the fixed catalog in the current room."""
+
+    shop_id: str
+    shop_name: str
+    catalog: tuple[ShopListingDefinition, ...]
+    coins: int
+
+
+@dataclass(frozen=True, slots=True)
+class BuyOutcome:
+    """One atomic purchase from an immutable fixed-price catalog."""
+
+    shop_id: str
+    shop_name: str
+    item_id: str
+    item_name: str
+    quantity: int
+    unit_price: int
+    total_price: int
+    coins: int
+    quest_outcomes: tuple[QuestOutcome, ...] = ()
+    level_gains: tuple[LevelGain, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class SellOutcome:
+    """One atomic sale to an immutable fixed-price catalog."""
+
+    shop_id: str
+    shop_name: str
+    item_id: str
+    item_name: str
+    quantity: int
+    unit_price: int
+    total_price: int
+    coins: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -175,6 +260,7 @@ class RecoverOutcome:
 
 
 _DEAD_ERROR = "你已经倒下了。使用 recover 恢复，或 load 读档。"
+_STABLE_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
 def _validate_quantity(quantity: int) -> None:
@@ -195,9 +281,11 @@ class World:
     player: Player
     quest_defs: dict[str, QuestDefinition] = field(default_factory=dict)
     quest_states: dict[str, QuestState] = field(default_factory=dict)
+    flags: dict[str, bool] = field(default_factory=dict)
     equipped: EquippedItems = field(default_factory=EquippedItems)
     characters: dict[str, Character] = field(default_factory=dict)
     dialogue_defs: dict[str, DialogueDefinition] = field(default_factory=dict)
+    shop_defs: dict[str, ShopDefinition] = field(default_factory=dict)
     active_dialogue: DialogueState | None = None
 
     @property
@@ -268,6 +356,7 @@ class World:
             max_hp=pack.player.max_hp,
             attack=pack.player.attack,
             defense=pack.player.defense,
+            coins=pack.player.coins,
             inventory=Inventory(capacity=pack.player.inventory_capacity),
         )
         quest_defs = dict(pack.quests)
@@ -293,6 +382,7 @@ class World:
             quest_defs=quest_defs,
             characters=characters,
             dialogue_defs=dialogue_defs,
+            shop_defs=dict(pack.shops),
         )
         # A newly accepted quest can already be satisfied in the starting state.
         # There is no command action to render here; ``quests`` exposes the
@@ -310,10 +400,48 @@ class World:
                 quest_def.trigger_room_id == room_id
                 and quest_def.id not in self.quest_states
             ):
-                self.quest_states[quest_def.id] = QuestState(
-                    quest_id=quest_def.id,
-                )
+                self._record_quest_acceptance(quest_def.id, reject_existing=False)
         return self._settle_eligible_quests()
+
+    def _record_quest_acceptance(
+        self, quest_id: str, *, reject_existing: bool
+    ) -> bool:
+        """Create one accepted quest state through the sole mutation path."""
+        if quest_id not in self.quest_defs:
+            raise WorldRuleError(f"任务 {quest_id!r} 不存在。")
+        if quest_id in self.quest_states:
+            if reject_existing:
+                raise WorldRuleError(f"任务 {quest_id} 已经接取或完成。")
+            return False
+        self.quest_states[quest_id] = QuestState(quest_id=quest_id)
+        return True
+
+    def _preflight_explicit_quest_acceptance(
+        self,
+        quest_id: str,
+        accepted_quest_ids: set[str],
+    ) -> QuestDefinition:
+        """Validate one explicit dialogue acceptance without mutating World."""
+        if not isinstance(quest_id, str) or not _STABLE_ID_PATTERN.fullmatch(quest_id):
+            raise WorldRuleError("任务 ID 必须是稳定 ID。")
+        quest_def = self.quest_defs.get(quest_id)
+        if quest_def is None:
+            raise WorldRuleError(f"任务 {quest_id!r} 不存在。")
+        if quest_id in accepted_quest_ids:
+            raise WorldRuleError(f"任务 {quest_id} 已经接取或完成。")
+        return quest_def
+
+    def accept_quest(self, quest_id: str) -> tuple[QuestOutcome, ...]:
+        """Explicitly accept a quest and immediately settle eligible tasks.
+
+        This public World entry deliberately bypasses a definition's trigger room,
+        while retaining M3's single state mutation and settlement authority.
+        """
+        self._require_alive()
+        self._preflight_explicit_quest_acceptance(quest_id, set(self.quest_states))
+        with self._atomic_mutation():
+            self._record_quest_acceptance(quest_id, reject_existing=True)
+            return self._settle_eligible_quests()
 
     def _settle_eligible_quests(self) -> tuple[QuestOutcome, ...]:
         """Award every newly satisfied accepted quest in stable ID order.
@@ -373,6 +501,7 @@ class World:
             deepcopy(self.monsters),
             deepcopy(self.player),
             deepcopy(self.quest_states),
+            deepcopy(self.flags),
             deepcopy(self.equipped),
             deepcopy(self.active_dialogue),
         )
@@ -384,6 +513,7 @@ class World:
                 self.monsters,
                 self.player,
                 self.quest_states,
+                self.flags,
                 self.equipped,
                 self.active_dialogue,
             ) = snapshot
@@ -522,6 +652,119 @@ class World:
                 ItemStack(item_id=item_id, quantity=quantity)
             )
         return DropOutcome(item_id=item_id, item_name=item.name, quantity=quantity)
+
+    def _shop_in_current_room(self) -> ShopDefinition | None:
+        """Return the one immutable shop definition for the current room."""
+        for shop in self.shop_defs.values():
+            if shop.room_id == self.player.room_id:
+                return shop
+        return None
+
+    def _require_current_shop(self) -> ShopDefinition:
+        shop = self._shop_in_current_room()
+        if shop is None:
+            raise WorldRuleError("当前房间没有商店。")
+        return shop
+
+    def _resolve_shop_listing(
+        self, shop: ShopDefinition, item_query: str
+    ) -> ShopListingDefinition:
+        item_id = self._resolve_id_from_ids(
+            item_query,
+            [listing.item_id for listing in shop.catalog],
+            self.items,
+            kind="物品",
+        )
+        if item_id is None:
+            raise WorldRuleError(f"{shop.name} 不经营 {item_query}。")
+        for listing in shop.catalog:
+            if listing.item_id == item_id:
+                return listing
+        raise AssertionError("已解析的商店物品不在目录中")
+
+    def shop(self) -> ShopOutcome:
+        """Inspect the current room's fixed catalog without changing World."""
+        shop = self._require_current_shop()
+        return ShopOutcome(
+            shop_id=shop.id,
+            shop_name=shop.name,
+            catalog=shop.catalog,
+            coins=self.player.coins,
+        )
+
+    def buy(self, item_query: str, quantity: int = 1) -> BuyOutcome:
+        """Atomically buy from an unlimited, immutable catalog."""
+        self._require_alive()
+        shop = self._require_current_shop()
+        _validate_quantity(quantity)
+        listing = self._resolve_shop_listing(shop, item_query)
+        item = self.items[listing.item_id]
+        total_price = listing.buy_price * quantity
+
+        if self.player.coins < total_price:
+            raise WorldRuleError("金币不足。")
+        existing = self.player.inventory.find_stack(item.id)
+        if item.stack_limit == 1:
+            if quantity != 1:
+                raise WorldRuleError("stack_limit=1 的物品一次只能购买 1 个。")
+            if self._is_item_placed_anywhere(item.id):
+                raise WorldRuleError(f"{item.name} 已在世界中，无法重复生成。")
+            if self.player.inventory.stack_count >= self.player.inventory.capacity:
+                raise WorldRuleError("背包已经满了。")
+        elif existing is None:
+            if self.player.inventory.stack_count >= self.player.inventory.capacity:
+                raise WorldRuleError("背包已经满了。")
+        elif existing.quantity + quantity > item.stack_limit:
+            raise WorldRuleError(f"超过栈上限 ({item.stack_limit})。")
+
+        with self._atomic_mutation():
+            self.player.coins -= total_price
+            self.player.inventory.add_stack(item.id, quantity)
+            quest_outcomes = self._settle_eligible_quests()
+            return BuyOutcome(
+                shop_id=shop.id,
+                shop_name=shop.name,
+                item_id=item.id,
+                item_name=item.name,
+                quantity=quantity,
+                unit_price=listing.buy_price,
+                total_price=total_price,
+                coins=self.player.coins,
+                quest_outcomes=quest_outcomes,
+                level_gains=self._quest_level_gains(quest_outcomes),
+            )
+
+    def sell(self, item_query: str, quantity: int = 1) -> SellOutcome:
+        """Atomically sell one unequipped backpack stack to the fixed catalog."""
+        self._require_alive()
+        shop = self._require_current_shop()
+        _validate_quantity(quantity)
+        listing = self._resolve_shop_listing(shop, item_query)
+        item = self.items[listing.item_id]
+        inv_stack = self.player.inventory.find_stack(item.id)
+        if inv_stack is None:
+            raise WorldRuleError("背包中没有该物品。")
+        if inv_stack.quantity < quantity:
+            raise WorldRuleError(
+                f"数量不足：背包中只有 {inv_stack.quantity} 个。"
+            )
+        if self.equipped.hand == item.id or self.equipped.body == item.id:
+            raise WorldRuleError(f"{item.name} 正在装备中，请先卸下。")
+
+        total_price = listing.sell_price * quantity
+        with self._atomic_mutation():
+            self.player.inventory.remove_stack(item.id, quantity)
+            self.player.coins += total_price
+            return SellOutcome(
+                shop_id=shop.id,
+                shop_name=shop.name,
+                item_id=item.id,
+                item_name=item.name,
+                quantity=quantity,
+                unit_price=listing.sell_price,
+                total_price=total_price,
+                coins=self.player.coins,
+            )
 
     def inspect_item(self, item_query: str) -> InspectItemOutcome:
         """Return details for an item in the current room or inventory."""
@@ -816,61 +1059,169 @@ class World:
                 ended=True,
             )
 
+    def _preflight_dialogue_effects(
+        self, effects: tuple[DialogueEffect, ...]
+    ) -> None:
+        """Validate a complete ordered effect list without changing World."""
+        projected_quantities = {
+            stack.item_id: stack.quantity
+            for stack in self.player.inventory.stacks
+        }
+        projected_stack_count = self.player.inventory.stack_count
+        projected_quest_ids = set(self.quest_states)
+
+        for effect in effects:
+            if isinstance(effect, GrantItemEffect):
+                if (
+                    not isinstance(effect.item_id, str)
+                    or not _STABLE_ID_PATTERN.fullmatch(effect.item_id)
+                ):
+                    raise WorldRuleError("对话奖励物品 ID 必须是稳定 ID。")
+                _validate_quantity(effect.quantity)
+                item = self.items.get(effect.item_id)
+                if item is None:
+                    raise WorldRuleError(
+                        f"对话奖励物品 {effect.item_id!r} 不存在。"
+                    )
+                if item.heal_amount is not None:
+                    raise WorldRuleError("对话奖励不能是消耗品。")
+                if effect.quantity > item.stack_limit:
+                    raise WorldRuleError(f"超过栈上限 ({item.stack_limit})。")
+
+                existing_quantity = projected_quantities.get(item.id)
+                if item.stack_limit == 1:
+                    if effect.quantity != 1:
+                        raise WorldRuleError("stack_limit=1 的对话奖励数量必须为 1。")
+                    if (
+                        existing_quantity is not None
+                        or self._is_item_placed_anywhere(item.id)
+                    ):
+                        raise WorldRuleError(f"你已经拥有 {item.name}。")
+                    if projected_stack_count >= self.player.inventory.capacity:
+                        raise WorldRuleError("背包已满，无法获得对话奖励。")
+                    projected_quantities[item.id] = 1
+                    projected_stack_count += 1
+                elif existing_quantity is None:
+                    if projected_stack_count >= self.player.inventory.capacity:
+                        raise WorldRuleError("背包已满，无法获得对话奖励。")
+                    projected_quantities[item.id] = effect.quantity
+                    projected_stack_count += 1
+                elif existing_quantity + effect.quantity > item.stack_limit:
+                    raise WorldRuleError(f"超过栈上限 ({item.stack_limit})。")
+                else:
+                    projected_quantities[item.id] = (
+                        existing_quantity + effect.quantity
+                    )
+            elif isinstance(effect, GrantExperienceEffect):
+                _validate_quantity(effect.amount)
+            elif isinstance(effect, AcceptQuestEffect):
+                self._preflight_explicit_quest_acceptance(
+                    effect.quest_id, projected_quest_ids
+                )
+                projected_quest_ids.add(effect.quest_id)
+            elif isinstance(effect, SetFlagEffect):
+                if (
+                    not isinstance(effect.flag_id, str)
+                    or not _STABLE_ID_PATTERN.fullmatch(effect.flag_id)
+                ):
+                    raise WorldRuleError("flag ID 必须是稳定 ID。")
+                if not isinstance(effect.value, bool):
+                    raise WorldRuleError("flag 值必须是布尔值。")
+            else:
+                raise WorldRuleError("对话效果类型无效。")
+
     def select_option(self, index: int) -> TalkOutcome:
-        """Select a dialogue option (1-indexed)."""
+        """Select an option after preflighting and atomically applying effects."""
         self._require_alive()
         if self.active_dialogue is None:
             raise WorldRuleError("你没有在和任何人对话。")
 
         dialogue = self.dialogue_defs[self.active_dialogue.dialogue_id]
         node = dialogue.nodes[self.active_dialogue.current_node_id]
-
         if index < 1 or index > len(node.options):
             raise WorldRuleError(f"无效的选项：{index}。")
 
         option = node.options[index - 1]
         character = self.characters[dialogue.character_id]
-        granted_item: DialogueItemGrant | None = None
-        if option.grant_item is not None:
-            grant_def = option.grant_item
-            item = self.items.get(grant_def.item_id)
-            if item is None:
-                raise WorldRuleError(
-                    f"对话奖励物品 {grant_def.item_id!r} 不存在。"
-                )
-            if item.heal_amount is not None:
-                raise WorldRuleError("对话奖励不能是消耗品。")
-            grant_qty = grant_def.quantity
-            if item.stack_limit == 1 and self.player.inventory.has_item(item.id):
-                raise WorldRuleError(f"你已经拥有 {item.name}。")
-            if not self.player.inventory.can_add_stack(
-                item.id, grant_qty, item.stack_limit
-            ):
-                raise WorldRuleError("背包已满，无法获得对话奖励。")
-            granted_item = DialogueItemGrant(item.id, item.name, grant_qty)
+        self._preflight_dialogue_effects(option.effects)
 
-        # All user/content validation is complete before this transaction starts.
-        # A task settlement failure must also roll back the item and dialogue state.
+        # Every post-preflight operation, including quest settlement and dialogue
+        # advancement, shares one local-memory transaction.
         with self._atomic_mutation():
-            quest_outcomes: tuple[QuestOutcome, ...] = ()
-            if granted_item is not None:
-                self.player.inventory.add_stack(
-                    granted_item.item_id, granted_item.quantity
-                )
-                quest_outcomes = self._settle_eligible_quests()
-            quest_level_gains = self._quest_level_gains(quest_outcomes)
+            effect_outcomes: list[DialogueEffectOutcome] = []
+            all_quest_outcomes: list[QuestOutcome] = []
+            all_level_gains: list[LevelGain] = []
 
+            for effect in option.effects:
+                if isinstance(effect, GrantItemEffect):
+                    item = self.items[effect.item_id]
+                    self.player.inventory.add_stack(item.id, effect.quantity)
+                    quest_outcomes = self._settle_eligible_quests()
+                    effect_outcomes.append(
+                        GrantItemEffectOutcome(
+                            item_id=item.id,
+                            item_name=item.name,
+                            quantity=effect.quantity,
+                            quest_outcomes=quest_outcomes,
+                        )
+                    )
+                    all_quest_outcomes.extend(quest_outcomes)
+                    all_level_gains.extend(
+                        self._quest_level_gains(quest_outcomes)
+                    )
+                elif isinstance(effect, GrantExperienceEffect):
+                    gains = tuple(grant_experience(self.player, effect.amount))
+                    effect_outcomes.append(
+                        GrantExperienceEffectOutcome(
+                            amount=effect.amount,
+                            level_gains=gains,
+                        )
+                    )
+                    all_level_gains.extend(gains)
+                elif isinstance(effect, AcceptQuestEffect):
+                    quest_def = self.quest_defs[effect.quest_id]
+                    self._record_quest_acceptance(
+                        effect.quest_id, reject_existing=True
+                    )
+                    quest_outcomes = self._settle_eligible_quests()
+                    effect_outcomes.append(
+                        AcceptQuestEffectOutcome(
+                            quest_id=quest_def.id,
+                            quest_name=quest_def.name,
+                            quest_outcomes=quest_outcomes,
+                        )
+                    )
+                    all_quest_outcomes.extend(quest_outcomes)
+                    all_level_gains.extend(
+                        self._quest_level_gains(quest_outcomes)
+                    )
+                elif isinstance(effect, SetFlagEffect):
+                    old_value = self.flags.get(effect.flag_id)
+                    changed = old_value is None or old_value != effect.value
+                    if changed:
+                        self.flags[effect.flag_id] = effect.value
+                    effect_outcomes.append(
+                        SetFlagEffectOutcome(
+                            flag_id=effect.flag_id,
+                            old_value=old_value,
+                            new_value=effect.value,
+                            changed=changed,
+                        )
+                    )
+                else:
+                    raise WorldRuleError("对话效果类型无效。")
+
+            common = {
+                "character_id": character.id,
+                "character_name": character.name,
+                "dialogue_id": dialogue.id,
+                "effect_outcomes": tuple(effect_outcomes),
+                "quest_outcomes": tuple(all_quest_outcomes),
+                "level_gains": tuple(all_level_gains),
+            }
             if option.next_node_id is None:
                 self.active_dialogue = None
-                return TalkOutcome(
-                    character_id=character.id,
-                    character_name=character.name,
-                    dialogue_id=dialogue.id,
-                    ended=True,
-                    granted_item=granted_item,
-                    quest_outcomes=quest_outcomes,
-                    level_gains=quest_level_gains,
-                )
+                return TalkOutcome(ended=True, **common)
 
             next_node = dialogue.nodes[option.next_node_id]
             if next_node.options:
@@ -879,9 +1230,6 @@ class World:
                     current_node_id=next_node.id,
                 )
                 return TalkOutcome(
-                    character_id=character.id,
-                    character_name=character.name,
-                    dialogue_id=dialogue.id,
                     node_id=next_node.id,
                     node_text=next_node.text,
                     options=tuple(
@@ -889,23 +1237,16 @@ class World:
                         for opt in next_node.options
                     ),
                     ended=False,
-                    granted_item=granted_item,
-                    quest_outcomes=quest_outcomes,
-                    level_gains=quest_level_gains,
+                    **common,
                 )
 
             self.active_dialogue = None
             return TalkOutcome(
-                character_id=character.id,
-                character_name=character.name,
-                dialogue_id=dialogue.id,
                 node_id=next_node.id,
                 node_text=next_node.text,
                 options=(),
                 ended=True,
-                granted_item=granted_item,
-                quest_outcomes=quest_outcomes,
-                level_gains=quest_level_gains,
+                **common,
             )
 
     def end_dialogue(self) -> DialogueEndOutcome:

@@ -84,8 +84,8 @@ quit
 - `use <ID或名称> [数量]`：使用背包内的消耗品（数量可选，默认 1）。
 - typed stacks：不可变内容 `ItemStackDefinition` 与运行时 `ItemStack` 统一房间、背包、
   战利品和对话奖励；容量按栈位计算，`stack_limit` 限制每栈数量。
-- 当前原创内容包为 0.4.0；本地存档为 v6，使用 `inventory_stacks` 与 `item_stacks`，
-  明确拒绝 v5 存档；旧 0.3.0 内容包存档也会按内容包版本拒绝。
+- 当前原创内容包为 0.6.0；本地存档为 v7，使用 `inventory_stacks`、`item_stacks`、
+  `player.coins` 与顶层 `flags`，明确拒绝 v6 存档；旧 0.4.0 内容包存档也会按内容包版本拒绝。
 - `equip <ID或名称>`：装备 hand 或 body 槽物品。
 - `unequip [hand|body]`：卸下指定槽位；省略时默认为 hand。
 - `save [槽位]` / `load [槽位]`：保存或读取默认 `default` 槽位，或使用一个安全的命名槽位。
@@ -95,8 +95,11 @@ quit
 - `talk <ID或名称>`：与角色对话，显示台词和编号选项。
 - `<数字>`：选择对话选项（对话中可用）。
 - `bye`：结束当前对话（对话中可用）。
-- 对话选项可一次性奖励一个未放置的原创普通物品，并在文本中明确显示。
-- `status`：查看生命、等级、经验、攻击和防御。
+- 对话选项必须声明有序 `effects`；首批强类型效果是 `grant_item`、`grant_experience`、
+  `accept_quest` 与 `set_flag`。World 预检整组效果后原子执行，并按效果顺序渲染结果。
+- `shop`：只读查看当前房间的固定无限目录；`buy <ID或名称> [数量]` 与
+  `sell <ID或名称> [数量]` 按内容包的固定价格交易，不维护可变库存。
+- `status`：查看生命、等级、经验、攻击、防御、金币和按稳定 ID 排序的 flags。
 - `quests`：查看已接取任务及进度。任务定义是 `monster_defeated`、`reach_room`、
   `collect_item` 三分支强类型契约；收集任务以背包数量达到 `required_quantity` 为条件。
 - JSON 内容包结构、类型、稳定 ID 与跨文件引用校验。

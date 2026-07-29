@@ -22,14 +22,15 @@ stale.
 - Current execution mode: GPT-5.6-sol reviews scope and architecture and performs
   independent acceptance; Codex is the sole executor; the project owner manually
   transfers prompts and completion reports between the two conversations.
-- M3 implementation began from local `f3e15e6790043b1ad163d3316cf9fe58e687e921`;
-  `origin/main` and directly queried remote `main` were
-  `1ee0b3053c541c1c2aa4c5e4339ebeaae62d1622`, with a clean worktree and local
-  ahead/behind `1/0`. Recheck live Git before acting; local commits do not
+- M4+M5 implementation began from baseline
+  `c2a512f59b017625125620dfbb8fdb1fe1a36300`; recheck live Git, `origin/main`,
+  direct remote `main`, and ahead/behind before acting. Local commits do not
   automatically push.
-- Current public-engine contract: content pack 0.4.0, unchanged save v6, typed
-  `ItemStackDefinition`/`ItemStack`, stack-limit validation, quantity-aware
-  `take`/`drop`/`use`, typed loot/dialogue rewards, and v5 save rejection.
+- Current public-engine contract: content pack 0.6.0; save v7; typed
+  `ItemStackDefinition`/`ItemStack`; quantity-aware `take`/`drop`/`use`;
+  required ordered dialogue effects; World-owned flags; nonnegative coins; and
+  frozen fixed-price, unlimited shop catalogs without serialized stock. v6 and
+  old 0.4.0 content saves are rejected without migration.
 - M3 was implemented by Codex and independently accepted GO by GPT-5.6-sol on
   2026-07-29 after the focused re-review of `dca629b` and its handoff correction
   `5527faa`. `QuestDefinition` is a frozen three-branch union:
@@ -37,15 +38,19 @@ stale.
   `collect_item.target_item_id + required_quantity`. World owns acceptance,
   condition checking, reward commit, deterministic quest-ID ordering, and local
   rollback; `World.move()` still returns `Room` while `move_with_outcome()` feeds
-  CLI task results. Loading save v6 restores `quest_states` only and never
-  reaccepts, rechecks, or reissues rewards.
+  CLI task results. M4 effects and M5 trades reuse this authority: effects are
+  whole-list preflighted and atomic; explicit duplicate acceptance rejects the
+  option; loading v7 restores state only and never replays effects, tasks,
+  rewards, or trades.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).
-- Codex local M3 evidence: 540 full unittest cases, 31 `tests.test_quest` cases,
-  56 preserved M2 stack cases, compileall, original-demo validation, history
-  safety scan, `git diff --check`, and an external-save-directory CLI flow passed.
-  M2's historical independent-acceptance evidence remains 530 full cases and 56
+- Codex local M4+M5 evidence: 568 full unittest cases, 12
+  `tests.test_dialogue_effects` cases, 12 `tests.test_shop` cases, 260 key M1–M3
+  regressions, compileall, original-demo validation, history safety scan, diff
+  checking, and external-save-directory CLI plus v6/0.6 and v7/0.4 rejection
+  cases passed. GPT-5.6-sol independent acceptance is still pending. M2's
+  historical independent-acceptance evidence remains 530 full cases and 56
   `tests.test_item_stacks` cases with its own CLI flow.
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo. The private corpus remains outside the repository and is not read
@@ -93,21 +98,22 @@ stale.
 
 ## Verified current facts
 
-- Codex local M3 suite: 540 tests passed (2026-07-29).
-- `tests/test_quest.py`: 31 tests passed (2026-07-29), covering all three typed
-  branches, mutually exclusive fields, `required_quantity` / stack limits,
-  quest-ID ordering, move/take/attack/dialogue rollback, reward-once behavior,
-  CLI rendering, and v6 load without task recomputation.
-- M3 is independently accepted GO by GPT-5.6-sol (2026-07-29). The focused
-  re-review closed the one P2 handoff finding in `PROJECT_STATE.md`; it reported
-  no remaining findings.
-- M3 compileall, original-demo validation, `check_repo_safety.py --history`,
-  `git diff --check`, and real CLI flow passed. The CLI completed collect/reach/
-  monster tasks, saved, picked up combat loot, loaded, and restored the saved
-  inventory, quest states, and level/experience.
-- M2 remains independently accepted GO with its historical 530 full tests and 56
-  `tests.test_item_stacks.py` tests; do not rewrite that historical evidence as
-  current M3 evidence.
+- Codex local M4+M5 suite: 568 tests passed (2026-07-29); focused suites are
+  12 `tests.test_dialogue_effects` and 12 `tests.test_shop` tests. The M1–M3
+  dialogue/task/stack/save regression command passed 260 tests.
+- M4 coverage proves exact effect shapes, all frozen branches, whole-list order and
+  rollback, duplicate explicit acceptance, immediate ready-task settlement,
+  flag semantics, typed CLI outcomes, and v7 flag load behavior.
+- M5 coverage proves frozen catalog definitions, required/strict shops content,
+  exact coins, catalog immutability, buy/sell invariance and rollback, death gate,
+  dialogue preservation, and v7 catalog reconstruction without stock serialization.
+- Compileall, original-demo validation, `check_repo_safety.py --history`,
+  `git diff --check`, and real external-save-directory CLI flow passed. The CLI
+  saved 14 coins/one true flag after effects, traded after saving, then loaded the
+  earlier world without replaying effects; independent v6/0.6 and v7/0.4 loads
+  were rejected for format and content-pack version respectively.
+- M1, M2, and M3 retain their historical GPT-5.6-sol independent GO decisions;
+  M4+M5 are implemented locally only and remain pending independent acceptance.
 
 ## Dated historical verification evidence (not current contracts)
 

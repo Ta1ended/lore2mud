@@ -8,34 +8,44 @@
         "id": "node_greeting",
         "text": "你也是来探索这片荒地的？我在这里歇脚，已经好几天没见到活人了。",
         "options": [
-          {"id": "opt_who", "text": "你是谁？", "next_node_id": "node_introduce"},
-          {"id": "opt_area", "text": "这片荒地是什么地方？", "next_node_id": "node_area"},
-          {"id": "opt_bye", "text": "告辞。", "next_node_id": null}
+          {"id": "opt_who", "text": "你是谁？", "next_node_id": "node_introduce", "effects": []},
+          {"id": "opt_area", "text": "这片荒地是什么地方？", "next_node_id": "node_area", "effects": []},
+          {"id": "opt_bye", "text": "告辞。", "next_node_id": null, "effects": []}
         ]
       },
       {
         "id": "node_introduce",
         "text": "我叫陈伯，曾经是个跑商的。如今年纪大了，就在这附近转悠，看看还能发现什么有趣的东西。",
         "options": [
-          {"id": "opt_observatory", "text": "你知道观测站那边的情况吗？", "next_node_id": "node_observatory"},
-          {"id": "opt_back", "text": "（换个话题）", "next_node_id": "node_greeting"},
-          {"id": "opt_bye2", "text": "告辞。", "next_node_id": null}
+          {"id": "opt_observatory", "text": "你知道观测站那边的情况吗？", "next_node_id": "node_observatory", "effects": []},
+          {"id": "opt_back", "text": "（换个话题）", "next_node_id": "node_greeting", "effects": []},
+          {"id": "opt_bye2", "text": "告辞。", "next_node_id": null, "effects": []}
         ]
       },
       {
         "id": "node_area",
         "text": "这里是微光边站，很久以前是个中转站。后来荒废了，只剩下些遗迹。东边的观测站里据说还留着些旧仪器。",
         "options": [
-          {"id": "opt_back2", "text": "（换个话题）", "next_node_id": "node_greeting"},
-          {"id": "opt_bye3", "text": "告辞。", "next_node_id": null}
+          {"id": "opt_back2", "text": "（换个话题）", "next_node_id": "node_greeting", "effects": []},
+          {"id": "opt_bye3", "text": "告辞。", "next_node_id": null, "effects": []}
         ]
       },
       {
         "id": "node_observatory",
         "text": "你说那个观测站？里面有只灰壳兽霸占着。那东西不大，但壳很硬。如果你要去，小心点。",
         "options": [
-          {"id": "opt_back3", "text": "（换个话题）", "next_node_id": "node_greeting"},
-          {"id": "opt_bye4", "text": "多谢提醒，告辞。", "next_node_id": null, "grant_item": {"item_id": "item_chen_token", "quantity": 1}}
+          {"id": "opt_back3", "text": "（换个话题）", "next_node_id": "node_greeting", "effects": []},
+          {
+            "id": "opt_bye4",
+            "text": "多谢提醒，告辞。",
+            "next_node_id": null,
+            "effects": [
+              {"kind": "set_flag", "flag_id": "flag_chen_warned_ash_mite", "value": true},
+              {"kind": "accept_quest", "quest_id": "quest_collect_ash_mite_gel"},
+              {"kind": "grant_experience", "amount": 3},
+              {"kind": "grant_item", "item_id": "item_chen_token", "quantity": 1}
+            ]
+          }
         ]
       }
     ],

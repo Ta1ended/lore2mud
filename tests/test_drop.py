@@ -142,7 +142,7 @@ class DropCommandTests(unittest.TestCase):
     def test_command_requires_an_item_query(self) -> None:
         self.assertEqual(
             self.commands.execute("drop").text,
-            "用法：take <物品ID或名称> [数量]",
+            "用法：drop <物品ID或名称> [数量]",
         )
 
     def test_help_includes_drop(self) -> None:

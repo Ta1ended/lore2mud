@@ -8,15 +8,19 @@ from pathlib import Path
 from typing import Any
 
 from lore2mud.content.models import (
+    AcceptQuestEffect,
     CanonReference,
     CharacterDefinition,
     ContentMetadata,
     ContentPack,
     DialogueDefinition,
+    DialogueEffect,
     DialogueNode,
     DialogueOption,
     ExitDefinition,
     CollectItemQuestDefinition,
+    GrantExperienceEffect,
+    GrantItemEffect,
     ItemDefinition,
     ItemStackDefinition,
     MonsterDefeatedQuestDefinition,
@@ -25,6 +29,9 @@ from lore2mud.content.models import (
     QuestDefinition,
     ReachRoomQuestDefinition,
     RoomDefinition,
+    SetFlagEffect,
+    ShopDefinition,
+    ShopListingDefinition,
 )
 
 STABLE_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
@@ -35,6 +42,7 @@ ENTITY_FILES = (
     "characters.json",
     "quests.json",
     "dialogues.json",
+    "shops.json",
 )
 
 
@@ -260,7 +268,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
     player_data = validator.object(pack_data.get("player", {}), "pack.json.player")
     validator.keys(
         player_data,
-        {"max_hp", "attack", "defense", "inventory_capacity"},
+        {"max_hp", "attack", "defense", "inventory_capacity", "coins"},
         "pack.json.player",
     )
     player = PlayerDefaults(
@@ -279,6 +287,13 @@ def load_content_pack(path: str | Path) -> ContentPack:
             "pack.json.player",
             minimum=1,
             default=20,
+        ),
+        coins=validator.integer(
+            player_data,
+            "coins",
+            "pack.json.player",
+            minimum=0,
+            default=0,
         ),
     )
 
@@ -781,7 +796,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 opt_obj = validator.object(opt_obj, oloc)
                 validator.keys(
                     opt_obj,
-                    {"id", "text", "next_node_id", "grant_item"},
+                    {"id", "text", "next_node_id", "effects"},
                     oloc,
                 )
                 oid = validator.stable_id(
@@ -798,23 +813,96 @@ def load_content_pack(path: str | Path) -> ContentPack:
                         f"{oloc}.next_node_id 必须是非空字符串或 null"
                     )
                     next_id = None
-                grant_item: ItemStackDefinition | None = None
-                if "grant_item" in opt_obj:
-                    raw_gi = opt_obj["grant_item"]
-                    if isinstance(raw_gi, dict):
-                        gi_loc = f"{oloc}.grant_item"
-                        validator.keys(raw_gi, {"item_id", "quantity"}, gi_loc)
-                        gi_id_raw = raw_gi.get("item_id")
-                        if isinstance(gi_id_raw, str) and gi_id_raw.strip():
-                            gi_id = validator.stable_id(gi_id_raw, f"{gi_loc}.item_id")
-                            gi_qty = validator.integer(
-                                raw_gi, "quantity", gi_loc, minimum=1, default=1,
+                if "effects" not in opt_obj:
+                    validator.issues.append(f"{oloc} 缺少 effects 字段")
+                    effects_raw: list[Any] = []
+                else:
+                    effects_raw = validator.array(
+                        opt_obj["effects"], f"{oloc}.effects"
+                    )
+
+                effects: list[DialogueEffect] = []
+                granted_item_ids: set[str] = set()
+                accepted_quest_ids: set[str] = set()
+                set_flag_ids: set[str] = set()
+                grant_experience_count = 0
+                for ei, effect_raw in enumerate(effects_raw):
+                    eloc = f"{oloc}.effects[{ei}]"
+                    effect_obj = validator.object(effect_raw, eloc)
+                    raw_kind = effect_obj.get("kind")
+                    if not isinstance(raw_kind, str) or not raw_kind:
+                        validator.issues.append(f"{eloc}.kind 必须是非空字符串")
+                        validator.keys(effect_obj, {"kind"}, eloc)
+                        continue
+
+                    if raw_kind == "grant_item":
+                        validator.keys(
+                            effect_obj, {"kind", "item_id", "quantity"}, eloc
+                        )
+                        item_id = validator.stable_id(
+                            validator.text(effect_obj, "item_id", eloc),
+                            f"{eloc}.item_id",
+                        )
+                        quantity = validator.integer(
+                            effect_obj, "quantity", eloc, minimum=1, default=1
+                        )
+                        if item_id in granted_item_ids:
+                            validator.issues.append(
+                                f"{oloc}.effects 不得重复 grant_item.item_id：{item_id}"
                             )
-                            grant_item = ItemStackDefinition(item_id=gi_id, quantity=gi_qty)
+                        granted_item_ids.add(item_id)
+                        effects.append(GrantItemEffect(item_id, quantity))
+                    elif raw_kind == "grant_experience":
+                        validator.keys(effect_obj, {"kind", "amount"}, eloc)
+                        amount = validator.integer(
+                            effect_obj, "amount", eloc, minimum=1, default=1
+                        )
+                        grant_experience_count += 1
+                        if grant_experience_count > 1:
+                            validator.issues.append(
+                                f"{oloc}.effects 最多只能有一个 grant_experience"
+                            )
+                        effects.append(GrantExperienceEffect(amount))
+                    elif raw_kind == "accept_quest":
+                        validator.keys(effect_obj, {"kind", "quest_id"}, eloc)
+                        quest_id = validator.stable_id(
+                            validator.text(effect_obj, "quest_id", eloc),
+                            f"{eloc}.quest_id",
+                        )
+                        if quest_id in accepted_quest_ids:
+                            validator.issues.append(
+                                f"{oloc}.effects 不得重复 accept_quest.quest_id：{quest_id}"
+                            )
+                        accepted_quest_ids.add(quest_id)
+                        effects.append(AcceptQuestEffect(quest_id))
+                    elif raw_kind == "set_flag":
+                        validator.keys(
+                            effect_obj, {"kind", "flag_id", "value"}, eloc
+                        )
+                        flag_id = validator.stable_id(
+                            validator.text(effect_obj, "flag_id", eloc),
+                            f"{eloc}.flag_id",
+                        )
+                        raw_value = effect_obj.get("value")
+                        if not isinstance(raw_value, bool):
+                            validator.issues.append(
+                                f"{eloc}.value 必须是布尔值"
+                            )
+                            value = False
                         else:
-                            validator.issues.append(f"{gi_loc}.item_id 必须是非空字符串")
-                    elif raw_gi is not None:
-                        validator.issues.append(f"{oloc}.grant_item 必须是对象或省略")
+                            value = raw_value
+                        if flag_id in set_flag_ids:
+                            validator.issues.append(
+                                f"{oloc}.effects 不得重复 set_flag.flag_id：{flag_id}"
+                            )
+                        set_flag_ids.add(flag_id)
+                        effects.append(SetFlagEffect(flag_id, value))
+                    else:
+                        validator.keys(effect_obj, {"kind"}, eloc)
+                        validator.issues.append(
+                            f"{eloc}.kind 必须是 grant_item、grant_experience、"
+                            "accept_quest 或 set_flag"
+                        )
                 if oid in opt_ids_seen:
                     validator.issues.append(f"{nloc} 选项 ID 重复：{oid}")
                 opt_ids_seen.add(oid)
@@ -823,7 +911,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                         id=oid,
                         text=otxt,
                         next_node_id=next_id,
-                        grant_item=grant_item,
+                        effects=tuple(effects),
                     )
                 )
 
@@ -861,6 +949,87 @@ def load_content_pack(path: str | Path) -> ContentPack:
         )
 
     dialogues = _unique_map(dialogue_defs_list, "dialogues.json", validator)
+
+    # --- shops ---
+    shop_defs_list: list[ShopDefinition] = []
+    for index, obj in enumerate(_load_entity_array(root, "shops.json", validator)):
+        location = f"shops.json[{index}]"
+        validator.keys(
+            obj,
+            {
+                "id",
+                "name",
+                "room_id",
+                "catalog",
+                "canon_ref",
+                "adaptation_notes",
+            },
+            location,
+        )
+        shop_id = validator.stable_id(
+            validator.text(obj, "id", location), f"{location}.id"
+        )
+        room_id = validator.stable_id(
+            validator.text(obj, "room_id", location), f"{location}.room_id"
+        )
+        catalog_raw = validator.array(obj.get("catalog"), f"{location}.catalog")
+        if not catalog_raw:
+            validator.issues.append(f"{location}.catalog 必须是非空数组")
+        catalog: list[ShopListingDefinition] = []
+        catalog_item_ids: set[str] = set()
+        for listing_index, listing_raw in enumerate(catalog_raw):
+            listing_location = f"{location}.catalog[{listing_index}]"
+            listing_obj = validator.object(listing_raw, listing_location)
+            validator.keys(
+                listing_obj,
+                {"item_id", "buy_price", "sell_price"},
+                listing_location,
+            )
+            item_id = validator.stable_id(
+                validator.text(listing_obj, "item_id", listing_location),
+                f"{listing_location}.item_id",
+            )
+            buy_price = validator.integer(
+                listing_obj,
+                "buy_price",
+                listing_location,
+                minimum=1,
+                default=1,
+            )
+            sell_price = validator.integer(
+                listing_obj,
+                "sell_price",
+                listing_location,
+                minimum=1,
+                default=1,
+            )
+            if sell_price > buy_price:
+                validator.issues.append(
+                    f"{listing_location}.sell_price 不得大于 buy_price"
+                )
+            if item_id in catalog_item_ids:
+                validator.issues.append(
+                    f"{location}.catalog 包含重复 item_id：{item_id}"
+                )
+            catalog_item_ids.add(item_id)
+            catalog.append(
+                ShopListingDefinition(
+                    item_id=item_id,
+                    buy_price=buy_price,
+                    sell_price=sell_price,
+                )
+            )
+        shop_defs_list.append(
+            ShopDefinition(
+                id=shop_id,
+                name=validator.text(obj, "name", location),
+                room_id=room_id,
+                catalog=tuple(catalog),
+                metadata=_metadata(obj, location, validator),
+            )
+        )
+
+    shops = _unique_map(shop_defs_list, "shops.json", validator)
 
     if start_room_id and start_room_id not in rooms:
         validator.issues.append(
@@ -969,7 +1138,30 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 f"{character.room_id}"
             )
 
-    granted_item_options: dict[str, list[str]] = {}
+    shop_room_ids: dict[str, str] = {}
+    for shop in shops.values():
+        if shop.room_id not in rooms:
+            validator.issues.append(
+                f"商店 {shop.id} 的 room_id 引用了不存在的房间：{shop.room_id}"
+            )
+        elif shop.room_id in shop_room_ids:
+            validator.issues.append(
+                f"房间 {shop.room_id} 不能同时拥有多个商店："
+                f"{shop_room_ids[shop.room_id]} 和 {shop.id}"
+            )
+        else:
+            shop_room_ids[shop.room_id] = shop.id
+        for listing in shop.catalog:
+            if listing.item_id not in items:
+                validator.issues.append(
+                    f"商店 {shop.id} 的 catalog 引用了不存在的物品："
+                    f"{listing.item_id}"
+                )
+                continue
+            item_sources.setdefault(listing.item_id, []).append(
+                f"商店 {shop.id} catalog"
+            )
+
     for dialogue in dialogues.values():
         if dialogue.character_id not in characters:
             validator.issues.append(
@@ -978,38 +1170,42 @@ def load_content_pack(path: str | Path) -> ContentPack:
             )
         for node in dialogue.nodes.values():
             for option in node.options:
-                gi = option.grant_item
-                if gi is None:
-                    continue
                 option_location = (
                     f"对话 {dialogue.id} 节点 {node.id} 选项 {option.id}"
                 )
-                granted_item_options.setdefault(gi.item_id, []).append(
-                    option_location
-                )
-                item = items.get(gi.item_id)
-                if item is None:
-                    validator.issues.append(
-                        f"{option_location} 的 grant_item 引用了不存在的物品："
-                        f"{gi.item_id}"
-                    )
-                    continue
-                if item.heal_amount is not None:
-                    validator.issues.append(
-                        f"{option_location} 的 grant_item 不能引用消耗品："
-                        f"{gi.item_id}"
-                    )
-                if gi.quantity > item.stack_limit:
-                    validator.issues.append(
-                        f"{option_location} 的 grant_item 数量 {gi.quantity} "
-                        f"超过栈上限 ({item.stack_limit})"
-                    )
-                if item.stack_limit == 1 and gi.quantity != 1:
-                    validator.issues.append(
-                        f"{option_location} 的 grant_item {gi.item_id} "
-                        f"stack_limit=1 时数量必须为 1"
-                    )
-                item_sources.setdefault(gi.item_id, []).append(option_location)
+                for effect in option.effects:
+                    if isinstance(effect, GrantItemEffect):
+                        item = items.get(effect.item_id)
+                        if item is None:
+                            validator.issues.append(
+                                f"{option_location} 的 grant_item 引用了不存在的物品："
+                                f"{effect.item_id}"
+                            )
+                            continue
+                        if item.heal_amount is not None:
+                            validator.issues.append(
+                                f"{option_location} 的 grant_item 不能引用消耗品："
+                                f"{effect.item_id}"
+                            )
+                        if effect.quantity > item.stack_limit:
+                            validator.issues.append(
+                                f"{option_location} 的 grant_item 数量 {effect.quantity} "
+                                f"超过栈上限 ({item.stack_limit})"
+                            )
+                        if item.stack_limit == 1 and effect.quantity != 1:
+                            validator.issues.append(
+                                f"{option_location} 的 grant_item {effect.item_id} "
+                                f"stack_limit=1 时数量必须为 1"
+                            )
+                        item_sources.setdefault(effect.item_id, []).append(
+                            option_location
+                        )
+                    elif isinstance(effect, AcceptQuestEffect):
+                        if effect.quest_id not in quests:
+                            validator.issues.append(
+                                f"{option_location} 的 accept_quest 引用了不存在的任务："
+                                f"{effect.quest_id}"
+                            )
 
     # Non-stackable (stack_limit==1) cross-source conflict detection.
     for item_id, sources in item_sources.items():
@@ -1084,6 +1280,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
         characters=characters,
         quests=quests,
         dialogues=dialogues,
+        shops=shops,
         extensions=extensions,
     )
 

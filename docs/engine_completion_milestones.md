@@ -1,6 +1,6 @@
 # Engine Completion Milestones
 
-_Last updated: 2026-07-29（M3 已由 GPT-5.6-sol 独立验收 GO）_
+_Last updated: 2026-07-29（M4+M5 已本地实现并验证，待 GPT-5.6-sol 独立验收）_
 
 本文件定义公共引擎从当前状态到功能完备的里程碑路线。每个里程碑是一个可独立验证的
 纵向切片，完成后更新本文件和相关交接记录。
@@ -96,28 +96,41 @@ _Last updated: 2026-07-29（M3 已由 GPT-5.6-sol 独立验收 GO）_
 
 ## M4: 强类型对话效果
 
-- **状态**: 规划中。
-- **强制完成条件**:
-  - 对话选项使用有序 typed effects 列表，不使用通用未校验字典。
-  - 首批效果为：`grant_experience`、`accept_quest`、`set_flag`。
-  - 所有效果先校验，再原子执行。
-  - 任一效果失败时，对话位置、玩家、任务、背包和 flags 均不改变。
-  - flags 使用稳定 ID 和布尔值，并进入存档。
-  - `accept_quest` 不得重复创建已接受或已完成任务。
-  - 对话效果不能绕过 World 的任务、经验和状态规则。
+- **状态**: 本地实现并验证，待 GPT-5.6-sol 独立验收。
+- **执行者**: Codex。
+- **已实现的强制契约**:
+  - `DialogueOption.effects` 为必填、有序、frozen tagged union：`grant_item`、
+    `grant_experience`、`accept_quest`、`set_flag`；旧 `grant_item` 字段不兼容且被拒绝。
+  - loader/Schema 严格拒绝缺失或未知 `kind`、跨分支字段、错误类型、bool-as-int、非法引用、
+    重复目标和多个经验效果。
+  - `World.select_option()` 先预检整组效果，再在同一事务中按内容顺序执行；失败会回滚
+    房间、怪物、玩家、金币、背包、装备、任务、flags 和活动对话，成功后才推进对话。
+  - 显式 `accept_quest` 可提前接取并立即结算，已接取/完成会使整项选择失败；自动触发接取
+    仍保持 M3 幂等语义。`set_flag` 是 World-owned upsert，缺失和 `false` 不混同。
+  - `TalkOutcome.effect_outcomes` 和每个分支 outcome 为 frozen typed 数据；CLI 按效果顺序
+    渲染且不重复任务/升级文本。save v7 严格保存 flags，load 不执行效果或重算任务。
+- **Codex 本地验证证据**:
+  - `tests.test_dialogue_effects`：12 项通过。
+  - M3/M2 对话、任务、堆叠与 save 回归均通过；全量、CLI、安全和编译证据在本切片交接中记录。
 
 ## M5: 固定金币商店
 
-- **状态**: 规划中。
-- **强制完成条件**:
-  - Player 增加非负整数金币。
-  - 新增强类型 `ShopDefinition` 和 `shops.json`。
-  - 商店使用内容包定义的确定性买卖价格。
-  - 商店库存为固定目录，不增加随机库存或额外 mutable stock。
-  - 买卖默认一个单位，也支持堆叠数量。
-  - 金币、物品数量和容量必须在状态变化前全部检查。
-  - 金币进入存档，存档版本按实际字段升级。
-  - original_demo 至少有一个可以实际买卖的原创商店。
+- **状态**: 本地实现并验证，待 GPT-5.6-sol 独立验收。
+- **执行者**: Codex。
+- **已实现的强制契约**:
+  - `PlayerDefaults`/`Player.coins` 是非负整数；`ShopDefinition` 和
+    `ShopListingDefinition` 是 frozen 内容定义，`shops.json` 对所有内容包必填。
+  - 商店是一房间至多一个、固定价格、无限供应的有序目录；不创建 stock、补货、动态价格或
+    任何可变商店存档状态。非堆叠目录物品参加既有跨来源唯一性检查。
+  - `shop` 只读，`buy`/`sell` 支持默认和显式正整数数量、稳定 ID 或唯一名称。买入预检金币、
+    容量、栈上限和唯一性，并与 collect_item 奖励同事务回滚；卖出拒绝已装备物品且不撤销任务。
+  - 倒下时可以查看 `shop`，不能买卖；所有交易路径保持活动对话并不修改目录。save v7 保存金币，
+    商店从当前内容包恢复。
+  - original_demo 为 0.6.0，初始 20 金币，`shop_chen_travel_goods` 在琉草小径以买 4 / 卖 2
+    交易 `item_linglu_pill`。
+- **Codex 本地验证证据**:
+  - `tests.test_shop`：12 项通过。
+  - M1–M4 回归、全量、CLI、安全和编译证据在本切片交接中记录。
 
 ## M6: Examine、帮助和错误反馈
 

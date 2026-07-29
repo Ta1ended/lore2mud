@@ -42,7 +42,7 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
   `reach_room.target_room_id` 或 `collect_item.target_item_id` 与
   `required_quantity`；分支目标字段互斥，收集数量必须在 1 和物品 `stack_limit` 之间；
 - `pack.json`、`rooms.json`、`items.json`、`monsters.json`、`characters.json`、
-  `quests.json` 和 `dialogues.json` 七个必需内容文件；
+  `quests.json`、`dialogues.json` 和 `shops.json` 八个必需内容文件；
 - 同一实体的重复放置；
 - 怪物 `room_id` 与房间 `monster_ids` 一致性；
 - 对话节点/选项的交叉引用与唯一性；
@@ -89,7 +89,7 @@ take item_spark_lantern [数量]
   → 对已接取且未完成的定义按任务 ID 检查条件
   → 发放经验、标记 completed、生成 QuestOutcome
 
-move_with_outcome / take / attack / select_option(grant_item)
+move_with_outcome / take / attack / select_option(effects) / buy
   → 主动作的全部预检
   → 局部内存事务：主动作 + 任务结算
   → quest_outcomes + level_gains（任务 ID 字典序）
@@ -111,7 +111,7 @@ move_with_outcome / take / attack / select_option(grant_item)
 `required_item_id`。加载器把旧的字符串出口和对象出口统一规范化；`World.move()`
 在修改房间、触发任务或清理活动对话前检查背包。缺少所需物品时，错误同时显示物品名
 和稳定 ID，且不改变任何运行时状态；通过时物品不会被消耗。出口定义属于内容包，
-不写入 save v6 的可变状态。
+不写入 save v7 的可变状态。
 
 `CommandProcessor.look()` 只读取当前房间的出口定义、物品定义和背包 ID，并显示门禁
 出口所需物品及“未持有”或“已持有”状态；它不复刻、放宽或执行门禁规则。门禁的唯一
@@ -124,7 +124,7 @@ move_with_outcome / take / attack / select_option(grant_item)
 并返回带稳定 ID、名称和描述的 `InspectItemOutcome`。其他房间的物品和尚未获得的对话
 奖励不在可见范围；同名可见物品要求使用稳定 ID。`CommandProcessor.inspect` 只渲染该
 结果，不直接读取或修改状态。查看不会改变房间、背包、装备、任务、活动对话或怪物，且
-不新增内容包或 save v6 契约。
+不新增内容包或 save v7 契约。
 
 ## 原作事实与游戏规则
 
@@ -150,7 +150,7 @@ move_with_outcome / take / attack / select_option(grant_item)
 内容定义（不可变）
   DialogueDefinition（对话树）
   → DialogueNode（节点 + 台词）
-  → DialogueOption（选项 + next_node_id + 可选 ItemStackDefinition grant_item）
+  → DialogueOption（选项 + next_node_id + 必填有序 DialogueEffect 列表）
 
 运行时状态（World 持有）
   characters: dict[str, Character]          # 角色位置由 room_id 决定
@@ -168,21 +168,25 @@ bye。结束选项（`next_node_id=null`）则立即结束对话。
 
 ### 状态不变性
 
-普通对话操作不修改玩家 HP、经验、装备、任务状态或房间布局。带 `grant_item` typed
-stack 的选项是唯一例外：`World.select_option()` 在变更对话状态前检查数量、
-`stack_limit`、背包栈位与唯一物品规则，然后在同一局部事务中加入经内容校验的数量并
-检查 collect_item 任务；失败时背包、任务、经验和 `active_dialogue` 均不变。
+`World.select_option()` 先在不修改真实 World 的前提下预检完整 effects 列表，再在一个
+局部内存事务中按内容顺序执行。四个 frozen 分支为 `grant_item(item_id, quantity)`、
+`grant_experience(amount)`、`accept_quest(quest_id)` 与 `set_flag(flag_id, value)`；它们分别
+复用库存/任务结算、progression、唯一任务接取入口和 World-owned flags。预检或后续结算失败时，
+房间、怪物、玩家、金币、背包、装备、任务、flags 和 `active_dialogue` 全部回滚，且对话位置
+只会在所有效果成功后推进。`accept_quest` 可以绕过触发房间提前接取，但已接取或已完成时会使
+整个选项失败；`set_flag` 保留缺失与显式 `false` 的差别，并报告旧值、新值和是否改变。
 
 ### 存档
 
-`active_dialogue` 和 `quest_states` 是 save v6 的必填字段。save v6 使用
-`inventory_stacks` 和每个房间的 `item_stacks` 数组保存 `{item_id, quantity}`；每个
-任务状态仍只有 `completed`，M3 不新增任何存档字段。v5 按格式版本明确拒绝，不做
-隐式迁移；original_demo 内容包升级至 0.4.0，因此引用 0.3.0 的存档也会由既有内容包
-版本检查拒绝。
+`active_dialogue`、`quest_states` 和顶层 `flags` 是 save v7 的必填字段；`player` 还必须
+保存非负整数 `coins`。save v7 使用 `inventory_stacks` 和每个房间的 `item_stacks` 数组保存
+`{item_id, quantity}`，而 `flags` 是稳定 ID 到真正 bool 的映射；每个任务状态仍只有
+`completed`。v6 按格式版本明确拒绝，不做隐式迁移；original_demo 内容包为 0.6.0，因此
+引用 0.4.0 的存档会由内容包版本检查拒绝。
 
-加载时只校验并恢复已保存的 `quest_states`，不调用任务接取、条件检查或奖励发放。其余
-严格验证包括：
+加载时只校验并恢复已保存的 `quest_states`、`coins`、`flags` 和其他运行时状态；不执行对话
+effects，不调用任务接取、条件检查、奖励发放或商店交易。商店定义从当前 ContentPack 重建，
+不会序列化库存。其余严格验证包括：
 - 顶层、`content_pack`、`player`、每个房间和每个怪物对象的键集合必须精确匹配；
 - `inventory_stacks` 与 `item_stacks` 中的物品 ID、正整数数量、栈上限、重复栈、
   容量和装备数量必须与当前内容定义一致；
@@ -196,12 +200,24 @@ stack 的选项是唯一例外：`World.select_option()` 在变更对话状态�
 由 `save <槽位>` / `load <槽位>` 传入，并只映射到保存目录内的 `<槽位>.json`：名称必须是
 1–32 位小写 ASCII 字母、数字、`-` 或 `_`，以字母或数字开头，且拒绝路径片段、扩展名和
 Windows 保留设备名。路径验证发生在序列化、读取或替换世界之前；槽位只选择文件，不改变
-save v6 的 JSON 契约。
+save v7 的 JSON 契约。
 
 `SaveLoadService.save()` 在服务边界把文件系统 `OSError` 转换为带原始异常链的
 `SaveLoadError`，因此 `CommandProcessor` 能将写入失败渲染为正常的“存档失败”文本，
 而不会让 I/O 异常逃出游戏循环。`_atomic_write()` 的原子写入和临时文件清理职责不变；
 非 I/O 编程错误不会被重新标记为存档 I/O 错误。
+
+### 固定金币商店
+
+`ShopDefinition` 与其有序 `ShopListingDefinition` 目录是冻结内容定义；每个房间至多有一个
+商店。`World.shop()` 只读返回目录和当前金币，`buy()` 与 `sell()` 返回各自的 typed outcome。
+目录是无限供应且不保存库存：买入只在所有价格、金币、容量、合并后的 `stack_limit` 和
+非堆叠物品唯一性检查通过后扣金币、加入物品并结算 `collect_item` 任务；奖励失败会连同
+金币和物品回滚。卖出只移除未装备的背包物品并增加固定售价，已完成任务不会撤销。
+
+`shop` 是倒下时仍可用的只读命令；`buy`/`sell` 受死亡门禁。三者都不结束活动对话，也不
+改变商店目录。`look` 只展示当前房间商店的名称与稳定 ID；`status` 展示金币和按 flag ID
+字典序排列的 flags。动态价格、折扣、货币物品和可变库存不属于本切片。
 
 ## 扩展原则
 

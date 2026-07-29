@@ -29,5 +29,16 @@
     "required_quantity": 2,
     "reward_experience": 0,
     "adaptation_notes": "本仓库原创演示任务。"
+  },
+  {
+    "id": "quest_collect_ash_mite_gel",
+    "name": "收集灰壳凝胶",
+    "description": "收集一份灰壳兽掉落的凝胶，带回去研究它的用途。",
+    "kind": "collect_item",
+    "trigger_room_id": "room_silent_observatory",
+    "target_item_id": "item_ash_mite_gel",
+    "required_quantity": 1,
+    "reward_experience": 5,
+    "adaptation_notes": "本仓库原创演示任务。"
   }
 ]

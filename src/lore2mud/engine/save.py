@@ -23,7 +23,7 @@ from lore2mud.engine.models import (
 from lore2mud.engine.world import World
 from lore2mud.inventory.models import EquippedItems, Inventory, Item, ItemStack
 
-SAVE_FORMAT_VERSION = 6
+SAVE_FORMAT_VERSION = 7
 DEFAULT_SLOT = "default.json"
 _SLOT_NAME_PATTERN = re.compile(r"[a-z0-9][a-z0-9_-]{0,31}")
 _WINDOWS_RESERVED_SLOT_NAMES = frozenset(
@@ -40,6 +40,7 @@ _SAVE_TOP_LEVEL_KEYS = frozenset(
         "rooms",
         "monsters",
         "quest_states",
+        "flags",
         "active_dialogue",
     }
 )
@@ -55,12 +56,14 @@ _PLAYER_KEYS = frozenset(
         "defense",
         "level",
         "experience",
+        "coins",
         "inventory_stacks",
     }
 )
 _ROOM_KEYS = frozenset({"item_stacks", "monster_ids"})
 _MONSTER_KEYS = frozenset({"hp"})
 _STACK_KEYS = frozenset({"item_id", "quantity"})
+_STABLE_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
 class SaveLoadError(Exception):
@@ -88,6 +91,20 @@ def _reject_unknown_fields(
         raise SaveLoadError(f"{location} 包含未知字段：{sorted(unknown)}")
 
 
+def _validate_flags(raw: object, location: str) -> dict[str, bool]:
+    """Validate the exact stable-ID-to-bool flags mapping at both boundaries."""
+    if not isinstance(raw, dict):
+        raise SaveLoadError(f"{location} 必须是对象")
+    result: dict[str, bool] = {}
+    for flag_id, value in raw.items():
+        if not isinstance(flag_id, str) or not _STABLE_ID_PATTERN.fullmatch(flag_id):
+            raise SaveLoadError(f"{location} 的 flag ID 必须是稳定 ID")
+        if not isinstance(value, bool):
+            raise SaveLoadError(f"{location}.{flag_id} 必须是布尔值")
+        result[flag_id] = value
+    return result
+
+
 def _serialize_stacks(stacks: list[ItemStack]) -> list[dict]:
     return [{"item_id": s.item_id, "quantity": s.quantity} for s in stacks]
 
@@ -95,6 +112,8 @@ def _serialize_stacks(stacks: list[ItemStack]) -> list[dict]:
 def _serialize_world(world: World) -> dict:
     """Serialize all mutable state from a World into a JSON-safe dict."""
     player = world.player
+    coins = _validate_int(player.coins, "player.coins", minimum=0)
+    flags = _validate_flags(world.flags, "flags")
     rooms_data: dict[str, dict] = {}
     for room_id, room in world.rooms.items():
         rooms_data[room_id] = {
@@ -130,6 +149,7 @@ def _serialize_world(world: World) -> dict:
             "defense": player.defense,
             "level": player.level,
             "experience": player.experience,
+            "coins": coins,
             "inventory_stacks": _serialize_stacks(player.inventory.stacks),
         },
         "equipped": {
@@ -139,6 +159,7 @@ def _serialize_world(world: World) -> dict:
         "rooms": rooms_data,
         "monsters": monsters_data,
         "quest_states": quest_states_data,
+        "flags": flags,
         "active_dialogue": (
             {
                 "dialogue_id": world.active_dialogue.dialogue_id,
@@ -299,6 +320,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
     experience = _validate_int(
         player_data.get("experience"), "player.experience", minimum=0
     )
+    coins = _validate_int(player_data.get("coins"), "player.coins", minimum=0)
 
     if hp < 0 or hp > max_hp:
         raise SaveLoadError(f"player.hp ({hp}) 必须在 0 和 max_hp ({max_hp}) 之间")
@@ -492,6 +514,11 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
             completed=completed,
         )
 
+    # --- flags ---
+    if "flags" not in data:
+        raise SaveLoadError("存档缺少 flags 字段")
+    flags = _validate_flags(data["flags"], "flags")
+
     # --- equipped (symmetric hand + body) ---
     equipped_raw = data.get("equipped")
     if not isinstance(equipped_raw, dict):
@@ -567,7 +594,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
 
     equipped = EquippedItems(hand=equipped_hand, body=equipped_body)
 
-    # --- active_dialogue (required in v6) ---
+    # --- active_dialogue (required in v7) ---
     if "active_dialogue" not in data:
         raise SaveLoadError("存档缺少 active_dialogue 字段")
     active_dialogue_raw = data["active_dialogue"]
@@ -629,6 +656,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         defense=defense,
         level=level,
         experience=experience,
+        coins=coins,
         hp=hp,
         inventory=Inventory(capacity=capacity, stacks=inv_stacks),
     )
@@ -668,9 +696,11 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         player=player,
         quest_defs=dict(pack.quests),
         quest_states=quest_states,
+        flags=flags,
         equipped=equipped,
         characters=characters,
         dialogue_defs=dict(pack.dialogues),
+        shop_defs=dict(pack.shops),
         active_dialogue=active_dialogue,
     )
 

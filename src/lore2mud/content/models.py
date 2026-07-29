@@ -135,11 +135,57 @@ QuestDefinition: TypeAlias = (
 
 
 @dataclass(frozen=True, slots=True)
+class GrantItemEffect:
+    """Award one validated, non-consumable typed item stack."""
+
+    item_id: str
+    quantity: int
+    kind: Literal["grant_item"] = field(init=False, default="grant_item")
+
+
+@dataclass(frozen=True, slots=True)
+class GrantExperienceEffect:
+    """Award deterministic experience through the progression service."""
+
+    amount: int
+    kind: Literal["grant_experience"] = field(
+        init=False, default="grant_experience"
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class AcceptQuestEffect:
+    """Explicitly accept one quest, independently of its trigger room."""
+
+    quest_id: str
+    kind: Literal["accept_quest"] = field(
+        init=False, default="accept_quest"
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class SetFlagEffect:
+    """Upsert one World-owned boolean flag."""
+
+    flag_id: str
+    value: bool
+    kind: Literal["set_flag"] = field(init=False, default="set_flag")
+
+
+DialogueEffect: TypeAlias = (
+    GrantItemEffect
+    | GrantExperienceEffect
+    | AcceptQuestEffect
+    | SetFlagEffect
+)
+
+
+@dataclass(frozen=True, slots=True)
 class DialogueOption:
     id: str
     text: str
     next_node_id: str | None = None
-    grant_item: ItemStackDefinition | None = None
+    effects: tuple[DialogueEffect, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -164,6 +210,27 @@ class PlayerDefaults:
     attack: int = 5
     defense: int = 1
     inventory_capacity: int = 20
+    coins: int = 0
+
+
+@dataclass(frozen=True, slots=True)
+class ShopListingDefinition:
+    """One immutable fixed-price item listing in a shop catalog."""
+
+    item_id: str
+    buy_price: int
+    sell_price: int
+
+
+@dataclass(frozen=True, slots=True)
+class ShopDefinition:
+    """An immutable, unlimited-supply catalog located in one room."""
+
+    id: str
+    name: str
+    room_id: str
+    catalog: tuple[ShopListingDefinition, ...]
+    metadata: ContentMetadata = field(default_factory=ContentMetadata)
 
 
 @dataclass(frozen=True, slots=True)
@@ -179,4 +246,5 @@ class ContentPack:
     characters: dict[str, CharacterDefinition]
     quests: dict[str, QuestDefinition]
     dialogues: dict[str, DialogueDefinition] = field(default_factory=dict)
+    shops: dict[str, ShopDefinition] = field(default_factory=dict)
     extensions: dict[str, Any] = field(default_factory=dict)

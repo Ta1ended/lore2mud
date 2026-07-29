@@ -1,7 +1,7 @@
 # Next Task
 
-_Last updated: 2026-07-29（M3 已由 GPT-5.6-sol 独立验收 GO）_
+_Last updated: 2026-07-29（M4+M5 本地实现并验证，待独立验收）_
 
 ## Single next action
 
-等待项目负责人明确授权下一项纵向切片；不得开始 M4 或其他功能实现。
+由 GPT-5.6-sol 对 M4+M5 的真实差异、测试、save v7 和 CLI 证据进行独立验收；不得开始 M6。

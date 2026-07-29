@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 from lore2mud.content.loader import ContentValidationError, load_content_pack
-from lore2mud.content.models import ItemStackDefinition
+from lore2mud.content.models import GrantItemEffect
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.inventory.models import ItemStack
 from lore2mud.engine.models import Character, DialogueState
@@ -20,8 +20,8 @@ from lore2mud.engine.save import (
     _serialize_world,
 )
 from lore2mud.engine.world import (
-    DialogueItemGrant,
     DialogueEndOutcome,
+    GrantItemEffectOutcome,
     TalkOutcome,
     World,
     WorldRuleError,
@@ -58,7 +58,8 @@ class ContentLoadingTests(unittest.TestCase):
         option = pack.dialogues["dialogue_elder_chen"].nodes[
             "node_observatory"
         ].options[1]
-        self.assertEqual(option.grant_item.item_id, "item_chen_token")
+        self.assertIsInstance(option.effects[-1], GrantItemEffect)
+        self.assertEqual(option.effects[-1].item_id, "item_chen_token")
 
     def test_empty_dialogues_array_valid(self) -> None:
         with tempfile.TemporaryDirectory() as td:
@@ -111,7 +112,7 @@ class ContentLoadingTests(unittest.TestCase):
             dlg = [{"id": "d1", "character_id": "character_elder_chen",
                     "start_node_id": "n1",
                     "nodes": [{"id": "n1", "text": "Hi", "options": [
-                        {"id": "o1", "text": "Go", "next_node_id": "n2"}
+                        {"id": "o1", "text": "Go", "next_node_id": "n2", "effects": []}
                     ]}]}]
             (pack_path / "dialogues.json").write_text(
                 json.dumps(dlg, ensure_ascii=False), "utf-8"
@@ -144,8 +145,8 @@ class ContentLoadingTests(unittest.TestCase):
             dlg = [{"id": "d1", "character_id": "character_elder_chen",
                     "start_node_id": "n1",
                     "nodes": [{"id": "n1", "text": "Hi", "options": [
-                        {"id": "o1", "text": "A"},
-                        {"id": "o1", "text": "B"},
+                        {"id": "o1", "text": "A", "effects": []},
+                        {"id": "o1", "text": "B", "effects": []},
                     ]}]}]
             (pack_path / "dialogues.json").write_text(
                 json.dumps(dlg, ensure_ascii=False), "utf-8"
@@ -174,7 +175,7 @@ class ContentLoadingTests(unittest.TestCase):
             dlg = [{"id": "d1", "character_id": "character_elder_chen",
                     "start_node_id": "n1",
                     "nodes": [{"id": "n1", "text": "Hi", "options": [
-                        {"id": "o1", "text": ""}
+                        {"id": "o1", "text": "", "effects": []}
                     ]}]}]
             (pack_path / "dialogues.json").write_text(
                 json.dumps(dlg, ensure_ascii=False), "utf-8"
@@ -277,7 +278,7 @@ class ContentLoadingTests(unittest.TestCase):
             dlg = [{"id": "d1", "character_id": "character_elder_chen",
                     "start_node_id": "n1",
                     "nodes": [{"id": "n1", "text": "Hi", "options": [
-                        {"id": "o1", "text": "Go", "bogus": True}
+                        {"id": "o1", "text": "Go", "effects": [], "bogus": True}
                     ]}]}]
             (pack_path / "dialogues.json").write_text(
                 json.dumps(dlg, ensure_ascii=False), "utf-8"
@@ -293,7 +294,7 @@ class ContentLoadingTests(unittest.TestCase):
             dlg = [{"id": "d1", "character_id": "character_elder_chen",
                     "start_node_id": "n1",
                     "nodes": [{"id": "n1", "text": "Hi", "options": [
-                        {"id": "o1", "text": "Bye"}
+                        {"id": "o1", "text": "Bye", "effects": []}
                     ]}]}]
             (pack_path / "dialogues.json").write_text(
                 json.dumps(dlg, ensure_ascii=False), "utf-8"
@@ -311,7 +312,7 @@ class ContentLoadingTests(unittest.TestCase):
 
     def test_reward_item_rejects_non_string(self) -> None:
         self._assert_invalid_grant(123)
-        # None is accepted silently (treated as no grant_item)
+        self._assert_invalid_grant(None)
 
     def test_reward_item_cannot_be_consumable(self) -> None:
         self._assert_invalid_grant("item_linglu_pill")
@@ -326,9 +327,9 @@ class ContentLoadingTests(unittest.TestCase):
             dialogues = json.loads(
                 (pack_path / "dialogues.json").read_text("utf-8")
             )
-            dialogues[0]["nodes"][0]["options"][0]["grant_item"] = (
-                {"item_id": "item_chen_token", "quantity": 1}
-            )
+            dialogues[0]["nodes"][0]["options"][0]["effects"] = [
+                {"kind": "grant_item", "item_id": "item_chen_token", "quantity": 1}
+            ]
             (pack_path / "dialogues.json").write_text(
                 json.dumps(dialogues, ensure_ascii=False), "utf-8"
             )
@@ -343,12 +344,12 @@ class ContentLoadingTests(unittest.TestCase):
             dialogues = json.loads(
                 (pack_path / "dialogues.json").read_text("utf-8")
             )
-            dialogues[0]["nodes"][0]["options"][0]["grant_item"] = (
-                {"item_id": "item_chen_token", "quantity": 1}
-            )
-            dialogues[0]["nodes"][0]["options"][1]["grant_item"] = (
-                {"item_id": "item_linglu_pill", "quantity": 1}
-            )
+            dialogues[0]["nodes"][0]["options"][0]["effects"] = [
+                {"kind": "grant_item", "item_id": "item_chen_token", "quantity": 1}
+            ]
+            dialogues[0]["nodes"][0]["options"][1]["effects"] = [
+                {"kind": "grant_item", "item_id": "item_linglu_pill", "quantity": 1}
+            ]
             (pack_path / "dialogues.json").write_text(
                 json.dumps(dialogues, ensure_ascii=False), "utf-8"
             )
@@ -364,12 +365,9 @@ class ContentLoadingTests(unittest.TestCase):
             dialogues = json.loads(
                 (pack_path / "dialogues.json").read_text("utf-8")
             )
-            if isinstance(value, str):
-                dialogues[0]["nodes"][0]["options"][0]["grant_item"] = (
-                    {"item_id": value, "quantity": 1}
-                )
-            else:
-                dialogues[0]["nodes"][0]["options"][0]["grant_item"] = value
+            dialogues[0]["nodes"][0]["options"][0]["effects"] = [
+                {"kind": "grant_item", "item_id": value, "quantity": 1}
+            ]
             (pack_path / "dialogues.json").write_text(
                 json.dumps(dialogues, ensure_ascii=False), "utf-8"
             )
@@ -398,7 +396,7 @@ class WorldDialogueNormalTests(unittest.TestCase):
         o = w.select_option(1)  # 你是谁？
         self.assertFalse(o.ended)
         self.assertIn("陈伯", o.node_text)
-        self.assertIsNone(o.granted_item)
+        self.assertEqual(o.effect_outcomes, ())
 
     def test_select_farewell_option_ends(self) -> None:
         w = _world_at_chen()
@@ -498,9 +496,10 @@ class DialogueItemGrantWorldTests(unittest.TestCase):
         outcome = world.select_option(2)
 
         self.assertTrue(outcome.ended)
-        self.assertIsInstance(outcome.granted_item, DialogueItemGrant)
-        self.assertEqual(outcome.granted_item.item_id, "item_chen_token")
-        self.assertEqual(outcome.granted_item.item_name, "旧铜牌")
+        granted = outcome.effect_outcomes[-1]
+        self.assertIsInstance(granted, GrantItemEffectOutcome)
+        self.assertEqual(granted.item_id, "item_chen_token")
+        self.assertEqual(granted.item_name, "旧铜牌")
         self.assertIn("item_chen_token", [s.item_id for s in world.player.inventory.stacks])
         self.assertIsNone(world.active_dialogue)
 
@@ -550,7 +549,7 @@ class DialogueItemGrantWorldTests(unittest.TestCase):
                             "opt_repeat",
                             "领取铜牌",
                             "node_repeat",
-                            grant_item=ItemStackDefinition("item_chen_token", 1),
+                            effects=(GrantItemEffect("item_chen_token", 1),),
                         ),
                     ),
                 )
@@ -591,7 +590,7 @@ class DialogueItemGrantWorldTests(unittest.TestCase):
                             "opt_take",
                             "收下",
                             "node_terminal",
-                            grant_item=ItemStackDefinition("item_chen_token", 1),
+                            effects=(GrantItemEffect("item_chen_token", 1),),
                         ),
                     ),
                 ),
@@ -604,7 +603,8 @@ class DialogueItemGrantWorldTests(unittest.TestCase):
 
         self.assertTrue(outcome.ended)
         self.assertEqual(outcome.node_id, "node_terminal")
-        self.assertEqual(outcome.granted_item.item_id, "item_chen_token")
+        self.assertIsInstance(outcome.effect_outcomes[0], GrantItemEffectOutcome)
+        self.assertEqual(outcome.effect_outcomes[0].item_id, "item_chen_token")
         self.assertIn("item_chen_token", [s.item_id for s in world.player.inventory.stacks])
 
 
@@ -791,7 +791,7 @@ class SaveLoadDialogueTests(unittest.TestCase):
                 "start_node_id": "n1",
                 "nodes": [
                     {"id": "n1", "text": "Hello", "options": [
-                        {"id": "o1", "text": "Go", "next_node_id": "n2"}
+                        {"id": "o1", "text": "Go", "next_node_id": "n2", "effects": []}
                     ]},
                     {"id": "n2", "text": "Goodbye.", "options": []},
                 ]
@@ -808,7 +808,7 @@ class SaveLoadDialogueTests(unittest.TestCase):
                     "id": "player_local", "name": "test",
                     "room_id": "room_glassgrass_path",
                     "max_hp": 20, "hp": 20, "attack": 5, "defense": 1,
-                    "level": 1, "experience": 0,
+                    "level": 1, "experience": 0, "coins": 20,
                     "inventory_stacks": [],
                 },
                 "equipped": {"hand": None, "body": None},
@@ -822,6 +822,7 @@ class SaveLoadDialogueTests(unittest.TestCase):
                     for mid, m in pack.monsters.items()
                 },
                 "quest_states": {},
+                "flags": {},
                 "active_dialogue": {
                     "dialogue_id": "d_term",
                     "current_node_id": "n2",

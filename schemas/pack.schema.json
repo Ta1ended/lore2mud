@@ -33,7 +33,8 @@
         "max_hp",
         "attack",
         "defense",
-        "inventory_capacity"
+        "inventory_capacity",
+        "coins"
       ],
       "properties": {
         "max_hp": {
@@ -51,6 +52,10 @@
         "inventory_capacity": {
           "type": "integer",
           "minimum": 1
+        },
+        "coins": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },

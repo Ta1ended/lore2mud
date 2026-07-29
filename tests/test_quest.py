@@ -492,7 +492,10 @@ class QuestAtomicityTests(unittest.TestCase):
             required_quantity=1,
             reward_experience=1,
         )
-        _replace_quests(pack, [quest])
+        _replace_quests(
+            pack,
+            [quest, pack.quests["quest_collect_ash_mite_gel"]],
+        )
         world = World.from_content_pack(pack)
         world.move("east")
         world.start_dialogue("character_elder_chen")
@@ -526,7 +529,10 @@ class QuestDialogueAndSaveTests(unittest.TestCase):
             required_quantity=1,
             reward_experience=15,
         )
-        _replace_quests(pack, [quest])
+        _replace_quests(
+            pack,
+            [quest, pack.quests["quest_collect_ash_mite_gel"]],
+        )
         world = World.from_content_pack(pack)
         world.move("east")
         world.start_dialogue("character_elder_chen")
@@ -539,14 +545,14 @@ class QuestDialogueAndSaveTests(unittest.TestCase):
 
         outcome = world.select_option(2)
 
-        self.assertIsNotNone(outcome.granted_item)
+        self.assertTrue(outcome.effect_outcomes)
         self.assertEqual(
             tuple(item.quest_id for item in outcome.quest_outcomes),
             (quest.id,),
         )
         self.assertTrue(world.quest_states[quest.id].completed)
         self.assertEqual(world.player.level, 2)
-        self.assertEqual(world.player.experience, 5)
+        self.assertEqual(world.player.experience, 8)
 
     def test_command_renders_dialogue_task_outcome(self) -> None:
         world, _ = self._dialogue_collect_world()
@@ -582,7 +588,7 @@ class QuestDialogueAndSaveTests(unittest.TestCase):
             service = SaveLoadService(pack, Path(td))
             service.save(world)
             saved = json.loads(service.save_path.read_text("utf-8"))
-            self.assertEqual(saved["save_format_version"], 6)
+            self.assertEqual(saved["save_format_version"], 7)
             self.assertEqual(
                 set(saved["quest_states"][default.id]),
                 {"completed"},
@@ -604,7 +610,7 @@ class QuestDialogueAndSaveTests(unittest.TestCase):
             self.assertEqual(loaded.player.level, 2)
             self.assertEqual(loaded.player.experience, 5)
 
-    def test_v6_rejects_a_save_from_the_old_0_3_content_pack(self) -> None:
+    def test_v7_rejects_a_save_from_the_old_0_4_content_pack(self) -> None:
         pack = load_content_pack(DEMO_PATH)
         world = World.from_content_pack(pack)
         with tempfile.TemporaryDirectory() as td:
@@ -612,19 +618,19 @@ class QuestDialogueAndSaveTests(unittest.TestCase):
             service.save(world)
             save_text = service.save_path.read_text("utf-8")
             service.save_path.write_text(
-                save_text.replace('"version": "0.4.0"', '"version": "0.3.0"'),
+                save_text.replace('"version": "0.6.0"', '"version": "0.4.0"'),
                 encoding="utf-8",
             )
             with self.assertRaises(SaveLoadError) as context:
                 service.load()
         self.assertIn("版本", str(context.exception))
 
-    def test_save_format_and_quest_state_shape_remain_v6(self) -> None:
+    def test_save_format_and_quest_state_shape_are_v7(self) -> None:
         world = World.from_content_pack(load_content_pack(DEMO_PATH))
         serialized = _serialize_world(world)
 
-        self.assertEqual(SAVE_FORMAT_VERSION, 6)
-        self.assertEqual(serialized["save_format_version"], 6)
+        self.assertEqual(SAVE_FORMAT_VERSION, 7)
+        self.assertEqual(serialized["save_format_version"], 7)
         self.assertEqual(
             set(serialized["quest_states"]["quest_clear_ash_mite"]),
             {"completed"},

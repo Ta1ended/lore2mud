@@ -12,10 +12,11 @@ content_pack/
 ├─ monsters.json
 ├─ characters.json
 ├─ quests.json
-└─ dialogues.json
+├─ dialogues.json
+└─ shops.json
 ```
 
-首版要求七个文件都存在；没有角色、任务或对话时使用空数组。所有文本为 UTF-8
+当前格式要求八个文件都存在；没有角色、任务、对话或商店时使用空数组。所有文本为 UTF-8
 JSON。稳定 ID 必须匹配：
 
 ```text
@@ -36,7 +37,8 @@ JSON。稳定 ID 必须匹配：
     "max_hp": 20,
     "attack": 5,
     "defense": 1,
-    "inventory_capacity": 10
+    "inventory_capacity": 10,
+    "coins": 0
   },
   "extensions": {}
 }
@@ -44,6 +46,8 @@ JSON。稳定 ID 必须匹配：
 
 `extensions` 为未来的私有 canon provider 或工具元数据预留；引擎首版不解释
 其中内容。
+
+`player.coins` 必填，必须是非负整数；bool、负数、字符串和缺失字段均被拒绝。
 
 ## 房间
 
@@ -226,7 +230,7 @@ null` 属于非法内容，加载器拒绝内容包。
   `1 <= required_quantity <= items[target_item_id].stack_limit`。完成条件是背包中
   该物品的数量大于或等于这个值。
 - `reward_experience` 是非负整数。
-- `World` 在移动、拾取、击败怪物和成功发放对话物品奖励后检查已接取任务；同一次
+- `World` 在移动、拾取、击败怪物、成功执行对话 `grant_item` 效果和商店买入后检查已接取任务；同一次
   动作完成多个任务时，按任务 ID 字典序结算并输出结果。`completed` 表示奖励已成功
   发放，之后 `drop`、`use` 或读档都不会撤销或补发。
 - 玩家使用 `quests` 指令查看已接取任务及收集任务的当前数量。
@@ -246,16 +250,16 @@ null` 属于非法内容，加载器拒绝内容包。
         "id": "node_greeting",
         "text": "你好，旅人。",
         "options": [
-          {"id": "opt_who", "text": "你是谁？", "next_node_id": "node_intro"},
-          {"id": "opt_bye", "text": "告辞。", "next_node_id": null}
+          {"id": "opt_who", "text": "你是谁？", "next_node_id": "node_intro", "effects": []},
+          {"id": "opt_bye", "text": "告辞。", "next_node_id": null, "effects": []}
         ]
       },
       {
         "id": "node_intro",
         "text": "我是这里的向导。",
         "options": [
-          {"id": "opt_back", "text": "（换个话题）", "next_node_id": "node_greeting"},
-          {"id": "opt_bye2", "text": "告辞。", "next_node_id": null}
+          {"id": "opt_back", "text": "（换个话题）", "next_node_id": "node_greeting", "effects": []},
+          {"id": "opt_bye2", "text": "告辞。", "next_node_id": null, "effects": []}
         ]
       }
     ]
@@ -285,10 +289,15 @@ null` 属于非法内容，加载器拒绝内容包。
 - `next_node_id`：目标节点 ID，或 `null`（结束对话）。
   - 省略 `next_node_id` 等价于 `null`。
   - 非 null 时必须引用同对话内的节点。
-- `grant_item`：可省略的奖励物品 typed stack 对象（`{item_id, quantity}`）。省略表示不奖励；若出现，必须是
-  非空稳定 ID，`null` 和其他类型均非法。
-  - 必须引用 `items.json` 中存在的非消耗品，且该物品不能放置在任何房间。
-  - 同一物品最多只能被一个对话选项奖励。
+- `effects`：**必填**数组；空数组合法。旧 `grant_item` 字段是未知字段，直接拒绝。
+  每个对象都必须有 `kind`，且只允许所属分支的精确字段：
+  - `{"kind": "grant_item", "item_id": "...", "quantity": 1}`：稳定 ID、正整数数量；
+    物品必须存在、不是消耗品、不超过 `stack_limit`，且非堆叠物品遵守跨来源唯一性。
+  - `{"kind": "grant_experience", "amount": 1}`：`amount` 是 bool 以外的正整数。
+  - `{"kind": "accept_quest", "quest_id": "..."}`：引用存在的稳定任务 ID。
+  - `{"kind": "set_flag", "flag_id": "...", "value": true}`：稳定 flag ID 和真正 bool 值。
+  同一选项不得重复 `grant_item.item_id`、`accept_quest.quest_id`、`set_flag.flag_id`，且最多一个
+  `grant_experience`；不同 kind 和不同目标可按原数组顺序组合。
 
 ### 对话交互
 
@@ -296,9 +305,45 @@ null` 属于非法内容，加载器拒绝内容包。
 - `<正整数>`：选择第 N 个选项（仅对话中有效，匹配 `^[1-9][0-9]{0,4}$`，最大99999）。
 - `bye`：主动结束对话（仅对话中有效）。
 - 移动房间自动结束对话。
-- 对话不改变 HP、经验、装备、任务或房间布局；带 `grant_item` 的选项会在
-  背包有空位且尚未拥有该物品时，原子性地加入一个奖励物品。失败时对话状态和
-  其他游戏状态均不变。
+- `select_option` 先预检完整 effects 列表，后在一个 World 事务中按数组顺序执行；容量、栈上限、
+  非堆叠唯一性、任务状态和后续异常均不能留下半完成状态，对话位置仅在全部成功后推进。
+- `grant_item` 会结算已接取的 `collect_item` 任务；`grant_experience` 复用 progression 服务；
+  `accept_quest` 可绕过 `trigger_room_id` 提前接取并立即结算，已接取/完成时整个选项失败；
+  `set_flag` 是 World-owned upsert，缺失与显式 `false` 不同，重复设置同值是成功 no-op。
+- `TalkOutcome.effect_outcomes` 是按 effects 原顺序排列的 frozen typed outcomes；CLI 同序渲染，
+  不重复渲染任务完成或升级文本。
+
+## 商店
+
+`shops.json` 是必需数组；没有商店时写 `[]`。每个商店的精确形状为：
+
+```json
+[
+  {
+    "id": "shop_chen_travel_goods",
+    "name": "陈伯的行囊",
+    "room_id": "room_glassgrass_path",
+    "catalog": [
+      {
+        "item_id": "item_linglu_pill",
+        "buy_price": 4,
+        "sell_price": 2
+      }
+    ],
+    "adaptation_notes": "本仓库原创演示商店。"
+  }
+]
+```
+
+- `id`、`room_id` 和每个 `item_id` 都是稳定 ID；房间和物品引用必须存在。
+- `catalog` 必须是非空有序数组，同一商店内不得重复 `item_id`，每个房间至多一个商店。
+- `buy_price` 和 `sell_price` 都是 bool 以外的正整数，且 `sell_price <= buy_price`。
+- `stack_limit=1` 的目录物品参与既有跨来源唯一性检查。
+- 商店定义是冻结、无限供应的内容目录；没有 stock、补货、折扣或动态价格字段，也不会写入存档。
+
+运行时命令是 `shop`、`buy <物品ID或名称> [数量]` 和 `sell <物品ID或名称> [数量]`。`shop`
+只读且倒下时可用；买卖预检金币、目录、数量、容量、栈上限、非堆叠唯一性和装备状态，在
+事务中完成金币与背包变更。买入会结算 collect_item 任务，卖出不会撤销已完成任务。
 
 ## 原作来源扩展
 

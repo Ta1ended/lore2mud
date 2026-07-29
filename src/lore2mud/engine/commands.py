@@ -11,7 +11,15 @@ from lore2mud.content.models import (
     MonsterDefeatedQuestDefinition,
     ReachRoomQuestDefinition,
 )
-from lore2mud.engine.world import QuestOutcome, World, WorldRuleError
+from lore2mud.engine.world import (
+    AcceptQuestEffectOutcome,
+    GrantExperienceEffectOutcome,
+    GrantItemEffectOutcome,
+    QuestOutcome,
+    SetFlagEffectOutcome,
+    World,
+    WorldRuleError,
+)
 
 HELP_TEXT = """可用指令：
   look                        查看当前房间
@@ -25,6 +33,9 @@ HELP_TEXT = """可用指令：
   inventory                    查看背包
   quests                       查看任务
   status                       查看角色状态
+  shop                         查看当前房间商店
+  buy <物品ID或名称> [数量]    从当前商店购买物品
+  sell <物品ID或名称> [数量]   向当前商店出售未装备物品
   attack <怪物ID或名称>         攻击怪物
   talk <角色ID或名称>           与角色对话
   <数字>                       选择对话选项（对话中）
@@ -39,7 +50,7 @@ _BARE_SELECTION = re.compile(r'^[1-9][0-9]{0,4}$')
 
 _DEAD_ALLOWED = frozenset({
     "look", "inspect", "status", "inventory", "inv", "i",
-    "quests", "help", "save", "load", "recover",
+    "quests", "shop", "help", "save", "load", "recover",
     "quit", "exit",
 })
 
@@ -86,6 +97,7 @@ def _classify_quantity_token(token: str) -> tuple[str, int | None]:
 
 def _parse_quantity(
     arguments: list[str],
+    usage: str,
 ) -> tuple[str, int, str | None]:
     """Parse tail quantity from arguments.
 
@@ -93,7 +105,7 @@ def _parse_quantity(
     error non-empty means return it directly.
     """
     if not arguments:
-        return ("", 1, "用法：take <物品ID或名称> [数量]")
+        return ("", 1, f"用法：{usage}")
 
     last = arguments[-1]
     kind, val = _classify_quantity_token(last)
@@ -102,7 +114,7 @@ def _parse_quantity(
         assert val is not None
         rest = arguments[:-1]
         if not rest:
-            return ("", val, "用法：take <物品ID或名称> [数量]")
+            return ("", val, f"用法：{usage}")
         return (" ".join(rest), val, None)
 
     if kind == "invalid":
@@ -173,6 +185,12 @@ class CommandProcessor:
                 return CommandResult(self._quests())
             if command == "status":
                 return CommandResult(self._status())
+            if command == "shop":
+                return self._shop(arguments)
+            if command == "buy":
+                return self._buy(arguments)
+            if command == "sell":
+                return self._sell(arguments)
             if command == "attack":
                 return self._attack(arguments)
             if command == "talk":
@@ -225,6 +243,10 @@ class CommandProcessor:
             )
             lines.append(f"角色：{chars}")
 
+        shop = self.world._shop_in_current_room()
+        if shop is not None:
+            lines.append(f"商店：{shop.name} ({shop.id})")
+
         hints = self._active_quest_hints()
         if hints:
             lines.append(hints)
@@ -273,7 +295,9 @@ class CommandProcessor:
         return CommandResult("\n".join(lines))
 
     def _take(self, arguments: list[str]) -> CommandResult:
-        query, quantity, error = _parse_quantity(arguments)
+        query, quantity, error = _parse_quantity(
+            arguments, "take <物品ID或名称> [数量]"
+        )
         if error:
             return CommandResult(error)
         outcome = self.world.take(query, quantity)
@@ -285,7 +309,9 @@ class CommandProcessor:
         return CommandResult("\n".join(lines))
 
     def _drop(self, arguments: list[str]) -> CommandResult:
-        query, quantity, error = _parse_quantity(arguments)
+        query, quantity, error = _parse_quantity(
+            arguments, "drop <物品ID或名称> [数量]"
+        )
         if error:
             return CommandResult(error)
         outcome = self.world.drop(query, quantity)
@@ -304,7 +330,9 @@ class CommandProcessor:
         )
 
     def _use(self, arguments: list[str]) -> CommandResult:
-        query, quantity, error = _parse_quantity(arguments)
+        query, quantity, error = _parse_quantity(
+            arguments, "use <物品ID或名称> [数量]"
+        )
         if error:
             return CommandResult(error)
         outcome = self.world.use(query, quantity)
@@ -393,12 +421,70 @@ class CommandProcessor:
         defense_str = (
             f"{ed}（{player.defense} 基础 + {def_bonus}）" if def_bonus else str(ed)
         )
+        flags_text = "、".join(
+            f"{flag_id}={'true' if value else 'false'}"
+            for flag_id, value in sorted(self.world.flags.items())
+        ) or "无"
         return (
             f"{player.name} [{player.id}]\n"
             f"等级：{player.level}  经验：{player.experience}/"
             f"{player.level * 10}\n"
             f"生命：{player.hp}/{player.max_hp}  "
-            f"攻击：{attack_str}  防御：{defense_str}"
+            f"攻击：{attack_str}  防御：{defense_str}\n"
+            f"金币：{player.coins}\n"
+            f"flags：{flags_text}"
+        )
+
+    def _shop(self, arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：shop")
+        outcome = self.world.shop()
+        lines = [
+            f"{outcome.shop_name} [{outcome.shop_id}]",
+            f"金币：{outcome.coins}",
+        ]
+        for listing in outcome.catalog:
+            item = self.world.items[listing.item_id]
+            lines.append(
+                f"- {item.name} ({item.id}) 买入：{listing.buy_price} "
+                f"金币，卖出：{listing.sell_price} 金币"
+            )
+        return CommandResult("\n".join(lines))
+
+    def _buy(self, arguments: list[str]) -> CommandResult:
+        query, quantity, error = _parse_quantity(
+            arguments, "buy <物品ID或名称> [数量]"
+        )
+        if error:
+            return CommandResult(error)
+        outcome = self.world.buy(query, quantity)
+        item_text = (
+            f"{outcome.item_name} ×{outcome.quantity}"
+            if outcome.quantity > 1
+            else outcome.item_name
+        )
+        lines = [
+            f"你购买了 {item_text}，花费 {outcome.total_price} 金币。"
+            f"余额：{outcome.coins}。"
+        ]
+        lines.extend(self._render_quest_outcomes(outcome.quest_outcomes))
+        return CommandResult("\n".join(lines))
+
+    def _sell(self, arguments: list[str]) -> CommandResult:
+        query, quantity, error = _parse_quantity(
+            arguments, "sell <物品ID或名称> [数量]"
+        )
+        if error:
+            return CommandResult(error)
+        outcome = self.world.sell(query, quantity)
+        item_text = (
+            f"{outcome.item_name} ×{outcome.quantity}"
+            if outcome.quantity > 1
+            else outcome.item_name
+        )
+        return CommandResult(
+            f"你出售了 {item_text}，获得 {outcome.total_price} 金币。"
+            f"余额：{outcome.coins}。"
         )
 
     def _attack(self, arguments: list[str]) -> CommandResult:
@@ -459,16 +545,41 @@ class CommandProcessor:
     @staticmethod
     def _render_talk(outcome: object) -> str:
         lines: list[str] = []
-        granted = getattr(outcome, "granted_item", None)
-        if granted is not None:
-            if granted.quantity > 1:
-                lines.append(
-                    f"你获得了 {granted.item_name} ×{granted.quantity}。"
+        for effect_outcome in getattr(outcome, "effect_outcomes", ()):
+            if isinstance(effect_outcome, GrantItemEffectOutcome):
+                if effect_outcome.quantity > 1:
+                    lines.append(
+                        f"你获得了 {effect_outcome.item_name} "
+                        f"×{effect_outcome.quantity}。"
+                    )
+                else:
+                    lines.append(f"你获得了 {effect_outcome.item_name}。")
+                lines.extend(
+                    CommandProcessor._render_quest_outcomes(
+                        effect_outcome.quest_outcomes
+                    )
                 )
-            else:
-                lines.append(
-                    f"你获得了 {granted.item_name}。"
+            elif isinstance(effect_outcome, GrantExperienceEffectOutcome):
+                lines.append(f"你获得了 {effect_outcome.amount} 点经验。")
+                for gain in effect_outcome.level_gains:
+                    lines.append(f"你升到了 {gain.new_level} 级！")
+            elif isinstance(effect_outcome, AcceptQuestEffectOutcome):
+                lines.append(f"你接取了任务：{effect_outcome.quest_name}。")
+                lines.extend(
+                    CommandProcessor._render_quest_outcomes(
+                        effect_outcome.quest_outcomes
+                    )
                 )
+            elif isinstance(effect_outcome, SetFlagEffectOutcome):
+                value = "true" if effect_outcome.new_value else "false"
+                if effect_outcome.changed:
+                    lines.append(
+                        f"标记 {effect_outcome.flag_id} 已设为 {value}。"
+                    )
+                else:
+                    lines.append(
+                        f"标记 {effect_outcome.flag_id} 保持 {value}。"
+                    )
         node_text = getattr(outcome, "node_text", None)
         if node_text is not None:
             char_name = getattr(outcome, "character_name", "")
@@ -480,11 +591,6 @@ class CommandProcessor:
         ended = getattr(outcome, "ended", False)
         if ended:
             lines.append("对话结束了。")
-        lines.extend(
-            CommandProcessor._render_quest_outcomes(
-                getattr(outcome, "quest_outcomes", ())
-            )
-        )
         return "\n".join(lines)
 
     @staticmethod

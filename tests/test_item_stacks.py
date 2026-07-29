@@ -68,53 +68,53 @@ class QuantityParsingTests(unittest.TestCase):
     """_parse_quantity must handle all numeric styles correctly."""
 
     def test_suffix_quantity(self) -> None:
-        q, qty, err = _parse_quantity(["灵露丸", "3"])
+        q, qty, err = _parse_quantity(["灵露丸", "3"], "take <物品ID或名称> [数量]")
         self.assertEqual(q, "灵露丸")
         self.assertEqual(qty, 3)
         self.assertIsNone(err)
 
     def test_default_quantity_1(self) -> None:
-        q, qty, err = _parse_quantity(["灵露丸"])
+        q, qty, err = _parse_quantity(["灵露丸"], "take <物品ID或名称> [数量]")
         self.assertEqual(q, "灵露丸")
         self.assertEqual(qty, 1)
         self.assertIsNone(err)
 
     def test_rejects_0(self) -> None:
-        _, _, err = _parse_quantity(["灵露丸", "0"])
+        _, _, err = _parse_quantity(["灵露丸", "0"], "take <物品ID或名称> [数量]")
         self.assertIsNotNone(err)
         self.assertIn("正整数", err)
 
     def test_rejects_negative(self) -> None:
-        _, _, err = _parse_quantity(["灵露丸", "-1"])
+        _, _, err = _parse_quantity(["灵露丸", "-1"], "take <物品ID或名称> [数量]")
         self.assertIsNotNone(err)
 
     def test_rejects_plus_1(self) -> None:
-        _, _, err = _parse_quantity(["灵露丸", "+1"])
+        _, _, err = _parse_quantity(["灵露丸", "+1"], "take <物品ID或名称> [数量]")
         self.assertIsNotNone(err)
 
     def test_rejects_float(self) -> None:
-        _, _, err = _parse_quantity(["灵露丸", "1.5"])
+        _, _, err = _parse_quantity(["灵露丸", "1.5"], "take <物品ID或名称> [数量]")
         self.assertIsNotNone(err)
 
     def test_rejects_scientific(self) -> None:
-        _, _, err = _parse_quantity(["灵露丸", "1e5"])
+        _, _, err = _parse_quantity(["灵露丸", "1e5"], "take <物品ID或名称> [数量]")
         self.assertIsNotNone(err)
 
     def test_rejects_hex(self) -> None:
-        _, _, err = _parse_quantity(["灵露丸", "0xFF"])
+        _, _, err = _parse_quantity(["灵露丸", "0xFF"], "take <物品ID或名称> [数量]")
         self.assertIsNotNone(err)
 
     def test_rejects_inf(self) -> None:
-        _, _, err = _parse_quantity(["灵露丸", "inf"])
+        _, _, err = _parse_quantity(["灵露丸", "inf"], "take <物品ID或名称> [数量]")
         self.assertIsNotNone(err)
 
     def test_lone_number_is_usage_error(self) -> None:
-        _, _, err = _parse_quantity(["3"])
+        _, _, err = _parse_quantity(["3"], "take <物品ID或名称> [数量]")
         self.assertIsNotNone(err)
         self.assertIn("用法", err)
 
     def test_empty_is_usage_error(self) -> None:
-        _, _, err = _parse_quantity([])
+        _, _, err = _parse_quantity([], "take <物品ID或名称> [数量]")
         self.assertIsNotNone(err)
 
     def test_number_suffix_name(self) -> None:
@@ -293,15 +293,15 @@ class LootTests(unittest.TestCase):
         self.assertEqual(gel_stack.quantity, 1)
 
 
-class SaveV6Tests(unittest.TestCase):
-    """Save format v6 with stacks."""
+class SaveV7Tests(unittest.TestCase):
+    """Save format v7 with stacks, coins, and flags."""
 
     def setUp(self) -> None:
         self.pack = load_content_pack(DEMO_PATH)
         self.tmpdir = tempfile.mkdtemp()
         self.service = SaveLoadService(self.pack, Path(self.tmpdir))
 
-    def test_save_v6_round_trip(self) -> None:
+    def test_save_v7_round_trip(self) -> None:
         world = World.from_content_pack(self.pack)
         world.take("item_linglu_pill", 2)
         self.service.save(world)
@@ -314,15 +314,15 @@ class SaveV6Tests(unittest.TestCase):
         self.assertIsNotNone(gel)
         self.assertEqual(gel.quantity, 1)
 
-    def test_save_format_version_is_6(self) -> None:
-        self.assertEqual(SAVE_FORMAT_VERSION, 6)
+    def test_save_format_version_is_7(self) -> None:
+        self.assertEqual(SAVE_FORMAT_VERSION, 7)
 
-    def test_save_v6_rejects_v5(self) -> None:
-        """A v5 save must be rejected."""
+    def test_save_v7_rejects_v6(self) -> None:
+        """A v6 save must be rejected."""
         import json
-        v5_data = {
-            "save_format_version": 5,
-            "content_pack": {"id": "original_demo", "version": "0.4.0"},
+        v6_data = {
+            "save_format_version": 6,
+            "content_pack": {"id": "original_demo", "version": "0.6.0"},
             "player": {
                 "id": "player_local", "name": "test", "room_id": "room_ember_wharf",
                 "max_hp": 20, "hp": 20, "attack": 5, "defense": 1,
@@ -336,17 +336,17 @@ class SaveV6Tests(unittest.TestCase):
             "active_dialogue": None,
         }
         save_path = Path(self.tmpdir) / "default.json"
-        save_path.write_text(json.dumps(v5_data), encoding="utf-8")
+        save_path.write_text(json.dumps(v6_data), encoding="utf-8")
         with self.assertRaises(SaveLoadError):
             self.service.load()
 
-    def test_save_v6_load_failure_preserves_world(self) -> None:
+    def test_save_v7_load_failure_preserves_world(self) -> None:
         """Failed load must not replace the current world."""
         world = World.from_content_pack(self.pack)
         self.service.save(world)
         # Corrupt the save
         save_path = Path(self.tmpdir) / "default.json"
-        save_path.write_text('{"save_format_version": 5}', encoding="utf-8")
+        save_path.write_text('{"save_format_version": 6}', encoding="utf-8")
         with self.assertRaises(SaveLoadError):
             self.service.load()
         # Original world should be unchanged
@@ -445,16 +445,17 @@ class SchemaContractTests(unittest.TestCase):
         ref = schema["properties"]["loot_item"]["$ref"]
         self.assertEqual(ref, "common.schema.json#/$defs/item_stack")
 
-    def test_dialogue_schema_uses_grant_item(self) -> None:
+    def test_dialogue_schema_uses_effects_union(self) -> None:
         schema = self._load("dialogue.schema.json")
         opt_schema = (
             schema["properties"]["nodes"]["items"]
             ["properties"]["options"]["items"]
         )
-        self.assertNotIn("grant_item_id", opt_schema["properties"])
-        self.assertIn("grant_item", opt_schema["properties"])
-        ref = opt_schema["properties"]["grant_item"]["$ref"]
-        self.assertEqual(ref, "common.schema.json#/$defs/item_stack")
+        self.assertNotIn("grant_item", opt_schema["properties"])
+        self.assertIn("effects", opt_schema["required"])
+        self.assertIn("effects", opt_schema["properties"])
+        ref = opt_schema["properties"]["effects"]["items"]["$ref"]
+        self.assertEqual(ref, "#/$defs/dialogue_effect")
 
     def test_common_schema_item_stack_definition(self) -> None:
         schema = self._load("common.schema.json")

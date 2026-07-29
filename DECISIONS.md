@@ -571,3 +571,31 @@
 - Evidence: `dca629b`, `5527faa`, `tests/test_quest.py`,
   `docs/engine_completion_milestones.md`, `PROJECT_STATE.md`.
 - Supersedes: Only the independent-acceptance-pending status in DEC-0025.
+
+## DEC-0027: Integrated M4 typed dialogue effects and M5 fixed coin shops
+
+- Date: 2026-07-29
+- Status: Implemented locally; GPT-5.6-sol independent acceptance pending.
+- Context: The project owner approved one bounded public-engine slice that combines
+  M4 and M5 without beginning M6–M8, adding no dependencies and no mutable shop
+  stock.
+- Decision: (a) Replace `DialogueOption.grant_item` with the ordered frozen
+  `grant_item` / `grant_experience` / `accept_quest` / `set_flag` effect union.
+  Explicit duplicate quest acceptance fails the complete option; flags are
+  World-owned stable-ID-to-bool state with missing and `false` kept distinct.
+  (b) Keep one authoritative World transaction for whole-list preflight, effect
+  execution, quest settlement, progression, flags, and dialogue advancement.
+  (c) Introduce frozen, unlimited fixed-price shop catalogs with coins, no
+  serialized stock, and fixed `shop` / `buy` / `sell` behavior. (d) Upgrade the
+  public demo to content 0.6.0 and saves to v7 with `player.coins` and top-level
+  `flags`.
+- Consequences: `shops.json` is required even when empty. v6 saves and 0.4.0 demo
+  saves are rejected without migration. M6–M8 remain unstarted. Local evidence is
+  568 full tests, focused M4/M5 suites, compileall, content validation, history
+  safety, and external-save-directory CLI/rejection flows; it is not a Sol GO.
+- Evidence: `src/lore2mud/content/models.py`, `src/lore2mud/content/loader.py`,
+  `src/lore2mud/engine/world.py`, `src/lore2mud/engine/save.py`,
+  `src/lore2mud/engine/commands.py`, `tests/test_dialogue_effects.py`,
+  `tests/test_shop.py`, `docs/engine_completion_milestones.md`.
+- Supersedes: The M3-only dialogue item-grant contract in DEC-0025 for current
+  behavior; DEC-0025 and DEC-0026 remain historical M3 evidence.

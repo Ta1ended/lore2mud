@@ -7,14 +7,28 @@
 - Documented the current execution workflow: GPT-5.6-sol is the scope/architecture
   reviewer and independent acceptor; Codex is the sole executor; the project owner
   manually transfers prompts and completion reports between the two conversations.
-- Upgraded the original demo content pack to 0.4.0. Existing 0.3.0 saves are
-  rejected by the existing content-pack version check; save format remains v6.
+- Upgraded the original demo content pack to 0.6.0 and the local save format to v7.
+  v6 saves are rejected by format version; 0.4.0 content-pack saves are rejected by
+  the content-pack version check.
 - Moved command-layer death gate before dialogue routing in `CommandProcessor`
   so that dead players cannot invoke `_select_option` or `_bye` through bare
   numbers or `bye` when `active_dialogue` is set (DEC-0020).
 
 ### Added
 
+- Added the M4 frozen dialogue-effect tagged union: `grant_item`,
+  `grant_experience`, `accept_quest`, and `set_flag`. Options require an ordered
+  `effects` list; strict loader/schema validation rejects legacy fields, mixed
+  branches, invalid values, references, and duplicate targets.
+- Added atomic whole-list dialogue effect preflight/execution, World-owned flags,
+  typed per-effect outcomes, explicit quest acceptance, and save v7 flags support.
+  The original demo adds the ordered elder-Chen effect fixture and the
+  `quest_collect_ash_mite_gel` collect task.
+- Added the M5 fixed coin shop model, required `shops.json`/shop schema, typed
+  `ShopOutcome`/`BuyOutcome`/`SellOutcome`, and `shop`/`buy`/`sell` commands.
+  Catalogs are frozen, unlimited content definitions with no mutable stock;
+  original_demo starts at 20 coins and sells/buys `item_linglu_pill` for 4/2.
+- Added `tests.test_dialogue_effects` and `tests.test_shop` focused contract suites.
 - Added the M3 frozen `QuestDefinition` tagged union with exact
   `monster_defeated.target_monster_id`, `reach_room.target_room_id`, and
   `collect_item.target_item_id` plus `required_quantity` branches. Schema and
@@ -51,6 +65,11 @@
 
 ### Verified
 
+- Codex completed local M4+M5 verification (not independent acceptance): 568 full
+  unittest cases, 12 `tests.test_dialogue_effects` cases, 12 `tests.test_shop`
+  cases, the M1–M3 regression suite, compileall, content validation, history safety,
+  diff checking, and external-save-directory CLI flows including v6/0.6 and
+  v7/0.4 rejection cases.
 - GPT-5.6-sol independently accepted the M3 typed quest-condition slice as GO.
   The focused re-review of the M3 implementation and its `5527faa` handoff
   correction closed the single P2 `PROJECT_STATE.md` finding with no remaining
