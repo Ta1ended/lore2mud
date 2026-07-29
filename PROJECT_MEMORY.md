@@ -37,11 +37,10 @@ stale.
   the second original encounter and GPT-5.6-sol independently accepted M7.1 GO with
   no findings on 2026-07-30 (DEC-0032). The project owner then authorized the larger
   M7.2 content-only scale slice; GPT-5.6-sol independently accepted M7.2 and M7 as
-  GO with no findings on 2026-07-30 (DEC-0034). M8 is unstarted and push is not
-  authorized. The acceptance-time direct remote `main` was `f0acd3f`; local
-  `origin/main` still points there, but this session's CLI direct lookup could not
-  refresh because of a network connection failure, so GitHub Desktop Fetch remains
-  required before any publishing decision.
+  GO with no findings on 2026-07-30 (DEC-0034). The project owner then confirmed
+  push; `f486e12` is now on local `main`, `origin/main`, and the directly queried
+  remote `main`. Codex has completed the M8 read-only audit baseline; independent
+  acceptance is pending and the public engine is not yet declared complete.
 - Current public-engine contract: content pack 0.8.0; save v7; typed
   `ItemStackDefinition`/`ItemStack`; quantity-aware `take`/`drop`/`use`;
   required ordered dialogue effects; World-owned flags; nonnegative coins; and
@@ -78,8 +77,8 @@ stale.
   same movement, deterministic combat, typed quest, and v7 save contracts; no
   engine, Schema, command, item, loot, or dependency contract changed. The demo is
   now eight rooms, four monsters, and seven quests. The M7 scale conditions are
-  independently accepted GO; this does not declare the public engine complete or
-  authorize M8.
+  independently accepted GO; the M8 audit is now authorized but does not declare
+  the public engine complete until its independent review passes.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).
@@ -154,6 +153,13 @@ stale.
   and defeat recovery also passed. The v7/0.8.0 save confirms the player is in a
   new room, both new monsters are HP 0 and removed, and both new quests are complete.
   The acceptance-time direct remote `main` was `f0acd3f` and no push occurred.
+- Codex completed the M8 read-only audit baseline on `f486e12` (2026-07-30): 599
+  full unittest cases, compileall, original-demo validation, `check_repo_safety.py
+  --history`, `git diff --check`, and `git fsck --full --no-dangling` passed. A real
+  CLI flow completed both M7.2 branches and v7/0.8.0 save/load; a fresh CLI flow
+  proved prism-sentinel death, the death gate, `recover`, and v7 save/load back at
+  the start room. No repository files changed; GPT-5.6-sol independent acceptance
+  remains pending (DEC-0035).
 - GPT-5.6-sol independently accepted M7.1 as GO with no findings (2026-07-30):
   relative to `086cda8`, `9786325` is one 22-file `+333/-55` commit and leaves
   `src/`, `schemas/`, dependency files, and private-material paths untouched. 19 M7/loot focused and
@@ -198,7 +204,8 @@ stale.
 - M1, M2, and M3 retain their historical GPT-5.6-sol independent GO decisions;
   M4+M5 are also independently accepted GO (DEC-0028), and M6 is independently
   accepted GO (DEC-0030). M7.1 is independently accepted GO (DEC-0032); M7.2 and
-  M7 are independently accepted GO (DEC-0034). M8 remains unstarted.
+  M7 are independently accepted GO (DEC-0034). M8 audit baseline is complete and
+  awaits independent acceptance (DEC-0035).
 
 ## Dated historical verification evidence (not current contracts)
 

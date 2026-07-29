@@ -103,6 +103,14 @@
 
 ### Verified
 
+- Codex completed the read-only M8 public-engine audit baseline on `f486e12`
+  after the push was confirmed: 599 full unittest cases, compileall, original-demo
+  validation, `check_repo_safety.py --history`, `git diff --check`, and
+  `git fsck --full --no-dangling` passed. A real CLI flow completed the M7.2
+  branches, saved and loaded v7/0.8.0 state, and a fresh real CLI flow proved
+  prism-sentinel death → `recover` → v7 save/load. `main`, `origin/main`, and the
+  directly queried remote `main` all point to `f486e12`; M8 independent acceptance
+  remains pending.
 - GPT-5.6-sol independently accepted M7.2 and the complete M7 milestone as GO with
   no findings (2026-07-30). Relative to `5497859`, `147633e` is one 22-file
   content/test/public-document commit with zero `src/`, Schema, dependency, or
@@ -112,14 +120,13 @@
   recovery. The v7/0.8.0 save confirmed the player in a new room, both new monsters
   at HP 0 and removed, and both new quests complete; direct remote `main` was
   `f0acd3f` at acceptance and no push occurred.
-- Codex locally verified M7.2 (not independent acceptance): 8 M7 scenario tests,
+- Codex locally verified M7.2 before its independent acceptance: 8 M7 scenario tests,
   15 loot regressions, and 599 full unittest cases passed, along with compileall,
   original-demo validation, history safety, and `git diff --check`. An
   external-save-directory CLI flow equipped the starting gear, cleared both prior
   encounters and both new branches, then save/loaded v7/0.8.0 state at the beacon
-  with the two new quests complete and both new monsters removed. M7's content-scale
-  target is locally met but requires GPT-5.6-sol independent acceptance before M7
-  can be GO.
+  with the two new quests complete and both new monsters removed. The later M7.2/M7
+  independent acceptance is recorded above.
 - GPT-5.6-sol independently accepted M7.1 as GO with no findings (2026-07-30).
   Relative to `086cda8`, `9786325` is one 22-file `+333/-55` commit with zero
   `src/`, `schemas/`, dependency-file, or private-path changes. Accepted evidence

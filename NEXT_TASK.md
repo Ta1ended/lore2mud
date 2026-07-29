@@ -1,21 +1,20 @@
 # Next Task
 
-_Last updated: 2026-07-30（M7.2 与 M7 已独立验收 GO；M8 未授权）_
+_Last updated: 2026-07-30（M8 只读审计基线完成；等待独立验收）_
 
 ## Single next action
 
-等待项目负责人先在 GitHub Desktop 执行 Fetch 并确认没有 incoming commits；确认后仅在其明确授权时再处理 push 决策。
+将 M8 只读审计证据转交 GPT-5.6-sol，申请公共引擎完成独立复核；在复核结论前不修改引擎或宣布 M8 GO。
 
 ## Boundaries
 
-- GPT-5.6-sol 已独立验收 M7.2 与整体 M7 为 GO、无 findings（DEC-0034）。当前原创演示为
-  8/8 房间、4/4 怪物和 7 条任务；这不等同于公共引擎完成。
-- 该验收相对 `5497859` 的 `147633e` 核对 22 个内容、测试和公开文档文件，`src/`、Schema、
-  依赖和私有资料路径均为 0；两条新任务保持唯一怪物目标。
-- 验收中的直查远端 `main` 为 `f0acd3f` 且未 push；本机 `origin/main` 仍指向该提交，但本次
-  CLI 直查因网络连接失败无法刷新，因此发布前必须由 GitHub Desktop Fetch 确认。
-- 不得开始 M8、其他功能切片或 push，除非项目负责人另行明确授权。
+- GPT-5.6-sol 已独立验收 M7.2 与整体 M7 为 GO、无 findings（DEC-0034）；当前原创演示为
+  8/8 房间、4/4 怪物和 7 条任务。
+- M8 基线提交为 `f486e12`；599 项全量测试、编译、内容、安全、Git fsck、真实 CLI 主流程和
+  死亡恢复均已通过，且本次审计未修改仓库文件。
+- `main`、`origin/main` 与远端 `main` 已同步到 `f486e12`，工作树干净，ahead/behind 为 0/0。
+- M8 独立复核前不得修改引擎、Schema、依赖、原创内容或 save 契约；不得访问私有小说事实层。
 
 ## Queue
 
-- Fetch 结果无 incoming commits 后，等待项目负责人决定是否授权 push；M8 仍未开始。
+- 等待 GPT-5.6-sol 独立复核结论；若有 findings，仅按新的明确授权执行一个有界修正切片。

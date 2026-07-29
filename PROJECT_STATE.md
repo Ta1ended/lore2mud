@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-30（M7.2 与 M7 已独立验收 GO；M8 未开始）_
+_Last updated: 2026-07-30（M8 只读审计基线完成；等待独立验收）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -27,7 +27,10 @@ Codex 在 M7.1 只扩充完全原创内容：新增碎讯支线、火花巡兽�
 项目负责人随后授权 M7.2 的较大纯内容扩容包：Codex 新增四个原创房间、两只怪物和两条
 唯一怪物目标任务（DEC-0033）。GPT-5.6-sol 已于 2026-07-30 对 `147633e` 相对 `5497859`
 完成独立验收：M7.2 GO、整体 M7 GO，均无 findings（DEC-0034）。该 GO 仅封板 M7 原创
-内容规模；公共引擎尚未完成，M8 未开始，也未授权 push。
+内容规模；公共引擎尚未完成，M8 尚未独立验收。
+
+项目负责人已确认 M7 文档提交完成 push，并授权继续后续开发。Codex 已完成 M8 公共引擎完成审计的
+只读基线；M8 尚未独立验收，不得宣布公共引擎完成或修改引擎以外的范围。
 
 当前公开契约为 content pack 0.8.0、save v7、强类型有序 `DialogueEffect`、World-owned
 `flags`、非负 `coins` 和冻结的固定无限商店目录。`World` 预检并原子执行 effects/买入；
@@ -176,16 +179,22 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 当前没有正在实施的功能切片。M7 当前为 8/8 房间、4/4 怪物、7 条任务，已由 GPT-5.6-sol
-  独立验收 GO。唯一下一动作是等待项目负责人通过 GitHub Desktop Fetch 确认无 incoming commits，
-  再明确决定是否授权 push；不得开始 M8 或其他功能切片。
+- M8 公共引擎完成审计的只读基线已完成；M7 当前为 8/8 房间、4/4 怪物、7 条任务，已由
+  GPT-5.6-sol 独立验收 GO。唯一下一动作是将 M8 证据转交 GPT-5.6-sol 进行独立复核；复核前
+  不修改引擎、Schema、依赖、原创内容或 save 契约。
 
 ## Blockers
 
-- 发布被项目负责人明确暂缓；本次 CLI 无法刷新直接远端连接，须以 GitHub Desktop Fetch 结果为准。
+- 无技术阻塞；M8 GO 受 GPT-5.6-sol 独立复核门槛约束。
 
 ## Verification
 
+- M8 只读审计基线（2026-07-30，Codex，独立验收待定）：以 `f486e12` 为基线，599 项全量
+  unittest、compileall、`lore2mud validate --content examples/original_demo`、
+  `check_repo_safety.py --history`、`git diff --check` 与 `git fsck --full --no-dangling` 全部通过。
+  真实 CLI 主流程完成 M7.2 两条新分支、save/load v7/0.8.0；另一全新 CLI 进程直达余辉信标台，
+  证明棱镜哨卫击杀玩家后的死亡门禁、`recover`、回到余烬渡台以及 v7 save/load。审计期间无仓库
+  文件修改；`main`、`origin/main` 与远端 `main` 均为 `f486e12`，ahead/behind 为 0/0。
 - M7.2 与 M7 独立验收 GO（2026-07-30，GPT-5.6-sol，无 findings）：相对 `5497859` 的
   `147633e` 为 1 个提交、22 个内容、测试和公开文档文件，`src/`、Schema、依赖文件和私有资料
   路径均为 0。23 项 M7/loot 聚焦、599 项全量 unittest、图与唯一性审计、compileall、
@@ -306,9 +315,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   authorized vertical slice.
 - M7.2 reaches all M7 content-scale counts (eight rooms, four monsters, and seven
   quests) without a new engine contract and is independently accepted together with
-  M7. This does not complete the public engine: M8 and push remain outside the
-  current authorization, and GitHub Desktop Fetch must confirm no incoming commits
-  before any publication decision.
+  M7. The M8 read-only audit baseline is complete, but the public engine is not
+  complete until GPT-5.6-sol independently accepts it; do not expand scope or enter
+  the private fact layer.
 - `drop` can deliberately leave a gate item in the current room and therefore block
   a gated exit until the player takes it again; this is explicit player intent.
   Equipped items are intentionally rejected instead of silently changing combat stats.

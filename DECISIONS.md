@@ -797,3 +797,27 @@
 - Supersedes: Only DEC-0033's independent-acceptance-pending status and related
   current handoff snapshots. DEC-0033's content, 0.8.0/v7, and boundary contracts,
   DEC-0032's M7.1 record, and all M1–M6 decisions remain in force.
+
+## DEC-0035: M8 public-engine audit baseline — independent acceptance pending
+
+- Date: 2026-07-30
+- Status: Codex read-only audit complete; GPT-5.6-sol independent acceptance pending.
+- Context: After the project owner confirmed the M7 documentation push, the next
+  roadmap stage is M8's public-engine completion audit. The audit was run against
+  `f486e12`, which is now present on local `main`, `origin/main`, and the directly
+  queried remote `main`.
+- Decision: Enter M8 through a read-only evidence baseline. Do not alter engine,
+  Schema, dependencies, original content, or save contracts until GPT-5.6-sol
+  reviews the evidence and identifies any required bounded correction.
+- Consequences: M8 is in audit preparation, not GO; the public engine remains
+  uncompleted until independent acceptance. The private novel fact layer remains
+  outside this roadmap and is not authorized.
+- Evidence: 599 full unittest cases; compileall; `lore2mud validate --content
+  examples/original_demo`; `check_repo_safety.py --history`; `git diff --check`;
+  `git fsck --full --no-dangling`; and a real CLI/save flow through both new M7.2
+  branches. A fresh real CLI flow reached the beacon without defeating prior
+  monsters, proved prism-sentinel death, `recover`, and v7 save/load back at the
+  start room. No repository files changed during the audit.
+- Supersedes: Only the M8-unstarted current handoff status after DEC-0034. DEC-0034
+  and all prior milestone contracts and independent acceptance records remain in
+  force.
