@@ -883,3 +883,35 @@
   `tests/test_fact_candidates.py`, `tests/fixtures/fact_candidates/`,
   `docs/fact_candidate_format.md`, `docs/novel_pipeline.md`.
 - Supersedes: None.
+
+## DEC-0038: Phase 1.0 focus fix — harden fact candidate validation
+
+- Date: 2026-07-30
+- Status: Implemented locally; GPT-5.6-sol focused re-review pending.
+- Context: Phase 1.0 independent acceptance was NO-GO with two P1 and one P2.
+  P1-1: `entity_type`, `source_support`, `certainty` leaked `TypeError` on
+  unhashable JSON types (list, dict) because `not in frozenset` was called before
+  `isinstance(str)` check, including in construction conditions. P1-2:
+  `NumericValue.number` was `float`, causing `float()` conversion of ints
+  (precision loss for 2^53+1) and `OverflowError` for 10^400. P2: Schema used
+  only `minLength` for non-blank strings and lacked `if/then/else` for the
+  `source_support` → `inference_basis` conditional.
+- Decision: (a) Add `isinstance(v, str)` guard before all `not in` / `in`
+  frozenset checks for `entity_type`, `source_support`, `certainty` — both in
+  the error-reporting path and the construction-condition path. (b) Change
+  `NumericValue.number` type to `int | float`; pass int values through without
+  `float()` conversion; apply `math.isfinite` only to `isinstance(num, float)`.
+  (c) Add `non_blank_string` def with `\S` pattern to Schema; use `$ref` for
+  `extracted_by`, `display_name`, alias items, text value, and `then` branch
+  of `inference_basis`. Add `if/then/else` on claim for
+  `source_support=inferred` → non-blank `inference_basis`, else `null`.
+  (d) Add 12 new test methods: P1-1 matrix (1 method, 24 subTests),
+  P1-2 precision (5 methods), P2 Schema structure (6 methods). Total focused: 131.
+- Consequences: The `entity_type`/`source_support`/`certainty` type-check paths
+  no longer leak `TypeError` on unhashable JSON types. Numeric `int` values are
+  preserved exactly without `float()` conversion, closing the `OverflowError` for
+  large ints. Schema now expresses the inference_basis conditional and rejects
+  pure-whitespace strings. 730 full tests continue to pass.
+- Evidence: `pipeline/fact_candidates.py`, `schemas/fact_candidate.schema.json`,
+  `tests/test_fact_candidates.py`.
+- Supersedes: None.

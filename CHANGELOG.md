@@ -9,18 +9,32 @@
   five value branches), stable-ID regex, NFKC alias dedup, relation cross-reference,
   and `FactCandidateValidationError`.
 - Added `schemas/fact_candidate.schema.json` (draft 2020-12, `additionalProperties`
-  false, `oneOf` tagged union). Schema expresses structural constraints; Python adds
-  semantic checks (dedup, cross-reference, NFKC, bool/int, finite float).
-- Added `tests/test_fact_candidates.py` with 119 focused tests covering all value
+  false, `oneOf` tagged union, `if/then/else` for inference_basis conditional,
+  `\\S` pattern for non-blank strings). Schema expresses structural constraints;
+  Python adds semantic checks (dedup, cross-reference, NFKC, bool/int, finite float).
+- Added `tests/test_fact_candidates.py` with 131 focused tests covering all value
   branches, unknown fields, missing fields, bool/int, NaN/Inf, alias dedup,
   relation dangling ref, chapter mismatch, inference_basis conditionals, frozen
-  return types, and issues-order determinism.
+  return types, issues-order determinism, P1-1 enum TypeError matrix (3 fields ×
+  8 bad types), P1-2 numeric int precision (42, 2^53+1, 10^400, float), and
+  P2 Schema structure assertions.
 - Added `tests/fixtures/fact_candidates/valid_character.json` — a fully fictional
   fixture with two candidates (character + location), four value branches, and a
   relation cross-reference.
 - Added `docs/fact_candidate_format.md` documenting the v1 envelope, candidate,
   claim, evidence dimensions, value branches, stable ID rules, and schema/Python
   boundary.
+
+### Fixed
+
+- Fixed P1-1: enum fields (`entity_type`, `source_support`, `certainty`) no longer
+  leak `TypeError` on unhashable JSON types (list, dict). All JSON-compatible types
+  are now caught and reported as `FactCandidateValidationError`.
+- Fixed P1-2: `NumericValue.number` is now `int | float`. Integers are preserved
+  exactly (no `float()` conversion), eliminating precision loss for large ints and
+  `OverflowError` for huge ints. `math.isfinite` check applies only to floats.
+- Fixed P2: Schema uses `if/then/else` for `source_support` → `inference_basis`
+  conditional, and `\\S` pattern for non-blank strings instead of `minLength` alone.
 
 ### Changed
 

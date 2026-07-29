@@ -394,6 +394,32 @@ class EntityTypeTests(unittest.TestCase):
             self.assertEqual(result.candidates[0].entity_type, etype)
 
 
+# ── P1-1: enum fields must not leak TypeError on unhashable types ────────────
+
+class EnumTypeErrorTests(unittest.TestCase):
+    """entity_type, source_support, certainty must accept any JSON type
+    and raise FactCandidateValidationError, never TypeError."""
+
+    _BAD_VALUES = [None, True, False, 0, 42, 3.14, ["x"], {"k": "v"}]
+
+    def _make_doc(self, field: str, value: object) -> dict:
+        doc = _minimal_doc()
+        if field == "entity_type":
+            doc["candidates"][0]["entity_type"] = value
+        else:
+            doc["candidates"][0]["claims"][0][field] = value
+        return doc
+
+    def test_enum_fields_reject_bad_types(self) -> None:
+        for field in ("entity_type", "source_support", "certainty"):
+            for bad in self._BAD_VALUES:
+                with self.subTest(field=field, value=bad):
+                    with self.assertRaises(FactCandidateValidationError):
+                        validate_fact_candidate_document(
+                            self._make_doc(field, bad)
+                        )
+
+
 # ── proposed_entity_id ──────────────────────────────────────────────────────
 
 class ProposedEntityIdTests(unittest.TestCase):
@@ -795,6 +821,57 @@ class NumericValueTests(unittest.TestCase):
             validate_fact_candidate_document(doc)
 
 
+# ── P1-2: numeric int precision and OverflowError ───────────────────────────
+
+class NumericPrecisionTests(unittest.TestCase):
+    """Integers must be preserved as int; only floats get isfinite check."""
+
+    def test_int_42_stays_int(self) -> None:
+        doc = _with_claim_value(
+            _minimal_doc(), {"kind": "numeric", "number": 42, "unit": None}
+        )
+        result = validate_fact_candidate_document(doc)
+        num = result.candidates[0].claims[0].value.number
+        self.assertIsInstance(num, int)
+        self.assertEqual(num, 42)
+
+    def test_int_2_pow_53_plus_1_exact(self) -> None:
+        big = 2**53 + 1
+        doc = _with_claim_value(
+            _minimal_doc(), {"kind": "numeric", "number": big, "unit": None}
+        )
+        result = validate_fact_candidate_document(doc)
+        num = result.candidates[0].claims[0].value.number
+        self.assertIsInstance(num, int)
+        self.assertEqual(num, big)
+
+    def test_int_10_pow_400_no_overflow(self) -> None:
+        huge = 10**400
+        doc = _with_claim_value(
+            _minimal_doc(), {"kind": "numeric", "number": huge, "unit": None}
+        )
+        result = validate_fact_candidate_document(doc)
+        num = result.candidates[0].claims[0].value.number
+        self.assertIsInstance(num, int)
+        self.assertEqual(num, huge)
+
+    def test_float_stays_float(self) -> None:
+        doc = _with_claim_value(
+            _minimal_doc(), {"kind": "numeric", "number": 3.14, "unit": None}
+        )
+        result = validate_fact_candidate_document(doc)
+        num = result.candidates[0].claims[0].value.number
+        self.assertIsInstance(num, float)
+        self.assertAlmostEqual(num, 3.14)
+
+    def test_int_0_stays_int(self) -> None:
+        doc = _with_claim_value(
+            _minimal_doc(), {"kind": "numeric", "number": 0, "unit": None}
+        )
+        result = validate_fact_candidate_document(doc)
+        self.assertIsInstance(result.candidates[0].claims[0].value.number, int)
+
+
 # ── value: boolean ──────────────────────────────────────────────────────────
 
 class BooleanValueTests(unittest.TestCase):
@@ -921,6 +998,55 @@ class SchemaParseTests(unittest.TestCase):
         self.assertIn("$schema", schema)
         self.assertIn("properties", schema)
         self.assertIn("$defs", schema)
+
+    def test_non_blank_pattern_on_extracted_by(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "fact_candidate.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        eb = schema["properties"]["extracted_by"]
+        self.assertIn("pattern", eb, "extracted_by must have a whitespace-rejecting pattern")
+        self.assertNotIn("minLength", eb, "extracted_by should rely on pattern, not just minLength")
+
+    def test_non_blank_pattern_on_display_name(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "fact_candidate.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        dn = schema["$defs"]["candidate"]["properties"]["display_name"]
+        # display_name uses $ref to non_blank_string
+        self.assertIn("$ref", dn)
+
+    def test_non_blank_string_def_exists(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "fact_candidate.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        nbs = schema["$defs"]["non_blank_string"]
+        self.assertIn("pattern", nbs)
+        self.assertIn("\\S", nbs["pattern"])
+
+    def test_claim_has_if_then_else_for_inference_basis(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "fact_candidate.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        claim = schema["$defs"]["claim"]
+        self.assertIn("if", claim, "claim must have if/then/else for inference_basis")
+        self.assertIn("then", claim)
+        self.assertIn("else", claim)
+        # if checks source_support == "inferred"
+        self.assertEqual(claim["if"]["properties"]["source_support"]["const"], "inferred")
+        # then requires non-blank inference_basis
+        then_ib = claim["then"]["properties"]["inference_basis"]
+        self.assertIn("$ref", then_ib)
+        # else requires null
+        else_ib = claim["else"]["properties"]["inference_basis"]
+        self.assertEqual(else_ib["type"], "null")
+
+    def test_text_value_uses_non_blank_pattern(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "fact_candidate.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        text_prop = schema["$defs"]["text_value"]["properties"]["text"]
+        self.assertIn("$ref", text_prop)
+
+    def test_alias_items_use_non_blank_pattern(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "fact_candidate.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        alias_items = schema["$defs"]["candidate"]["properties"]["aliases"]["items"]
+        self.assertIn("$ref", alias_items)
 
 
 # ── multi-candidate multi-claim ─────────────────────────────────────────────

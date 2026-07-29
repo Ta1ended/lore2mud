@@ -89,8 +89,10 @@ stale.
   candidate, claim, 5-branch value tagged union), stable-ID regex, NFKC alias
   dedup, relation cross-reference, `FactCandidateValidationError`. JSON Schema
   at `schemas/fact_candidate.schema.json` (draft 2020-12). 119 focused tests
-  and 718 full tests pass, compileall, content validation, safety scan, and
-  diff check clean. Pending GPT-5.6-sol independent acceptance (DEC-0037).
+  and 730 full tests pass, compileall, content validation, safety scan, and
+  diff check clean. GPT-5.6-sol independent acceptance NO-GO (P1-1 enum TypeError,
+  P1-2 numeric precision, P2 Schema constraints). Focus fix in DEC-0038: 131
+  focused tests, all P1/P2 closed. Pending focused re-review.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/lore2mud/lore2mud/schemas/fact_candidate.schema.json",
   "title": "Fact Candidate Document v1",
-  "description": "A v1 document envelope containing fact candidates extracted from a single chapter. This schema expresses structural constraints; Python adds semantic checks (dedup, cross-reference, NFKC alias normalization).",
+  "description": "A v1 document envelope containing fact candidates extracted from a single chapter. This schema expresses structural constraints; Python adds semantic checks the schema cannot express (dedup, cross-reference, NFKC alias normalization, bool/int, finite float).",
   "type": "object",
   "required": ["format_version", "source_chapter", "extracted_by", "candidates"],
   "additionalProperties": false,
@@ -19,8 +19,8 @@
     },
     "extracted_by": {
       "type": "string",
-      "minLength": 1,
-      "description": "Identifier of the extraction tool or model."
+      "pattern": "\\S",
+      "description": "Non-blank identifier of the extraction tool or model."
     },
     "candidates": {
       "type": "array",
@@ -35,6 +35,11 @@
       "pattern": "^[a-z][a-z0-9_]*$",
       "minLength": 1,
       "description": "Lowercase ASCII identifier: letter start, letters/digits/underscores."
+    },
+    "non_blank_string": {
+      "type": "string",
+      "pattern": "\\S",
+      "description": "A string that contains at least one non-whitespace character."
     },
     "candidate": {
       "type": "object",
@@ -56,18 +61,11 @@
           ],
           "description": "Optional proposed stable ID; null if not proposed."
         },
-        "display_name": {
-          "type": "string",
-          "minLength": 1,
-          "description": "Non-empty display name."
-        },
+        "display_name": { "$ref": "#/$defs/non_blank_string" },
         "aliases": {
           "type": "array",
-          "items": {
-            "type": "string",
-            "minLength": 1
-          },
-          "description": "Required array (may be empty). Each alias non-empty. Python checks NFKC dedup."
+          "items": { "$ref": "#/$defs/non_blank_string" },
+          "description": "Required array (may be empty). Each alias non-blank. Python checks NFKC dedup."
         },
         "claims": {
           "type": "array",
@@ -106,12 +104,20 @@
           "type": "string",
           "enum": ["certain", "uncertain"]
         },
-        "inference_basis": {
-          "oneOf": [
-            { "type": "null" },
-            { "type": "string", "minLength": 1 }
-          ],
-          "description": "Required non-null when source_support=inferred; must be null otherwise."
+        "inference_basis": {}
+      },
+      "if": {
+        "properties": { "source_support": { "const": "inferred" } },
+        "required": ["source_support"]
+      },
+      "then": {
+        "properties": {
+          "inference_basis": { "$ref": "#/$defs/non_blank_string" }
+        }
+      },
+      "else": {
+        "properties": {
+          "inference_basis": { "type": "null" }
         }
       }
     },
@@ -131,7 +137,7 @@
       "additionalProperties": false,
       "properties": {
         "kind": { "const": "text" },
-        "text": { "type": "string", "minLength": 1 }
+        "text": { "$ref": "#/$defs/non_blank_string" }
       }
     },
     "relation_value": {

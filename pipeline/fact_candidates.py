@@ -66,7 +66,7 @@ class RelationValue:
 @dataclass(frozen=True, slots=True)
 class NumericValue:
     kind: Literal["numeric"] = "numeric"
-    number: float = 0.0
+    number: int | float = 0
     unit: str | None = None
 
 
@@ -247,7 +247,7 @@ def _parse_value(
                 issues.append(f"{loc}.value.unit 非 null 时必须是非空白字符串")
                 return None
             _check_stable_id(unit, f"{loc}.value.unit", issues)
-        return NumericValue(number=float(num), unit=unit)
+        return NumericValue(number=num, unit=unit)
 
     if kind == "boolean":
         _check_unknown_keys(raw, {"kind", "flag"}, f"{loc}.value", issues)
@@ -360,7 +360,7 @@ def validate_fact_candidate_document(data: object) -> FactCandidateDocument:
 
         # entity_type
         et = raw_cand.get("entity_type")
-        if et not in _ENTITY_TYPES:
+        if not isinstance(et, str) or et not in _ENTITY_TYPES:
             issues.append(
                 f"{cloc}.entity_type 必须是 "
                 "character|location|organization|skill|item|event"
@@ -451,12 +451,12 @@ def validate_fact_candidate_document(data: object) -> FactCandidateDocument:
 
             # source_support
             ss = raw_claim.get("source_support")
-            if ss not in _SOURCE_SUPPORTS:
+            if not isinstance(ss, str) or ss not in _SOURCE_SUPPORTS:
                 issues.append(f"{clloc}.source_support 必须是 explicit|inferred")
 
             # certainty
             cert = raw_claim.get("certainty")
-            if cert not in _CERTAINTIES:
+            if not isinstance(cert, str) or cert not in _CERTAINTIES:
                 issues.append(f"{clloc}.certainty 必须是 certain|uncertain")
 
             # inference_basis — conditional
@@ -484,7 +484,9 @@ def validate_fact_candidate_document(data: object) -> FactCandidateDocument:
                 and claim_value is not None
                 and isinstance(raw_sc_list, list)
                 and len(raw_sc_list) == 1
+                and isinstance(ss, str)
                 and ss in _SOURCE_SUPPORTS
+                and isinstance(cert, str)
                 and cert in _CERTAINTIES
             ):
                 sc_tuple = tuple(s for s in raw_sc_list if isinstance(s, str))
@@ -506,6 +508,7 @@ def validate_fact_candidate_document(data: object) -> FactCandidateDocument:
         if (
             isinstance(cid, str)
             and cid.strip()
+            and isinstance(et, str)
             and et in _ENTITY_TYPES
             and isinstance(dn, str)
             and dn.strip()

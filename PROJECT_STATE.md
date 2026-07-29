@@ -183,9 +183,10 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 ## In progress
 
 - Phase 1.0 fact-candidate document validation contract已由 Hermes 实现，
-  等待 GPT-5.6-sol 独立验收（DEC-0037）。实现位于 `pipeline/fact_candidates.py`，
-  不涉及 `src/`、现有 Schema、original_demo 或 save 格式。119 项聚焦测试和
-  718 项全量测试通过；compileall、内容校验、安全扫描和 diff 检查均通过。
+  GPT-5.6-sol 独立验收 NO-GO（P1-1 enum TypeError、P1-2 numeric precision、
+  P2 Schema 约束）。聚焦修正已提交（DEC-0038）：131 项聚焦测试通过，
+  全量 730 项测试通过，compileall、内容校验、安全扫描和 diff 检查均通过。
+  等待 GPT-5.6-sol 聚焦复验。
 
 ## Blockers
 

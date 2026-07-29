@@ -201,7 +201,9 @@ doc = validate_fact_candidate_document(parsed_json_dict)
 # Raises FactCandidateValidationError on failure
 ```
 
-The validator performs structural checks only.  It does not read files,
+The validator performs structural checks and bounded semantic checks (ID dedup,
+NFKC alias dedup, relation cross-reference, source_chapter equality, bool/int
+discrimination, finite float).  It does not read files,
 access private data, or validate against a manifest.
 
 ## Schema
