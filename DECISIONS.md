@@ -710,3 +710,29 @@
   `docs/engine_completion_milestones.md`, `PROJECT_STATE.md`.
 - Supersedes: Only the M7 planning-only status in the milestone roadmap; M1–M6
   contracts and their independent acceptance records remain in force.
+
+## DEC-0032: M7.1 independent acceptance — GO
+
+- Date: 2026-07-30
+- Status: Accepted
+- Context: Codex implemented the project-owner-authorized M7.1 second original
+  encounter in `9786325`. GPT-5.6-sol then independently reviewed the completed
+  slice relative to `086cda8`.
+- Decision: Record M7.1 as independently accepted GO by GPT-5.6-sol with no
+  findings. The acceptance covers one 22-file `+333/-55` commit; no `src/`,
+  `schemas/`, dependency-file, or private-material path changed. It accepts the
+  public fourth room, second monster, second monster-defeated quest, content-pack
+  0.7.0, and unchanged save v7 contract.
+- Consequences: M7.1 is complete, but M7 remains in progress at 4/8 rooms, 2/4
+  monsters, and five quests; this is not M7 GO or public-engine completion. M7.2
+  still requires explicit project-owner authorization, followed first by a read-only
+  implementation proposal. This decision does not authorize push.
+- Evidence: 19 M7/loot focused tests; 595 full unittest cases; compileall;
+  `lore2mud validate --content examples/original_demo`; `check_repo_safety.py
+  --history`; baseline `git diff --check`; and a real CLI flow that accepted the
+  new task, defeated both monsters, entered the new room, completed
+  `quest_clear_spark_hound`, and save/loaded. The v7/0.7.0 save confirmed the
+  player remained in the new room, the hound was HP 0 and removed, and the task was
+  complete. Direct remote `main` remained `f0acd3f`; no push occurred.
+- Supersedes: Only the independent-acceptance-pending status in DEC-0031. DEC-0031
+  content, save, and boundary contracts remain in force.

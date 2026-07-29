@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-29（M7.1 已本地实现并验证，等待 GPT-5.6-sol 独立验收）_
+_Last updated: 2026-07-30（M7.1 已由 GPT-5.6-sol 独立验收 GO；M7 进行中）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -23,7 +23,8 @@ outcomes、公开 `examine`、兼容 `inspect`、集中 `CommandSpec` 路由/帮
 跨类型同名或重复 ID 必须显式限定类型，歧义夹具只存在于测试内存。GPT-5.6-sol 已于
 2026-07-29 对 M6 独立验收 GO、无 findings（DEC-0030）。项目负责人已明确授权 M7；
 Codex 在 M7.1 只扩充完全原创内容：新增碎讯支线、火花巡兽和观测站触发的清除任务
-（DEC-0031）。该切片尚未独立验收，不能表述为 M7 GO，且不授权 push。
+（DEC-0031）。GPT-5.6-sol 已于 2026-07-30 对 M7.1 独立验收 GO、无 findings（DEC-0032）。
+该结论只封板 M7.1；M7 仍进行中，不得表述为 M7 GO，且未授权 M7.2 或 push。
 
 当前公开契约为 content pack 0.7.0、save v7、强类型有序 `DialogueEffect`、World-owned
 `flags`、非负 `coins` 和冻结的固定无限商店目录。`World` 预检并原子执行 effects/买入；
@@ -39,15 +40,17 @@ M4 effects 不重放，v6 与旧内容包存档继续拒绝。M6 独立验收证
 591 项全量 unittest，以及 compileall、original_demo 校验、历史安全扫描、diff、相对
 `f0acd3f` 的 11 文件范围和仓库外 CLI/save v7；均通过且无 findings。验收时 main 工作树
 干净、ahead/behind 为 1/0，直查远端 main 为 `f0acd3f`；发布或 push 前必须再次直查。
-M7.1 本地证据为 4 项新场景测试、15 项 loot 回归和 595 项全量 unittest，以及 compileall、
-original_demo 校验、历史安全扫描、diff 检查和仓库外 CLI/save v7；均通过。CLI 完成两只怪物、
-新任务和 save/load，保存中 pack 为 0.7.0、火花巡兽 HP 为 0 且房间不再含该怪物。唯一下一动作
-见 `NEXT_TASK.md`。
+M7.1 的 Codex 本地证据为 4 项新场景测试、15 项 loot 回归和 595 项全量 unittest，以及
+compileall、original_demo 校验、历史安全扫描、diff 检查和仓库外 CLI/save v7；均通过。GPT-5.6-sol
+随后相对 `086cda8` 对 `9786325` 独立验收 GO、无 findings：范围为 1 个提交、22 文件、+333/-55，
+且 `src/`、`schemas/`、依赖文件与私有资料路径均为 0。真实 CLI 和存档确认新任务完成、玩家位于
+新房间、火花巡兽 HP 为 0 且已从房间移除，save 保持 v7/0.7.0；远端直查仍为 `f0acd3f`，未 push。
+M7 当前仍为 4/8 房间、2/4 怪物、5 条任务；唯一下一动作见 `NEXT_TASK.md`。
 
 ## Historical current-status snapshot (2026-07-28, pre-M2; not current)
 
 > 下列快照保留当时的 save v5、0.2.7、旧 Git 与旧执行流程事实；当前状态以上文
-> v7、0.7.0、M7.1 本地验证待独立验收、M4+M5 GO、M3/M2 GO 和 Codex 执行模式为准。
+> v7、0.7.0、M7.1 独立验收 GO（M7 进行中）、M4+M5 GO、M3/M2 GO 和 Codex 执行模式为准。
 
 装备系统已实现 hand 和 body 双槽位，存档格式为 v5。对话系统已实现——原创 NPC 老陈带有
 确定性分支对话和一次性普通物品奖励；琉草小径西向出口要求持有该铜牌，`look` 会只读显示
@@ -73,7 +76,7 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 ## Completed
 
 > 历史记录说明：本节中 save v3–v5、内容包 0.2.x、旧 API 名称、旧测试数和旧 Git
-> 状态均为对应切片当时的事实；当前契约以“Current status”的 v7、0.7.0 和 M7.1 本地验证状态为准。
+> 状态均为对应切片当时的事实；当前契约以“Current status”的 v7、0.7.0 和 M7.1 独立验收状态为准。
 
 - `src/lore2mud/` 实现标准库运行时、双 CLI 入口和领域模块。
 - `examples/original_demo/` 提供四个原创房间、六个物品、两只怪物、一个角色（老陈）和五条
@@ -163,8 +166,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- M7.1 第二个原创遭遇已本地实现并验证；唯一下一动作是由 GPT-5.6-sol 对内容边界、任务
-  触发/结算、0.7.0/v7 兼容和真实 CLI 证据进行独立验收。验收前不得开始 M7.2 或 push。
+- M7.1 第二个原创遭遇已独立验收 GO；M7 仍进行中，当前规模为 4/8 房间、2/4 怪物、5 条任务。
+  唯一下一动作是等待项目负责人明确授权 M7.2；获得授权后先提交只读实施方案。授权前不得开始
+  M7.2 或 push。
 
 ## Blockers
 
@@ -172,6 +176,13 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## Verification
 
+- M7.1 独立验收 GO（2026-07-30，GPT-5.6-sol，无 findings）：相对 `086cda8` 的 `9786325`
+  为 1 个提交、22 文件、+333/-55；`src/`、`schemas/`、依赖文件和私有资料路径均为 0。19 项
+  M7/loot 聚焦与 595 项全量 unittest 通过；compileall、original_demo 校验、
+  `check_repo_safety.py --history` 和基线范围 `git diff --check` 通过。真实 CLI 完成“进入观测站并
+  接取任务 → 击败灰壳兽 → 进入碎讯支线 → 击败火花巡兽 → 完成任务 → save/load”；存档确认 v7、
+  content pack 0.7.0、玩家位于新房间、火花巡兽 HP=0 且已移除、
+  `quest_clear_spark_hound` 已完成。直查远端 `main` 为 `f0acd3f`，未 push。该 GO 仅适用于 M7.1。
 - M7.1 本地验证（2026-07-29，非独立验收）：4 项 `tests.test_m7_second_encounter`、15 项
   `tests.test_loot` 和 595 项全量 unittest 通过；compileall、original_demo 校验、
   `check_repo_safety.py --history` 与 `git diff --check` 通过。仓库外 CLI 完成“进入观测站 →
@@ -270,8 +281,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   rule together and extend the bidirectional consistency test in a separately
   authorized vertical slice.
 - M7.1 is only the first content-expansion slice: it reaches four of eight rooms
-  and two of four monsters. It cannot be described as M7 completion, and its local
-  verification still requires independent acceptance before another M7 slice.
+  and two of four monsters. Its independent acceptance is GO, but it cannot be
+  described as M7 completion; another M7 slice still requires explicit project-owner
+  authorization and a read-only implementation proposal first.
 - `drop` can deliberately leave a gate item in the current room and therefore block
   a gated exit until the player takes it again; this is explicit player intent.
   Equipped items are intentionally rejected instead of silently changing combat stats.

@@ -94,12 +94,21 @@
 
 ### Verified
 
+- GPT-5.6-sol independently accepted M7.1 as GO with no findings (2026-07-30).
+  Relative to `086cda8`, `9786325` is one 22-file `+333/-55` commit with zero
+  `src/`, `schemas/`, dependency-file, or private-path changes. Accepted evidence
+  includes 19 M7/loot focused tests, 595 full unittest cases, compileall,
+  original-demo validation, history safety, baseline `git diff --check`, and a real
+  CLI/save v7 flow. The saved v7/0.7.0 state places the player in the new room,
+  removes the defeated hound at HP 0, and marks `quest_clear_spark_hound` complete.
+  Direct remote `main` remained `f0acd3f`; no push occurred. This GO closes M7.1
+  only; M7 remains in progress at 4/8 rooms, 2/4 monsters, and five quests.
 - Codex locally verified M7.1 (not independent acceptance): 19 M7/loot focused
   tests and 595 full unittest cases passed, along with compileall, original-demo
   validation, history safety, and `git diff --check`. An external-save-directory
   CLI flow reached the new room, defeated both monsters, completed
   `quest_clear_spark_hound`, and save/loaded v7/0.7.0 state. M7 remains in
-  progress and requires GPT-5.6-sol independent acceptance before another slice.
+  progress; the subsequent independent acceptance is recorded above.
 - GPT-5.6-sol independently accepted M6 as GO with no findings, using
   `53a071f` as the baseline. Accepted evidence is 22 M6 tests, 187 focused
   M6/inspect/commands/recover/dialogue regressions, and 591 full unittest cases;

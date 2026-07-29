@@ -22,18 +22,20 @@ stale.
 - Current execution mode: GPT-5.6-sol reviews scope and architecture and performs
   independent acceptance; Codex is the sole executor; the project owner manually
   transfers prompts and completion reports between the two conversations.
-- M7.1 implementation baseline is
-  `086cda88b4f696c8356e3c9a133e214636555220`. Recheck live Git, `origin/main`,
-  direct remote `main`, and ahead/behind before acting or publishing. Local commits
-  do not automatically push.
+- M7.1 independent-acceptance baseline is
+  `97863258966a499b8eba805cd0ef2e598943eb63`; the reviewed implementation is one
+  22-file `+333/-55` commit relative to `086cda88b4f696c8356e3c9a133e214636555220`.
+  Recheck live Git, `origin/main`, direct remote `main`, and ahead/behind before
+  acting or publishing. Local commits do not automatically push.
 - GPT-5.6-sol's first M4+M5 independent review was NO-GO because `World.buy()`
   could create a new stack above its `stack_limit`, allowing a save that its own
   v7 loader rejects. Codex corrected that one M5 P1 in `59ca3cd`; GPT-5.6-sol's
   focused re-review found no findings and independently accepted M4+M5 GO on
   2026-07-29. GPT-5.6-sol also independently accepted M6 GO with no findings on
-  2026-07-29 (DEC-0030). The project owner then authorized M7.1; Codex has locally
-  implemented and verified the second original encounter, but GPT-5.6-sol
-  independent acceptance is pending. Push is not authorized.
+  2026-07-29 (DEC-0030). The project owner then authorized M7.1; Codex implemented
+  the second original encounter and GPT-5.6-sol independently accepted M7.1 GO with
+  no findings on 2026-07-30 (DEC-0032). M7 remains in progress, and M7.2 still needs
+  separate project-owner authorization; push is not authorized.
 - Current public-engine contract: content pack 0.7.0; save v7; typed
   `ItemStackDefinition`/`ItemStack`; quantity-aware `take`/`drop`/`use`;
   required ordered dialogue effects; World-owned flags; nonnegative coins; and
@@ -61,8 +63,8 @@ stale.
   observatory, `monster_spark_hound`, and the observation-station-triggered
   `quest_clear_spark_hound`. It reuses existing movement, deterministic combat,
   typed monster quests, and v7 saves; no engine, Schema, command, item, or loot
-  contract changed. The demo is now four rooms, two monsters, and five quests;
-  this is not full M7 completion.
+  contract changed. The demo is now four rooms, two monsters, and five quests.
+  M7.1 is independently accepted, but this is not full M7 completion.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).
@@ -120,12 +122,20 @@ stale.
 
 ## Verified current facts
 
-- Codex locally verified M7.1 (not independent acceptance): 4 new M7 scenario
+- GPT-5.6-sol independently accepted M7.1 as GO with no findings (2026-07-30):
+  relative to `086cda8`, `9786325` is one 22-file `+333/-55` commit and leaves
+  `src/`, `schemas/`, dependency files, and private-material paths untouched. 19 M7/loot focused and
+  595 full tests, compileall, original-demo validation, history safety, and baseline
+  diff checking passed. The real CLI completed the second encounter and save/load;
+  the v7/0.7.0 save has the player in the new room, the hound at HP 0 and removed,
+  and `quest_clear_spark_hound` completed. Direct remote `main` was `f0acd3f` and
+  no push occurred. This accepts M7.1 only; M7 remains in progress at four of eight
+  rooms and two of four monsters.
+- Codex locally verified M7.1 before independent acceptance: 4 new M7 scenario
   tests plus 15 loot regressions and 595 full tests passed, together with
   compileall, original-demo validation, history safety, and diff checking. The
   external CLI completed the second encounter and saved/loaded v7 with pack 0.7.0;
-  a 0.6.0 content-pack save is rejected. M7.1 must be independently reviewed
-  before any further M7 slice.
+  a 0.6.0 content-pack save is rejected.
 - GPT-5.6-sol independently accepted M6 GO with no findings (2026-07-29): 22 M6
   tests, 187 focused inspect/commands/recover/dialogue regressions, and 591 full
   tests passed together with compileall, original-demo validation, history safety,
@@ -155,8 +165,8 @@ stale.
   were rejected for format and content-pack version respectively.
 - M1, M2, and M3 retain their historical GPT-5.6-sol independent GO decisions;
   M4+M5 are also independently accepted GO (DEC-0028), and M6 is independently
-  accepted GO (DEC-0030). M7.1 is locally verified under explicit authorization
-  but is not GO until independent acceptance.
+  accepted GO (DEC-0030). M7.1 is independently accepted GO (DEC-0032), while M7
+  itself remains in progress and any M7.2 work needs new explicit authorization.
 
 ## Dated historical verification evidence (not current contracts)
 
