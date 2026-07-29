@@ -216,8 +216,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## Risks and unknowns
 
-- Only one quest type (monster_defeated) is implemented; more types need explicit
-  decisions.
+- M3 implements the fixed `monster_defeated`, `reach_room`, and `collect_item`
+  quest kinds; any further quest kind requires an explicit contract and vertical slice.
 - The one-target-monster-per-quest constraint will need revisiting if shared-target
   quests are ever needed.
 - Dialogue grants only one typed item effect; quest triggers, experience effects,
