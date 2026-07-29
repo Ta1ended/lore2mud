@@ -1,8 +1,7 @@
 # Next Task
 
-_Last updated: 2026-07-29（M5 P1 已本地修正，待 M4+M5 聚焦独立复验）_
+_Last updated: 2026-07-29（M4+M5 已由 GPT-5.6-sol 独立验收 GO）_
 
 ## Single next action
 
-将 M5 空栈 `stack_limit` 预检修正的真实差异、回归测试、save v7 与 CLI 证据提交
-GPT-5.6-sol，对 M4+M5 进行聚焦独立复验；不得开始 M6。
+等待项目负责人明确授权下一项纵向切片；不得开始 M6 或其他功能实现。

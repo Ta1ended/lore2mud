@@ -72,6 +72,12 @@
 
 ### Verified
 
+- GPT-5.6-sol independently accepted the integrated M4+M5 slice as GO. The
+  focused re-review closed the first-review M5 empty-stack `stack_limit` P1 in
+  `59ca3cd` with no findings; accepted evidence is 25 focused M4/M5 tests, 569
+  full unittest cases, compileall, original-demo validation, history safety,
+  `git diff --check`, and the external-save-directory CLI rejection/save/load
+  flow. M4 effects do not replay, and v6/old-content saves remain rejected.
 - Codex locally verified the M5 P1 correction (not independent acceptance): 569
   full unittest cases, 12 M4 effect cases, and 13 M5 shop cases passed, along
   with compileall, original-demo validation, history safety, `git diff --check`,

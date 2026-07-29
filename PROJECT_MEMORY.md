@@ -28,9 +28,9 @@ stale.
   automatically push.
 - GPT-5.6-sol's first M4+M5 independent review was NO-GO because `World.buy()`
   could create a new stack above its `stack_limit`, allowing a save that its own
-  v7 loader rejects. Codex locally corrected that one M5 P1 by rejecting an
-  over-limit quantity before any buy mutation; M4+M5 remain pending focused
-  independent re-review and are not GO.
+  v7 loader rejects. Codex corrected that one M5 P1 in `59ca3cd`; GPT-5.6-sol's
+  focused re-review found no findings and independently accepted M4+M5 GO on
+  2026-07-29. M6 or any other feature implementation remains unauthorized.
 - Current public-engine contract: content pack 0.6.0; save v7; typed
   `ItemStackDefinition`/`ItemStack`; quantity-aware `take`/`drop`/`use`;
   required ordered dialogue effects; World-owned flags; nonnegative coins; and
@@ -54,8 +54,8 @@ stale.
   `tests.test_dialogue_effects` cases, 13 `tests.test_shop` cases, compileall,
   original-demo validation, history safety scan, diff checking, and an
   external-save-directory CLI path that rejects buy ×6 after selling ×3, then
-  save/loads the valid zero-stack state with 26 coins. M4+M5 independent
-  acceptance is still pending. M2's
+  save/loads the valid zero-stack state with 26 coins. GPT-5.6-sol independently
+  accepted this M4+M5 evidence as GO; the first-review P1 is closed. M2's
   historical independent-acceptance evidence remains 530 full cases and 56
   `tests.test_item_stacks` cases with its own CLI flow.
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
@@ -104,10 +104,9 @@ stale.
 
 ## Verified current facts
 
-- GPT-5.6-sol found a P1 in the first M4+M5 independent review: an empty
-  inventory stack could be bought above its `stack_limit`, producing a v7 save
-  that fails strict load validation. M4 itself had no blocking finding, but the
-  combined milestone is not independently accepted.
+- GPT-5.6-sol independently accepted M4+M5 as GO (2026-07-29). The first
+  review's empty-stack `stack_limit` P1 was fixed in `59ca3cd`; the focused
+  re-review found no findings.
 - Codex local P1-correction suite: 569 tests passed (2026-07-29); focused suites
   are 12 `tests.test_dialogue_effects` and 13 `tests.test_shop` tests. The new
   test covers World and CLI rejection of an empty-stack buy ×6, with coins and
@@ -125,8 +124,8 @@ stale.
   earlier world without replaying effects; independent v6/0.6 and v7/0.4 loads
   were rejected for format and content-pack version respectively.
 - M1, M2, and M3 retain their historical GPT-5.6-sol independent GO decisions;
-  M4+M5 have a locally verified P1 correction but remain pending focused
-  independent re-review.
+  M4+M5 are also independently accepted GO (DEC-0028). M6 remains unstarted and
+  requires explicit project-owner authorization.
 
 ## Dated historical verification evidence (not current contracts)
 

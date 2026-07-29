@@ -1,6 +1,6 @@
 # Engine Completion Milestones
 
-_Last updated: 2026-07-29（M5 P1 已本地修正；M4+M5 待聚焦独立复验）_
+_Last updated: 2026-07-29（M4+M5 已由 GPT-5.6-sol 独立验收 GO）_
 
 本文件定义公共引擎从当前状态到功能完备的里程碑路线。每个里程碑是一个可独立验证的
 纵向切片，完成后更新本文件和相关交接记录。
@@ -96,9 +96,9 @@ _Last updated: 2026-07-29（M5 P1 已本地修正；M4+M5 待聚焦独立复验�
 
 ## M4: 强类型对话效果
 
-- **状态**: 首次独立审查未发现 M4 阻塞项；联合 M4+M5 尚待 M5 P1 修正后的聚焦独立复验，
-  不标记 GO。
+- **状态**: GPT-5.6-sol 已完成联合 M4+M5 独立验收，结论 GO。
 - **执行者**: Codex。
+- **验收者**: GPT-5.6-sol。
 - **已实现的强制契约**:
   - `DialogueOption.effects` 为必填、有序、frozen tagged union：`grant_item`、
     `grant_experience`、`accept_quest`、`set_flag`；旧 `grant_item` 字段不兼容且被拒绝。
@@ -113,12 +113,18 @@ _Last updated: 2026-07-29（M5 P1 已本地修正；M4+M5 待聚焦独立复验�
 - **Codex 本地验证证据**:
   - `tests.test_dialogue_effects`：12 项通过。
   - M3/M2 对话、任务、堆叠与 save 回归均通过；全量、CLI、安全和编译证据在本切片交接中记录。
+- **GPT-5.6-sol 独立验收证据**:
+  - 联合 M4+M5 聚焦复验无 findings；M4 effects 顺序、整组预检、重复接取原子拒绝、typed
+    outcomes、flags 和即时任务结算均通过。
+  - 25 项 M4/M5 专项、569 项全量测试、compileall、original_demo 校验、历史安全扫描、
+    diff 检查和真实 CLI 通过；effects 不重放，v6 与旧内容包存档继续拒绝。
 
 ## M5: 固定金币商店
 
-- **状态**: 首次独立验收为 NO-GO；空栈买入超 `stack_limit` 的 P1 已本地修正并验证，待
-  GPT-5.6-sol 聚焦复验，尚不标记 GO。
+- **状态**: GPT-5.6-sol 已完成联合 M4+M5 独立验收，结论 GO；首次空栈买入超
+  `stack_limit` 的 P1 已关闭。
 - **执行者**: Codex。
+- **验收者**: GPT-5.6-sol。
 - **已实现的强制契约**:
   - `PlayerDefaults`/`Player.coins` 是非负整数；`ShopDefinition` 和
     `ShopListingDefinition` 是 frozen 内容定义，`shops.json` 对所有内容包必填。
@@ -136,6 +142,9 @@ _Last updated: 2026-07-29（M5 P1 已本地修正；M4+M5 待聚焦独立复验�
     不变。
   - 全量 unittest：569 项通过；compileall、original_demo 校验、历史安全扫描和 diff 检查通过。
   - 仓库外 CLI：拾取 3、卖出 3 后 buy ×6 被拒绝；金币保持 26、背包为空，save/load 成功。
+- **GPT-5.6-sol 独立验收封板**:
+  - `59ca3cd` 修正的新栈上限预检使非法栈无法写入；聚焦复验无 findings。
+  - 该 GO 仅封板 M4+M5，不授权 M6 或其他功能开发。
 
 ## M6: Examine、帮助和错误反馈
 

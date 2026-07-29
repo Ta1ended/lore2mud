@@ -599,3 +599,27 @@
   `tests/test_shop.py`, `docs/engine_completion_milestones.md`.
 - Supersedes: The M3-only dialogue item-grant contract in DEC-0025 for current
   behavior; DEC-0025 and DEC-0026 remain historical M3 evidence.
+
+## DEC-0028: M4+M5 independent acceptance — GO
+
+- Date: 2026-07-29
+- Status: Accepted
+- Context: Codex implemented the approved integrated M4/M5 slice in `cc1b1ce`.
+  GPT-5.6-sol's first review found one M5 P1: `World.buy()` could create a new
+  empty inventory stack above its `stack_limit`, yielding a v7 save that strict
+  load rejects. Codex corrected that path in `59ca3cd`.
+- Decision: Record M4 typed dialogue effects and M5 fixed coin shops as
+  independently accepted GO by GPT-5.6-sol. The focused re-review found no
+  findings and closed the M5 P1. Accepted evidence is 25 focused M4/M5 tests,
+  569 full unittest cases, compileall, original-demo validation, history safety,
+  `git diff --check`, and external-save-directory CLI buy-rejection/save/load
+  coverage. M4 effects do not replay; v6 and old content-pack saves remain
+  rejected.
+- Consequences: M4 and M5 are complete. The public engine remains in development;
+  M6 or any other feature work requires explicit future project-owner
+  authorization. This decision does not change M1/M2 Hermes history or the
+  independent acceptance records for M1–M3.
+- Evidence: `cc1b1ce`, `59ca3cd`, `tests/test_dialogue_effects.py`,
+  `tests/test_shop.py`, `docs/engine_completion_milestones.md`,
+  `PROJECT_STATE.md`.
+- Supersedes: Only the independent-acceptance-pending status in DEC-0027.
