@@ -32,14 +32,23 @@ quests
 go east
 attack monster_spark_hound
 attack monster_spark_hound
-attack monster_spark_hound
+quests
+go east
+go north
+attack monster_mist_crawler
+attack monster_mist_crawler
+go south
+go east
+go east
+attack monster_prism_sentinel
+attack monster_prism_sentinel
 quests
 quit
 ```
 
 ## 三类任务与分段接取任务
 
-演示内容包 0.7.0 在起始房间自动接取三条完全原创任务：
+演示内容包 0.8.0 在起始房间自动接取三条完全原创任务：
 
 - `quest_collect_linglu_pills`：背包中收集 2 枚灵露丸（`collect_item`）。
 - `quest_reach_silent_observatory`：抵达静默观测站（`reach_room`）。
@@ -48,6 +57,10 @@ quit
   老陈的对话提前接取；跳过对话时，进入静默观测站仍会按既有 M3 规则自动接取。
 - `quest_clear_spark_hound`：进入静默观测站后接取，前往其东侧的碎讯支线击败火花巡兽
   （`monster_defeated`，奖励 18 点经验）。
+- `quest_clear_mist_crawler`：进入断轨岔口后接取，前往北侧雾凝机井击败雾核潜行者
+  （`monster_defeated`，奖励 20 点经验）。
+- `quest_clear_prism_sentinel`：同样在断轨岔口接取，前往东侧的余辉信标台击败棱镜哨卫
+  （`monster_defeated`，奖励 22 点经验）。
 
 执行 `quests` 可查看收集进度。拾取、移动、击败怪物、成功对话 `grant_item` 效果和商店买入都会由
 引擎统一检查已接取任务；已经完成的任务不会因丢弃或使用物品而撤销。
@@ -77,11 +90,12 @@ quit
 灰壳兽首次被击败后会在当前房间掉落一份 `item_ash_mite_gel`。使用 `look` 查看掉落，
 再用 `take item_ash_mite_gel` 拾取；它是一件可用的原创消耗品。
 
-## 第二个遭遇
+## M7 内容扩容
 
-从静默观测站向东可抵达碎讯支线。这里的火花巡兽没有引入新机制：它使用现有确定性战斗、
-怪物经验和 `monster_defeated` 任务结算。击败灰壳兽后继续向东，再攻击
-`monster_spark_hound` 三次即可完成该任务。
+从静默观测站向东依次经过碎讯支线和断轨岔口后，可选择北侧的雾凝机井或东侧的折光档案室。
+折光档案室继续向东通往余辉信标台。新增的雾核潜行者与棱镜哨卫没有引入新机制：二者都使用
+现有确定性战斗、怪物经验和 `monster_defeated` 任务结算。按上方推荐流程装备晶刃和铜鳞甲后，
+每只新增怪物都可在三次攻击内击败。
 
 ## 物品交互
 

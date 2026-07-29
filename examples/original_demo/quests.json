@@ -50,5 +50,25 @@
     "target_monster_id": "monster_spark_hound",
     "reward_experience": 18,
     "adaptation_notes": "本仓库原创演示任务。"
+  },
+  {
+    "id": "quest_clear_mist_crawler",
+    "name": "清除雾核潜行者",
+    "description": "雾凝机井里的雾核潜行者扰乱了岔口的路线。击败它。",
+    "kind": "monster_defeated",
+    "trigger_room_id": "room_broken_rail_junction",
+    "target_monster_id": "monster_mist_crawler",
+    "reward_experience": 20,
+    "adaptation_notes": "本仓库原创演示任务。"
+  },
+  {
+    "id": "quest_clear_prism_sentinel",
+    "name": "清除棱镜哨卫",
+    "description": "余辉信标台上的棱镜哨卫仍在阻断东侧平台。击败它。",
+    "kind": "monster_defeated",
+    "trigger_room_id": "room_broken_rail_junction",
+    "target_monster_id": "monster_prism_sentinel",
+    "reward_experience": 22,
+    "adaptation_notes": "本仓库原创演示任务。"
   }
 ]

@@ -21,5 +21,27 @@
     "defense": 2,
     "experience_reward": 18,
     "adaptation_notes": "本仓库原创演示怪物。"
+  },
+  {
+    "id": "monster_mist_crawler",
+    "name": "雾核潜行者",
+    "description": "由井底冷雾裹成的低矮构造，移动时会拖出一串冰凉的光点。",
+    "room_id": "room_mist_condenser_well",
+    "max_hp": 14,
+    "attack": 4,
+    "defense": 3,
+    "experience_reward": 20,
+    "adaptation_notes": "本仓库原创演示怪物。"
+  },
+  {
+    "id": "monster_prism_sentinel",
+    "name": "棱镜哨卫",
+    "description": "信标残片拼成的人形哨卫，会让表面的棱镜依次亮起。",
+    "room_id": "room_afterglow_beacon_platform",
+    "max_hp": 18,
+    "attack": 5,
+    "defense": 4,
+    "experience_reward": 22,
+    "adaptation_notes": "本仓库原创演示怪物。"
   }
 ]

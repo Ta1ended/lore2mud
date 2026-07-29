@@ -49,11 +49,63 @@
     "name": "碎讯支线",
     "description": "脱离主轨的窄台伸入浓雾，断裂信号柱仍不时迸出蓝白火花。",
     "exits": {
-      "west": "room_silent_observatory"
+      "west": "room_silent_observatory",
+      "east": "room_broken_rail_junction"
     },
     "item_stacks": [],
     "monster_ids": [
       "monster_spark_hound"
+    ],
+    "adaptation_notes": "本仓库原创演示地点。"
+  },
+  {
+    "id": "room_broken_rail_junction",
+    "name": "断轨岔口",
+    "description": "悬空铜轨在这里分作两支，北边通向轰鸣的机井，东边隐约可见折光玻璃。",
+    "exits": {
+      "west": "room_shattered_signal_spur",
+      "north": "room_mist_condenser_well",
+      "east": "room_lens_archive"
+    },
+    "item_stacks": [],
+    "monster_ids": [],
+    "adaptation_notes": "本仓库原创演示地点。"
+  },
+  {
+    "id": "room_mist_condenser_well",
+    "name": "雾凝机井",
+    "description": "深井里的冷凝轮缓慢转动，贴着井壁的雾光不时凝成细碎水珠。",
+    "exits": {
+      "south": "room_broken_rail_junction"
+    },
+    "item_stacks": [],
+    "monster_ids": [
+      "monster_mist_crawler"
+    ],
+    "adaptation_notes": "本仓库原创演示地点。"
+  },
+  {
+    "id": "room_lens_archive",
+    "name": "折光档案室",
+    "description": "层层镜片柜仍保存着空白记录，散射的微光把墙面切成细长的格子。",
+    "exits": {
+      "west": "room_broken_rail_junction",
+      "east": "room_afterglow_beacon_platform"
+    },
+    "item_stacks": [],
+    "monster_ids": [],
+    "adaptation_notes": "本仓库原创演示地点。"
+  },
+  {
+    "id": "room_afterglow_beacon_platform",
+    "name": "余辉信标台",
+    "description": "信标外壳裂开一道长缝，残余光束掠过平台，照亮了守候在此的构造体。",
+    "exits": {
+      "west": "room_lens_archive"
+    },
+    "item_stacks": [],
+    "monster_ids": [
+      "monster_prism_sentinel"
     ],
     "adaptation_notes": "本仓库原创演示地点。"
   }

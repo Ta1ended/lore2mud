@@ -22,11 +22,11 @@ stale.
 - Current execution mode: GPT-5.6-sol reviews scope and architecture and performs
   independent acceptance; Codex is the sole executor; the project owner manually
   transfers prompts and completion reports between the two conversations.
-- M7.1 independent-acceptance baseline is
-  `97863258966a499b8eba805cd0ef2e598943eb63`; the reviewed implementation is one
-  22-file `+333/-55` commit relative to `086cda88b4f696c8356e3c9a133e214636555220`.
-  Recheck live Git, `origin/main`, direct remote `main`, and ahead/behind before
-  acting or publishing. Local commits do not automatically push.
+- M7.2 implementation baseline is
+  `549785912418bff56d1521437a51c25718edbc34`; M7.1's independently accepted
+  implementation remains `97863258966a499b8eba805cd0ef2e598943eb63`. Recheck live
+  Git, `origin/main`, direct remote `main`, and ahead/behind before acting or
+  publishing. Local commits do not automatically push.
 - GPT-5.6-sol's first M4+M5 independent review was NO-GO because `World.buy()`
   could create a new stack above its `stack_limit`, allowing a save that its own
   v7 loader rejects. Codex corrected that one M5 P1 in `59ca3cd`; GPT-5.6-sol's
@@ -34,13 +34,14 @@ stale.
   2026-07-29. GPT-5.6-sol also independently accepted M6 GO with no findings on
   2026-07-29 (DEC-0030). The project owner then authorized M7.1; Codex implemented
   the second original encounter and GPT-5.6-sol independently accepted M7.1 GO with
-  no findings on 2026-07-30 (DEC-0032). M7 remains in progress, and M7.2 still needs
-  separate project-owner authorization; push is not authorized.
-- Current public-engine contract: content pack 0.7.0; save v7; typed
+  no findings on 2026-07-30 (DEC-0032). The project owner then authorized the larger
+  M7.2 content-only scale slice; Codex has locally implemented and verified it, but
+  GPT-5.6-sol independent acceptance is pending (DEC-0033). Push is not authorized.
+- Current public-engine contract: content pack 0.8.0; save v7; typed
   `ItemStackDefinition`/`ItemStack`; quantity-aware `take`/`drop`/`use`;
   required ordered dialogue effects; World-owned flags; nonnegative coins; and
   frozen fixed-price, unlimited shop catalogs without serialized stock. v6 and
-  old 0.6.0 content saves are rejected without migration.
+  old 0.7.0 content saves are rejected without migration.
 - M3 was implemented by Codex and independently accepted GO by GPT-5.6-sol on
   2026-07-29 after the focused re-review of `dca629b` and its handoff correction
   `5527faa`. `QuestDefinition` is a frozen three-branch union:
@@ -65,6 +66,14 @@ stale.
   typed monster quests, and v7 saves; no engine, Schema, command, item, or loot
   contract changed. The demo is now four rooms, two monsters, and five quests.
   M7.1 is independently accepted, but this is not full M7 completion.
+- M7.2 adds only public content: `room_broken_rail_junction`,
+  `room_mist_condenser_well`, `room_lens_archive`,
+  `room_afterglow_beacon_platform`, `monster_mist_crawler`,
+  `monster_prism_sentinel`, and their unique-target monster quests. It reuses the
+  same movement, deterministic combat, typed quest, and v7 save contracts; no
+  engine, Schema, command, item, loot, or dependency contract changed. The demo is
+  now eight rooms, four monsters, and seven quests. The M7 scale conditions are
+  locally met but require independent acceptance before M7 can be GO.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).
@@ -122,6 +131,14 @@ stale.
 
 ## Verified current facts
 
+- Codex locally verified M7.2 (not independent acceptance): content pack 0.8.0
+  expands the demo to eight rooms, four monsters, and seven quests, with four new
+  rooms, two new monsters, and two unique-target `monster_defeated` quests. Eight
+  M7 scenario tests plus 15 loot regressions and 599 full tests passed, together
+  with compileall, original-demo validation, history safety, and diff checking. The
+  external CLI completed both new branches and save/loaded v7/0.8.0 state with the
+  player at the beacon, both new monsters at HP 0 and removed, and both new quests
+  complete. M7.2 must be independently reviewed before M7 can be declared GO.
 - GPT-5.6-sol independently accepted M7.1 as GO with no findings (2026-07-30):
   relative to `086cda8`, `9786325` is one 22-file `+333/-55` commit and leaves
   `src/`, `schemas/`, dependency files, and private-material paths untouched. 19 M7/loot focused and
@@ -165,8 +182,8 @@ stale.
   were rejected for format and content-pack version respectively.
 - M1, M2, and M3 retain their historical GPT-5.6-sol independent GO decisions;
   M4+M5 are also independently accepted GO (DEC-0028), and M6 is independently
-  accepted GO (DEC-0030). M7.1 is independently accepted GO (DEC-0032), while M7
-  itself remains in progress and any M7.2 work needs new explicit authorization.
+  accepted GO (DEC-0030). M7.1 is independently accepted GO (DEC-0032); M7.2 is
+  locally verified under explicit authorization but awaits independent acceptance.
 
 ## Dated historical verification evidence (not current contracts)
 

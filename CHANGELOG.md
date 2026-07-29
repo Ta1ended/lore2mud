@@ -4,6 +4,11 @@
 
 ### Changed
 
+- Expanded the fully original demo to content-pack 0.8.0 with M7.2: four more
+  rooms, the two new monsters `monster_mist_crawler` and `monster_prism_sentinel`,
+  and their unique-target `monster_defeated` quests. The demo now reaches eight
+  rooms, four monsters, and seven quests. Save format remains v7; saves bound to
+  content-pack 0.7.0 are rejected by the existing content-pack version check.
 - Expanded the fully original demo to content-pack 0.7.0 with the M7.1 second
   encounter: the fourth room `room_shattered_signal_spur`, the second monster
   `monster_spark_hound`, and its existing-kind `monster_defeated` quest. Save
@@ -33,6 +38,10 @@
 
 ### Added
 
+- Added `tests.test_m7_content_scale` for the four-room topology, reciprocal
+  exits, unique quest targets, both deterministic branches, CLI rendering, and v7
+  save/load after both new encounters. Updated current-content version/count
+  assertions and prior-save rejection fixtures for content-pack 0.8.0.
 - Added `tests.test_m7_second_encounter` for content counts/references, the
   observation-station-to-spur scenario, CLI quest rendering, and v7 rejection of
   an old 0.6.0 content-pack save. Updated the no-loot test fixture to retain
@@ -94,6 +103,14 @@
 
 ### Verified
 
+- Codex locally verified M7.2 (not independent acceptance): 8 M7 scenario tests,
+  15 loot regressions, and 599 full unittest cases passed, along with compileall,
+  original-demo validation, history safety, and `git diff --check`. An
+  external-save-directory CLI flow equipped the starting gear, cleared both prior
+  encounters and both new branches, then save/loaded v7/0.8.0 state at the beacon
+  with the two new quests complete and both new monsters removed. M7's content-scale
+  target is locally met but requires GPT-5.6-sol independent acceptance before M7
+  can be GO.
 - GPT-5.6-sol independently accepted M7.1 as GO with no findings (2026-07-30).
   Relative to `086cda8`, `9786325` is one 22-file `+333/-55` commit with zero
   `src/`, `schemas/`, dependency-file, or private-path changes. Accepted evidence

@@ -736,3 +736,33 @@
   complete. Direct remote `main` remained `f0acd3f`; no push occurred.
 - Supersedes: Only the independent-acceptance-pending status in DEC-0031. DEC-0031
   content, save, and boundary contracts remain in force.
+
+## DEC-0033: M7.2 content-scale completion and content-pack 0.8.0
+
+- Date: 2026-07-30
+- Status: Implemented locally; GPT-5.6-sol independent acceptance pending.
+- Context: After M7.1 was independently accepted, the project owner authorized a
+  larger but still content-only M7.2 slice to reach the M7 room and monster scale
+  target without mixing in an engine or data-contract change.
+- Decision: Add exactly four public original rooms—`room_broken_rail_junction`,
+  `room_mist_condenser_well`, `room_lens_archive`, and
+  `room_afterglow_beacon_platform`—plus `monster_mist_crawler`,
+  `monster_prism_sentinel`, `quest_clear_mist_crawler`, and
+  `quest_clear_prism_sentinel`. The new exits are reciprocal, the two quests are
+  accepted on entering the junction, and each has its own unique monster target.
+  Bump original_demo from 0.7.0 to 0.8.0; keep save format v7, with old 0.7.0
+  content-pack saves rejected by the existing identity/version check.
+- Consequences: No engine, Schema, command, dependency, item, loot, dialogue, shop,
+  or save-format contract changes. The demo now has eight rooms, four monsters, and
+  seven quests, so the M7 content-scale conditions are locally met. This is not M7
+  GO or public-engine completion until GPT-5.6-sol independently accepts M7.2. This
+  decision does not authorize M8 or push.
+- Evidence: `examples/original_demo/pack.json`, `rooms.json`, `monsters.json`, and
+  `quests.json`; `tests/test_m7_content_scale.py`; `tests/test_m7_second_encounter.py`;
+  `tests/test_loot.py`; and the M7 handoff records. Local evidence is 8 M7 scenario
+  tests, 15 loot regressions, 599 full unittest cases, compileall, content validation,
+  history safety, diff checking, and an external CLI/save v7 path through both new
+  branches.
+- Supersedes: Only the M7.2 awaiting-authorization status in `NEXT_TASK.md` and
+  related current snapshots. M7.1's GO record and all M1–M6 contracts remain in
+  force.
