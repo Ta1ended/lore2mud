@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-29（M4+M5 本地实现并验证，待 GPT-5.6-sol 独立验收）_
+_Last updated: 2026-07-29（M5 P1 已本地修正并验证；M4+M5 待聚焦独立复验）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -13,22 +13,25 @@ _Last updated: 2026-07-29（M4+M5 本地实现并验证，待 GPT-5.6-sol 独立
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
 
-M4+M5 已由 Codex 在基线 `c2a512f59b017625125620dfbb8fdb1fe1a36300` 上本地实现并验证，
-但尚待 GPT-5.6-sol 独立验收。当前公开契约为 content pack 0.6.0、save v7、强类型有序
-`DialogueEffect`、World-owned `flags`、非负 `coins` 和冻结的固定无限商店目录。`World`
-预检并原子执行 effects/买入；`accept_quest` 显式重复会整体失败；`load` 只恢复状态，绝不
-重放效果、自动接取、检查、奖励或交易。`shop`/`buy`/`sell` 不引入可变库存，M6–M8 未开始。
+GPT-5.6-sol 对 M4+M5 的首次独立验收结论为 NO-GO：M5 的 `World.buy()` 在新建空栈时遗漏
+`quantity > item.stack_limit` 预检，可能写出会被严格 v7 load 拒绝的非法背包栈。M4 未发现
+阻塞项，但联合 M4+M5 不得封板。Codex 已在该分支补上空栈上限预检和 World/CLI 状态不变性
+回归测试；该本地修正仍须 GPT-5.6-sol 聚焦复验，尚非 GO。
 
-本地证据为 12 项 M4 专项、12 项 M5 专项、260 项 M1–M3 关键回归和 568 项全量 unittest，
-以及 compileall、original_demo 校验、仓库外 CLI 主流程和两条独立拒绝用例。CLI 证明初始
-20 金币、按顺序写 flag/接取任务/经验/铜牌、重复接取整体拒绝、买二卖一、任务完成、save/load
-恢复 14 金币、flags、背包、任务和固定目录。Git/远端状态必须在提交后重新核实；唯一下一动作
-见 `NEXT_TASK.md`。
+当前公开契约仍为 content pack 0.6.0、save v7、强类型有序 `DialogueEffect`、World-owned
+`flags`、非负 `coins` 和冻结的固定无限商店目录。`World` 预检并原子执行 effects/买入；
+`accept_quest` 显式重复会整体失败；`load` 只恢复状态，绝不重放效果、自动接取、检查、奖励
+或交易。`shop`/`buy`/`sell` 不引入可变库存，M6–M8 未开始。
+
+P1 修正后的本地证据为 12 项 M4 专项、13 项 M5 专项和 569 项全量 unittest，以及
+compileall、original_demo 校验、历史安全扫描、diff 检查和仓库外 CLI 流程。该 CLI 精确覆盖
+“拾取 3 → 卖出 3 → 买入 6 被拒绝 → save/load”：金币保持 26、背包没有非法栈、存档可读回。
+Git/远端状态必须在提交后重新核实；唯一下一动作见 `NEXT_TASK.md`。
 
 ## Historical current-status snapshot (2026-07-28, pre-M2; not current)
 
 > 下列快照保留当时的 save v5、0.2.7、旧 Git 与旧执行流程事实；当前状态以上文
-> v7、0.6.0、M4+M5 本地验证待独立验收、M3/M2 GO 和 Codex 执行模式为准。
+> v7、0.6.0、M5 P1 本地修正待 M4+M5 聚焦独立复验、M3/M2 GO 和 Codex 执行模式为准。
 
 装备系统已实现 hand 和 body 双槽位，存档格式为 v5。对话系统已实现——原创 NPC 老陈带有
 确定性分支对话和一次性普通物品奖励；琉草小径西向出口要求持有该铜牌，`look` 会只读显示
@@ -137,21 +140,22 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 功能实现和本地验证已完成；唯一下一动作是由 GPT-5.6-sol 对 M4+M5 的真实差异、测试、
-  save v7 和 CLI 证据进行独立验收；不得开始 M6。
+- M5 P1 已在本地修正并验证；唯一下一动作是由 GPT-5.6-sol 对该修正及 M4+M5 真实差异、
+  测试、save v7 和 CLI 证据进行聚焦独立复验；不得开始 M6。
 
 ## Blockers
 
-- None.
+- M4+M5 尚未独立验收 GO。首次验收的 M5 空栈超限 P1 已本地修正，必须由
+  GPT-5.6-sol 聚焦复验后才能解除封板阻塞。
 
 ## Verification
 
-- M4+M5 本地验证（2026-07-29，Codex，尚非独立验收）：`tests.test_dialogue_effects` 12 项、
-  `tests.test_shop` 12 项、M1–M3 关键回归 260 项和全量 unittest 568 项通过；compileall、
-  `lore2mud validate`、`check_repo_safety.py --history`、diff 检查和仓库外 CLI 流程通过。
-  CLI 使用外部临时存档目录，覆盖初始 20 金币、effects 顺序、重复接取拒绝、buy ×2/sell ×1、
-  灰壳兽/凝胶任务、save 后交易、load 恢复；独立加载测试确认 v6/0.6 因格式版本拒绝、
-  v7/0.4 因内容包版本拒绝。
+- M4+M5 首次独立验收（2026-07-29，GPT-5.6-sol）：NO-GO。M4 无阻塞项；M5 发现空栈
+  `buy` ×6 未预检 `stack_limit=5`，可生成保存成功但 load 拒绝的非法 v7 栈。
+- M5 P1 本地修正验证（2026-07-29，Codex，尚非独立复验）：`tests.test_dialogue_effects` 12 项、
+  `tests.test_shop` 13 项和全量 unittest 569 项通过；compileall、`lore2mud validate`、
+  `check_repo_safety.py --history`、diff 检查通过。仓库外 CLI 执行拾取 3、卖出 3、买入 6
+  拒绝、save/load，确认金币保持 26、背包为空、v7 存档可读。
 - M3 独立验收 GO（2026-07-29，GPT-5.6-sol）：540 项全量 unittest、31 项
   `tests.test_quest`、56 项 `tests.test_item_stacks` 通过；compileall、original_demo
   内容校验、`check_repo_safety.py --history`、`git diff --check` 通过；仓库外临时存档

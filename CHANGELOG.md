@@ -14,6 +14,13 @@
   so that dead players cannot invoke `_select_option` or `_bye` through bare
   numbers or `bye` when `active_dialogue` is set (DEC-0020).
 
+### Fixed
+
+- Fixed `World.buy()` so an empty inventory stack cannot be created above the
+  item's `stack_limit`. The rejection happens before coins, inventory, quests,
+  or dialogue state mutate; the M5 regression covers both World and CLI buy ×6
+  rejection followed by a valid v7 save/load.
+
 ### Added
 
 - Added the M4 frozen dialogue-effect tagged union: `grant_item`,
@@ -65,6 +72,11 @@
 
 ### Verified
 
+- Codex locally verified the M5 P1 correction (not independent acceptance): 569
+  full unittest cases, 12 M4 effect cases, and 13 M5 shop cases passed, along
+  with compileall, original-demo validation, history safety, `git diff --check`,
+  and an external-save-directory CLI flow that preserves 26 coins and an empty
+  inventory after rejected buy ×6, then save/loads successfully.
 - Codex completed local M4+M5 verification (not independent acceptance): 568 full
   unittest cases, 12 `tests.test_dialogue_effects` cases, 12 `tests.test_shop`
   cases, the M1–M3 regression suite, compileall, content validation, history safety,

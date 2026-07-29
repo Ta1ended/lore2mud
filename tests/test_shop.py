@@ -196,6 +196,20 @@ class ShopWorldTests(unittest.TestCase):
             seller.sell("item_linglu_pill")
         self.assertEqual(_mutable_state(seller), before)
 
+    def test_new_stack_buy_above_stack_limit_rejects_before_mutation(self) -> None:
+        world = _world_at_shop()
+        world.player.coins = 26
+        before = _mutable_state(world)
+
+        with self.assertRaisesRegex(WorldRuleError, r"超过栈上限 \(5\)"):
+            world.buy("item_linglu_pill", 6)
+        self.assertEqual(_mutable_state(world), before)
+        self.assertIsNone(world.player.inventory.find_stack("item_linglu_pill"))
+
+        result = CommandProcessor(world).execute("buy item_linglu_pill 6")
+        self.assertIn("超过栈上限 (5)", result.text)
+        self.assertEqual(_mutable_state(world), before)
+
     def test_equipped_sell_and_nonstackable_duplicate_generation_are_rejected(self) -> None:
         equipped = World.from_content_pack(load_content_pack(DEMO_PATH))
         equipped.take("item_crystal_blade")

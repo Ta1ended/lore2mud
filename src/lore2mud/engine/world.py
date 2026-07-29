@@ -714,6 +714,8 @@ class World:
         elif existing is None:
             if self.player.inventory.stack_count >= self.player.inventory.capacity:
                 raise WorldRuleError("背包已经满了。")
+            if quantity > item.stack_limit:
+                raise WorldRuleError(f"超过栈上限 ({item.stack_limit})。")
         elif existing.quantity + quantity > item.stack_limit:
             raise WorldRuleError(f"超过栈上限 ({item.stack_limit})。")
 

@@ -1,6 +1,6 @@
 # Engine Completion Milestones
 
-_Last updated: 2026-07-29（M4+M5 已本地实现并验证，待 GPT-5.6-sol 独立验收）_
+_Last updated: 2026-07-29（M5 P1 已本地修正；M4+M5 待聚焦独立复验）_
 
 本文件定义公共引擎从当前状态到功能完备的里程碑路线。每个里程碑是一个可独立验证的
 纵向切片，完成后更新本文件和相关交接记录。
@@ -96,7 +96,8 @@ _Last updated: 2026-07-29（M4+M5 已本地实现并验证，待 GPT-5.6-sol 独
 
 ## M4: 强类型对话效果
 
-- **状态**: 本地实现并验证，待 GPT-5.6-sol 独立验收。
+- **状态**: 首次独立审查未发现 M4 阻塞项；联合 M4+M5 尚待 M5 P1 修正后的聚焦独立复验，
+  不标记 GO。
 - **执行者**: Codex。
 - **已实现的强制契约**:
   - `DialogueOption.effects` 为必填、有序、frozen tagged union：`grant_item`、
@@ -115,7 +116,8 @@ _Last updated: 2026-07-29（M4+M5 已本地实现并验证，待 GPT-5.6-sol 独
 
 ## M5: 固定金币商店
 
-- **状态**: 本地实现并验证，待 GPT-5.6-sol 独立验收。
+- **状态**: 首次独立验收为 NO-GO；空栈买入超 `stack_limit` 的 P1 已本地修正并验证，待
+  GPT-5.6-sol 聚焦复验，尚不标记 GO。
 - **执行者**: Codex。
 - **已实现的强制契约**:
   - `PlayerDefaults`/`Player.coins` 是非负整数；`ShopDefinition` 和
@@ -123,14 +125,17 @@ _Last updated: 2026-07-29（M4+M5 已本地实现并验证，待 GPT-5.6-sol 独
   - 商店是一房间至多一个、固定价格、无限供应的有序目录；不创建 stock、补货、动态价格或
     任何可变商店存档状态。非堆叠目录物品参加既有跨来源唯一性检查。
   - `shop` 只读，`buy`/`sell` 支持默认和显式正整数数量、稳定 ID 或唯一名称。买入预检金币、
-    容量、栈上限和唯一性，并与 collect_item 奖励同事务回滚；卖出拒绝已装备物品且不撤销任务。
+    容量、栈上限（包括新建空栈）和唯一性，并与 collect_item 奖励同事务回滚；卖出拒绝已装备
+    物品且不撤销任务。
   - 倒下时可以查看 `shop`，不能买卖；所有交易路径保持活动对话并不修改目录。save v7 保存金币，
     商店从当前内容包恢复。
   - original_demo 为 0.6.0，初始 20 金币，`shop_chen_travel_goods` 在琉草小径以买 4 / 卖 2
     交易 `item_linglu_pill`。
-- **Codex 本地验证证据**:
-  - `tests.test_shop`：12 项通过。
-  - M1–M4 回归、全量、CLI、安全和编译证据在本切片交接中记录。
+- **Codex 本地修正验证证据**:
+  - `tests.test_shop`：13 项通过；新增空栈 buy ×6 超栈上限拒绝，World 与 CLI 均保持状态
+    不变。
+  - 全量 unittest：569 项通过；compileall、original_demo 校验、历史安全扫描和 diff 检查通过。
+  - 仓库外 CLI：拾取 3、卖出 3 后 buy ×6 被拒绝；金币保持 26、背包为空，save/load 成功。
 
 ## M6: Examine、帮助和错误反馈
 
