@@ -174,5 +174,7 @@ The manifest is a provenance sidecar:
 - Monsters, shops, equipment, consumables
 - Dialogue effects (grant_item, accept_quest, etc.)
 - Cross-chapter entity merging or conflict resolution
-- Formal canon registry
+- CanonRegistry input or multi-chapter adaptation; L2W-3 provides the separate
+  [Canon Registry Format v1](canon_registry_format.md), but this compiler still
+  accepts exactly one CanonDraft v1
 - LLM or model integration

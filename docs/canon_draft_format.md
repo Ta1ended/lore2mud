@@ -5,8 +5,9 @@
 A canon draft is the deterministic output of promoting reviewed fact-candidate
 claims into a structured, traceable, and re-validable canon document.  It is
 called a *draft* because it contains a single chapter's facts only;
-cross-chapter merging, conflict resolution, multi-source deduplication, and
-formal canon registry promotion belong to future slices.
+cross-chapter identity mapping belongs to the separate L2W-3 canon registry
+stage. Conflict resolution and multi-source semantic deduplication remain
+outside CanonDraft v1.
 
 ## Input chain
 
@@ -115,9 +116,11 @@ remains unchanged.
 
 ## What v1 does NOT cover
 
-- Cross-chapter entity merging
+- Cross-chapter entity merging inside a CanonDraft; use
+  [Canon Registry Format v1](canon_registry_format.md) for explicit multi-draft
+  identity mapping and source-preserving assembly
 - Multi-source conflict resolution
-- Formal canon registry (storage, versioning, query)
+- Mutable canon registry storage, incremental versioning, or query APIs
 - Canon→game adaptation (HP, attack, quests, items)
 - Model or LLM integration
 - UI or web interface

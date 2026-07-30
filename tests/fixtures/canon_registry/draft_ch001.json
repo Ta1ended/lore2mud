@@ -1,0 +1,78 @@
+{
+  "entities": [
+    {
+      "aliases": [
+        "First Watcher"
+      ],
+      "canonical_name": "Mira",
+      "claims": [
+        {
+          "certainty": "certain",
+          "claim_id": "claim_home",
+          "inference_basis": null,
+          "predicate": "home",
+          "review_reason": "The chapter states the location directly.",
+          "source_chapters": [
+            "chapter_000001"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "entity_ref": "source_tower",
+            "kind": "relation"
+          }
+        },
+        {
+          "certainty": "certain",
+          "claim_id": "claim_role",
+          "inference_basis": null,
+          "predicate": "role",
+          "review_reason": "The role is named directly.",
+          "source_chapters": [
+            "chapter_000001"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "enum_value": "watcher",
+            "kind": "enum"
+          }
+        }
+      ],
+      "entity_id": "source_mira",
+      "entity_type": "character",
+      "source_candidate_id": "candidate_mira"
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Glass Tower",
+      "claims": [
+        {
+          "certainty": "certain",
+          "claim_id": "claim_description",
+          "inference_basis": null,
+          "predicate": "description",
+          "review_reason": "The place is described directly.",
+          "source_chapters": [
+            "chapter_000001"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "kind": "text",
+            "text": "A clear tower above the valley."
+          }
+        }
+      ],
+      "entity_id": "source_tower",
+      "entity_type": "location",
+      "source_candidate_id": "candidate_tower"
+    }
+  ],
+  "extracted_by": "fictional-extractor/v1",
+  "format_version": 1,
+  "promotion_id": "promo_ch001",
+  "review_id": "review_ch001",
+  "reviewed_by": "fixture-reviewer",
+  "source": {
+    "chapter_id": "chapter_000001",
+    "chapter_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
+}

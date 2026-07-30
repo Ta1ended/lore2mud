@@ -1,0 +1,51 @@
+{
+  "entities": [
+    {
+      "aliases": [
+        "Mira of the Gate",
+        "Valley Watcher",
+        "First Watcher"
+      ],
+      "canonical_name": "Mira",
+      "entity_id": "canon_mira",
+      "members": [
+        {
+          "promotion_id": "promo_ch001",
+          "source_entity_id": "source_mira"
+        },
+        {
+          "promotion_id": "promo_ch002",
+          "source_entity_id": "source_mira_later"
+        }
+      ],
+      "merge_reason": "The reviewer explicitly identifies both chapter-local entities as the same person."
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Valley Gate",
+      "entity_id": "canon_valley_gate",
+      "members": [
+        {
+          "promotion_id": "promo_ch002",
+          "source_entity_id": "source_gate"
+        }
+      ],
+      "merge_reason": "This location has one reviewed source entity."
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Glass Tower",
+      "entity_id": "canon_glass_tower",
+      "members": [
+        {
+          "promotion_id": "promo_ch001",
+          "source_entity_id": "source_tower"
+        }
+      ],
+      "merge_reason": "This location has one reviewed source entity."
+    }
+  ],
+  "format_version": 1,
+  "registry_id": "fixture_registry",
+  "registry_version": 1
+}

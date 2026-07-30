@@ -1373,3 +1373,38 @@
 - Supersedes: The active advisor/Hermes/manual-transfer workflow in DEC-0037 and
   later workflow references; it does not supersede their historical implementation
   or acceptance evidence.
+
+## DEC-0060: L2W-3 explicit multi-chapter canon registry assembly
+
+- Date: 2026-07-31
+- Status: Implemented locally; independent acceptance pending.
+- Context: After L2W-2 independent acceptance, the project owner authorized Codex
+  to choose and implement the next bounded slice. A stable multi-chapter identity
+  layer is required before broader adaptation can consume facts from several
+  CanonDraft documents without guessing or overwriting provenance.
+- Decision: (a) L2W-3 consumes at least two validated CanonDraft v1 inputs with
+  unique promotion and chapter IDs plus a human-authored RegistryPlan v1.
+  (b) The plan maps every `(promotion_id, source_entity_id)` exactly once, requires
+  explicit registry names/aliases and `merge_reason`, permits at most one member
+  per promotion in each registry entity, and cannot combine different entity types.
+  (c) CanonRegistry v1 preserves every source name, alias, candidate,
+  claim, review field, and chapter binding; claim identity is the composite
+  `(promotion_id, source_entity_id, source_claim_id)`. Repeated and conflicting
+  claims coexist without automatic deduplication or resolution. (d) Relation values
+  are rewritten through the exact member mapping to registry entity IDs.
+  (e) Sources, entities, aliases, members, claims, and JSON keys have canonical
+  deterministic ordering. (f) The CLI rejects input/output aliases and writes one
+  revalidated UTF-8 registry through same-directory tempfile + flush + fsync +
+  `os.replace`, preserving an old output on failure. (g) No private corpus,
+  engine, content-pack, save, dependency, or model integration is in scope.
+- Evidence: baseline `b22bee33cacb154a2efc7e4eef0e3182ccc8319c` to current
+  implementation HEAD; 80 focused tests and 1062 full tests (1 skipped) pass,
+  together with compileall, original-demo validation, history safety,
+  `git fsck --full --no-dangling`, `git diff --check`, golden output, and a real
+  `python -m pipeline.canon_registry` subprocess flow.
+- Consequences: explicit cross-chapter identity assembly and a formal immutable
+  registry snapshot exist. Semantic conflict resolution, mutable registry storage,
+  registry queries, broader game adaptation, L2W-4, private processing, and push
+  remain outside this decision.
+- Independent acceptance: Pending a fresh Codex GPT-5.6-sol read-only review.
+- Supersedes: None.

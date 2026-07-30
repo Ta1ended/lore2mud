@@ -1,0 +1,208 @@
+{
+  "entities": [
+    {
+      "aliases": [],
+      "canonical_name": "Glass Tower",
+      "claims": [
+        {
+          "certainty": "certain",
+          "inference_basis": null,
+          "predicate": "description",
+          "review_reason": "The place is described directly.",
+          "source": {
+            "promotion_id": "promo_ch001",
+            "source_claim_id": "claim_description",
+            "source_entity_id": "source_tower"
+          },
+          "source_chapters": [
+            "chapter_000001"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "kind": "text",
+            "text": "A clear tower above the valley."
+          }
+        }
+      ],
+      "entity_id": "canon_glass_tower",
+      "entity_type": "location",
+      "members": [
+        {
+          "promotion_id": "promo_ch001",
+          "source_aliases": [],
+          "source_candidate_id": "candidate_tower",
+          "source_canonical_name": "Glass Tower",
+          "source_entity_id": "source_tower"
+        }
+      ],
+      "merge_reason": "This location has one reviewed source entity."
+    },
+    {
+      "aliases": [
+        "First Watcher",
+        "Mira of the Gate",
+        "Valley Watcher"
+      ],
+      "canonical_name": "Mira",
+      "claims": [
+        {
+          "certainty": "certain",
+          "inference_basis": null,
+          "predicate": "home",
+          "review_reason": "The chapter states the location directly.",
+          "source": {
+            "promotion_id": "promo_ch001",
+            "source_claim_id": "claim_home",
+            "source_entity_id": "source_mira"
+          },
+          "source_chapters": [
+            "chapter_000001"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "entity_ref": "canon_glass_tower",
+            "kind": "relation"
+          }
+        },
+        {
+          "certainty": "certain",
+          "inference_basis": null,
+          "predicate": "role",
+          "review_reason": "The role is named directly.",
+          "source": {
+            "promotion_id": "promo_ch001",
+            "source_claim_id": "claim_role",
+            "source_entity_id": "source_mira"
+          },
+          "source_chapters": [
+            "chapter_000001"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "enum_value": "watcher",
+            "kind": "enum"
+          }
+        },
+        {
+          "certainty": "certain",
+          "inference_basis": null,
+          "predicate": "home",
+          "review_reason": "The later chapter names the new post.",
+          "source": {
+            "promotion_id": "promo_ch002",
+            "source_claim_id": "claim_home",
+            "source_entity_id": "source_mira_later"
+          },
+          "source_chapters": [
+            "chapter_000002"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "entity_ref": "canon_valley_gate",
+            "kind": "relation"
+          }
+        },
+        {
+          "certainty": "uncertain",
+          "inference_basis": "Her duties imply a broader role.",
+          "predicate": "role",
+          "review_reason": "Accepted as an explicit uncertainty, not a replacement.",
+          "source": {
+            "promotion_id": "promo_ch002",
+            "source_claim_id": "claim_role",
+            "source_entity_id": "source_mira_later"
+          },
+          "source_chapters": [
+            "chapter_000002"
+          ],
+          "source_support": "inferred",
+          "value": {
+            "enum_value": "guardian",
+            "kind": "enum"
+          }
+        }
+      ],
+      "entity_id": "canon_mira",
+      "entity_type": "character",
+      "members": [
+        {
+          "promotion_id": "promo_ch001",
+          "source_aliases": [
+            "First Watcher"
+          ],
+          "source_candidate_id": "candidate_mira",
+          "source_canonical_name": "Mira",
+          "source_entity_id": "source_mira"
+        },
+        {
+          "promotion_id": "promo_ch002",
+          "source_aliases": [
+            "Valley Watcher"
+          ],
+          "source_candidate_id": "candidate_mira_later",
+          "source_canonical_name": "Mira of the Gate",
+          "source_entity_id": "source_mira_later"
+        }
+      ],
+      "merge_reason": "The reviewer explicitly identifies both chapter-local entities as the same person."
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Valley Gate",
+      "claims": [
+        {
+          "certainty": "certain",
+          "inference_basis": null,
+          "predicate": "description",
+          "review_reason": "The gate is described directly.",
+          "source": {
+            "promotion_id": "promo_ch002",
+            "source_claim_id": "claim_description",
+            "source_entity_id": "source_gate"
+          },
+          "source_chapters": [
+            "chapter_000002"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "kind": "text",
+            "text": "A narrow gate at the valley edge."
+          }
+        }
+      ],
+      "entity_id": "canon_valley_gate",
+      "entity_type": "location",
+      "members": [
+        {
+          "promotion_id": "promo_ch002",
+          "source_aliases": [],
+          "source_candidate_id": "candidate_gate",
+          "source_canonical_name": "Valley Gate",
+          "source_entity_id": "source_gate"
+        }
+      ],
+      "merge_reason": "This location has one reviewed source entity."
+    }
+  ],
+  "format_version": 1,
+  "registry_id": "fixture_registry",
+  "registry_version": 1,
+  "sources": [
+    {
+      "chapter_id": "chapter_000001",
+      "chapter_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "extracted_by": "fictional-extractor/v1",
+      "promotion_id": "promo_ch001",
+      "review_id": "review_ch001",
+      "reviewed_by": "fixture-reviewer"
+    },
+    {
+      "chapter_id": "chapter_000002",
+      "chapter_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "extracted_by": "fictional-extractor/v1",
+      "promotion_id": "promo_ch002",
+      "review_id": "review_ch002",
+      "reviewed_by": "fixture-reviewer"
+    }
+  ]
+}

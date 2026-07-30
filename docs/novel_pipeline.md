@@ -133,10 +133,18 @@ CanonDraft 可通过显式 AdaptationPlan 编译为可玩的微型内容包（�
 一物品、一叙事对话、一自动接取任务）。格式规范见
 [adaptation_plan_format.md](adaptation_plan_format.md)。
 
+### L2W-3：多章 canon registry
+
+两个或更多已验证的 CanonDraft 可通过显式 RegistryPlan 组装为确定性的
+CanonRegistry。人工计划负责把每个章内实体映射到 registry 稳定 ID；工具要求所有
+来源实体恰好覆盖一次、合并成员类型一致，并把关系引用改写为 registry ID。每条 claim
+保留 `(promotion_id, source_entity_id, source_claim_id)` 来源，不自动去重、覆盖或裁决
+冲突。格式规范见 [canon_registry_format.md](canon_registry_format.md)。
+
 ## 第三步：实体归并
 
-中央注册表负责稳定 ID。子 Agent 可以并行提取候选，但不能各自永久决定实体
-ID。别名、称号和省略主语可能产生重复实体，必须通过来源章节审核。
+中央注册表负责稳定 ID。并行提取的候选不能各自永久决定实体 ID。别名、称号和
+省略主语可能产生重复实体，必须通过来源章节审核并写入显式 RegistryPlan。
 
 遇到冲突时保留：
 

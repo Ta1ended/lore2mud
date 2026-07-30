@@ -127,6 +127,15 @@ stale.
   staged atomic write with loader validation and manifest re-validate.
   GPT-5.6-sol independently accepted technical commit `f7a977a2` GO (DEC-0058):
   72 focused tests with 1 skipped and 982 full tests with 1 skipped.
+- L2W-3 multi-chapter canon registry assembly implemented locally by Codex
+  against baseline `b22bee33cacb154a2efc7e4eef0e3182ccc8319c` (DEC-0060).
+  `pipeline/canon_registry.py` consumes 2+ validated CanonDrafts and an explicit
+  full-coverage RegistryPlan, preserves source/member/claim provenance, rewrites
+  relations to registry IDs, retains conflicting claims, and atomically emits a
+  deterministic CanonRegistry v1. 80 focused and 1062 full tests (1 skipped),
+  compileall, original-demo validation, history safety, fsck, diff checking, and
+  real CLI generation passed. Independent GPT-5.6-sol acceptance is pending;
+  this implementation context must not declare GO.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

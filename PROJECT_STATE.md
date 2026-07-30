@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-31（Codex 全程工作流启用；L2W-2 已独立验收 GO）_
+_Last updated: 2026-07-31（L2W-3 本地实现完成；独立验收 pending）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -13,6 +13,12 @@ _Last updated: 2026-07-31（Codex 全程工作流启用；L2W-2 已独立验收 
 活动开发工作流已切换为 Codex 全程负责并统一使用 GPT-5.6-sol（DEC-0059）。
 规划、实现、测试和交接由 Codex 完成；需要独立验收时使用新的 Codex 复验任务或
 干净上下文。Hermes 不再承担新任务，其既有提交与决定归属保持为历史事实。
+
+项目负责人已授权 Codex 自定下一范围受限切片。Codex 选择并完成 L2W-3 多章 canon
+registry 本地实现（DEC-0060）：两个或更多 CanonDraft v1 经显式 RegistryPlan 完整映射为
+CanonRegistry v1；来源名称、别名、candidate、claim、审核字段和章节绑定全部保留，relation
+改写为 registry ID，重复或冲突 claim 不自动去重或裁决。该实现未读取私有小说，未修改
+引擎、内容包、save 或依赖。独立 GPT-5.6-sol 验收尚未执行，因此当前状态不是 GO。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
@@ -187,16 +193,25 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 无活动实施切片。L2W-2 micro content pack compilation 已由 GPT-5.6-sol
-  独立验收 GO（DEC-0058），全部 findings 已关闭。72 项 adaptation 聚焦
-  （1 skipped）、982 项全量 unittest（1 skipped）。
+- L2W-3 实施与本地验证已完成，等待新的 Codex GPT-5.6-sol 任务或干净上下文
+  相对基线 `b22bee33cacb154a2efc7e4eef0e3182ccc8319c` 只读独立验收。
+- 验收前不得把当前实现上下文的完成报告写成 GO，也不开始 L2W-4、一般化改编、
+  私有资料处理或 push。
 
 ## Blockers
 
-- 无技术阻塞；后续工作受项目负责人新的明确授权门槛约束。
+- 无技术阻塞；发布门槛是 L2W-3 独立验收。网络不佳时，push 可由项目负责人在
+  明确授权后通过 GitHub Desktop 手动完成。
 
 ## Verification
 
+- L2W-3 local verification（2026-07-31，Codex，独立验收 pending）：相对基线
+  `b22bee33cacb154a2efc7e4eef0e3182ccc8319c` 新增确定性多章 registry 模块、两份
+  draft-2020-12 Schema、80 项聚焦测试、四份公开虚构夹具和格式文档。80 项聚焦测试、
+  1062 项全量 unittest（1 skipped）、compileall、original-demo 内容校验、
+  `check_repo_safety.py --history`、`git fsck --full --no-dangling`、`git diff --check`
+  和真实 `python -m pipeline.canon_registry` CLI/golden 往返均通过。未访问私有小说；
+  `src/`、游戏内容 Schema、original_demo、save 和依赖均未修改。
 - Phase 1.0 independent acceptance GO（2026-07-30，GPT-5.6-sol，DEC-0039）：
   聚焦复验确认 DEC-0038 三个 findings 全部关闭。131 项聚焦测试、730 项全量
   unittest、compileall、original-demo 校验、安全历史扫描和 diff 检查通过。
@@ -310,6 +325,13 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - `docs/production_workflow.md` - Codex 全程工作流及实现/复验阶段分离规则。
 - `docs/engine_completion_milestones.md` - M1–M8 引擎完成路线图。
 - `NEXT_TASK.md` - exactly one recommended continuation.
+- `pipeline/canon_registry.py` - L2W-3 explicit multi-draft identity assembly,
+  source-preserving registry validation, relation rewriting, and atomic CLI output.
+- `schemas/canon_registry_plan.schema.json` / `schemas/canon_registry.schema.json` -
+  L2W-3 structural contracts; Python validation adds exact coverage and references.
+- `tests/test_canon_registry.py` - L2W-3 validation, build, determinism, provenance,
+  atomic writer, Schema structure, golden fixture, and subprocess CLI coverage.
+- `docs/canon_registry_format.md` - RegistryPlan and CanonRegistry v1 contract.
 - `src/lore2mud/engine/world.py` - authoritative state for quests, effects, flags,
   coins, fixed shops, inventory, equipment, and dialogue.
 - `src/lore2mud/engine/save.py` - strict v7 save/load service with coins and flags.

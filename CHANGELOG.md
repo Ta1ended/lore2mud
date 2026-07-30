@@ -4,6 +4,21 @@
 
 ### Added
 
+- Added deterministic multi-chapter canon registry assembly (L2W-3):
+  `pipeline/canon_registry.py` validates explicit `RegistryPlan v1` identity
+  mappings, requires exact coverage of two or more unique CanonDraft sources,
+  allows at most one member per source in each registry entity, rejects mixed
+  entity types, rewrites relations to registry IDs, and emits a
+  frozen source-preserving `CanonRegistry v1`. Repeated or conflicting claims
+  remain distinct under `(promotion_id, source_entity_id, source_claim_id)`;
+  no identity inference or semantic conflict resolution occurs. The CLI writes
+  deterministic UTF-8 JSON through a same-directory temporary file with
+  flush, fsync, atomic replace, input/output alias rejection, and failure cleanup.
+  Added RegistryPlan/CanonRegistry draft-2020-12 Schemas, a public fictional
+  golden fixture, format documentation, and 80 focused tests. Local verification
+  passed 1062 full tests (1 skipped), compileall, original-demo validation,
+  history safety, fsck, diff checking, and real module CLI generation;
+  independent acceptance is pending.
 - Added micro content pack compilation (L2W-2): `pipeline/adaptation.py` with
   frozen `AdaptationPlan`, `AdaptationManifest`, and semantic `MicroContentPack`
   dataclass models, `validate_adaptation_plan()`,

@@ -214,19 +214,24 @@ python pipeline/split_novel.py `
 首次运行后必须检查章节数、异常标题和前后边界。详细流程见
 [小说资料管线](docs/novel_pipeline.md)。
 
+审核后的单章 canon 草稿可通过显式 RegistryPlan 组装为多章 CanonRegistry；该步骤
+保留每条 claim 的复合来源，不自动识别同名实体或裁决冲突。格式见
+[Canon Registry Format v1](docs/canon_registry_format.md)。
+
 ## 生产工作流
 
-2026-07-29 文档封板前的实时同步基线为 `1ee0b30`：`HEAD`、`origin/main` 和直接查询的
-远端 `main` 一致，工作树干净，ahead/behind 为 `0/0`。该基线不等同于后续本地文档提交后的
-HEAD；本地提交不会自动 push，执行任何发布或历史操作前必须重新检查实时远端状态。
-GPT-5.6-sol 负责范围、架构与独立验收，Codex 是仓库内唯一执行者，项目负责人负责人工转交：
+Codex 全程使用 GPT-5.6-sol 完成方案、实现、测试、交接和本地提交；项目负责人
+批准切片范围和 push，不再在不同 Agent 之间人工转交 prompt：
 
-1. 顾问根据当前状态定义一个可验证目标、数据契约和限制。
-2. 执行者先阅读 `AGENTS.md`、交接文件、相关代码和测试，并报告数据流、范围、
-   风险和测试方案。
-3. 执行者只实现当前纵向切片，同步内容格式、文档和四个交接文件。
-4. 执行者运行完整测试与 `python scripts/check_repo_safety.py --history`。
-5. 顾问按测试、差异和试玩证据验收，再决定下一项任务。
+1. Codex 先阅读 `AGENTS.md`、交接文件、相关代码和测试，并报告数据流、范围、
+   风险和验证方案。
+2. 项目负责人明确授权后，Codex 只实现当前纵向切片。
+3. Codex 运行完整测试、`python scripts/check_repo_safety.py --history` 和对应 CLI
+   冒烟，再同步格式文档与交接文件并创建本地提交。
+4. 需要独立验收时，由新的 Codex 任务或干净上下文使用 GPT-5.6-sol 只读核对真实
+   提交并给出 GO/REVISE。
+5. 本地提交不会自动 push；发布前重新核实 HEAD、`origin/main` 和 ahead/behind，
+   并取得项目负责人明确授权。
 
 可直接复制的任务模板与检查点见
 [生产工作流](docs/production_workflow.md)。

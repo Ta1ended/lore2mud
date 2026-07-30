@@ -1,0 +1,78 @@
+{
+  "entities": [
+    {
+      "aliases": [
+        "Valley Watcher"
+      ],
+      "canonical_name": "Mira of the Gate",
+      "claims": [
+        {
+          "certainty": "certain",
+          "claim_id": "claim_home",
+          "inference_basis": null,
+          "predicate": "home",
+          "review_reason": "The later chapter names the new post.",
+          "source_chapters": [
+            "chapter_000002"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "entity_ref": "source_gate",
+            "kind": "relation"
+          }
+        },
+        {
+          "certainty": "uncertain",
+          "claim_id": "claim_role",
+          "inference_basis": "Her duties imply a broader role.",
+          "predicate": "role",
+          "review_reason": "Accepted as an explicit uncertainty, not a replacement.",
+          "source_chapters": [
+            "chapter_000002"
+          ],
+          "source_support": "inferred",
+          "value": {
+            "enum_value": "guardian",
+            "kind": "enum"
+          }
+        }
+      ],
+      "entity_id": "source_mira_later",
+      "entity_type": "character",
+      "source_candidate_id": "candidate_mira_later"
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Valley Gate",
+      "claims": [
+        {
+          "certainty": "certain",
+          "claim_id": "claim_description",
+          "inference_basis": null,
+          "predicate": "description",
+          "review_reason": "The gate is described directly.",
+          "source_chapters": [
+            "chapter_000002"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "kind": "text",
+            "text": "A narrow gate at the valley edge."
+          }
+        }
+      ],
+      "entity_id": "source_gate",
+      "entity_type": "location",
+      "source_candidate_id": "candidate_gate"
+    }
+  ],
+  "extracted_by": "fictional-extractor/v1",
+  "format_version": 1,
+  "promotion_id": "promo_ch002",
+  "review_id": "review_ch002",
+  "reviewed_by": "fixture-reviewer",
+  "source": {
+    "chapter_id": "chapter_000002",
+    "chapter_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+  }
+}
