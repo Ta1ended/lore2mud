@@ -337,6 +337,14 @@
   focused tests, 730 full tests, compileall, original-demo validation, safety
   history scan, and diff check. Local HEAD=`3442d2d`, `origin/main`=`afdb235`,
   ahead/behind=2/0, not pushed.
+- GPT-5.6-sol independently accepted Phase 1.1 manifest validation and candidate
+  source binding as GO with no remaining findings (DEC-0047). Implementation
+  `c69eeee` + 4 focus-fix rounds (`2781e7c`, `ecfca89`, `e350ee5`, `ca34d7b`,
+  `ec6bc62`, `56edcb2`) closed all P1/P2 findings. Accepted evidence: 237 focused
+  tests, 817 full tests, compileall, original-demo validation, safety history
+  scan, git fsck, diff check, Schema primary/scan path verification, and
+  build_manifest integration all passing. Local HEAD=`56edcb2`,
+  `origin/main`=`1585a98`, ahead/behind=7/0, not pushed.
 
 
 - GPT-5.6-sol independently accepted M8 as GO after focused review: the Git-snapshot

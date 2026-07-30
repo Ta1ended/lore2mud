@@ -106,7 +106,9 @@ stale.
   DEC-0042: 8 missing-field tests + 5 new Schema tests, 236 focused, 817 full tests.
   Schema allOf/additionalProperties P1 fixed in DEC-0043: entry_base.properties
   now lists all 12 fields. 237 focused, 817 full tests. Pending GPT-5.6-sol
-  final re-review (DEC-0041 through DEC-0046).
+  final re-review (DEC-0041 through DEC-0046). GPT-5.6-sol independently
+  accepted Phase 1.1 GO with no remaining findings (DEC-0047). 237 focused,
+  817 full tests. Local HEAD=`56edcb2`, `origin/main`=`1585a98`.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

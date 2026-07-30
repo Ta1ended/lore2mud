@@ -182,7 +182,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- Phase 1.1 等待 GPT-5.6-sol 最终复验（DEC-0041 至 DEC-0046）。
+- 无活动实施切片。Phase 1.1 已由 GPT-5.6-sol 独立验收 GO（DEC-0047），
+  全部 P1/P2 findings 已关闭。任何后续工作须项目负责人新的明确授权。
 
 ## Blockers
 

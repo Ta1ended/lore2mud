@@ -1084,3 +1084,32 @@
 - Evidence: `CHANGELOG.md`, `DECISIONS.md`.
 - Supersedes: Only DEC-0045's count numbers; the merge decision and scope
   remain unchanged.
+
+## DEC-0047: Phase 1.1 independent acceptance — GO
+
+- Date: 2026-07-30
+- Status: Accepted
+- Context: Phase 1.1 manifest validation and candidate source binding was
+  implemented (`c69eeee`) and underwent four focus-fix rounds for P1/P2 findings
+  (DEC-0042/0043/0044/0045/0046). GPT-5.6-sol performed final independent review
+  and confirmed all findings closed.
+- Decision: Record Phase 1.1 as independently accepted GO by GPT-5.6-sol.
+  Applicable commits: `c69eeee` (initial), `2781e7c` (P1/P2 field presence +
+  Schema conditions), `ecfca89` (Schema allOf/additionalProperties),
+  `e350ee5` (Changelog structure + test counts), `ca34d7b` (section merge),
+  `ec6bc62` (count correction), `56edcb2` (NEXT_TASK DEC range).
+  Accepted evidence: 237 focused tests, 817 full unittest, compileall,
+  original-demo validation, `check_repo_safety.py --history`,
+  `git fsck --full --no-dangling`, `git diff --check`, Schema primary/scan
+  path semantic verification, and build_manifest integration all passing.
+  Local HEAD=`56edcb2`, `origin/main`=`1585a98`, ahead/behind=7/0, worktree
+  clean, not pushed. Direct remote query not refreshed this session; must
+  recheck before publishing.
+- Consequences: Phase 1.1 is complete. No new implementation is authorized.
+  Phase 1.2 (review decisions, canon writing, entity resolution, model
+  integration, or any other work) requires a separate, explicit, scoped
+  project-owner authorization. This does not authorize push.
+- Evidence: `pipeline/chapter_manifests.py`, `schemas/chapter_manifest.schema.json`,
+  `tests/test_chapter_manifests.py`, `docs/chapter_manifest_format.md`,
+  `docs/fact_candidate_format.md`.
+- Supersedes: Only DEC-0041's independent-acceptance-pending status.
