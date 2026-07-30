@@ -114,7 +114,7 @@ stale.
   models, four-state decisions, superseded conditional, (candidate_id,claim_id)
   uniqueness, candidate-document binding. 43 focused, 280 Phase 1.2+1.1+1.0
   regression, 860 full tests verified. Pending GPT-5.6-sol independent acceptance
-  (DEC-0048).
+  (DEC-0048 to DEC-0050).
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

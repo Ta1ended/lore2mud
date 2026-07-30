@@ -183,7 +183,7 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 ## In progress
 
 - Phase 1.2 fact-review validation and review states 已由 Hermes 实现，
-  等待 GPT-5.6-sol 聚焦复验（DEC-0048/0049）。43 项聚焦、280 项回归、
+  等待 GPT-5.6-sol 聚焦复验（DEC-0048 to DEC-0050）。43 项聚焦、280 项回归、
   860 项全量测试通过。未修改 src/、现有 Schema、original_demo 或 save。
 
 ## Blockers

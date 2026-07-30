@@ -1162,3 +1162,19 @@
 - Evidence: `docs/fact_review_format.md`, `docs/fact_candidate_format.md`,
   `NEXT_TASK.md`, `PROJECT_MEMORY.md`, `PROJECT_STATE.md`.
 - Supersedes: None.
+
+## DEC-0050: Phase 1.2 Markdown and DEC range fix
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: docs/fact_candidate_format.md Review binding heading had leading `|`
+  and trailing `|` from patch artifact. Handoff files referenced only DEC-0048,
+  omitting DEC-0049.
+- Decision: Remove stray pipe characters from Markdown. Update handoff files
+  to reference DEC-0048 through DEC-0050. No code, Schema, test, fixture,
+  or CHANGELOG changes.
+- Consequences: Markdown is clean. Handoff DEC ranges are consistent.
+  Pending GPT-5.6-sol final re-review.
+- Evidence: `docs/fact_candidate_format.md`, `NEXT_TASK.md`,
+  `PROJECT_MEMORY.md`, `PROJECT_STATE.md`.
+- Supersedes: None.
