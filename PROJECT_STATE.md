@@ -182,9 +182,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- Phase 1.1 聚焦修正：P1 missing-field bypass 和 P2 Schema conditions
-  已关闭（DEC-0042）。236 项聚焦测试通过，816 项全量测试通过。
-  等待 GPT-5.6-sol 聚焦复验。
+- Phase 1.1 Schema allOf/additionalProperties P1 已关闭（DEC-0043）。
+  237 项聚焦测试通过，816 项全量测试通过。等待 GPT-5.6-sol 聚焦复验。
 
 ## Blockers
 

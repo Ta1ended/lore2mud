@@ -639,6 +639,23 @@ class SchemaParseTests(unittest.TestCase):
         # next_id: null or chapter_id
         self.assertIn("oneOf", base["next_id"])
 
+    def test_entry_base_properties_has_all_12_fields(self) -> None:
+        """entry_base.properties must list all 12 required fields
+        to be compatible with additionalProperties:false."""
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "chapter_manifest.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        base = schema["$defs"]["entry_base"]
+        required = set(base["required"])
+        properties = set(base["properties"].keys())
+        self.assertEqual(len(required), 12, f"expected 12 required, got {len(required)}: {required}")
+        self.assertEqual(len(properties), 12, f"expected 12 properties, got {len(properties)}: {properties}")
+        self.assertTrue(required.issubset(properties),
+            f"all required must be in properties; missing: {required - properties}")
+        for field in ("source_chapter_label", "source_title", "volume_label",
+                      "source_offset", "source_line"):
+            self.assertIn(field, properties,
+                f"entry_base.properties missing conditional field: {field}")
+
 
 # ── source binding ──────────────────────────────────────────────────────────
 

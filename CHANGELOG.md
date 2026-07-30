@@ -29,6 +29,7 @@ n### Fixed
 - Phase 1.1 P2: Schema restructured with root `if/then/else` on `source_encoding` (null→scan_entry, encoding→primary_entry), typed constraints for previous_id/next_id/path, and conditional field requirements for primary vs. scan.
   false, `oneOf` tagged union, `if/then/else` for inference_basis conditional,
   `\\S` pattern for non-blank strings). Schema expresses structural constraints;
+- Phase 1.1 Schema P1: entry_base.properties now lists all 12 required fields, fixing additionalProperties:false rejection of the 5 conditional fields (source_chapter_label, source_title, volume_label, source_offset, source_line). base/branch constraints preserved in allOf per primary_entry/scan_entry.
   Python adds semantic checks (dedup, cross-reference, NFKC, bool/int, finite float).
 - Added `tests/test_fact_candidates.py` with 131 focused tests covering all value
   branches, unknown fields, missing fields, bool/int, NaN/Inf, alias dedup,

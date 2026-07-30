@@ -1009,3 +1009,23 @@
 - Evidence: `pipeline/chapter_manifests.py`, `schemas/chapter_manifest.schema.json`,
   `tests/test_chapter_manifests.py`.
 - Supersedes: None.
+
+## DEC-0043: Phase 1.1 Schema allOf/additionalProperties fix
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: Schema `entry_base` had `additionalProperties:false` with `required` listing
+  all 12 fields, but `properties` only defined 7. The 5 conditional fields
+  (source_chapter_label, source_title, volume_label, source_offset, source_line)
+  were only defined in `primary_entry`/`scan_entry` `allOf` branches, causing
+  JSON Schema draft 2020-12 to reject them as additional properties.
+- Decision: Add the 5 conditional fields to `entry_base.properties` with `{}`
+  (unconstrained); keep `primary_entry`/`scan_entry` `allOf` branches for type
+  refinements. Add `test_entry_base_properties_has_all_12_fields` asserting
+  the complete property set.
+- Consequences: Schema now structurally accepts all 12 fields at the base level
+  while `allOf` branches refine types per primary/scan path. 237 focused,
+  816 full tests pass. Pending focused re-review.
+- Evidence: `schemas/chapter_manifest.schema.json`,
+  `tests/test_chapter_manifests.py`.
+- Supersedes: None.

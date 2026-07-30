@@ -104,6 +104,8 @@ stale.
   Pending GPT-5.6-sol independent acceptance (DEC-0041). Phase 1.1 independent
   acceptance NO-GO (P1 missing-field bypass, P2 Schema conditions). Focus fix in
   DEC-0042: 8 missing-field tests + 5 new Schema tests, 236 focused, 816 full tests.
+  Pending focused re-review. Schema allOf/additionalProperties P1 fixed in
+  DEC-0043: entry_base.properties now lists all 12 fields. 237 focused/816 full.
   Pending focused re-review.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and

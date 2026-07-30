@@ -82,6 +82,11 @@
       "properties": {
         "chapter_id": { "$ref": "#/$defs/chapter_id" },
         "title": { "$ref": "#/$defs/non_blank" },
+        "source_chapter_label": {},
+        "source_title": {},
+        "volume_label": {},
+        "source_offset": {},
+        "source_line": {},
         "path": { "type": "string" },
         "character_count": { "type": "integer", "minimum": 0 },
         "sha256": { "$ref": "#/$defs/sha256" },
