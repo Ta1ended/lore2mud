@@ -4,7 +4,7 @@ _Last updated: 2026-07-30（Phase 1.1 文档收尾完成；最终复验待定）
 
 ## Single next action
 
-交回 GPT-5.6-sol 最终复验 Phase 1.1（DEC-0041/0042/0043/0044/0045）。
+交回 GPT-5.6-sol 最终复验 Phase 1.1（DEC-0041 至 DEC-0046）。
 复验 GO 前不得开始 Phase 1.2，不得 push。
 
 ## Boundaries
