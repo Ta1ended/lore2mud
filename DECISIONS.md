@@ -1351,3 +1351,25 @@
 - Supersedes: DEC-0057's "已同步" claim was premature; this decision confirms
   the correct handling off numbers and clean Git state.
 - Does not authorize: L2W-3, push, or any new feature work.
+
+## DEC-0059: Codex-only GPT-5.6-sol development workflow
+
+- Date: 2026-07-31
+- Status: Active
+- Context: Hermes is no longer available as an executor. The project owner directed
+  Codex to run the development workflow end to end using GPT-5.6-sol.
+- Decision: Codex is the sole active development Agent for planning, implementation,
+  testing, handoff, and review tasks. All lore2mud development tasks select
+  GPT-5.6-sol; if unavailable, implementation stops rather than silently switching
+  models. The project owner approves slice scope and push but no longer transfers
+  prompts between advisor and executor Agents. When independent acceptance is
+  required, a fresh Codex review task or clean context performs a read-only review
+  of the real baseline, commit, tests, safety checks, and gameplay evidence. An
+  implementation context cannot self-declare GO from its own completion report.
+- Consequences: `AGENTS.md` and `docs/production_workflow.md` now describe one
+  Codex workflow with stage separation instead of Agent separation. Existing
+  Hermes and Codex attribution in historical commits and decisions remains unchanged.
+  Local commits still require explicit project-owner authorization before push.
+- Supersedes: The active advisor/Hermes/manual-transfer workflow in DEC-0037 and
+  later workflow references; it does not supersede their historical implementation
+  or acceptance evidence.

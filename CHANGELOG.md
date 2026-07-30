@@ -5,14 +5,16 @@
 ### Added
 
 - Added micro content pack compilation (L2W-2): `pipeline/adaptation.py` with
-  frozen `AdaptationPlan`, `AdaptationManifest`, `MicroContentPack`,
-  `CompiledDocument` dataclass models, `validate_adaptation_plan()`,
+  frozen `AdaptationPlan`, `AdaptationManifest`, and semantic `MicroContentPack`
+  dataclass models, `validate_adaptation_plan()`,
   `compile_micro_pack()`, `write_micro_pack()` (atomic, staged),
   `validate_adaptation_manifest_document()`, and deterministic `main()` CLI.
-  44 focused tests. Adaptation plan single-object profile (1 room/character/
+  72 focused tests (1 skipped) and 982 full tests (1 skipped) passed independent
+  acceptance. Adaptation plan single-object profile (1 room/character/
   item/quest/dialogue). Item output excludes heal/slot/bonus fields. Quest
   auto-accepted via trigger_room. Dialogue effects=[]. Full provenance via
-  adaptation_manifest.json sidecar.
+  adaptation_manifest.json sidecar; golden nine-file output and per-file fsync
+  are covered.
 - Added `schemas/adaptation_plan.schema.json` and
   `schemas/adaptation_manifest.schema.json` (draft 2020-12).
 - Added `docs/adaptation_plan_format.md`.
@@ -306,6 +308,10 @@
 
 ### Changed
 
+- Replaced the active GPT-5.6-sol advisor + Hermes executor handoff with a
+  Codex-only GPT-5.6-sol workflow. Codex now owns planning, implementation,
+  verification, and handoff; independent acceptance remains a separate fresh
+  Codex review task or clean-context pass. Historical Hermes attribution is unchanged.
 - Expanded the fully original demo to content-pack 0.8.0 with M7.2: four more
   rooms, the two new monsters `monster_mist_crawler` and `monster_prism_sentinel`,
   and their unique-target `monster_defeated` quests. The demo now reaches eight
@@ -321,9 +327,9 @@
   now reports syntax, parameters, context restrictions, and death restrictions;
   DEC-0020 death-gate ordering and dialogue-only bare-number behavior remain
   compatible.
-- Documented the current execution workflow: GPT-5.6-sol is the scope/architecture
-  reviewer and independent acceptor; Hermes is the executor for fact-layer slices;
-  the project owner manually transfers prompts and completion reports.
+- Earlier documented the GPT-5.6-sol advisor + Hermes executor workflow for
+  fact-layer slices. DEC-0059 now supersedes that active workflow while preserving
+  its historical implementation and acceptance attribution.
 - Upgraded the original demo content pack to 0.6.0 and the local save format to v7.
   v6 saves are rejected by format version; 0.4.0 content-pack saves are rejected by
   the content-pack version check.

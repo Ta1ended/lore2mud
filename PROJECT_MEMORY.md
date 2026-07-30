@@ -19,9 +19,10 @@ stale.
 ## Current checkpoint
 
 - Repository: `lore2mud`; branch: `main`.
-- Current execution mode: GPT-5.6-sol reviews scope and architecture and performs
-  independent acceptance; Hermes is the current executor for L2W-1; the project
-  owner manually transfers prompts and completion reports between the two conversations.
+- Current execution mode (DEC-0059): Codex is the sole active development Agent;
+  planning, implementation, verification, handoff, and independent-review tasks all
+  use GPT-5.6-sol. Independent acceptance uses a fresh Codex review task or clean
+  context. Hermes remains historical attribution only; manual inter-Agent transfer is retired.
 - M7.2 independent acceptance compares
   `147633e0f139c9bc04919d8f69e75666e511fadc` with baseline
   `549785912418bff56d1521437a51c25718edbc34`; M7.1's independently accepted
@@ -124,8 +125,8 @@ stale.
   `pipeline/adaptation.py` with frozen dataclass models, AdaptationPlan
   structural validation, binding + coverage + cross-object compilation,
   staged atomic write with loader validation and manifest re-validate.
-  38 focused tests, 954 full tests. Pending GPT-5.6-sol independent acceptance
-  (DEC-0055).
+  GPT-5.6-sol independently accepted technical commit `f7a977a2` GO (DEC-0058):
+  72 focused tests with 1 skipped and 982 full tests with 1 skipped.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

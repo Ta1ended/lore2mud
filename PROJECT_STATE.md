@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-30（M8 独立验收 GO；M1–M8 公共引擎交接封板）_
+_Last updated: 2026-07-31（Codex 全程工作流启用；L2W-2 已独立验收 GO）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -9,6 +9,10 @@ _Last updated: 2026-07-30（M8 独立验收 GO；M1–M8 公共引擎交接封�
 通用引擎和原创示例。
 
 ## Current status
+
+活动开发工作流已切换为 Codex 全程负责并统一使用 GPT-5.6-sol（DEC-0059）。
+规划、实现、测试和交接由 Codex 完成；需要独立验收时使用新的 Codex 复验任务或
+干净上下文。Hermes 不再承担新任务，其既有提交与决定归属保持为历史事实。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
@@ -104,8 +108,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - 安全门覆盖 private novel 的 raw/chapters/summaries/canon/extractions、私有/
   生成内容、存档、模型、索引、数据库、日志、本地配置和有限常见凭据模式；CI 使用
   `--history` 扫描所有可达历史树和 blob。
-- 生产工作流明确 GPT-5.6-sol 为顾问、Codex 为唯一执行者，项目负责人负责人工
-  转交；仍要求先审数据契约和验收方案，再完成单一纵向切片。
+- 生产工作流由 Codex 全程使用 GPT-5.6-sol 完成方案、实现、测试和交接；需要独立
+  验收时另开 Codex 复验任务或使用干净上下文，仍要求先审数据契约和验收方案，
+  再完成一个经项目负责人明确授权的纵向切片。
 - `tests/` 覆盖核心玩法、消耗品、装备（hand+body）、对话系统（91 项）、
   非法内容引用、拆章和安全检查。
 - 私有小说已在仓库外完成一次受控拆章；原文未修改，章节重建校验通过。
@@ -301,8 +306,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 ## Key paths
 
 - `PROJECT_MEMORY.md` - fresh-session restart instructions and pause rules.
-- `AGENTS.md` - GPT-5.6-sol 顾问、Codex 唯一执行者与人工转交约束。
-- `docs/production_workflow.md` - GPT-5.6-sol 顾问与 Codex 执行的生产流程。
+- `AGENTS.md` - Codex 全程使用 GPT-5.6-sol 的开发、授权与独立验收约束。
+- `docs/production_workflow.md` - Codex 全程工作流及实现/复验阶段分离规则。
 - `docs/engine_completion_milestones.md` - M1–M8 引擎完成路线图。
 - `NEXT_TASK.md` - exactly one recommended continuation.
 - `src/lore2mud/engine/world.py` - authoritative state for quests, effects, flags,
