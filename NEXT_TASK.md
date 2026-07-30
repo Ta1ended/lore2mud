@@ -1,19 +1,18 @@
 # Next Task
 
-_Last updated: 2026-07-30（Phase 1.1 独立验收 GO；封板）_
+_Last updated: 2026-07-30（Phase 1.2 实现完成；独立验收待定）_
 
 ## Single next action
 
-等待项目负责人对后续工作给出新的、明确且范围受限的授权；在授权前不开始
-Phase 1.2、任何新功能或私有小说事实层工作。
+交回 GPT-5.6-sol 独立验收 Phase 1.2 fact-review validation（DEC-0048）。
+验收通过前不得开始后续切片。
 
 ## Boundaries
 
-- Phase 1.1 manifest validation and candidate source binding 已由 GPT-5.6-sol
-  独立验收 GO（DEC-0047），全部 P1/P2 findings 已关闭。
-- 本地 HEAD=`56edcb2`，`origin/main`=`1585a98`，ahead/behind=7/0，未 push。
-  push 前须重新实时核实远端。
+- Phase 1.2 实现位于 `pipeline/fact_reviews.py`，不涉及 src/、现有 Schema、
+  original_demo 或 save 格式。
+- 43 项聚焦测试通过；全量测试待验证。
 
 ## Queue
 
-- 无排队实施项；任何后续事项均须项目负责人重新明确授权。
+- 无排队实施项。

@@ -120,6 +120,7 @@ python pipeline/split_novel.py D:\PrivateNovel\book.txt novel\chapters --encodin
 
 逐章提取的候选格式规范见 [fact_candidate_format.md](fact_candidate_format.md)。
 manifest v2 校验规范见 [chapter_manifest_format.md](chapter_manifest_format.md)。
+审核决定格式规范见 [fact_review_format.md](fact_review_format.md)。
 
 ## 第三步：实体归并
 

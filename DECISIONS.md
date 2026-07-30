@@ -1113,3 +1113,31 @@
   `tests/test_chapter_manifests.py`, `docs/chapter_manifest_format.md`,
   `docs/fact_candidate_format.md`.
 - Supersedes: Only DEC-0041's independent-acceptance-pending status.
+
+## DEC-0048: Phase 1.2 fact-review document validation and claim-level review states
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: After Phase 1.1 GO, the project owner authorized Phase 1.2: a
+  fact-review document format encoding human review decisions (accepted,
+  rejected, superseded, conflicted) on fact-candidate claims, with binding
+  validation against FactCandidateDocument instances.
+- Decision: (a) New `pipeline/fact_reviews.py` with frozen `ReviewDecision`
+  (candidate_id, claim_id, state, reason, superseded_by_claim_id) and
+  `FactReviewDocument`. (b) `validate_fact_review_document()` checks:
+  format_version=1, review_id stable ID, source_chapter chapter_NNNNNN,
+  reviewed_by non-blank, decisions non-empty, (candidate_id,claim_id) unique,
+  state four-way enum, superseded_by_claim_id conditional (required non-blank
+  when superseded, null otherwise). (c) `validate_fact_review_bindings()`
+  checks source_chapter match, candidate/claim existence, supersede same-
+  candidate non-self. (d) New Schema with `if/then/else` for superseded
+  conditional. (e) 43 focused tests. (f) Not modified: `src/`, existing
+  `pipeline/fact_candidates.py`, `pipeline/chapter_manifests.py`,
+  `build_manifest.py`, existing schemas, original_demo, save.
+- Consequences: Fact-review format is defined and validated. Cross-document
+  conflicts, entity resolution, canon writing, and model integration remain for
+  future slices. Pending GPT-5.6-sol independent acceptance.
+- Evidence: `pipeline/fact_reviews.py`, `schemas/fact_review.schema.json`,
+  `tests/test_fact_reviews.py`, `tests/fixtures/fact_reviews/`,
+  `docs/fact_review_format.md`.
+- Supersedes: None.

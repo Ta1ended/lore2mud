@@ -1,0 +1,36 @@
+{
+  "format_version": 1,
+  "review_id": "review_character_fog_villager",
+  "source_chapter": "chapter_000001",
+  "reviewed_by": "human-reviewer",
+  "decisions": [
+    {
+      "candidate_id": "character_fog_villager",
+      "claim_id": "claim_fog_villager_origin",
+      "state": "accepted",
+      "reason": "原文明确陈述。",
+      "superseded_by_claim_id": null
+    },
+    {
+      "candidate_id": "character_fog_villager",
+      "claim_id": "claim_fog_villager_age",
+      "state": "superseded",
+      "reason": "被更精确的 claim 替换。",
+      "superseded_by_claim_id": "claim_fog_villager_age_v2"
+    },
+    {
+      "candidate_id": "character_fog_villager",
+      "claim_id": "claim_fog_villager_alive",
+      "state": "rejected",
+      "reason": "原文未提供存活证据。",
+      "superseded_by_claim_id": null
+    },
+    {
+      "candidate_id": "location_fog_ridge",
+      "claim_id": "claim_fog_ridge_type",
+      "state": "conflicted",
+      "reason": "不同章节对地点类型描述矛盾。",
+      "superseded_by_claim_id": null
+    }
+  ]
+}

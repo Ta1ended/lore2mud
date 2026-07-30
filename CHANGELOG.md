@@ -20,6 +20,16 @@
   and Schema structure assertions.
 - Added `tests/fixtures/chapter_manifests/valid_primary.json` and `valid_scan.json`.
 - Added `docs/chapter_manifest_format.md`.
+- Added v1 fact-review document validation: `pipeline/fact_reviews.py` with
+  frozen `ReviewDecision` and `FactReviewDocument` dataclasses, four-state
+  (accepted/rejected/superseded/conflicted) with superseded_by_claim_id
+  conditional, (candidate_id, claim_id) uniqueness, and
+  `validate_fact_review_bindings()` for candidate-document cross-checking.
+- Added `schemas/fact_review.schema.json` (draft 2020-12, `if/then/else` for
+  state=superseded conditional).
+- Added `tests/test_fact_reviews.py` with 43 focused tests.
+- Added `tests/fixtures/fact_reviews/valid_review.json`.
+- Added `docs/fact_review_format.md`.
 - Added v1 fact-candidate document validation contract: `pipeline/fact_candidates.py`
   with frozen dataclass models (`FactCandidateDocument`, `Candidate`, `Claim`,
   five value branches), stable-ID regex, NFKC alias dedup, relation cross-reference,

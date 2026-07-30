@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/fact_review.schema.json",
+  "title": "Fact Review Document v1",
+  "description": "A v1 review document encoding human review decisions on fact-candidate claims. Schema expresses structural constraints; Python adds semantic checks (duplicate pairs, supersede binding, source chapter matching).",
+  "type": "object",
+  "required": ["format_version", "review_id", "source_chapter", "reviewed_by", "decisions"],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": { "const": 1 },
+    "review_id": { "$ref": "#/$defs/stable_id" },
+    "source_chapter": { "type": "string", "pattern": "^chapter_[0-9]{6}$" },
+    "reviewed_by": { "$ref": "#/$defs/non_blank" },
+    "decisions": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/decision" }
+    }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "non_blank": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "decision": {
+      "type": "object",
+      "required": ["candidate_id", "claim_id", "state", "reason", "superseded_by_claim_id"],
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": { "$ref": "#/$defs/stable_id" },
+        "claim_id": { "$ref": "#/$defs/stable_id" },
+        "state": { "type": "string", "enum": ["accepted", "rejected", "superseded", "conflicted"] },
+        "reason": { "$ref": "#/$defs/non_blank" },
+        "superseded_by_claim_id": {}
+      },
+      "if": {
+        "properties": { "state": { "const": "superseded" } },
+        "required": ["state"]
+      },
+      "then": {
+        "properties": { "superseded_by_claim_id": { "$ref": "#/$defs/stable_id" } }
+      },
+      "else": {
+        "properties": { "superseded_by_claim_id": { "type": "null" } }
+      }
+    }
+  }
+}

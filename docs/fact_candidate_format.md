@@ -233,3 +233,15 @@ validated = validate_fact_candidate_sources(manifest, [doc1, doc2])
 This ensures every extraction document references a chapter that exists in
 the manifest. Multiple documents per chapter are allowed; no deduplication
 or merging is performed.
+
+## Review binding
+
+Reviewed claims can be validated against a FactCandidateDocument via:
+
+```python
+from pipeline.fact_reviews import validate_fact_review_bindings
+
+validate_fact_review_bindings(review, candidate_doc)
+```
+
+See [fact_review_format.md](fact_review_format.md) for the review document format.

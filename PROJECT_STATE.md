@@ -182,8 +182,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 无活动实施切片。Phase 1.1 已由 GPT-5.6-sol 独立验收 GO（DEC-0047），
-  全部 P1/P2 findings 已关闭。任何后续工作须项目负责人新的明确授权。
+- Phase 1.2 fact-review validation and review states 已由 Hermes 实现，
+  等待 GPT-5.6-sol 独立验收（DEC-0048）。43 项聚焦测试通过。
+  未修改 src/、现有 Schema、original_demo 或 save。
 
 ## Blockers
 
