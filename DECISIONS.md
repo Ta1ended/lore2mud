@@ -1226,3 +1226,26 @@
   `schemas/canon_draft.schema.json`, `tests/test_canon.py`,
   `docs/canon_draft_format.md`.
 - Supersedes: None.
+
+## DEC-0053: L2W-1 acceptance rework — P1/P2 findings closed
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: GPT-5.6-sol independent acceptance REVISE identified five P1 findings
+  and four P2 documentation/tests issues. This decision records the fix commit.
+- Fixes:
+  (a) P1-1: build_canon_draft() now calls validate_fact_candidate_sources()
+      and validate_fact_review_bindings() before computing closure.
+  (b) P1-2: validate_canon_draft_document() uses two-pass: collect entity_ids
+      first, then validate claims with full entity_id set.
+  (c) P1-3: CLI rejects output path equal to any input path (normcase + samefile).
+  (d) P1-4: tempfile.mkstemp replaces fixed .<output>.tmp path; _cleanup_tmp
+      only removes the specific temp file created by this invocation.
+  (e) P1-5: added stable-ID checks for source_candidate_id, numeric.unit,
+      enum.enum_value in Python validator; Schema now has inference_basis
+      if/then/else conditional.
+  (f) P2: real relation-only entity test, CHANGELOG correction,
+      production_workflow title fix, dead code removal, Schema structure tests.
+- Evidence: 50 focused tests, 910 full tests, compileall, validate, safety, diff.
+- Pending GPT-5.6-sol focused re-review.
+- Supersedes: None.

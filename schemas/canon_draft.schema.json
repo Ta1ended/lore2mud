@@ -61,7 +61,17 @@
         "certainty": { "type": "string", "enum": ["certain", "uncertain"] },
         "inference_basis": { "oneOf": [{ "type": "null" }, { "type": "string", "minLength": 1 }] },
         "review_reason": { "$ref": "#/$defs/non_blank" }
-      }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "source_support": { "const": "inferred" } } },
+          "then": { "properties": { "inference_basis": { "type": "string", "minLength": 1 } } }
+        },
+        {
+          "if": { "properties": { "source_support": { "const": "explicit" } } },
+          "then": { "properties": { "inference_basis": { "type": "null" } } }
+        }
+      ]
     },
     "canon_value": {
       "oneOf": [

@@ -21,21 +21,20 @@ Exit codes: 0=success, 1=data/binding/build/I/O error, 2=argument error.
 from __future__ import annotations
 
 import argparse
-import hashlib
 import json
 import math
 import os
 import re
 import sys
+import tempfile
 import unicodedata
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass
 from typing import Any, Literal, TypeAlias
 
-from pipeline.chapter_manifests import ChapterManifest, ChapterManifestEntry
+from pipeline.chapter_manifests import ChapterManifest
 from pipeline.fact_candidates import (
     FactCandidateDocument,
-    ClaimValue as FCClaimValue,
     TextValue as FCTextValue,
     RelationValue as FCRelationValue,
     NumericValue as FCNumericValue,
@@ -234,87 +233,6 @@ def _check_alias_dedup(
             seen.add(normalized)
 
 
-def _require_vector(
-    obj: dict[str, Any], key: str, loc: str, issues: list[str]
-) -> list[str]:
-    """Require a non-empty array of non-blank strings with stable ID format."""
-    raw = obj.get(key)
-    if not isinstance(raw, list) or len(raw) == 0:
-        issues.append(f"{loc}.{key} 必须是非空数组")
-        return []
-    result: list[str] = []
-    for vi, v in enumerate(raw):
-        if not isinstance(v, str) or not v.strip():
-            issues.append(f"{loc}.{key}[{vi}] 必须是非空白字符串")
-        else:
-            result.append(v)
-    return result
-
-
-# ── value parser (from FC claim value dict) ─────────────────────────────────
-
-
-def _parse_fc_value(
-    raw: Any, loc: str, issues: list[str]
-) -> CanonClaimValue | None:
-    if not isinstance(raw, dict):
-        issues.append(f"{loc}.value 必须是对象")
-        return None
-    kind = raw.get("kind")
-    if not isinstance(kind, str):
-        issues.append(f"{loc}.value.kind 必须是字符串")
-        return None
-
-    if kind == "text":
-        _check_unknown_keys(raw, frozenset({"kind", "text"}), loc, issues)
-        text = raw.get("text")
-        if not isinstance(text, str) or not text.strip():
-            issues.append(f"{loc}.text 必须是非空白字符串")
-            return None
-        return CanonTextValue(text=text)
-    elif kind == "relation":
-        _check_unknown_keys(raw, frozenset({"kind", "candidate_ref"}), loc, issues)
-        # candidate_ref will be rewritten later; accept as-is here
-        ref = raw.get("candidate_ref")
-        if not isinstance(ref, str) or not ref.strip():
-            issues.append(f"{loc}.candidate_ref 必须是非空白字符串")
-            return None
-        _require_stable_id(ref, f"{loc}.candidate_ref", issues)
-        return FCRelationValue(candidate_ref=ref)  # type: ignore[return-value]
-    elif kind == "numeric":
-        _check_unknown_keys(raw, frozenset({"kind", "number", "unit"}), loc, issues)
-        num = raw.get("number")
-        if num is None:
-            issues.append(f"{loc}.number 是必填字段")
-            return None
-        if isinstance(num, bool) or not isinstance(num, (int, float)):
-            issues.append(f"{loc}.number 必须是非 bool 的 int 或 float")
-            return None
-        if isinstance(num, float) and not math.isfinite(num):
-            issues.append(f"{loc}.number 不允许 NaN 或 Infinity")
-            return None
-        unit = raw.get("unit")
-        if unit is not None and (not isinstance(unit, str) or not unit.strip()):
-            issues.append(f"{loc}.unit 非 null 时必须是非空白字符串")
-            return None
-        return CanonNumericValue(number=num, unit=unit)
-    elif kind == "boolean":
-        _check_unknown_keys(raw, frozenset({"kind", "flag"}), loc, issues)
-        flag = raw.get("flag")
-        if not isinstance(flag, bool):
-            issues.append(f"{loc}.flag 必须是真正 bool")
-            return None
-        return CanonBooleanValue(flag=flag)
-    elif kind == "enum":
-        _check_unknown_keys(raw, frozenset({"kind", "enum_value"}), loc, issues)
-        ev = raw.get("enum_value")
-        if not isinstance(ev, str) or not ev.strip():
-            issues.append(f"{loc}.enum_value 必须是非空白字符串")
-            return None
-        return CanonEnumValue(enum_value=ev)
-    else:
-        issues.append(f"{loc}.kind 必须是 text|relation|numeric|boolean|enum")
-        return None
 
 
 # ── public entry: validate promotion plan ───────────────────────────────────
@@ -477,9 +395,29 @@ def build_canon_draft(
                 manifest_sha = entry.sha256
                 break
 
-    # 4. Review-candidate binding (re-validate inline)
-    if sc != candidate_doc.source_chapter:
-        pass  # already checked above
+    if issues:
+        raise CanonDraftBuildingError(tuple(issues))
+
+    # 4. Enforce existing binding contracts
+    try:
+        from pipeline.chapter_manifests import validate_fact_candidate_sources
+        validate_fact_candidate_sources(manifest, [candidate_doc])
+    except Exception as exc:
+        issues.append(
+            f"candidate source 绑定失败：{exc}"
+        )
+
+    try:
+        from pipeline.fact_reviews import validate_fact_review_bindings
+        validate_fact_review_bindings(review, candidate_doc)
+    except Exception as exc:
+        issues.append(
+            f"review 绑定失败：{exc}"
+        )
+
+    if issues:
+        raise CanonDraftBuildingError(tuple(issues))
+
     # Build candidate_id → claims map
     cand_map: dict[str, set[str]] = {}
     for c in candidate_doc.candidates:
@@ -635,17 +573,6 @@ def build_canon_draft(
     return draft
 
 
-def _canon_to_dict(draft: CanonDraft) -> dict[str, Any]:
-    """Serialize CanonDraft to a plain dict for validation/serialization."""
-    def conv(obj: Any) -> Any:
-        if isinstance(obj, (CanonDraft, CanonSource, CanonEntity, CanonClaim,
-                           EntityPromotionMapping, PromotionPlan)):
-            return asdict(obj)
-        if isinstance(obj, tuple):
-            return list(obj)
-        return obj
-    return asdict(draft)
-
 
 def _sorted_json_dict(draft: CanonDraft) -> dict[str, Any]:
     """Serialize CanonDraft to dict with deterministic key/collection order."""
@@ -782,26 +709,35 @@ def validate_canon_draft_document(data: object) -> CanonDraft:
         issues.append("entities 不得为空数组")
 
     parsed_entities: list[CanonEntity] = []
-    seen_entity_ids: set[str] = set()
     seen_candidate_ids: set[str] = set()
 
+    # ── Pass 1: collect and validate entity_ids ──────────────────────────
+    entity_ids: set[str] = set()
     for ei, raw_entity in enumerate(raw_entities):
         eloc = f"entities[{ei}]"
         if not isinstance(raw_entity, dict):
             issues.append(f"{eloc} 必须是对象")
             continue
-
         allowed_entity = frozenset({
             "entity_id", "entity_type", "canonical_name",
             "aliases", "source_candidate_id", "claims",
         })
         _check_unknown_keys(raw_entity, allowed_entity, eloc, issues)
+        eid = _require_text(raw_entity, "entity_id", eloc, issues)
+        _require_stable_id(eid, f"{eloc}.entity_id", issues)
+        if eid in entity_ids:
+            issues.append(f"{eloc}.entity_id 重复：{eid}")
+        entity_ids.add(eid)
+
+    # ── Pass 2: parse entities with claims, using collected entity_ids ───
+    seen_candidate_ids = set()
+    for ei, raw_entity in enumerate(raw_entities):
+        eloc = f"entities[{ei}]"
+        if not isinstance(raw_entity, dict):
+            continue
 
         eid = _require_text(raw_entity, "entity_id", eloc, issues)
         _require_stable_id(eid, f"{eloc}.entity_id", issues)
-        if eid in seen_entity_ids:
-            issues.append(f"{eloc}.entity_id 重复：{eid}")
-        seen_entity_ids.add(eid)
 
         et = raw_entity.get("entity_type")
         if et not in _ENTITY_TYPES:
@@ -814,6 +750,7 @@ def validate_canon_draft_document(data: object) -> CanonDraft:
             _check_alias_dedup(raw_aliases, cname, f"{eloc}.aliases", issues)
 
         scid = _require_text(raw_entity, "source_candidate_id", eloc, issues)
+        _require_stable_id(scid, f"{eloc}.source_candidate_id", issues)
         if scid in seen_candidate_ids:
             issues.append(f"{eloc}.source_candidate_id 重复：{scid}")
         seen_candidate_ids.add(scid)
@@ -844,10 +781,10 @@ def validate_canon_draft_document(data: object) -> CanonDraft:
             pred = _require_text(raw_claim, "predicate", cloc, issues)
             _require_stable_id(pred, f"{cloc}.predicate", issues)
 
-            # value (canon tagged union)
-            cv = _parse_canon_value(raw_claim.get("value"), cloc, issues, seen_entity_ids)
+            cv = _parse_canon_value(
+                raw_claim.get("value"), cloc, issues, entity_ids,
+            )
 
-            # source_chapters
             raw_sc_list = raw_claim.get("source_chapters")
             if not isinstance(raw_sc_list, list) or len(raw_sc_list) != 1:
                 issues.append(f"{cloc}.source_chapters 必须是恰好一个元素的数组")
@@ -890,12 +827,9 @@ def validate_canon_draft_document(data: object) -> CanonDraft:
             ):
                 sc_tuple = tuple(s for s in raw_sc_list if isinstance(s, str))
                 parsed_claims.append(CanonClaim(
-                    claim_id=clid,
-                    predicate=pred,
-                    value=cv,
+                    claim_id=clid, predicate=pred, value=cv,
                     source_chapters=sc_tuple,
-                    source_support=ss,
-                    certainty=cert,
+                    source_support=ss, certainty=cert,
                     inference_basis=ib if isinstance(ib, str) and ib.strip() else None,
                     review_reason=rr,
                 ))
@@ -907,8 +841,7 @@ def validate_canon_draft_document(data: object) -> CanonDraft:
             and isinstance(scid, str) and scid.strip()
         ):
             parsed_entities.append(CanonEntity(
-                entity_id=eid,
-                entity_type=et,
+                entity_id=eid, entity_type=et,
                 canonical_name=cname,
                 aliases=tuple(
                     a for a in raw_aliases
@@ -978,9 +911,11 @@ def _parse_canon_value(
             issues.append(f"{loc}.value.number 不允许 NaN 或 Infinity")
             return None
         unit = raw.get("unit")
-        if unit is not None and (not isinstance(unit, str) or not unit.strip()):
-            issues.append(f"{loc}.value.unit 非 null 时必须是非空白字符串")
-            return None
+        if unit is not None:
+            if not isinstance(unit, str) or not unit.strip():
+                issues.append(f"{loc}.value.unit 非 null 时必须是非空白字符串")
+                return None
+            _require_stable_id(unit, f"{loc}.value.unit", issues)
         return CanonNumericValue(number=num, unit=unit)
     elif kind == "boolean":
         _check_unknown_keys(raw, frozenset({"kind", "flag"}), loc, issues)
@@ -995,6 +930,7 @@ def _parse_canon_value(
         if not isinstance(ev, str) or not ev.strip():
             issues.append(f"{loc}.value.enum_value 必须是非空白字符串")
             return None
+        _require_stable_id(ev, f"{loc}.value.enum_value", issues)
         return CanonEnumValue(enum_value=ev)
     else:
         issues.append(f"{loc}.value.kind 必须是 text|relation|numeric|boolean|enum")
@@ -1036,6 +972,29 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     args = parser.parse_args(argv)
 
+    # ── P1-3: output must not overwrite any input ─────────────────────────
+    output_real = os.path.realpath(args.output)
+    inputs = [args.promotion_plan, args.review, args.candidate, args.manifest]
+    for input_path in inputs:
+        input_real = os.path.realpath(input_path)
+        if os.path.normcase(output_real) == os.path.normcase(input_real):
+            print(
+                f"错误：output ({args.output}) 与输入 ({input_path}) 指向同一文件",
+                file=sys.stderr,
+            )
+            return 1
+        try:
+            if os.path.isfile(output_real) and os.path.samefile(output_real, input_real):
+                print(
+                    f"错误：output ({args.output}) 与输入 ({input_path}) 是同一文件",
+                    file=sys.stderr,
+                )
+                return 1
+        except OSError:
+            pass
+
+    tmp_path: str | None = None
+
     try:
         # 1. Read all inputs
         def _read_json(path: str) -> Any:
@@ -1058,25 +1017,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         raw_output = _sorted_json_dict(draft)
         validate_canon_draft_document(raw_output)
 
-        # 4. Atomic write
-        output_path = args.output
-        tmp_path = os.path.join(
-            os.path.dirname(os.path.abspath(output_path)) or ".",
-            f".{os.path.basename(output_path)}.tmp",
-        )
+        # 4. Atomic write — tempfile in target directory
+        out_dir = os.path.dirname(os.path.abspath(args.output)) or os.getcwd()
         json_bytes = json.dumps(
             raw_output, ensure_ascii=False, sort_keys=True, indent=2,
         ) + "\n"
 
-        with open(tmp_path, "w", encoding="utf-8", newline="") as f:
+        fd, tmp_path = tempfile.mkstemp(
+            dir=out_dir, prefix=".canon_draft_", suffix=".tmp",
+        )
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
             f.write(json_bytes)
             f.flush()
             os.fsync(f.fileno())
-        os.replace(tmp_path, output_path)
+        os.replace(tmp_path, args.output)
+        tmp_path = None  # successfully committed
 
     except json.JSONDecodeError as exc:
         print(f"JSON 解析错误：{exc}", file=sys.stderr)
-        _cleanup_tmp(args.output if hasattr(args, "output") else None)
+        _cleanup_tmp(tmp_path)
         return 1
     except (
         CanonDraftValidationError,
@@ -1085,19 +1044,16 @@ def main(argv: Sequence[str] | None = None) -> int:
         OSError,
     ) as exc:
         print(f"错误：{exc}", file=sys.stderr)
-        _cleanup_tmp(args.output if hasattr(args, "output") else None)
+        _cleanup_tmp(tmp_path)
         return 1
 
     return 0
 
 
-def _cleanup_tmp(output_path: str | None) -> None:
-    if output_path is None:
+def _cleanup_tmp(tmp_path: str | None) -> None:
+    """Safely remove a temporary file if it exists."""
+    if tmp_path is None:
         return
-    tmp_path = os.path.join(
-        os.path.dirname(os.path.abspath(output_path)) or ".",
-        f".{os.path.basename(output_path)}.tmp",
-    )
     try:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)

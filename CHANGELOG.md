@@ -13,8 +13,7 @@
   entity_ref. CanonDraft validated before atomic write.
 - Added `schemas/canon_promotion_plan.schema.json` and
   `schemas/canon_draft.schema.json` (draft 2020-12).
-- Added `tests/test_canon.py` with 35 focused tests.
-- Added `tests/fixtures/canon/` test data.
+- Added `tests/test_canon.py` with 50 focused tests.
 - Added `docs/canon_draft_format.md`.
 - Added v2 chapter manifest validation: `pipeline/chapter_manifests.py` with
   frozen `ChapterManifestEntry` and `ChapterManifest` dataclasses, primary/scan

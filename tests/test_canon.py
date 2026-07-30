@@ -289,12 +289,14 @@ class BuildDraftTests(unittest.TestCase):
         for dec in r2_dict["decisions"]:
             if dec["claim_id"] == "claim_origin":
                 dec["state"] = "superseded"
-                dec["superseded_by_claim_id"] = "claim_origin_v2"
+                dec["superseded_by_claim_id"] = "claim_age"
         r2 = validate_fact_review_document(r2_dict)
         draft = build_canon_draft(r2, c, m, p)
         char_entity = [e for e in draft.entities if e.entity_id == "canon_char_fog_villager"][0]
         claim_ids = [cl.claim_id for cl in char_entity.claims]
         self.assertNotIn("claim_origin", claim_ids)
+        self.assertIn("claim_age", claim_ids)
+        self.assertIn("claim_alive", claim_ids)
 
     def test_closure_extra_mapping_rejected(self) -> None:
         """Plan maps a candidate that exists but has no accepted claims and
@@ -374,29 +376,183 @@ class BuildDraftTests(unittest.TestCase):
         self.assertTrue(any("source_chapter" in i for i in ctx.exception.issues))
 
     def test_relation_only_entity_output(self) -> None:
-        """Entity that only appears as accepted relation target, with no own
-        accepted claims, must still be promoted (zero-claim entity)."""
+        """Third candidate: no accepted own claims, but referenced by accepted
+        relation from another candidate. Must be promoted as zero-claim entity
+        with relation correctly rewritten to entity_ref."""
+        cd = _valid_candidate()
+        # Add third candidate with no accepted claims
+        cd["candidates"].append({
+            "candidate_id": "item_herb",
+            "entity_type": "item",
+            "proposed_entity_id": None,
+            "display_name": "草药",
+            "aliases": [],
+            "claims": [{
+                "claim_id": "claim_herb_desc",
+                "predicate": "description",
+                "value": {"kind": "text", "text": "草药。"},
+                "source_chapters": ["chapter_000001"],
+                "source_support": "explicit", "certainty": "certain",
+                "inference_basis": None,
+            }],
+        })
+        # Add relation claim from villager → herb
+        cd["candidates"][0]["claims"].append({
+            "claim_id": "claim_has_herb",
+            "predicate": "possesses",
+            "value": {"kind": "relation", "candidate_ref": "item_herb"},
+            "source_chapters": ["chapter_000001"],
+            "source_support": "explicit", "certainty": "certain",
+            "inference_basis": None,
+        })
+        c2 = validate_fact_candidate_document(cd)
+        # Review: reject herb's own claim, accept villager's claims including herb relation
+        rd = _valid_review()
+        rd["decisions"].append({
+            "candidate_id": "item_herb", "claim_id": "claim_herb_desc",
+            "state": "rejected", "reason": "不可信。", "superseded_by_claim_id": None,
+        })
+        rd["decisions"].append({
+            "candidate_id": "character_fog_villager", "claim_id": "claim_has_herb",
+            "state": "accepted", "reason": "明确。", "superseded_by_claim_id": None,
+        })
+        r2 = validate_fact_review_document(rd)
+        # Plan: include herb mapping
+        pp = _valid_plan()
+        pp["entity_mappings"].append({
+            "candidate_id": "item_herb", "entity_id": "canon_item_herb",
+            "canonical_name": "草药", "aliases": [],
+        })
+        p2 = validate_canon_promotion_plan(pp)
+        m2 = validate_chapter_manifest(_valid_manifest())
+        draft = build_canon_draft(r2, c2, m2, p2)
+        # Villager entity has the herb relation
+        char_entity = [e for e in draft.entities if e.entity_id == "canon_char_fog_villager"][0]
+        rel_claim = [cl for cl in char_entity.claims if cl.claim_id == "claim_has_herb"][0]
+        self.assertIsInstance(rel_claim.value, CanonRelationValue)
+        self.assertEqual(rel_claim.value.entity_ref, "canon_item_herb")
+        # Herb entity exists with zero claims
+        herb_entity = [e for e in draft.entities if e.entity_id == "canon_item_herb"]
+        self.assertEqual(len(herb_entity), 1)
+        self.assertEqual(len(herb_entity[0].claims), 0)
+        self.assertEqual(herb_entity[0].entity_type, "item")
+
+    # ── P1-1: binding contract enforcement tests ──────────────────────────
+
+    def test_accepted_decision_unknown_claim_rejected(self) -> None:
+        m, c, _, p = _build_all()
+        rd = _valid_review()
+        rd["decisions"].append({
+            "candidate_id": "character_fog_villager",
+            "claim_id": "nonexistent_claim",
+            "state": "accepted", "reason": "n/a",
+            "superseded_by_claim_id": None,
+        })
+        r2 = validate_fact_review_document(rd)
+        with self.assertRaises(CanonDraftBuildingError) as ctx:
+            build_canon_draft(r2, c, m, p)
+        self.assertTrue(any("review 绑定失败" in i for i in ctx.exception.issues))
+
+    def test_accepted_decision_wrong_candidate_rejected(self) -> None:
+        m, c, _, p = _build_all()
+        rd = _valid_review()
+        rd["decisions"].append({
+            "candidate_id": "wrong_candidate",
+            "claim_id": "claim_origin",
+            "state": "accepted", "reason": "n/a",
+            "superseded_by_claim_id": None,
+        })
+        r2 = validate_fact_review_document(rd)
+        with self.assertRaises(CanonDraftBuildingError) as ctx:
+            build_canon_draft(r2, c, m, p)
+        self.assertTrue(any("review 绑定失败" in i for i in ctx.exception.issues))
+
+    def test_superseded_target_nonexistent_rejected(self) -> None:
+        m, c, _, p = _build_all()
+        rd = _valid_review()
+        for dec in rd["decisions"]:
+            if dec["claim_id"] == "claim_origin":
+                dec["state"] = "superseded"
+                dec["superseded_by_claim_id"] = "nonexistent"
+        r2 = validate_fact_review_document(rd)
+        with self.assertRaises(CanonDraftBuildingError) as ctx:
+            build_canon_draft(r2, c, m, p)
+        self.assertTrue(any("review 绑定失败" in i for i in ctx.exception.issues))
+
+    # ── P1-2: two-pass entity_ref tests ──────────────────────────────────
+
+    def test_forward_entity_ref_accepted(self) -> None:
+        """entity_ref to entity whose entity_id is later in sort order."""
         m, c, r, p = _build_all()
-        # Mark location's claims as rejected
-        r2_dict = _valid_review()
-        for dec in r2_dict["decisions"]:
-            if dec["candidate_id"] == "location_fog_ridge":
-                dec["state"] = "rejected"
-        # But claim_inhabited (relation referencing character) stays accepted
-        for dec in r2_dict["decisions"]:
-            if dec["candidate_id"] == "character_fog_villager" and dec["claim_id"] == "claim_origin":
-                dec["state"] = "accepted"
-            if dec["candidate_id"] == "location_fog_ridge" and dec["claim_id"] == "claim_inhabited":
-                dec["state"] = "accepted"
-        # We need the location's claim_inhabited to be accepted but location's own accepted? No.
-        # Actually requirement: location_fog_ridge has accepted relation claim (claim_inhabited)
-        # that references character_fog_villager.
-        # This means location_fog_ridge is a direct entity (has accepted claim: claim_inhabited)
-        # But if we reject all location's claims, it won't be in closure even as relation target
-        # because the relation claim itself is not accepted.
-        # To test relation-only: make a third candidate that is only a relation target,
-        # not a direct entity with its own accepted claims.
-        pass  # Complex scenario - covered by relation-target in closure logic
+        draft = build_canon_draft(r, c, m, p)
+        loc_entity = [e for e in draft.entities if e.entity_id == "canon_loc_fog_ridge"][0]
+        rel_claim = [cl for cl in loc_entity.claims if cl.claim_id == "claim_inhabited"][0]
+        self.assertEqual(rel_claim.value.entity_ref, "canon_char_fog_villager")
+
+    def test_entities_reversed_still_accepted(self) -> None:
+        """Reverse entity order in draft validation - entity_ref must resolve."""
+        m, c, r, p = _build_all()
+        draft = build_canon_draft(r, c, m, p)
+        raw = _sorted_json_dict(draft)
+        # Reverse entities in the raw dict
+        raw["entities"].reverse()
+        # Must still validate because entity_ids are pre-collected
+        validate_canon_draft_document(raw)
+
+    # ── Schema structure tests ────────────────────────────────────────────
+
+    def test_schema_draft_2020_12(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "canon_draft.schema.json"
+        with open(schema_path, encoding="utf-8") as f:
+            schema = json.load(f)
+        self.assertEqual(schema["$schema"], "https://json-schema.org/draft/2020-12/schema")
+        self.assertIn("$defs", schema)
+        self.assertIn("claim", schema["$defs"])
+        self.assertIn("allOf", schema["$defs"]["claim"])
+
+    def test_schema_no_candidate_ref(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "canon_draft.schema.json"
+        with open(schema_path, encoding="utf-8") as f:
+            schema = json.load(f)
+        raw = json.dumps(schema)
+        self.assertNotIn("candidate_ref", raw)
+        self.assertIn("entity_ref", raw)
+
+    def test_schema_inference_condition(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "canon_draft.schema.json"
+        with open(schema_path, encoding="utf-8") as f:
+            schema = json.load(f)
+        claim_def = schema["$defs"]["claim"]
+        all_of = claim_def.get("allOf", [])
+        self.assertEqual(len(all_of), 2)
+        self.assertEqual(all_of[0]["if"]["properties"]["source_support"]["const"], "inferred")
+        self.assertEqual(all_of[0]["then"]["properties"]["inference_basis"]["type"], "string")
+        self.assertEqual(all_of[1]["if"]["properties"]["source_support"]["const"], "explicit")
+        self.assertEqual(all_of[1]["then"]["properties"]["inference_basis"]["type"], "null")
+
+    def test_schema_five_branch_oneOf(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "canon_draft.schema.json"
+        with open(schema_path, encoding="utf-8") as f:
+            schema = json.load(f)
+        one_of = schema["$defs"]["canon_value"]["oneOf"]
+        self.assertEqual(len(one_of), 5)
+        kinds = set()
+        defs = schema["$defs"]
+        for branch in one_of:
+            ref = branch.get("$ref", "")
+            ref_name = ref.rsplit("/", 1)[-1]
+            if ref_name and ref_name in defs:
+                kinds.add(defs[ref_name]["properties"]["kind"]["const"])
+            elif "properties" in branch:
+                kinds.add(branch["properties"]["kind"]["const"])
+        self.assertEqual(kinds, {"text", "relation", "numeric", "boolean", "enum"})
+
+    def test_schema_required_additional_properties(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "canon_draft.schema.json"
+        with open(schema_path, encoding="utf-8") as f:
+            schema = json.load(f)
+        self.assertTrue(schema["additionalProperties"] is False)
+        self.assertIn("entities", schema["required"])
 
 
 # ── CanonDraft re-validation ────────────────────────────────────────────────
@@ -583,6 +739,8 @@ class CLITests(unittest.TestCase):
             with open(broken_plan, "w", encoding="utf-8") as f:
                 json.dump({"bad": True}, f)
             out = os.path.join(td, "draft.json")
+            # Check temp dir files before
+            before = set(os.listdir(td))
             main([
                 "--promotion-plan", broken_plan,
                 "--review", paths["review"],
@@ -590,14 +748,99 @@ class CLITests(unittest.TestCase):
                 "--manifest", paths["manifest"],
                 "--output", out,
             ])
-            tmp_path = os.path.join(td, ".draft.json.tmp")
-            self.assertFalse(os.path.exists(tmp_path))
+            # No temp file should remain
+            tmp_files = [f for f in os.listdir(td) if f.startswith(".canon_draft_")]
+            self.assertEqual(len(tmp_files), 0)
 
     def test_cli_missing_arg_exit_2(self) -> None:
         from pipeline.canon import main
         with self.assertRaises(SystemExit) as ctx:
             main(["--promotion-plan", "x.json"])
         self.assertEqual(ctx.exception.code, 2)
+
+    # ── P1-3: output must not overwrite input ────────────────────────────────
+
+    def test_cli_output_equals_promotion_plan_rejected(self) -> None:
+        from pipeline.canon import main
+        with tempfile.TemporaryDirectory() as td:
+            paths = self._write_inputs(td)
+            # output = plan file
+            ec = main([
+                "--promotion-plan", paths["plan"],
+                "--review", paths["review"],
+                "--candidate", paths["candidate"],
+                "--manifest", paths["manifest"],
+                "--output", paths["plan"],
+            ])
+            self.assertEqual(ec, 1)
+
+    def test_cli_output_equals_review_rejected(self) -> None:
+        from pipeline.canon import main
+        with tempfile.TemporaryDirectory() as td:
+            paths = self._write_inputs(td)
+            ec = main([
+                "--promotion-plan", paths["plan"],
+                "--review", paths["review"],
+                "--candidate", paths["candidate"],
+                "--manifest", paths["manifest"],
+                "--output", paths["review"],
+            ])
+            self.assertEqual(ec, 1)
+
+    def test_cli_output_equals_candidate_rejected(self) -> None:
+        from pipeline.canon import main
+        with tempfile.TemporaryDirectory() as td:
+            paths = self._write_inputs(td)
+            ec = main([
+                "--promotion-plan", paths["plan"],
+                "--review", paths["review"],
+                "--candidate", paths["candidate"],
+                "--manifest", paths["manifest"],
+                "--output", paths["candidate"],
+            ])
+            self.assertEqual(ec, 1)
+
+    def test_cli_output_equals_manifest_rejected(self) -> None:
+        from pipeline.canon import main
+        with tempfile.TemporaryDirectory() as td:
+            paths = self._write_inputs(td)
+            ec = main([
+                "--promotion-plan", paths["plan"],
+                "--review", paths["review"],
+                "--candidate", paths["candidate"],
+                "--manifest", paths["manifest"],
+                "--output", paths["manifest"],
+            ])
+            self.assertEqual(ec, 1)
+
+    # ── P1-4: pre-existing unrelated tmp file must not be removed ─────────
+
+    def test_cli_preexisting_tmp_file_not_removed(self) -> None:
+        """An unrelated .canon_draft_*.tmp file left by a prior crash must
+        survive a failed run."""
+        from pipeline.canon import main
+        with tempfile.TemporaryDirectory() as td:
+            paths = self._write_inputs(td)
+            # Create a pre-existing tmp file with distinct content
+            preexisting = os.path.join(td, ".canon_draft_preexisting.tmp")
+            with open(preexisting, "w", encoding="utf-8") as f:
+                f.write("preexisting content")
+            # Run with bad plan
+            bad = os.path.join(td, "bad.json")
+            with open(bad, "w") as f:
+                json.dump(1, f)
+            out = os.path.join(td, "draft.json")
+            main([
+                "--promotion-plan", bad,
+                "--review", paths["review"],
+                "--candidate", paths["candidate"],
+                "--manifest", paths["manifest"],
+                "--output", out,
+            ])
+            # Preexisting tmp file unchanged
+            self.assertTrue(os.path.exists(preexisting))
+            with open(preexisting, encoding="utf-8") as f:
+                self.assertEqual(f.read(), "preexisting content")
 
 
 if __name__ == "__main__":
