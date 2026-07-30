@@ -1029,3 +1029,24 @@
 - Evidence: `schemas/chapter_manifest.schema.json`,
   `tests/test_chapter_manifests.py`.
 - Supersedes: None.
+
+## DEC-0044: Phase 1.1 documentation fix — Changelog structure and test evidence
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: The CHANGELOG `[Unreleased]` section had a garbled structure (literal
+  `n### Fixed`, truncated fact-candidate Schema Added entry, Phase 1.1 fix entries
+  embedded in other bullets). Test counts in handoff files showed 816 but the
+  current full unittest suite has 817 tests.
+- Decision: (a) Rewrite the `[Unreleased]` `### Added`/`### Fixed` sections with
+  clean structure: Phase 1.1 additions first, Phase 1.0 additions next, all fixes
+  consolidated under one `### Fixed` heading. (b) Update PROJECT_MEMORY.md,
+  PROJECT_STATE.md, NEXT_TASK.md test counts from 816 to 817. (c) Remove
+  duplicate "Pending" lines in PROJECT_MEMORY.md. (d) Record that DEC-0043's
+  816 count was a pre-correction snapshot. No code, Schema, test, or fixture
+  changes.
+- Consequences: Documentation now accurately reflects the current state. 817 full
+  tests confirmed. Pending GPT-5.6-sol final re-review.
+- Evidence: `CHANGELOG.md`, `PROJECT_MEMORY.md`, `PROJECT_STATE.md`,
+  `NEXT_TASK.md`.
+- Supersedes: None.

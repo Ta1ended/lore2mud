@@ -9,14 +9,15 @@
   conditional validation, consecutive chapter ID enforcement, chain adjacency,
   path safety, SHA-256 format, and monotonic offset/line checks.
 - Added `schemas/chapter_manifest.schema.json` (draft 2020-12, `additionalProperties`
-  false, `source_encoding` oneOf conditional).
+  false, `source_encoding` if/then/else conditional, `oneOf` for previous/next).
 - Added `validate_fact_candidate_sources()` for binding validated
   `FactCandidateDocument` instances to a `ChapterManifest` by source_chapter
   existence check.
-- Added `tests/test_chapter_manifests.py` with 73 focused tests covering fixtures,
+- Added `tests/test_chapter_manifests.py` with 86 focused tests covering fixtures,
   frozen types, build_manifest integration (primary + scan + empty), ID consecutive/
   duplicate/skip, path safety, SHA-256 format, chain adjacency, primary/scan
-  conditions, offset/line monotonic, source binding, and Schema structure.
+  conditions, offset/line monotonic, missing-field rejection, source binding,
+  and Schema structure assertions.
 - Added `tests/fixtures/chapter_manifests/valid_primary.json` and `valid_scan.json`.
 - Added `docs/chapter_manifest_format.md`.
 - Added v1 fact-candidate document validation contract: `pipeline/fact_candidates.py`
@@ -24,12 +25,8 @@
   five value branches), stable-ID regex, NFKC alias dedup, relation cross-reference,
   and `FactCandidateValidationError`.
 - Added `schemas/fact_candidate.schema.json` (draft 2020-12, `additionalProperties`
-n### Fixed
-- Phase 1.1 P1: `source_encoding`, scan five null fields, `previous_id`/`next_id` now require explicit key presence; missing keys raise `ChapterManifestValidationError` instead of silently defaulting.
-- Phase 1.1 P2: Schema restructured with root `if/then/else` on `source_encoding` (null→scan_entry, encoding→primary_entry), typed constraints for previous_id/next_id/path, and conditional field requirements for primary vs. scan.
   false, `oneOf` tagged union, `if/then/else` for inference_basis conditional,
   `\\S` pattern for non-blank strings). Schema expresses structural constraints;
-- Phase 1.1 Schema P1: entry_base.properties now lists all 12 required fields, fixing additionalProperties:false rejection of the 5 conditional fields (source_chapter_label, source_title, volume_label, source_offset, source_line). base/branch constraints preserved in allOf per primary_entry/scan_entry.
   Python adds semantic checks (dedup, cross-reference, NFKC, bool/int, finite float).
 - Added `tests/test_fact_candidates.py` with 131 focused tests covering all value
   branches, unknown fields, missing fields, bool/int, NaN/Inf, alias dedup,
@@ -46,24 +43,23 @@ n### Fixed
 
 ### Fixed
 
-- Fixed P1-1: enum fields (`entity_type`, `source_support`, `certainty`) no longer
+- Phase 1.0 P1-1: enum fields (`entity_type`, `source_support`, `certainty`) no longer
   leak `TypeError` on unhashable JSON types (list, dict). All JSON-compatible types
   are now caught and reported as `FactCandidateValidationError`.
-- Fixed P1-2: `NumericValue.number` is now `int | float`. Integers are preserved
+- Phase 1.0 P1-2: `NumericValue.number` is now `int | float`. Integers are preserved
   exactly (no `float()` conversion), eliminating precision loss for large ints and
   `OverflowError` for huge ints. `math.isfinite` check applies only to floats.
-- Fixed P2: Schema uses `if/then/else` for `source_support` → `inference_basis`
+- Phase 1.0 P2: Schema uses `if/then/else` for `source_support` → `inference_basis`
   conditional, and `\\S` pattern for non-blank strings instead of `minLength` alone.
-
-### Verified
-
-- GPT-5.6-sol independently accepted Phase 1.0 fact-candidate validation as GO
-  with no remaining findings (DEC-0039). Initial implementation `e2b8136` (119
-  focused, 718 full) was NO-GO; focus fix `3442d2d` closed P1-1 (enum TypeError),
-  P1-2 (numeric int precision), P2 (Schema constraints). Accepted evidence: 131
-  focused tests, 730 full tests, compileall, original-demo validation, safety
-  history scan, and diff check. The acceptance snapshot before its documentation
-  seal was HEAD=`3442d2d`, `origin/main`=`afdb235`, ahead/behind=2/0, not pushed.
+- Phase 1.1 P1: `source_encoding`, scan five null fields, `previous_id`/`next_id`
+  now require explicit key presence; missing keys raise
+  `ChapterManifestValidationError` instead of silently defaulting.
+- Phase 1.1 P2: Schema restructured with root `if/then/else` on `source_encoding`
+  (null→scan_entry, encoding→primary_entry), typed `oneOf` constraints for
+  previous_id/next_id, and conditional field requirements for primary vs. scan.
+- Phase 1.1 Schema P1: entry_base.properties now lists all 12 required fields,
+  fixing additionalProperties:false rejection of the 5 conditional fields
+  (source_chapter_label, source_title, volume_label, source_offset, source_line).
 
 ### Changed
 
@@ -83,14 +79,24 @@ n### Fixed
   DEC-0020 death-gate ordering and dialogue-only bare-number behavior remain
   compatible.
 - Documented the current execution workflow: GPT-5.6-sol is the scope/architecture
-  reviewer and independent acceptor; Codex is the sole executor; the project owner
-  manually transfers prompts and completion reports between the two conversations.
+  reviewer and independent acceptor; Hermes is the executor for fact-layer slices;
+  the project owner manually transfers prompts and completion reports.
 - Upgraded the original demo content pack to 0.6.0 and the local save format to v7.
   v6 saves are rejected by format version; 0.4.0 content-pack saves are rejected by
   the content-pack version check.
 - Moved command-layer death gate before dialogue routing in `CommandProcessor`
   so that dead players cannot invoke `_select_option` or `_bye` through bare
   numbers or `bye` when `active_dialogue` is set (DEC-0020).
+
+### Verified
+
+- GPT-5.6-sol independently accepted Phase 1.0 fact-candidate validation as GO
+  with no remaining findings (DEC-0039). Initial implementation `e2b8136` (119
+  focused, 718 full) was NO-GO; focus fix `3442d2d` closed P1-1 (enum TypeError),
+  P1-2 (numeric int precision), P2 (Schema constraints). Accepted evidence: 131
+  focused tests, 730 full tests, compileall, original-demo validation, safety
+  history scan, and diff check. Local HEAD=`3442d2d`, `origin/main`=`afdb235`,
+  ahead/behind=2/0, not pushed.
 
 ### Fixed
 
@@ -146,7 +152,7 @@ n### Fixed
   monster task, and 31 focused M3 task tests for contracts, ordering, rollback,
   idempotence, dialogue rewards, CLI output, and v6 load behavior.
 - Added typed item stacks: frozen `ItemStackDefinition` in content layer,
-  mutable `ItemStack` in runtime. `ItemDefinition.stack_limit` field (default 1).
+  mutable `ItemStack` in runtime. `ItemStackDefinition.stack_limit` field (default 1).
   Rooms, inventory, loot, and dialogue rewards use typed stacks.
 - Added optional quantity to `take`, `drop`, and `use` commands (suffix syntax:
   `take <item> [qty]`). Default quantity is 1. Numeric style validation rejects
