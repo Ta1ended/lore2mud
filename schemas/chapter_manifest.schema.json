@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/lore2mud/lore2mud/schemas/chapter_manifest.schema.json",
   "title": "Chapter Manifest v2",
-  "description": "A v2 chapter manifest produced by split_novel + build_manifest. Schema expresses structural constraints; Python adds semantic checks (consecutive IDs, chain adjacency, monotonic offset/line, count equality).",
+  "description": "A v2 chapter manifest produced by split_novel + build_manifest. Schema expresses structural constraints; Python adds semantic checks (consecutive IDs, chain adjacency, monotonic offset/line, count equality, path==<chapter_id>.txt).",
   "type": "object",
   "required": ["format_version", "source_encoding", "chapter_count", "chapters"],
   "additionalProperties": false,
@@ -11,13 +11,7 @@
       "const": 2,
       "description": "Must be exactly 2."
     },
-    "source_encoding": {
-      "oneOf": [
-        { "type": "null" },
-        { "type": "string", "enum": ["utf-8-sig", "utf-8", "gbk", "gb18030"] }
-      ],
-      "description": "Null for scan-compat path; one of four encodings for primary path."
-    },
+    "source_encoding": {},
     "chapter_count": {
       "type": "integer",
       "minimum": 0,
@@ -27,6 +21,27 @@
       "type": "array",
       "items": { "$ref": "#/$defs/entry" },
       "description": "Array of chapter entries. May be empty."
+    }
+  },
+  "if": {
+    "properties": { "source_encoding": { "type": "null" } },
+    "required": ["source_encoding"]
+  },
+  "then": {
+    "properties": {
+      "chapters": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/scan_entry" }
+      }
+    }
+  },
+  "else": {
+    "properties": {
+      "source_encoding": { "type": "string", "enum": ["utf-8-sig", "utf-8", "gbk", "gb18030"] },
+      "chapters": {
+        "type": "array",
+        "items": { "$ref": "#/$defs/primary_entry" }
+      }
     }
   },
   "$defs": {
@@ -42,28 +57,83 @@
       "type": "string",
       "pattern": "\\S"
     },
-    "entry": {
+    "nullable_str": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string" }
+      ]
+    },
+    "nullable_int": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "integer" }
+      ]
+    },
+    "entry_base": {
       "type": "object",
       "required": [
-        "chapter_id", "title", "source_chapter_label", "source_title",
-        "volume_label", "source_offset", "source_line", "path",
-        "character_count", "sha256", "previous_id", "next_id"
+        "chapter_id", "title",
+        "source_chapter_label", "source_title",
+        "volume_label", "source_offset", "source_line",
+        "path", "character_count", "sha256",
+        "previous_id", "next_id"
       ],
       "additionalProperties": false,
       "properties": {
         "chapter_id": { "$ref": "#/$defs/chapter_id" },
         "title": { "$ref": "#/$defs/non_blank" },
-        "source_chapter_label": {},
-        "source_title": {},
-        "volume_label": {},
-        "source_offset": {},
-        "source_line": {},
         "path": { "type": "string" },
         "character_count": { "type": "integer", "minimum": 0 },
         "sha256": { "$ref": "#/$defs/sha256" },
-        "previous_id": {},
-        "next_id": {}
+        "previous_id": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/chapter_id" }
+          ]
+        },
+        "next_id": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/chapter_id" }
+          ]
+        }
       }
+    },
+    "entry": {
+      "oneOf": [
+        { "$ref": "#/$defs/primary_entry" },
+        { "$ref": "#/$defs/scan_entry" }
+      ]
+    },
+    "scan_entry": {
+      "allOf": [
+        { "$ref": "#/$defs/entry_base" },
+        {
+          "type": "object",
+          "properties": {
+            "source_chapter_label": { "type": "null" },
+            "source_title": { "type": "null" },
+            "volume_label": { "type": "null" },
+            "source_offset": { "type": "null" },
+            "source_line": { "type": "null" }
+          }
+        }
+      ]
+    },
+    "primary_entry": {
+      "allOf": [
+        { "$ref": "#/$defs/entry_base" },
+        {
+          "type": "object",
+          "properties": {
+            "source_chapter_label": { "$ref": "#/$defs/non_blank" },
+            "source_title": { "type": "string" },
+            "volume_label": { "$ref": "#/$defs/nullable_str" },
+            "source_offset": { "type": "integer", "minimum": 0 },
+            "source_line": { "type": "integer", "minimum": 1 }
+          }
+        }
+      ]
     }
   }
 }

@@ -987,3 +987,25 @@
   `tests/test_chapter_manifests.py`, `tests/fixtures/chapter_manifests/`,
   `docs/chapter_manifest_format.md`.
 - Supersedes: None.
+
+## DEC-0042: Phase 1.1 focus fix — close P1 missing-field bypass and P2 Schema conditions
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: Phase 1.1 independent acceptance was NO-GO with two findings. P1: the
+  validator accepted missing keys (`source_encoding`, scan null fields,
+  `previous_id`/`next_id`) by treating `.get()` as default null. P2: Schema lacked
+  `if/then/else` on `source_encoding` to differentiate primary/scan entry shapes.
+- Decision: (a) Add explicit `"key" not in data`/`raw_entry` checks for
+  `source_encoding` root field, five scan-null fields, and `previous_id`/`next_id`;
+  all missing keys now produce `ChapterManifestValidationError`. (b) Restructure
+  Schema with root `if/then/else`: `source_encoding=null`→`scan_entry` (5 fields
+  must be null), else→`primary_entry` (typed constraints). Add `previous_id`/`next_id`
+  `oneOf` constraints. (c) Add 8 missing-field tests + 5 new Schema structure tests.
+  Total focused: 236. (d) `build_manifest` primary/scan paths remain compatible.
+- Consequences: All 12 entry fields and the root `source_encoding` now require
+  explicit key presence. Schema now fully distinguishes primary and scan entry
+  shapes. 816 full tests continue to pass. Pending focused re-review.
+- Evidence: `pipeline/chapter_manifests.py`, `schemas/chapter_manifest.schema.json`,
+  `tests/test_chapter_manifests.py`.
+- Supersedes: None.

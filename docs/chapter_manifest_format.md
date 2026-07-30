@@ -63,6 +63,9 @@ Each entry has exactly 12 fields. Unknown fields are rejected.
 
 The validator enforces the correct set based on `source_encoding`.
 
+All 12 fields are required in every entry — even nullable fields must be
+explicitly present (e.g. `"previous_id": null`, not absent).
+
 ## Validation
 
 ```python

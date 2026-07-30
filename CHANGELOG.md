@@ -24,6 +24,9 @@
   five value branches), stable-ID regex, NFKC alias dedup, relation cross-reference,
   and `FactCandidateValidationError`.
 - Added `schemas/fact_candidate.schema.json` (draft 2020-12, `additionalProperties`
+n### Fixed
+- Phase 1.1 P1: `source_encoding`, scan five null fields, `previous_id`/`next_id` now require explicit key presence; missing keys raise `ChapterManifestValidationError` instead of silently defaulting.
+- Phase 1.1 P2: Schema restructured with root `if/then/else` on `source_encoding` (null→scan_entry, encoding→primary_entry), typed constraints for previous_id/next_id/path, and conditional field requirements for primary vs. scan.
   false, `oneOf` tagged union, `if/then/else` for inference_basis conditional,
   `\\S` pattern for non-blank strings). Schema expresses structural constraints;
   Python adds semantic checks (dedup, cross-reference, NFKC, bool/int, finite float).

@@ -101,7 +101,10 @@ stale.
   chain adjacency, path safety, SHA-256 format, monotonic offset/line. Source binding
   via `validate_fact_candidate_sources()`. JSON Schema at
   `schemas/chapter_manifest.schema.json`. 73 focused tests, 803 full tests pass.
-  Pending GPT-5.6-sol independent acceptance (DEC-0041).
+  Pending GPT-5.6-sol independent acceptance (DEC-0041). Phase 1.1 independent
+  acceptance NO-GO (P1 missing-field bypass, P2 Schema conditions). Focus fix in
+  DEC-0042: 8 missing-field tests + 5 new Schema tests, 236 focused, 816 full tests.
+  Pending focused re-review.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

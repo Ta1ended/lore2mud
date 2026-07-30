@@ -469,6 +469,64 @@ class PrimaryScanConditionTests(unittest.TestCase):
         self.assertTrue(any("source_offset" in i for i in ctx.exception.issues))
 
 
+# ── P1: missing required fields must be rejected ───────────────────────────
+
+class MissingRequiredFieldsTests(unittest.TestCase):
+    """Keys that are required-even-if-nullable must be explicitly present."""
+
+    def test_root_missing_source_encoding_rejected(self) -> None:
+        d = _valid_primary()
+        del d["source_encoding"]
+        with self.assertRaises(ChapterManifestValidationError) as ctx:
+            validate_chapter_manifest(d)
+        self.assertTrue(any("source_encoding" in i for i in ctx.exception.issues))
+
+    def test_scan_missing_source_chapter_label_rejected(self) -> None:
+        d = _valid_scan()
+        del d["chapters"][0]["source_chapter_label"]
+        with self.assertRaises(ChapterManifestValidationError) as ctx:
+            validate_chapter_manifest(d)
+        self.assertTrue(any("source_chapter_label" in i and "null" in i for i in ctx.exception.issues))
+
+    def test_scan_missing_source_title_rejected(self) -> None:
+        d = _valid_scan()
+        del d["chapters"][0]["source_title"]
+        with self.assertRaises(ChapterManifestValidationError):
+            validate_chapter_manifest(d)
+
+    def test_scan_missing_volume_label_rejected(self) -> None:
+        d = _valid_scan()
+        del d["chapters"][0]["volume_label"]
+        with self.assertRaises(ChapterManifestValidationError):
+            validate_chapter_manifest(d)
+
+    def test_scan_missing_source_offset_rejected(self) -> None:
+        d = _valid_scan()
+        del d["chapters"][0]["source_offset"]
+        with self.assertRaises(ChapterManifestValidationError):
+            validate_chapter_manifest(d)
+
+    def test_scan_missing_source_line_rejected(self) -> None:
+        d = _valid_scan()
+        del d["chapters"][0]["source_line"]
+        with self.assertRaises(ChapterManifestValidationError):
+            validate_chapter_manifest(d)
+
+    def test_first_chapter_missing_previous_id_rejected(self) -> None:
+        d = _valid_primary()
+        del d["chapters"][0]["previous_id"]
+        with self.assertRaises(ChapterManifestValidationError) as ctx:
+            validate_chapter_manifest(d)
+        self.assertTrue(any("previous_id" in i for i in ctx.exception.issues))
+
+    def test_last_chapter_missing_next_id_rejected(self) -> None:
+        d = _valid_primary()
+        del d["chapters"][2]["next_id"]
+        with self.assertRaises(ChapterManifestValidationError) as ctx:
+            validate_chapter_manifest(d)
+        self.assertTrue(any("next_id" in i for i in ctx.exception.issues))
+
+
 # ── offset/line monotonic ──────────────────────────────────────────────────
 
 class MonotonicTests(unittest.TestCase):
@@ -518,17 +576,68 @@ class SchemaParseTests(unittest.TestCase):
         self.assertIn("properties", schema)
         self.assertIn("$defs", schema)
 
-    def test_schema_has_additional_properties_false(self) -> None:
+    def test_additional_properties_false(self) -> None:
         schema_path = Path(__file__).resolve().parents[1] / "schemas" / "chapter_manifest.schema.json"
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
         self.assertFalse(schema.get("additionalProperties"))
-        self.assertFalse(schema["$defs"]["entry"].get("additionalProperties"))
+        self.assertFalse(schema["$defs"]["entry_base"].get("additionalProperties"))
 
-    def test_schema_has_source_encoding_conditional(self) -> None:
+    def test_root_has_if_then_else_on_source_encoding(self) -> None:
         schema_path = Path(__file__).resolve().parents[1] / "schemas" / "chapter_manifest.schema.json"
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
-        se = schema["properties"]["source_encoding"]
-        self.assertIn("oneOf", se)
+        self.assertIn("if", schema, "root must have if/then/else")
+        self.assertIn("then", schema)
+        self.assertIn("else", schema)
+        self.assertEqual(schema["if"]["properties"]["source_encoding"]["type"], "null")
+
+    def test_then_uses_scan_entry(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "chapter_manifest.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        ref = schema["then"]["properties"]["chapters"]["items"]["$ref"]
+        self.assertIn("scan_entry", ref)
+
+    def test_else_uses_primary_entry_and_encoding_enum(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "chapter_manifest.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        ref = schema["else"]["properties"]["chapters"]["items"]["$ref"]
+        self.assertIn("primary_entry", ref)
+        se = schema["else"]["properties"]["source_encoding"]
+        self.assertIn("enum", se)
+        self.assertEqual(set(se["enum"]), {"utf-8-sig", "utf-8", "gbk", "gb18030"})
+
+    def test_scan_entry_requires_null_fields(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "chapter_manifest.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        scan = schema["$defs"]["scan_entry"]["allOf"][1]["properties"]
+        for field in ("source_chapter_label", "source_title", "volume_label",
+                      "source_offset", "source_line"):
+            self.assertEqual(scan[field]["type"], "null", f"{field} must be null in scan")
+
+    def test_primary_entry_has_typed_fields(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "chapter_manifest.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        prim = schema["$defs"]["primary_entry"]["allOf"][1]["properties"]
+        # source_chapter_label: non-blank
+        self.assertIn("$ref", prim["source_chapter_label"])
+        # source_title: string (allows empty)
+        self.assertEqual(prim["source_title"]["type"], "string")
+        # volume_label: nullable_str
+        self.assertIn("nullable_str", prim["volume_label"]["$ref"])
+        # source_offset: integer >= 0
+        self.assertEqual(prim["source_offset"]["type"], "integer")
+        self.assertEqual(prim["source_offset"]["minimum"], 0)
+        # source_line: integer >= 1
+        self.assertEqual(prim["source_line"]["type"], "integer")
+        self.assertEqual(prim["source_line"]["minimum"], 1)
+
+    def test_previous_next_id_constrained(self) -> None:
+        schema_path = Path(__file__).resolve().parents[1] / "schemas" / "chapter_manifest.schema.json"
+        schema = json.loads(schema_path.read_text(encoding="utf-8"))
+        base = schema["$defs"]["entry_base"]["properties"]
+        # previous_id: null or chapter_id
+        self.assertIn("oneOf", base["previous_id"])
+        # next_id: null or chapter_id
+        self.assertIn("oneOf", base["next_id"])
 
 
 # ── source binding ──────────────────────────────────────────────────────────

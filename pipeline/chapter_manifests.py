@@ -206,9 +206,12 @@ def validate_chapter_manifest(data: object) -> ChapterManifest:
     elif fv != 2:
         issues.append(f"format_version 必须为 2，收到 {fv}")
 
-    # source_encoding
+    # source_encoding — must be explicitly present
     raw_se = data.get("source_encoding")
-    if raw_se is None:
+    if "source_encoding" not in data:
+        issues.append("source_encoding 是必填字段（可为 null）")
+        is_scan = False
+    elif raw_se is None:
         is_scan = True
     elif not isinstance(raw_se, str):
         issues.append("source_encoding 必须是字符串或 null")
@@ -308,8 +311,12 @@ def validate_chapter_manifest(data: object) -> ChapterManifest:
                 f"{eloc}.sha256 必须是 64 位小写十六进制，收到 {raw_sha!r}"
             )
 
-        # previous_id
-        raw_prev = raw_entry.get("previous_id")
+        # previous_id — key must be explicitly present
+        if "previous_id" not in raw_entry:
+            issues.append(f"{eloc}.previous_id 是必填字段（可为 null）")
+            raw_prev = None
+        else:
+            raw_prev = raw_entry["previous_id"]
         if raw_prev is None:
             if ei != 0:
                 issues.append(
@@ -326,8 +333,12 @@ def validate_chapter_manifest(data: object) -> ChapterManifest:
         elif ei == 0:
             issues.append(f"{eloc}.previous_id 首章节必须为 null")
 
-        # next_id
-        raw_next = raw_entry.get("next_id")
+        # next_id — key must be explicitly present
+        if "next_id" not in raw_entry:
+            issues.append(f"{eloc}.next_id 是必填字段（可为 null）")
+            raw_next = None
+        else:
+            raw_next = raw_entry["next_id"]
         if raw_next is None:
             if ei != len(raw_chapters) - 1:
                 issues.append(
@@ -351,7 +362,7 @@ def validate_chapter_manifest(data: object) -> ChapterManifest:
                 "source_chapter_label", "source_title", "volume_label",
                 "source_offset", "source_line",
             ):
-                if raw_entry.get(null_field) is not None:
+                if null_field not in raw_entry or raw_entry[null_field] is not None:
                     issues.append(
                         f"{eloc}.{null_field} 在 source_encoding=null "
                         "(scan 路径) 时必须为 null"
