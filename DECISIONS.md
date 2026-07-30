@@ -1050,3 +1050,19 @@
 - Evidence: `CHANGELOG.md`, `PROJECT_MEMORY.md`, `PROJECT_STATE.md`,
   `NEXT_TASK.md`.
 - Supersedes: None.
+
+## DEC-0045: Phase 1.1 Changelog structure merge
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: The `[Unreleased]` section had duplicate `### Added`, `### Fixed`,
+  `### Changed`, and `### Verified` headings from historical incremental appends.
+  DEC-0044 claimed "all fixes under one ### Fixed" but the file was inconsistent.
+- Decision: Merge all entries under unique category headings in the fixed order
+  Added → Fixed → Changed → Verified. No entries deleted or rewritten; only
+  structure and heading deduplication changed. 73 Added bullets, 7 Fixed, 46
+  Changed, 15 Verified all preserved.
+- Consequences: CHANGELOG `[Unreleased]` is now structurally clean. No code,
+  Schema, test, or fixture changes. Pending GPT-5.6-sol final re-review.
+- Evidence: `CHANGELOG.md`.
+- Supersedes: None.
