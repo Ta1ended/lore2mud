@@ -182,8 +182,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 无活动实施切片。Phase 1.2 已由 GPT-5.6-sol 独立验收 GO（DEC-0051），
-  全部 findings 已关闭。任何后续工作须项目负责人新的明确授权。
+- L2W-1 canon draft promotion 已由 Hermes 实现，等待 GPT-5.6-sol 独立验收
+  （DEC-0052）。35 项聚焦、895 项全量测试通过。未修改 src/、现有 pipeline、
+  Schema、original_demo 或 save。
 
 ## Blockers
 

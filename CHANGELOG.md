@@ -4,6 +4,18 @@
 
 ### Added
 
+- Added canon draft promotion (L2W-1): `pipeline/canon.py` with frozen
+  `PromotionPlan`, `CanonDraft`, `CanonEntity`, `CanonClaim` dataclass models,
+  `validate_canon_promotion_plan()`, `build_canon_draft()`,
+  `validate_canon_draft_document()`, and deterministic `main()` CLI.
+  Promotion closure: direct entities (≥1 accepted claim) ∪ relation entities
+  (accepted relation target). Relation value rewritten from candidate_ref to
+  entity_ref. CanonDraft validated before atomic write.
+- Added `schemas/canon_promotion_plan.schema.json` and
+  `schemas/canon_draft.schema.json` (draft 2020-12).
+- Added `tests/test_canon.py` with 35 focused tests.
+- Added `tests/fixtures/canon/` test data.
+- Added `docs/canon_draft_format.md`.
 - Added v2 chapter manifest validation: `pipeline/chapter_manifests.py` with
   frozen `ChapterManifestEntry` and `ChapterManifest` dataclasses, primary/scan
   conditional validation, consecutive chapter ID enforcement, chain adjacency,

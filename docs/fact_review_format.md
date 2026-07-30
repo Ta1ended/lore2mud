@@ -91,3 +91,8 @@ Returns the review unchanged on success; raises `FactReviewBindingValidationErro
 and `if/then/else` for the `state=superseded` conditional. Python adds duplicate
 pair detection, candidate/claim binding, cross-candidate supersede rejection,
 and self-reference checks.
+
+## Next steps
+
+Reviewed claims with state=accepted can be promoted to a canon draft via
+`pipeline.canon.build_canon_draft()`.  See [canon_draft_format.md](canon_draft_format.md).

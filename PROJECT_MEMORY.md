@@ -20,7 +20,7 @@ stale.
 
 - Repository: `lore2mud`; branch: `main`.
 - Current execution mode: GPT-5.6-sol reviews scope and architecture and performs
-  independent acceptance; Hermes is the sole executor for Phase 1.0; the project
+  independent acceptance; Hermes is the current executor for L2W-1; the project
   owner manually transfers prompts and completion reports between the two conversations.
 - M7.2 independent acceptance compares
   `147633e0f139c9bc04919d8f69e75666e511fadc` with baseline
@@ -116,6 +116,10 @@ stale.
   regression, 860 full tests. GPT-5.6-sol independently accepted Phase 1.2 GO
   with no remaining findings (DEC-0051). Local HEAD=`e742d20`,
   `origin/main`=`a55c7d8`.
+- L2W-1 canon draft promotion implemented by Hermes (2026-07-30):
+  `pipeline/canon.py` with frozen dataclass models, promotion closure logic,
+  CLI with atomic write. 35 focused tests, 895 full tests. Pending GPT-5.6-sol
+  independent acceptance (DEC-0052).
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

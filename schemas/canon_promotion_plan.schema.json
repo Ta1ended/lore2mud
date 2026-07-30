@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/canon_promotion_plan.schema.json",
+  "title": "Canon Promotion Plan v1",
+  "description": "A v1 promotion plan mapping fact-candidate entities to canon entity IDs.",
+  "type": "object",
+  "required": ["format_version", "promotion_id", "source_chapter", "review_id", "entity_mappings"],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": { "const": 1 },
+    "promotion_id": { "$ref": "#/$defs/stable_id" },
+    "source_chapter": { "type": "string", "pattern": "^chapter_[0-9]{6}$" },
+    "review_id": { "$ref": "#/$defs/stable_id" },
+    "entity_mappings": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/mapping" }
+    }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "non_blank": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "mapping": {
+      "type": "object",
+      "required": ["candidate_id", "entity_id", "canonical_name", "aliases"],
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": { "$ref": "#/$defs/stable_id" },
+        "entity_id": { "$ref": "#/$defs/stable_id" },
+        "canonical_name": { "$ref": "#/$defs/non_blank" },
+        "aliases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/non_blank" }
+        }
+      }
+    }
+  }
+}

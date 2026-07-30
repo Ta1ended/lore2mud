@@ -1202,3 +1202,27 @@
 - Evidence: `pipeline/fact_reviews.py`, `schemas/fact_review.schema.json`,
   `tests/test_fact_reviews.py`, `docs/fact_review_format.md`.
 - Supersedes: Only DEC-0048's independent-acceptance-pending status.
+
+## DEC-0052: L2W-1 canon draft promotion from reviewed facts
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: After Phase 1.2 GO, the project owner authorized L2W-1: promote
+  validated, reviewed, single-chapter fact data into a deterministic canon draft
+  via an explicit PromotionPlan.
+- Decision: (a) New `pipeline/canon.py` with `PromotionPlan`, `CanonDraft`,
+  `CanonEntity`, `CanonClaim` frozen dataclasses, canonical value tagged union
+  (text/relation/numeric/boolean/enum) using entity_ref instead of candidate_ref.
+  (b) `validate_canon_promotion_plan()` for input structure. (c) `build_canon_draft()`
+  for promotion closure (direct ∪ relation entities), source_chapter/plan/review
+  consistency, relation rewriting, and self-validation. (d) `validate_canon_draft_document()`
+  for output revalidation (entity_ref non-dangling, source_chapter match, etc.).
+  (e) Deterministic CLI with atomic write (flush+fsync+os.replace). (f) Two new
+  JSON Schema files. (g) 35 focused tests, 895 full tests.
+- Consequences: Canon draft format is defined and validated. Cross-chapter
+  merging, formal canon registry, and game adaptation remain for future slices.
+  Pending GPT-5.6-sol independent acceptance.
+- Evidence: `pipeline/canon.py`, `schemas/canon_promotion_plan.schema.json`,
+  `schemas/canon_draft.schema.json`, `tests/test_canon.py`,
+  `docs/canon_draft_format.md`.
+- Supersedes: None.
