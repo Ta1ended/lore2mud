@@ -1332,3 +1332,22 @@
 - Evidence: 72 focused tests (1 skipped), 982 full tests. HEAD=`*current*`.
 - Pending GPT-5.6-sol final focused re-review.
 - Supersedes: None.
+
+## DEC-0058: L2W-2 independent acceptance — GO
+
+- Date: 2026-07-30
+- Status: Accepted
+- Context: L2W-2 micro content pack compilation from CanonDraft + AdaptationPlan.
+  Initial implementation `e05c946`. Three rework rounds (`2cc6696`, `389c0b0`,
+  `f7a977a`) closed all P1/P2 findings.
+- Decision: GPT-5.6-sol independently accepted L2W-2 GO with no remaining code
+  findings. 72 focused tests (1 skipped), 982 full tests (1 skipped).
+  Evidence: code contracts verified, golden fixtures byte-identical, atomic
+  write with fsync, MicroContentPack type safety, Schema stable IDs, real
+  subprocess CLI, and loader validation all pass.
+- Acceptance commit: `f7a977a2ced3e1a90bbd0cabb76803ff8bd93897`.
+- Consequences: L2W-2 scope is complete. Cross-chapter merging, formal canon
+  registry, and general game adaptation remain for future slices.
+- Supersedes: DEC-0057's "已同步" claim was premature; this decision confirms
+  the correct handling off numbers and clean Git state.
+- Does not authorize: L2W-3, push, or any new feature work.
