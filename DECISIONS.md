@@ -1066,3 +1066,21 @@
   Schema, test, or fixture changes. Pending GPT-5.6-sol final re-review.
 - Evidence: `CHANGELOG.md`.
 - Supersedes: None.
+
+## DEC-0046: Phase 1.1 Changelog count correction
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: DEC-0045 recorded Changelog counts as "73 Added, 7 Fixed, 46 Changed,
+  15 Verified". After the merge of (previous unreleased) sub-headings and full
+  verification, the actual [Unreleased] counts are 99 Added, 7 Fixed, 20 Changed,
+  15 Verified (total 141 bullets). No entries were deleted or rewritten; the
+  discrepancy was a counting error in DEC-0045.
+- Decision: Append DEC-0046 with corrected counts. No CHANGELOG, code, Schema,
+  test, or fixture changes.
+- Consequences: Documentation now accurately reflects the merged Changelog
+  structure. 237 focused, 817 full tests unchanged. Pending GPT-5.6-sol final
+  re-review (DEC-0041 through DEC-0046).
+- Evidence: `CHANGELOG.md`, `DECISIONS.md`.
+- Supersedes: Only DEC-0045's count numbers; the merge decision and scope
+  remain unchanged.
