@@ -1,0 +1,13 @@
+[
+  {
+    "adaptation_notes": "n.",
+    "description": "d.",
+    "id": "q",
+    "kind": "collect_item",
+    "name": "q",
+    "required_quantity": 1,
+    "reward_experience": 10,
+    "target_item_id": "i",
+    "trigger_room_id": "r"
+  }
+]

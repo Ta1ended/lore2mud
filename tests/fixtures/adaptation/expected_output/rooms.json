@@ -1,0 +1,22 @@
+[
+  {
+    "adaptation_notes": "n.",
+    "canon_ref": {
+      "entity_id": "e_loc",
+      "source_chapters": [
+        "chapter_000001"
+      ]
+    },
+    "description": "d.",
+    "exits": {},
+    "id": "r",
+    "item_stacks": [
+      {
+        "item_id": "i",
+        "quantity": 1
+      }
+    ],
+    "monster_ids": [],
+    "name": "r"
+  }
+]

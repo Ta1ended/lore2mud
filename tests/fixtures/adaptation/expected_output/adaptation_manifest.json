@@ -1,0 +1,62 @@
+{
+  "adaptation_id": "adapt_t",
+  "bindings": [
+    {
+      "adaptation_notes": "n.",
+      "canon_claim_refs": [
+        "c2"
+      ],
+      "canon_entity_ref": "e_char",
+      "game_id": "c",
+      "game_kind": "character"
+    },
+    {
+      "adaptation_notes": "n.",
+      "canon_claim_refs": [],
+      "canon_entity_ref": "e_item",
+      "game_id": "i",
+      "game_kind": "item"
+    },
+    {
+      "adaptation_notes": "n.",
+      "canon_claim_refs": [
+        "c1"
+      ],
+      "canon_entity_ref": "e_loc",
+      "game_id": "r",
+      "game_kind": "room"
+    }
+  ],
+  "format_version": 1,
+  "game_only": [
+    {
+      "adaptation_notes": "n.",
+      "game_id": "di",
+      "game_kind": "dialogue"
+    },
+    {
+      "adaptation_notes": "n.",
+      "game_id": "q",
+      "game_kind": "quest"
+    }
+  ],
+  "omissions": [
+    {
+      "canon_entity_ref": "e_x",
+      "reason": "x."
+    },
+    {
+      "canon_entity_ref": "e_y",
+      "reason": "y."
+    }
+  ],
+  "pack": {
+    "id": "tp",
+    "version": "0.1.0"
+  },
+  "source": {
+    "chapter_id": "chapter_000001",
+    "chapter_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "promotion_id": "promo_t"
+  }
+}

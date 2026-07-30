@@ -1,0 +1,20 @@
+{
+  "extensions": {
+    "canon_provider": {
+      "format_version": 1,
+      "kind": "adaptation_manifest",
+      "path": "adaptation_manifest.json"
+    }
+  },
+  "id": "tp",
+  "name": "tp",
+  "player": {
+    "attack": 5,
+    "coins": 0,
+    "defense": 1,
+    "inventory_capacity": 20,
+    "max_hp": 20
+  },
+  "start_room_id": "r",
+  "version": "0.1.0"
+}

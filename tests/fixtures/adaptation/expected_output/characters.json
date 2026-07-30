@@ -1,0 +1,15 @@
+[
+  {
+    "adaptation_notes": "n.",
+    "canon_ref": {
+      "entity_id": "e_char",
+      "source_chapters": [
+        "chapter_000001"
+      ]
+    },
+    "description": "d.",
+    "id": "c",
+    "name": "c",
+    "room_id": "r"
+  }
+]

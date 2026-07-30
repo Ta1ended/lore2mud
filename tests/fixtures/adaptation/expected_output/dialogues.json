@@ -1,0 +1,34 @@
+[
+  {
+    "adaptation_notes": "n.",
+    "character_id": "c",
+    "id": "di",
+    "nodes": [
+      {
+        "id": "end",
+        "options": [
+          {
+            "effects": [],
+            "id": "o2",
+            "next_node_id": null,
+            "text": "bye."
+          }
+        ],
+        "text": "end."
+      },
+      {
+        "id": "start",
+        "options": [
+          {
+            "effects": [],
+            "id": "o",
+            "next_node_id": "end",
+            "text": "bye."
+          }
+        ],
+        "text": "hi."
+      }
+    ],
+    "start_node_id": "start"
+  }
+]

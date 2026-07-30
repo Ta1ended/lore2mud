@@ -1287,3 +1287,27 @@
   `schemas/adaptation_manifest.schema.json`, `tests/test_adaptation.py`,
   `tests/fixtures/adaptation/`, `docs/adaptation_plan_format.md`.
 - Supersedes: None.
+
+## DEC-0056: L2W-2 second rework — P1 findings closed
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: GPT-5.6-sol second focused REVISE identified six P1 findings and
+  P2 documentation/fixture gaps. This decision records the fix commit at
+  `47a7c8a`.
+- Fixes:
+  (a) P1-1 Manifest: type-safe kind checks, cross-set game_id/CER uniqueness,
+      binding∩omission disjoint, deterministic ordering in return value.
+  (b) P1-2 MicroContentPack: restored approved dict/tuple semantic model
+      (not bytes). JSON serialization moved to writer.
+  (c) P1-3 Atomic write: document pre-validation before temp dir creation,
+      second lexists right before os.replace, writer-level tests.
+  (d) P1-4 Schema: stable ID for dialogue node/option/next ID. CLI explicit
+      exception list (no bare `except Exception`).
+  (e) P1-5 Tests: 58 tests (restored + new), >44. Nodes sorted by ID,
+      options order preserved, 2+ omission/claim_ref determinism tests.
+  (f) P2: Golden fixtures (valid_plan.json + expected_output/9 files),
+      handoff sync, DEC-0056.
+- Evidence: 58 focused tests, 968 full tests.
+- Pending GPT-5.6-sol third focused re-review.
+- Supersedes: None.
