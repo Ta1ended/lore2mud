@@ -20,10 +20,10 @@
       }
     },
     "pack": { "type": "object", "required": ["id", "version"], "additionalProperties": false,
-      "properties": { "id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" }, "version": { "type": "string" } } },
-    "bindings": { "type": "array", "minItems": 3, "items": { "$ref": "#/$defs/binding" } },
+      "properties": { "id": { "$ref": "#/$defs/stable_id" }, "version": { "type": "string" } } },
+    "bindings": { "type": "array", "minItems": 3, "maxItems": 3, "items": { "$ref": "#/$defs/binding" } },
     "omissions": { "type": "array", "items": { "$ref": "#/$defs/omission" } },
-    "game_only": { "type": "array", "minItems": 2, "items": { "$ref": "#/$defs/game_only_entry" } }
+    "game_only": { "type": "array", "minItems": 2, "maxItems": 2, "items": { "$ref": "#/$defs/game_only_entry" } }
   },
   "$defs": {
     "stable_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },

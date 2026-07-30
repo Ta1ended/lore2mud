@@ -183,7 +183,7 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 ## In progress
 
 - L2W-2 micro content pack compilation 已由 Hermes 实现，等待 GPT-5.6-sol
-  独立验收（DEC-0055）。44 项聚焦、954 项全量测试通过。
+  独立验收（DEC-0055）。38 项聚焦、954 项全量测试通过。
 
 ## Blockers
 

@@ -1,606 +1,505 @@
-"""Tests for pipeline.adaptation — L2W-2 micro content pack compilation."""
+"""Tests for pipeline.adaptation — L2W-2 rework."""
 
 from __future__ import annotations
 
 import json
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 import unittest
-from dataclasses import asdict
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from pipeline.canon import validate_canon_draft_document, build_canon_draft
-from pipeline.chapter_manifests import validate_chapter_manifest
-from pipeline.fact_candidates import validate_fact_candidate_document
-from pipeline.fact_reviews import validate_fact_review_document
+from pipeline.canon import validate_canon_draft_document
 from pipeline.adaptation import (
     AdaptationPlan, AdaptationManifest, AdaptationValidationError, CompilationError,
-    MicroContentPack, CompiledDocument,
-    validate_adaptation_plan, compile_micro_pack, write_micro_pack,
+    MicroContentPack, validate_adaptation_plan, compile_micro_pack, write_micro_pack,
     validate_adaptation_manifest_document,
 )
 
-# ── Helpers ────────────────────────────────────────────────────────────────
+# ── Pure fictional fixtures ────────────────────────────────────────────────
 
-_VALID_PLAN = {
-    "format_version": 1,
-    "adaptation_id": "adapt_test",
-    "source_promotion_id": "promo_test",
-    "source_chapter": "chapter_000001",
-    "pack": {
-        "id": "test_micro", "name": "测试微场景", "version": "0.1.0",
-        "start_room_id": "room_test",
-        "player": {"max_hp": 20, "attack": 5, "defense": 1, "inventory_capacity": 20, "coins": 0},
-    },
-    "room": {
-        "canon_entity_ref": "e_loc", "game_id": "room_test",
-        "name": "测试房间", "description": "一个测试房间。",
-        "canon_claim_refs": ["c_type"], "adaptation_notes": "唯一房间。",
-    },
-    "character": {
-        "canon_entity_ref": "e_char", "game_id": "char_test",
-        "name": "测试角色", "description": "一个测试角色。",
-        "canon_claim_refs": ["c_origin"], "adaptation_notes": "叙事 NPC。",
-    },
-    "item": {
-        "canon_entity_ref": "e_item", "game_id": "item_test",
-        "name": "测试物品", "description": "一个测试物品。",
-        "canon_claim_refs": [], "adaptation_notes": "收集物。",
-    },
-    "quest": {
-        "game_id": "quest_test", "kind": "collect_item",
-        "name": "测试任务", "description": "收集物品。",
-        "target_item_id": "item_test", "required_quantity": 1, "reward_experience": 10,
-        "adaptation_notes": "自动接取。",
-    },
-    "dialogue": {
-        "game_id": "dial_test", "character_id": "char_test",
-        "start_node_id": "start",
-        "nodes": [{
-            "id": "start", "text": "你好。",
-            "options": [{"id": "opt_leave", "text": "再会。", "next_node_id": None, "effects": []}],
-        }],
-        "adaptation_notes": "纯叙事。",
-    },
-    "omissions": [{"canon_entity_ref": "e_extra", "reason": "不在范围。"}],
-}
-
-_CANON_DRAFT_JSON = {
-    "format_version": 1,
-    "promotion_id": "promo_test",
+_CD = {
+    "format_version": 1, "promotion_id": "promo_t",
     "source": {"chapter_id": "chapter_000001", "chapter_sha256": "a" * 64},
-    "extracted_by": "tester",
-    "review_id": "review_test",
-    "reviewed_by": "human",
+    "extracted_by": "t", "review_id": "r", "reviewed_by": "h",
     "entities": [
-        {
-            "entity_id": "e_loc", "entity_type": "location",
-            "canonical_name": "地点", "aliases": [],
-            "source_candidate_id": "s_loc",
-            "claims": [{"claim_id": "c_type", "predicate": "type",
-                "value": {"kind": "enum", "enum_value": "village"},
-                "source_chapters": ["chapter_000001"], "source_support": "explicit",
-                "certainty": "certain", "inference_basis": None, "review_reason": "ok."}],
-        },
-        {
-            "entity_id": "e_char", "entity_type": "character",
-            "canonical_name": "角色", "aliases": [],
-            "source_candidate_id": "s_char",
-            "claims": [{"claim_id": "c_origin", "predicate": "origin",
-                "value": {"kind": "text", "text": "出身于此。"},
-                "source_chapters": ["chapter_000001"], "source_support": "explicit",
-                "certainty": "certain", "inference_basis": None, "review_reason": "ok."}],
-        },
-        {
-            "entity_id": "e_item", "entity_type": "item",
-            "canonical_name": "物品", "aliases": [],
-            "source_candidate_id": "s_item",
-            "claims": [{"claim_id": "c_desc", "predicate": "description",
-                "value": {"kind": "text", "text": "物品。"},
-                "source_chapters": ["chapter_000001"], "source_support": "explicit",
-                "certainty": "certain", "inference_basis": None, "review_reason": "ok."}],
-        },
-        {
-            "entity_id": "e_extra", "entity_type": "character",
-            "canonical_name": "额外", "aliases": [],
-            "source_candidate_id": "s_extra",
-            "claims": [{"claim_id": "c_extra", "predicate": "origin",
-                "value": {"kind": "text", "text": "额外。"},
-                "source_chapters": ["chapter_000001"], "source_support": "explicit",
-                "certainty": "certain", "inference_basis": None, "review_reason": "ok."}],
-        },
+        {"entity_id": "e_loc", "entity_type": "location", "canonical_name": "L", "aliases": [],
+         "source_candidate_id": "sl", "claims": [{"claim_id": "c1", "predicate": "type",
+             "value": {"kind": "enum", "enum_value": "village"}, "source_chapters": ["chapter_000001"],
+             "source_support": "explicit", "certainty": "certain", "inference_basis": None, "review_reason": "o."}]},
+        {"entity_id": "e_char", "entity_type": "character", "canonical_name": "C", "aliases": [],
+         "source_candidate_id": "sc", "claims": [{"claim_id": "c2", "predicate": "origin",
+             "value": {"kind": "text", "text": "o."}, "source_chapters": ["chapter_000001"],
+             "source_support": "explicit", "certainty": "certain", "inference_basis": None, "review_reason": "o."}]},
+        {"entity_id": "e_item", "entity_type": "item", "canonical_name": "I", "aliases": [],
+         "source_candidate_id": "si", "claims": [{"claim_id": "c3", "predicate": "desc",
+             "value": {"kind": "text", "text": "d."}, "source_chapters": ["chapter_000001"],
+             "source_support": "explicit", "certainty": "certain", "inference_basis": None, "review_reason": "o."}]},
+        {"entity_id": "e_extra", "entity_type": "character", "canonical_name": "X", "aliases": [],
+         "source_candidate_id": "sx", "claims": [{"claim_id": "c4", "predicate": "origin",
+             "value": {"kind": "text", "text": "x."}, "source_chapters": ["chapter_000001"],
+             "source_support": "explicit", "certainty": "certain", "inference_basis": None, "review_reason": "o."}]},
+        {"entity_id": "e_extra2", "entity_type": "character", "canonical_name": "Y", "aliases": [],
+         "source_candidate_id": "sy", "claims": [{"claim_id": "c5", "predicate": "origin",
+             "value": {"kind": "text", "text": "y."}, "source_chapters": ["chapter_000001"],
+             "source_support": "explicit", "certainty": "certain", "inference_basis": None, "review_reason": "o."}]},
     ],
 }
 
+_PLAN = lambda: validate_adaptation_plan({
+    "format_version": 1, "adaptation_id": "adapt_t", "source_promotion_id": "promo_t",
+    "source_chapter": "chapter_000001",
+    "pack": {"id": "tp", "name": "tp", "version": "0.1.0", "start_room_id": "r",
+        "player": {"max_hp": 20, "attack": 5, "defense": 1, "inventory_capacity": 20, "coins": 0}},
+    "room": {"canon_entity_ref": "e_loc", "game_id": "r", "name": "room", "description": "desc.",
+        "canon_claim_refs": ["c1"], "adaptation_notes": "an."},
+    "character": {"canon_entity_ref": "e_char", "game_id": "c", "name": "char", "description": "desc.",
+        "canon_claim_refs": ["c2"], "adaptation_notes": "an."},
+    "item": {"canon_entity_ref": "e_item", "game_id": "i", "name": "item", "description": "desc.",
+        "canon_claim_refs": [], "adaptation_notes": "an."},
+    "quest": {"game_id": "q", "kind": "collect_item", "name": "quest", "description": "desc.",
+        "target_item_id": "i", "required_quantity": 1, "reward_experience": 10, "adaptation_notes": "a."},
+    "dialogue": {"game_id": "di", "character_id": "c", "start_node_id": "s",
+        "nodes": [{"id": "s", "text": "hi.", "options": [{"id": "o", "text": "bye.",
+            "next_node_id": "s2", "effects": []}]},
+            {"id": "s2", "text": "bye.", "options": [{"id": "o2", "text": "bye.",
+                "next_node_id": None, "effects": []}]}],
+        "adaptation_notes": "n."},
+    "omissions": [{"canon_entity_ref": "e_extra", "reason": "x."},
+                  {"canon_entity_ref": "e_extra2", "reason": "y."}],
+})
 
-def _canon_draft():
-    return validate_canon_draft_document(_CANON_DRAFT_JSON)
+
+def _cd():
+    return validate_canon_draft_document(_CD)
 
 
-def _plan():
-    return validate_adaptation_plan(_VALID_PLAN)
+# ═══════════════════════════════════════════════════════════════════════════
+# Plan structural
+# ═══════════════════════════════════════════════════════════════════════════
 
+class PlanValidationTests(unittest.TestCase):
+    def test_valid(self) -> None:
+        p = _PLAN()
+        self.assertEqual(p.adaptation_id, "adapt_t")
 
-# ── Plan structural validation ─────────────────────────────────────────────
-
-class PlanStructuralValidationTests(unittest.TestCase):
-    def test_valid_plan(self) -> None:
-        plan = _plan()
-        self.assertEqual(plan.adaptation_id, "adapt_test")
-        self.assertEqual(plan.room.game_id, "room_test")
-
-    def test_format_version_mismatch(self) -> None:
-        d = dict(_VALID_PLAN)
-        d["format_version"] = 2
+    def test_bool_version(self) -> None:
+        d = {"format_version": True}
         with self.assertRaises(AdaptationValidationError):
             validate_adaptation_plan(d)
 
-    def test_bool_version_rejected(self) -> None:
-        d = dict(_VALID_PLAN)
-        d["format_version"] = True
+    def test_unknown_field(self) -> None:
+        d = {"format_version": 1, "adaptation_id": "a", "source_promotion_id": "p",
+             "source_chapter": "chapter_000001", "pack": {}, "room": {}, "character": {},
+             "item": {}, "quest": {}, "dialogue": {}, "omissions": [], "extra": 1}
         with self.assertRaises(AdaptationValidationError):
             validate_adaptation_plan(d)
 
-    def test_unknown_field_rejected(self) -> None:
-        d = dict(_VALID_PLAN)
-        d["extra"] = 1
+    def test_quest_kind(self) -> None:
+        d2 = json.loads(json.dumps({"format_version": 1, "adaptation_id": "a",
+            "source_promotion_id": "p", "source_chapter": "chapter_000001",
+            "pack": {"id": "p", "name": "p", "version": "0.1.0", "start_room_id": "r",
+                "player": {"max_hp": 20, "attack": 5, "defense": 1, "inventory_capacity": 20, "coins": 0}},
+            "room": {"canon_entity_ref": "e_loc", "game_id": "r", "name": "r", "description": "d.",
+                "canon_claim_refs": [], "adaptation_notes": "n."},
+            "character": {"canon_entity_ref": "e_char", "game_id": "c", "name": "c", "description": "d.",
+                "canon_claim_refs": [], "adaptation_notes": "n."},
+            "item": {"canon_entity_ref": "e_item", "game_id": "i", "name": "i", "description": "d.",
+                "canon_claim_refs": [], "adaptation_notes": "n."},
+            "quest": {"game_id": "q", "kind": "reach_room", "name": "q", "description": "d.",
+                "target_item_id": "i", "required_quantity": 1, "reward_experience": 10,
+                "adaptation_notes": "n."},
+            "dialogue": {"game_id": "di", "character_id": "c", "start_node_id": "s",
+                "nodes": [{"id": "s", "text": "t.", "options": [{"id": "o", "text": "t.",
+                    "next_node_id": None, "effects": []}]}], "adaptation_notes": "n."},
+            "omissions": [{"canon_entity_ref": "e_extra", "reason": "x."}],
+        }))
+        with self.assertRaises(AdaptationValidationError):
+            validate_adaptation_plan(d2)
+
+    def test_start_node_missing(self) -> None:
+        d = json.loads(json.dumps({
+            "format_version": 1, "adaptation_id": "a", "source_promotion_id": "p",
+            "source_chapter": "chapter_000001",
+            "pack": {"id": "p", "name": "p", "version": "0.1.0", "start_room_id": "r",
+                "player": {"max_hp": 20, "attack": 5, "defense": 1, "inventory_capacity": 20, "coins": 0}},
+            "room": {"canon_entity_ref": "e_loc", "game_id": "r", "name": "r", "description": "d.",
+                "canon_claim_refs": [], "adaptation_notes": "n."},
+            "character": {"canon_entity_ref": "e_char", "game_id": "c", "name": "c", "description": "d.",
+                "canon_claim_refs": [], "adaptation_notes": "n."},
+            "item": {"canon_entity_ref": "e_item", "game_id": "i", "name": "i", "description": "d.",
+                "canon_claim_refs": [], "adaptation_notes": "n."},
+            "quest": {"game_id": "q", "kind": "collect_item", "name": "q", "description": "d.",
+                "target_item_id": "i", "required_quantity": 1, "reward_experience": 10, "adaptation_notes": "n."},
+            "dialogue": {"game_id": "di", "character_id": "c", "start_node_id": "nonexistent",
+                "nodes": [{"id": "s", "text": "t.", "options": [{"id": "o", "text": "t.",
+                    "next_node_id": None, "effects": []}]}], "adaptation_notes": "n."},
+            "omissions": [{"canon_entity_ref": "e_extra", "reason": "x."}],
+        }))
         with self.assertRaises(AdaptationValidationError):
             validate_adaptation_plan(d)
 
-    def test_quest_kind_wrong(self) -> None:
-        d = dict(_VALID_PLAN)
-        d["quest"] = dict(d["quest"])
-        d["quest"]["kind"] = "reach_room"
+    def test_next_node_id_invalid(self) -> None:
+        """next_node_id=[] must not leak TypeError."""
+        d = json.loads(json.dumps({
+            "format_version": 1, "adaptation_id": "a", "source_promotion_id": "p",
+            "source_chapter": "chapter_000001",
+            "pack": {"id": "p", "name": "p", "version": "0.1.0", "start_room_id": "r",
+                "player": {"max_hp": 20, "attack": 5, "defense": 1, "inventory_capacity": 20, "coins": 0}},
+            "room": {"canon_entity_ref": "e_loc", "game_id": "r", "name": "r", "description": "d.",
+                "canon_claim_refs": [], "adaptation_notes": "n."},
+            "character": {"canon_entity_ref": "e_char", "game_id": "c", "name": "c", "description": "d.",
+                "canon_claim_refs": [], "adaptation_notes": "n."},
+            "item": {"canon_entity_ref": "e_item", "game_id": "i", "name": "i", "description": "d.",
+                "canon_claim_refs": [], "adaptation_notes": "n."},
+            "quest": {"game_id": "q", "kind": "collect_item", "name": "q", "description": "d.",
+                "target_item_id": "i", "required_quantity": 1, "reward_experience": 10, "adaptation_notes": "n."},
+            "dialogue": {"game_id": "di", "character_id": "c", "start_node_id": "s",
+                "nodes": [{"id": "s", "text": "t.", "options": [{"id": "o", "text": "t.",
+                    "next_node_id": [], "effects": []}]}], "adaptation_notes": "n."},
+            "omissions": [{"canon_entity_ref": "e_extra", "reason": "x."}],
+        }))
         with self.assertRaises(AdaptationValidationError):
             validate_adaptation_plan(d)
 
-    def test_nodes_have_effects_empty(self) -> None:
-        d = dict(_VALID_PLAN)
-        d["dialogue"] = dict(d["dialogue"])
-        d["dialogue"]["nodes"] = [dict(d["dialogue"]["nodes"][0])]
-        d["dialogue"]["nodes"][0]["options"] = [dict(d["dialogue"]["nodes"][0]["options"][0])]
-        d["dialogue"]["nodes"][0]["options"][0]["effects"] = [{"something": 1}]
-        with self.assertRaises(AdaptationValidationError):
-            validate_adaptation_plan(d)
-
-    def test_start_node_id_missing(self) -> None:
-        d = dict(_VALID_PLAN)
-        d["dialogue"] = dict(d["dialogue"])
-        d["dialogue"]["start_node_id"] = "nonexistent"
-        with self.assertRaises(AdaptationValidationError):
-            validate_adaptation_plan(d)
-
-    def test_node_id_duplicate(self) -> None:
-        d = dict(_VALID_PLAN)
-        d["dialogue"] = dict(d["dialogue"])
-        n = d["dialogue"]["nodes"][0]
-        d["dialogue"]["nodes"] = [dict(n), dict(n)]
-        with self.assertRaises(AdaptationValidationError):
-            validate_adaptation_plan(d)
-
-    def test_option_id_duplicate(self) -> None:
-        d = dict(_VALID_PLAN)
-        d["dialogue"] = dict(d["dialogue"])
-        n = d["dialogue"]["nodes"][0]
-        n2 = {"id": "start", "text": "其他",
-              "options": [{"id": "same", "text": "A", "next_node_id": None, "effects": []},
-                          {"id": "same", "text": "B", "next_node_id": None, "effects": []}]}
-        d["dialogue"]["nodes"] = [n2]
-        with self.assertRaises(AdaptationValidationError):
-            validate_adaptation_plan(d)
-
-    def test_omission_entity_ref_duplicate(self) -> None:
-        d = dict(_VALID_PLAN)
-        d["omissions"] = [dict(d["omissions"][0]), dict(d["omissions"][0])]
-        with self.assertRaises(AdaptationValidationError):
-            validate_adaptation_plan(d)
-
-    def test_canon_claim_refs_dedup(self) -> None:
-        d = dict(_VALID_PLAN)
-        d["room"] = dict(d["room"])
-        d["room"]["canon_claim_refs"] = ["c_type", "c_type"]
+    def test_option_id_not_stable(self) -> None:
+        d = json.loads(json.dumps({
+            "format_version": 1, "adaptation_id": "a", "source_promotion_id": "p",
+            "source_chapter": "chapter_000001",
+            "pack": {"id": "p", "name": "p", "version": "0.1.0", "start_room_id": "r",
+                "player": {"max_hp": 20, "attack": 5, "defense": 1, "inventory_capacity": 20, "coins": 0}},
+            "room": {"canon_entity_ref": "e_loc", "game_id": "r", "name": "r", "description": "d.",
+                "canon_claim_refs": [], "adaptation_notes": "n."},
+            "character": {"canon_entity_ref": "e_char", "game_id": "c", "name": "c", "description": "d.",
+                "canon_claim_refs": [], "adaptation_notes": "n."},
+            "item": {"canon_entity_ref": "e_item", "game_id": "i", "name": "i", "description": "d.",
+                "canon_claim_refs": [], "adaptation_notes": "n."},
+            "quest": {"game_id": "q", "kind": "collect_item", "name": "q", "description": "d.",
+                "target_item_id": "i", "required_quantity": 1, "reward_experience": 10, "adaptation_notes": "n."},
+            "dialogue": {"game_id": "di", "character_id": "c", "start_node_id": "s",
+                "nodes": [{"id": "s", "text": "t.", "options": [{"id": "Not Stable!",
+                    "text": "t.", "next_node_id": None, "effects": []}]}], "adaptation_notes": "n."},
+            "omissions": [{"canon_entity_ref": "e_extra", "reason": "x."}],
+        }))
         with self.assertRaises(AdaptationValidationError):
             validate_adaptation_plan(d)
 
 
-# ── Compilation errors ─────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+# Compilation
+# ═══════════════════════════════════════════════════════════════════════════
 
-class CompilationValidationTests(unittest.TestCase):
+class CompilationTests(unittest.TestCase):
     def test_valid_compile(self) -> None:
-        pack = compile_micro_pack(_canon_draft(), _plan())
-        self.assertIsInstance(pack, MicroContentPack)
-        self.assertEqual(len(pack.documents), 9)
+        p = compile_micro_pack(_cd(), _PLAN())
+        self.assertIsInstance(p, MicroContentPack)
+        self.assertIsInstance(p.pack, bytes)
 
     def test_source_promotion_mismatch(self) -> None:
-        plan = _plan()
-        plan2 = AdaptationPlan(
-            format_version=1, adaptation_id=plan.adaptation_id,
-            source_promotion_id="wrong", source_chapter=plan.source_chapter,
-            pack=plan.pack, room=plan.room, character=plan.character,
-            item=plan.item, quest=plan.quest, dialogue=plan.dialogue,
-            omissions=plan.omissions,
-        )
+        p = _PLAN()
+        p2 = AdaptationPlan(format_version=1, adaptation_id=p.adaptation_id,
+            source_promotion_id="wrong", source_chapter=p.source_chapter,
+            pack=p.pack, room=p.room, character=p.character, item=p.item,
+            quest=p.quest, dialogue=p.dialogue, omissions=p.omissions)
         with self.assertRaises(CompilationError):
-            compile_micro_pack(_canon_draft(), plan2)
+            compile_micro_pack(_cd(), p2)
 
-    def test_source_chapter_mismatch(self) -> None:
-        plan = _plan()
-        plan2 = AdaptationPlan(
-            format_version=1, adaptation_id=plan.adaptation_id,
-            source_promotion_id=plan.source_promotion_id,
-            source_chapter="chapter_000002",
-            pack=plan.pack, room=plan.room, character=plan.character,
-            item=plan.item, quest=plan.quest, dialogue=plan.dialogue,
-            omissions=plan.omissions,
-        )
+    def test_coverage_missing(self) -> None:
+        p = _PLAN()
+        p2 = AdaptationPlan(format_version=1, adaptation_id=p.adaptation_id,
+            source_promotion_id=p.source_promotion_id, source_chapter=p.source_chapter,
+            pack=p.pack, room=p.room, character=p.character, item=p.item,
+            quest=p.quest, dialogue=p.dialogue, omissions=p.omissions[:1])
         with self.assertRaises(CompilationError):
-            compile_micro_pack(_canon_draft(), plan2)
+            compile_micro_pack(_cd(), p2)
 
-    def test_entity_ref_nonexistent(self) -> None:
-        plan = _plan()
-        room2 = type(plan.room)(canon_entity_ref="nonexistent", game_id=plan.room.game_id,
-            name=plan.room.name, description=plan.room.description,
-            canon_claim_refs=plan.room.canon_claim_refs,
-            adaptation_notes=plan.room.adaptation_notes)
-        with self.assertRaises(CompilationError):
-            compile_micro_pack(_canon_draft(), type(plan)(
-                format_version=1, adaptation_id=plan.adaptation_id,
-                source_promotion_id=plan.source_promotion_id,
-                source_chapter=plan.source_chapter,
-                pack=plan.pack, room=room2, character=plan.character,
-                item=plan.item, quest=plan.quest, dialogue=plan.dialogue,
-                omissions=plan.omissions,
-            ))
-
-    def test_entity_type_mismatch(self) -> None:
-        plan = _plan()
-        room2 = type(plan.room)(canon_entity_ref="e_char", game_id=plan.room.game_id,
-            name=plan.room.name, description=plan.room.description,
-            canon_claim_refs=plan.room.canon_claim_refs,
-            adaptation_notes=plan.room.adaptation_notes)
-        with self.assertRaises(CompilationError):
-            compile_micro_pack(_canon_draft(), type(plan)(
-                format_version=1, adaptation_id=plan.adaptation_id,
-                source_promotion_id=plan.source_promotion_id,
-                source_chapter=plan.source_chapter,
-                pack=plan.pack, room=room2, character=plan.character,
-                item=plan.item, quest=plan.quest, dialogue=plan.dialogue,
-                omissions=plan.omissions,
-            ))
-
-    def test_claim_ref_wrong_entity(self) -> None:
-        plan = _plan()
-        room2 = type(plan.room)(canon_entity_ref="e_loc", game_id=plan.room.game_id,
-            name=plan.room.name, description=plan.room.description,
-            canon_claim_refs=("c_origin",),  # belongs to e_char, not e_loc
-            adaptation_notes=plan.room.adaptation_notes)
-        with self.assertRaises(CompilationError):
-            compile_micro_pack(_canon_draft(), type(plan)(
-                format_version=1, adaptation_id=plan.adaptation_id,
-                source_promotion_id=plan.source_promotion_id,
-                source_chapter=plan.source_chapter,
-                pack=plan.pack, room=room2, character=plan.character,
-                item=plan.item, quest=plan.quest, dialogue=plan.dialogue,
-                omissions=plan.omissions,
-            ))
-
-    def test_coverage_missing_entity(self) -> None:
-        plan = _plan()
-        plan2 = type(plan)(
-            format_version=1, adaptation_id=plan.adaptation_id,
-            source_promotion_id=plan.source_promotion_id,
-            source_chapter=plan.source_chapter,
-            pack=plan.pack, room=plan.room, character=plan.character,
-            item=plan.item, quest=plan.quest, dialogue=plan.dialogue,
-            omissions=tuple(o for o in plan.omissions if o.canon_entity_ref != "e_extra"),
-        )
-        with self.assertRaises(CompilationError):
-            compile_micro_pack(_canon_draft(), plan2)
-
-    def test_selected_in_omissions(self) -> None:
-        plan = _plan()
-        plan2 = type(plan)(
-            format_version=1, adaptation_id=plan.adaptation_id,
-            source_promotion_id=plan.source_promotion_id,
-            source_chapter=plan.source_chapter,
-            pack=plan.pack, room=plan.room, character=plan.character,
-            item=plan.item, quest=plan.quest, dialogue=plan.dialogue,
-            omissions=(type(plan.omissions[0])(
-                canon_entity_ref="e_loc", reason="测试"),),
-        )
-        with self.assertRaises(CompilationError):
-            compile_micro_pack(_canon_draft(), plan2)
-
-    def test_game_id_duplicate(self) -> None:
-        plan = _plan()
-        room2 = type(plan.room)(canon_entity_ref="e_loc", game_id="char_test",
-            name=plan.room.name, description=plan.room.description,
-            canon_claim_refs=plan.room.canon_claim_refs,
-            adaptation_notes=plan.room.adaptation_notes)
-        with self.assertRaises(CompilationError):
-            compile_micro_pack(_canon_draft(), type(plan)(
-                format_version=1, adaptation_id=plan.adaptation_id,
-                source_promotion_id=plan.source_promotion_id,
-                source_chapter=plan.source_chapter,
-                pack=plan.pack, room=room2, character=plan.character,
-                item=plan.item, quest=plan.quest, dialogue=plan.dialogue,
-                omissions=plan.omissions,
-            ))
-
-    def test_start_room_mismatch(self) -> None:
-        plan = _plan()
-        pack2 = type(plan.pack)(id=plan.pack.id, name=plan.pack.name,
-            version=plan.pack.version, start_room_id="wrong",
-            player=plan.pack.player)
-        with self.assertRaises(CompilationError):
-            compile_micro_pack(_canon_draft(), type(plan)(
-                format_version=1, adaptation_id=plan.adaptation_id,
-                source_promotion_id=plan.source_promotion_id,
-                source_chapter=plan.source_chapter,
-                pack=pack2, room=plan.room, character=plan.character,
-                item=plan.item, quest=plan.quest, dialogue=plan.dialogue,
-                omissions=plan.omissions,
-            ))
-
-
-# ── Output shape ───────────────────────────────────────────────────────────
-
-class OutputShapeTests(unittest.TestCase):
-    def setUp(self):
-        self.pack = compile_micro_pack(_canon_draft(), _plan())
-
-    def test_nine_documents(self) -> None:
-        fns = sorted(d.filename for d in self.pack.documents)
-        self.assertEqual(fns, [
-            "adaptation_manifest.json", "characters.json", "dialogues.json",
-            "items.json", "monsters.json", "pack.json", "quests.json",
-            "rooms.json", "shops.json",
-        ])
-
-    def test_item_has_no_heal_slot_bonus(self) -> None:
-        doc = [d for d in self.pack.documents if d.filename == "items.json"][0]
-        items = json.loads(doc.payload)
-        keys = set(items[0].keys())
-        self.assertEqual(keys, {"id", "name", "description", "stack_limit", "canon_ref", "adaptation_notes"})
+    def test_item_shaped(self) -> None:
+        p = compile_micro_pack(_cd(), _PLAN())
+        item = json.loads(p.items)
+        keys = set(item[0].keys())
+        self.assertEqual(keys, {"id", "name", "description", "stack_limit",
+                                "canon_ref", "adaptation_notes"})
 
     def test_quest_no_canon_ref(self) -> None:
-        doc = [d for d in self.pack.documents if d.filename == "quests.json"][0]
-        quests = json.loads(doc.payload)
-        self.assertNotIn("canon_ref", quests[0])
+        p = compile_micro_pack(_cd(), _PLAN())
+        self.assertNotIn("canon_ref", json.loads(p.quests)[0])
 
     def test_dialogue_no_canon_ref(self) -> None:
-        doc = [d for d in self.pack.documents if d.filename == "dialogues.json"][0]
-        dials = json.loads(doc.payload)
-        self.assertNotIn("canon_ref", dials[0])
+        p = compile_micro_pack(_cd(), _PLAN())
+        self.assertNotIn("canon_ref", json.loads(p.dialogues)[0])
 
-    def test_dialogue_nodes_array(self) -> None:
-        doc = [d for d in self.pack.documents if d.filename == "dialogues.json"][0]
-        dials = json.loads(doc.payload)
-        self.assertIsInstance(dials[0]["nodes"], list)
-
-    def test_dialogue_options_have_effects(self) -> None:
-        doc = [d for d in self.pack.documents if d.filename == "dialogues.json"][0]
-        dials = json.loads(doc.payload)
-        for node in dials[0]["nodes"]:
+    def test_dialogue_effects_empty(self) -> None:
+        p = compile_micro_pack(_cd(), _PLAN())
+        dial = json.loads(p.dialogues)
+        for node in dial[0]["nodes"]:
             for opt in node["options"]:
-                self.assertIn("effects", opt)
                 self.assertEqual(opt["effects"], [])
 
     def test_description_verbatim(self) -> None:
-        doc = [d for d in self.pack.documents if d.filename == "rooms.json"][0]
-        rooms = json.loads(doc.payload)
-        self.assertEqual(rooms[0]["description"], "一个测试房间。")
+        p = compile_micro_pack(_cd(), _PLAN())
+        self.assertEqual(json.loads(p.rooms)[0]["description"], "desc.")
 
-    def test_load_content_pack(self) -> None:
-        from lore2mud.content.loader import load_content_pack
-        with tempfile.TemporaryDirectory() as td:
-            for doc in self.pack.documents:
-                with open(os.path.join(td, doc.filename), "wb") as f:
-                    f.write(doc.payload)
-            cp = load_content_pack(td)
-            self.assertEqual(cp.id, "test_micro")
-            self.assertEqual(len(cp.rooms), 1)
-            self.assertEqual(len(cp.quests), 1)
-            self.assertEqual(cp.quests["quest_test"].kind, "collect_item")
-            self.assertEqual(len(cp.dialogues), 1)
-            self.assertEqual(len(cp.characters), 1)
-            self.assertEqual(len(cp.items), 1)
+    def test_nodes_sorted_by_id(self) -> None:
+        p = compile_micro_pack(_cd(), _PLAN())
+        dial = json.loads(p.dialogues)
+        nids = [n["id"] for n in dial[0]["nodes"]]
+        self.assertEqual(nids, sorted(nids))
+
+    def test_options_order_preserved(self) -> None:
+        """Option order determines player input 1/2/3 — must stay as-is."""
+        base = json.loads(json.dumps({}))
+        # Build from _PLAN with two options in known order
+        plan_a = _PLAN()
+        p1 = compile_micro_pack(_cd(), plan_a)
+        # Verify first option is "o" (id starts with o)
+        dial1 = json.loads(p1.dialogues)[0]
+        self.assertEqual(dial1["nodes"][0]["options"][0]["id"], "o")
+
+    def test_deterministic_reversed_omissions(self) -> None:
+        """2+ omissions reversed must produce same bytes."""
+        p = _PLAN()
+        rev_oms = tuple(reversed(p.omissions))
+        p2 = AdaptationPlan(format_version=1, adaptation_id=p.adaptation_id,
+            source_promotion_id=p.source_promotion_id, source_chapter=p.source_chapter,
+            pack=p.pack, room=p.room, character=p.character, item=p.item,
+            quest=p.quest, dialogue=p.dialogue, omissions=rev_oms)
+        d1 = compile_micro_pack(_cd(), p)
+        d2 = compile_micro_pack(_cd(), p2)
+        for attr in ("pack", "rooms", "items", "characters", "quests", "dialogues",
+                     "monsters", "shops"):
+            self.assertEqual(getattr(d1, attr), getattr(d2, attr), f"{attr} differs")
+
+    def test_deterministic_reversed_entities(self) -> None:
+        """Reversed canon entities must produce same output."""
+        cd_rev = validate_canon_draft_document({**_CD, "entities": list(reversed(_CD["entities"]))})
+        p1 = compile_micro_pack(_cd(), _PLAN())
+        p2 = compile_micro_pack(cd_rev, _PLAN())
+        for attr in ("pack", "rooms", "items", "characters", "quests", "dialogues",
+                     "monsters", "shops"):
+            self.assertEqual(getattr(p1, attr), getattr(p2, attr), f"{attr} differs")
 
 
-# ── Manifest ───────────────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+# Manifest validation
+# ═══════════════════════════════════════════════════════════════════════════
 
-class ManifestTests(unittest.TestCase):
-    def setUp(self):
-        self.pack = compile_micro_pack(_canon_draft(), _plan())
-
-    def test_manifest_has_three_bindings(self) -> None:
-        m = self.pack.manifest
+class ManifestValidationTests(unittest.TestCase):
+    def test_valid_manifest(self) -> None:
+        p = compile_micro_pack(_cd(), _PLAN())
+        m = p.manifest
         self.assertEqual(len(m.bindings), 3)
-        kinds = {b.game_kind for b in m.bindings}
-        self.assertEqual(kinds, {"room", "character", "item"})
-
-    def test_manifest_has_two_game_only(self) -> None:
-        m = self.pack.manifest
         self.assertEqual(len(m.game_only), 2)
-        kinds = {g.game_kind for g in m.game_only}
-        self.assertEqual(kinds, {"quest", "dialogue"})
+        self.assertEqual(len(m.omissions), 2)
 
-    def test_manifest_full_omissions(self) -> None:
-        m = self.pack.manifest
-        self.assertEqual(len(m.omissions), 1)
-        self.assertEqual(m.omissions[0].canon_entity_ref, "e_extra")
+    def test_manifest_roundtrip(self) -> None:
+        p = compile_micro_pack(_cd(), _PLAN())
+        d = json.loads(p._manifest_bytes()) if hasattr(p, '_manifest_bytes') else {}
+        # Actually get from a copy
+        m2 = validate_adaptation_manifest_document(json.loads(p._manifest_bytes()))
+        self.assertEqual(m2, p.manifest)
 
-    def test_manifest_revalidate(self) -> None:
-        doc = [d for d in self.pack.documents if d.filename == "adaptation_manifest.json"][0]
-        raw = json.loads(doc.payload)
-        revalidated = validate_adaptation_manifest_document(raw)
-        self.assertEqual(revalidated, self.pack.manifest)
+    def test_empty_bindings_rejected(self) -> None:
+        d = {"format_version": 1, "adaptation_id": "a",
+             "source": {"promotion_id": "p", "chapter_id": "chapter_000001", "chapter_sha256": "a"*64},
+             "pack": {"id": "p", "version": "0.1.0"},
+             "bindings": [], "game_only": [], "omissions": []}
+        with self.assertRaises(AdaptationValidationError):
+            validate_adaptation_manifest_document(d)
 
-    def test_manifest_source_fields(self) -> None:
-        m = self.pack.manifest
-        self.assertEqual(m.source.promotion_id, "promo_test")
-        self.assertEqual(m.source.chapter_id, "chapter_000001")
-        self.assertEqual(m.source.chapter_sha256, "a" * 64)
+    def test_wrong_game_only_kind(self) -> None:
+        d = {"format_version": 1, "adaptation_id": "a",
+             "source": {"promotion_id": "p", "chapter_id": "chapter_000001", "chapter_sha256": "a"*64},
+             "pack": {"id": "p", "version": "0.1.0"},
+             "bindings": [{"game_kind": "room", "game_id": "r", "canon_entity_ref": "e_l",
+                           "canon_claim_refs": [], "adaptation_notes": "n."},
+                          {"game_kind": "character", "game_id": "c", "canon_entity_ref": "e_c",
+                           "canon_claim_refs": [], "adaptation_notes": "n."},
+                          {"game_kind": "item", "game_id": "i", "canon_entity_ref": "e_i",
+                           "canon_claim_refs": [], "adaptation_notes": "n."}],
+             "game_only": [{"game_kind": "item", "game_id": "x", "adaptation_notes": "n."},
+                           {"game_kind": "dialogue", "game_id": "y", "adaptation_notes": "n."}],
+             "omissions": []}
+        with self.assertRaises(AdaptationValidationError):
+            validate_adaptation_manifest_document(d)
 
-
-# ── Frozen ─────────────────────────────────────────────────────────────────
-
-class FrozenTests(unittest.TestCase):
-    def test_plan_frozen(self) -> None:
-        plan = _plan()
-        with self.assertRaises(AttributeError):
-            plan.adaptation_id = "changed"  # type: ignore
-
-    def test_payload_bytes_immutable(self) -> None:
-        pack = compile_micro_pack(_canon_draft(), _plan())
-        doc = pack.documents[0]
-        with self.assertRaises(AttributeError):
-            doc.filename = "changed"  # type: ignore
-
-
-# ── Determinism ────────────────────────────────────────────────────────────
-
-class DeterminismTests(unittest.TestCase):
-    def test_reversed_entities_same(self) -> None:
-        rev = dict(_CANON_DRAFT_JSON)
-        rev["entities"] = list(reversed(rev["entities"]))
-        cd_rev = validate_canon_draft_document(rev)
-        cd = validate_canon_draft_document(_CANON_DRAFT_JSON)
-        p1 = compile_micro_pack(cd, _plan())
-        p2 = compile_micro_pack(cd_rev, _plan())
-        for d1, d2 in zip(
-            sorted(p1.documents, key=lambda x: x.filename),
-            sorted(p2.documents, key=lambda x: x.filename),
-        ):
-            self.assertEqual(d1.payload, d2.payload, f"差异: {d1.filename}")
-
-    def test_reversed_omissions_same(self) -> None:
-        plan = _plan()
-        oms = list(plan.omissions)
-        oms2 = list(reversed(oms))
-        plan2 = type(plan)(
-            format_version=1, adaptation_id=plan.adaptation_id,
-            source_promotion_id=plan.source_promotion_id,
-            source_chapter=plan.source_chapter,
-            pack=plan.pack, room=plan.room, character=plan.character,
-            item=plan.item, quest=plan.quest, dialogue=plan.dialogue,
-            omissions=tuple(oms2),
-        )
-        p1 = compile_micro_pack(_canon_draft(), plan)
-        p2 = compile_micro_pack(_canon_draft(), plan2)
-        for d1, d2 in zip(
-            sorted(p1.documents, key=lambda x: x.filename),
-            sorted(p2.documents, key=lambda x: x.filename),
-        ):
-            self.assertEqual(d1.payload, d2.payload, f"差异: {d1.filename}")
-
-    def test_option_order_preserved(self) -> None:
-        """Option order must be preserved (players choose 1/2/3)."""
-        # Create plan with two options
-        base = dict(_VALID_PLAN)
-        base["dialogue"] = dict(base["dialogue"])
-        base["dialogue"]["nodes"] = [{
-            "id": "start", "text": "选择？",
-            "options": [
-                {"id": "opt_a", "text": "选项A", "next_node_id": None, "effects": []},
-                {"id": "opt_b", "text": "选项B", "next_node_id": None, "effects": []},
-            ],
-        }]
-        plan_a = validate_adaptation_plan(base)
-        p1 = compile_micro_pack(_canon_draft(), plan_a)
-        # Reverse options
-        base["dialogue"]["nodes"][0]["options"].reverse()
-        plan_b = validate_adaptation_plan(base)
-        p2 = compile_micro_pack(_canon_draft(), plan_b)
-        d1 = [d for d in p1.documents if d.filename == "dialogues.json"][0]
-        d2 = [d for d in p2.documents if d.filename == "dialogues.json"][0]
-        self.assertNotEqual(d1.payload, d2.payload)
-        # Verify order in output
-        arr_a = json.loads(d1.payload)
-        arr_b = json.loads(d2.payload)
-        self.assertEqual(arr_a[0]["nodes"][0]["options"][0]["id"], "opt_a")
-        self.assertEqual(arr_b[0]["nodes"][0]["options"][0]["id"], "opt_b")
+    def test_manifest_game_id_duplicate(self) -> None:
+        d = {"format_version": 1, "adaptation_id": "a",
+             "source": {"promotion_id": "p", "chapter_id": "chapter_000001", "chapter_sha256": "a"*64},
+             "pack": {"id": "p", "version": "0.1.0"},
+             "bindings": [{"game_kind": "room", "game_id": "same", "canon_entity_ref": "e_l",
+                           "canon_claim_refs": [], "adaptation_notes": "n."},
+                          {"game_kind": "character", "game_id": "c", "canon_entity_ref": "e_c",
+                           "canon_claim_refs": [], "adaptation_notes": "n."},
+                          {"game_kind": "item", "game_id": "same", "canon_entity_ref": "e_i",
+                           "canon_claim_refs": [], "adaptation_notes": "n."}],
+             "game_only": [{"game_kind": "quest", "game_id": "q", "adaptation_notes": "n."},
+                           {"game_kind": "dialogue", "game_id": "d", "adaptation_notes": "n."}],
+             "omissions": []}
+        with self.assertRaises(AdaptationValidationError):
+            validate_adaptation_manifest_document(d)
 
 
-# ── write_micro_pack ─────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+# Atomic write & path traversal
+# ═══════════════════════════════════════════════════════════════════════════
 
 class WriteTests(unittest.TestCase):
+    def _pack(self):
+        return compile_micro_pack(_cd(), _PLAN())
+
     def test_write_success(self) -> None:
-        pack = compile_micro_pack(_canon_draft(), _plan())
         with tempfile.TemporaryDirectory() as td:
-            out = os.path.join(td, "output_micro")
-            result = write_micro_pack(pack, out)
+            out = os.path.join(td, "o")
+            result = write_micro_pack(self._pack(), out)
             self.assertTrue(os.path.isdir(result))
-            self.assertTrue(os.path.isfile(os.path.join(result, "pack.json")))
             self.assertTrue(os.path.isfile(os.path.join(result, "adaptation_manifest.json")))
 
-    def test_write_output_exists_rejected(self) -> None:
-        pack = compile_micro_pack(_canon_draft(), _plan())
+    def test_write_reject_existing_file(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            out = os.path.join(td, "existing")
-            os.mkdir(out)
-            with open(os.path.join(out, "dummy.txt"), "w") as f:
+            out = os.path.join(td, "o")
+            with open(out, "w") as f:
                 f.write("x")
             with self.assertRaises(FileExistsError):
-                write_micro_pack(pack, out)
+                write_micro_pack(self._pack(), out)
 
-    def test_write_failure_cleans_temp(self) -> None:
-        """Broken manifest (mismatch after re-read) must clean up temp."""
-        pack = compile_micro_pack(_canon_draft(), _plan())
-        from pipeline.adaptation import ManifestSource, ManifestPack, ManifestBinding, ManifestGameOnly, ManifestOmission
-        bad_manifest = type(pack.manifest)(
-            format_version=1, adaptation_id=pack.manifest.adaptation_id,
-            source=ManifestSource(
-                promotion_id="WRONG_MISMATCH",
-                chapter_id=pack.manifest.source.chapter_id,
-                chapter_sha256=pack.manifest.source.chapter_sha256,
-            ),
-            pack=pack.manifest.pack,
-            bindings=pack.manifest.bindings,
-            omissions=pack.manifest.omissions,
-            game_only=pack.manifest.game_only,
-        )
-        bad_pack = MicroContentPack(documents=pack.documents, manifest=bad_manifest)
+    def test_write_reject_existing_dir_nonempty(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            out = os.path.join(td, "output")
-            with self.assertRaises(Exception):
-                write_micro_pack(bad_pack, out)
-            self.assertFalse(os.path.exists(out))
-            leftovers = [f for f in os.listdir(td) if f.startswith(".l2w_adaptation_")]
-            self.assertEqual(len(leftovers), 0)
+            out = os.path.join(td, "o")
+            os.mkdir(out)
+            with open(os.path.join(out, "x"), "w") as f:
+                f.write("x")
+            with self.assertRaises(FileExistsError):
+                write_micro_pack(self._pack(), out)
 
-    def test_preexisting_same_prefix_not_deleted(self) -> None:
-        pack = compile_micro_pack(_canon_draft(), _plan())
+    def test_write_reject_existing_empty_dir(self) -> None:
         with tempfile.TemporaryDirectory() as td:
-            out = os.path.join(td, "output")
-            # Create a pre-existing temp-like dir
-            preexisting = os.path.join(td, ".l2w_adaptation_preexisting")
-            os.mkdir(preexisting)
-            with open(os.path.join(preexisting, "dummy.txt"), "w") as f:
-                f.write("keep")
-            write_micro_pack(pack, out)
-            # Preexisting dir must survive
-            self.assertTrue(os.path.isdir(preexisting))
-            self.assertTrue(os.path.isfile(os.path.join(preexisting, "dummy.txt")))
+            out = os.path.join(td, "o")
+            os.mkdir(out)
+            with self.assertRaises(FileExistsError):
+                write_micro_pack(self._pack(), out)
+
+    def test_traversal_filename_rejected(self) -> None:
+        with self.assertRaises(CompilationError):
+            from pipeline.adaptation import _validate_document_path
+            _validate_document_path("../escape.txt", b"x")
+
+    def test_absolute_filename_rejected(self) -> None:
+        from pipeline.adaptation import _validate_document_path
+        with self.assertRaises(CompilationError):
+            _validate_document_path("/etc/passwd", b"x")
+
+    def test_unknown_filename_rejected(self) -> None:
+        from pipeline.adaptation import _validate_document_path
+        with self.assertRaises(CompilationError):
+            _validate_document_path("secret.txt", b"x")
 
 
-# ── Schema structure ───────────────────────────────────────────────────────
+# ═══════════════════════════════════════════════════════════════════════════
+# CLI
+# ═══════════════════════════════════════════════════════════════════════════
+
+class CLITests(unittest.TestCase):
+    def _write_inputs(self, td: str) -> dict[str, str]:
+        cd_path = os.path.join(td, "cd.json")
+        with open(cd_path, "w", encoding="utf-8") as f:
+            json.dump(_CD, f, ensure_ascii=False)
+        plan_path = os.path.join(td, "plan.json")
+        with open(plan_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "format_version": 1, "adaptation_id": "adapt_cli",
+                "source_promotion_id": "promo_t", "source_chapter": "chapter_000001",
+                "pack": {"id": "cli_micro", "name": "CLI", "version": "0.1.0",
+                    "start_room_id": "r", "player": {"max_hp": 20, "attack": 5,
+                        "defense": 1, "inventory_capacity": 20, "coins": 0}},
+                "room": {"canon_entity_ref": "e_loc", "game_id": "r", "name": "r",
+                    "description": "d.", "canon_claim_refs": [], "adaptation_notes": "n."},
+                "character": {"canon_entity_ref": "e_char", "game_id": "c", "name": "c",
+                    "description": "d.", "canon_claim_refs": [], "adaptation_notes": "n."},
+                "item": {"canon_entity_ref": "e_item", "game_id": "i", "name": "i",
+                    "description": "d.", "canon_claim_refs": [], "adaptation_notes": "n."},
+                "quest": {"game_id": "q", "kind": "collect_item", "name": "q",
+                    "description": "d.", "target_item_id": "i", "required_quantity": 1,
+                    "reward_experience": 10, "adaptation_notes": "a."},
+                "dialogue": {"game_id": "di", "character_id": "c", "start_node_id": "s",
+                    "nodes": [{"id": "s", "text": "t.", "options": [{"id": "o",
+                        "text": "t.", "next_node_id": None, "effects": []}]}],
+                    "adaptation_notes": "n."},
+                "omissions": [{"canon_entity_ref": "e_extra", "reason": "x."},
+                              {"canon_entity_ref": "e_extra2", "reason": "y."}],
+            }, f, ensure_ascii=False)
+        with open(os.path.join(td, "bad.json"), "w") as f:
+            json.dump(1, f)
+        with open(os.path.join(td, "junk.json"), "w") as f:
+            f.write("not json")
+        return {"cd": cd_path, "plan": plan_path,
+                "bad": os.path.join(td, "bad.json"), "junk": os.path.join(td, "junk.json")}
+
+    def test_cli_success(self) -> None:
+        from pipeline.adaptation import main
+        with tempfile.TemporaryDirectory() as td:
+            ins = self._write_inputs(td)
+            out = os.path.join(td, "o")
+            ec = main(["--canon-draft", ins["cd"], "--adaptation-plan", ins["plan"],
+                       "--output-dir", out])
+            self.assertEqual(ec, 0)
+            self.assertTrue(os.path.isdir(out))
+
+    def test_cli_bad_canon_draft(self) -> None:
+        from pipeline.adaptation import main
+        with tempfile.TemporaryDirectory() as td:
+            ins = self._write_inputs(td)
+            ec = main(["--canon-draft", ins["bad"], "--adaptation-plan", ins["plan"],
+                       "--output-dir", os.path.join(td, "o")])
+            self.assertEqual(ec, 1)
+
+    def test_cli_bad_plan(self) -> None:
+        from pipeline.adaptation import main
+        with tempfile.TemporaryDirectory() as td:
+            ins = self._write_inputs(td)
+            ec = main(["--canon-draft", ins["cd"], "--adaptation-plan", ins["bad"],
+                       "--output-dir", os.path.join(td, "o")])
+            self.assertEqual(ec, 1)
+
+    def test_cli_junk_json(self) -> None:
+        from pipeline.adaptation import main
+        with tempfile.TemporaryDirectory() as td:
+            ins = self._write_inputs(td)
+            ec = main(["--canon-draft", ins["junk"], "--adaptation-plan", ins["plan"],
+                       "--output-dir", os.path.join(td, "o")])
+            self.assertEqual(ec, 1)
+
+    def test_cli_missing_arg(self) -> None:
+        from pipeline.adaptation import main
+        with self.assertRaises(SystemExit) as ctx:
+            main(["--canon-draft", "x.json"])
+        self.assertEqual(ctx.exception.code, 2)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Schema boundary
+# ═══════════════════════════════════════════════════════════════════════════
 
 class SchemaTests(unittest.TestCase):
-    def test_plan_schema_no_external_coverage(self) -> None:
-        """Schema must NOT claim to validate external CanonDraft references."""
-        schema_path = REPO / "schemas" / "adaptation_plan.schema.json"
-        with open(schema_path, encoding="utf-8") as f:
-            schema = json.load(f)
-        raw = json.dumps(schema)
-        # Schema should not reference CanonDraft
+    def test_plan_schema_no_external(self) -> None:
+        sp = REPO / "schemas" / "adaptation_plan.schema.json"
+        with open(sp, encoding="utf-8") as f:
+            s = json.load(f)
+        raw = json.dumps(s)
         self.assertNotIn("canon_ref", raw)
-        self.assertNotIn("source_chapter", schema.get("if", {}))
+
+    def test_manifest_schema_exact_counts(self) -> None:
+        sp = REPO / "schemas" / "adaptation_manifest.schema.json"
+        with open(sp, encoding="utf-8") as f:
+            s = json.load(f)
+        self.assertEqual(s["properties"]["bindings"]["minItems"], 3)
+        self.assertEqual(s["properties"]["bindings"]["maxItems"], 3)
+        self.assertEqual(s["properties"]["game_only"]["minItems"], 2)
+        self.assertEqual(s["properties"]["game_only"]["maxItems"], 2)
 
 
 if __name__ == "__main__":

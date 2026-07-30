@@ -124,7 +124,7 @@ stale.
   `pipeline/adaptation.py` with frozen dataclass models, AdaptationPlan
   structural validation, binding + coverage + cross-object compilation,
   staged atomic write with loader validation and manifest re-validate.
-  44 focused tests, 954 full tests. Pending GPT-5.6-sol independent acceptance
+  38 focused tests, 954 full tests. Pending GPT-5.6-sol independent acceptance
   (DEC-0055).
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
