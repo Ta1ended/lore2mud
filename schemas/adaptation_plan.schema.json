@@ -1,0 +1,105 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/adaptation_plan.schema.json",
+  "title": "Adaptation Plan v1",
+  "description": "A v1 adaptation plan mapping a CanonDraft to a micro content pack.",
+  "type": "object",
+  "required": ["format_version", "adaptation_id", "source_promotion_id", "source_chapter",
+    "pack", "room", "character", "item", "quest", "dialogue", "omissions"],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": { "const": 1 },
+    "adaptation_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "source_promotion_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "source_chapter": { "type": "string", "pattern": "^chapter_[0-9]{6}$" },
+    "pack": { "$ref": "#/$defs/pack" },
+    "room": { "$ref": "#/$defs/entity_adaptation" },
+    "character": { "$ref": "#/$defs/entity_adaptation" },
+    "item": { "$ref": "#/$defs/entity_adaptation" },
+    "quest": { "$ref": "#/$defs/quest_adaptation" },
+    "dialogue": { "$ref": "#/$defs/dialogue_adaptation" },
+    "omissions": { "type": "array", "items": { "$ref": "#/$defs/omission" } }
+  },
+  "$defs": {
+    "stable_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "non_blank": { "type": "string", "pattern": "\\S" },
+    "entity_adaptation": {
+      "type": "object",
+      "required": ["canon_entity_ref", "game_id", "name", "description", "canon_claim_refs", "adaptation_notes"],
+      "additionalProperties": false,
+      "properties": {
+        "canon_entity_ref": { "$ref": "#/$defs/stable_id" },
+        "game_id": { "$ref": "#/$defs/stable_id" },
+        "name": { "$ref": "#/$defs/non_blank" },
+        "description": { "$ref": "#/$defs/non_blank" },
+        "canon_claim_refs": { "type": "array", "items": { "$ref": "#/$defs/stable_id" } },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "quest_adaptation": {
+      "type": "object",
+      "required": ["game_id", "kind", "name", "description", "target_item_id", "required_quantity", "reward_experience", "adaptation_notes"],
+      "additionalProperties": false,
+      "properties": {
+        "game_id": { "$ref": "#/$defs/stable_id" },
+        "kind": { "const": "collect_item" },
+        "name": { "$ref": "#/$defs/non_blank" },
+        "description": { "$ref": "#/$defs/non_blank" },
+        "target_item_id": { "$ref": "#/$defs/stable_id" },
+        "required_quantity": { "type": "integer", "minimum": 1 },
+        "reward_experience": { "type": "integer", "minimum": 1 },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "dialogue_adaptation": {
+      "type": "object",
+      "required": ["game_id", "character_id", "start_node_id", "nodes", "adaptation_notes"],
+      "additionalProperties": false,
+      "properties": {
+        "game_id": { "$ref": "#/$defs/stable_id" },
+        "character_id": { "$ref": "#/$defs/stable_id" },
+        "start_node_id": { "type": "string", "pattern": "\\S" },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/dialogue_node" }
+        },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "dialogue_node": {
+      "type": "object",
+      "required": ["id", "text", "options"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "\\S" },
+        "text": { "$ref": "#/$defs/non_blank" },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/dialogue_option" }
+        }
+      }
+    },
+    "dialogue_option": {
+      "type": "object",
+      "required": ["id", "text", "next_node_id", "effects"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "type": "string", "pattern": "\\S" },
+        "text": { "$ref": "#/$defs/non_blank" },
+        "next_node_id": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "\\S" }] },
+        "effects": { "type": "array", "maxItems": 0 }
+      }
+    },
+    "omission": {
+      "type": "object",
+      "required": ["canon_entity_ref", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "canon_entity_ref": { "$ref": "#/$defs/stable_id" },
+        "reason": { "$ref": "#/$defs/non_blank" }
+      }
+    }
+  }
+}

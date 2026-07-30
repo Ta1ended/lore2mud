@@ -127,6 +127,12 @@ manifest v2 校验规范见 [chapter_manifest_format.md](chapter_manifest_format
 通过审核的 accepted claims 可经人工 PromotionPlan 确定性生成为 canon 草稿。
 格式规范见 [canon_draft_format.md](canon_draft_format.md)。
 
+### L2W-2：改编为 micro vignette
+
+CanonDraft 可通过显式 AdaptationPlan 编译为可玩的微型内容包（一房间、一角色、
+一物品、一叙事对话、一自动接取任务）。格式规范见
+[adaptation_plan_format.md](adaptation_plan_format.md)。
+
 ## 第三步：实体归并
 
 中央注册表负责稳定 ID。子 Agent 可以并行提取候选，但不能各自永久决定实体

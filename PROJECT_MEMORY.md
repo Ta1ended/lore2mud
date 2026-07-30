@@ -118,8 +118,14 @@ stale.
   `origin/main`=`a55c7d8`.
 - L2W-1 canon draft promotion implemented by Hermes (2026-07-30):
   `pipeline/canon.py` with frozen dataclass models, promotion closure logic,
-  CLI with atomic write. 35 focused tests, 895 full tests. Pending GPT-5.6-sol
-  independent acceptance (DEC-0052).
+  CLI with atomic write. 50 focused, 910 full tests. GPT-5.6-sol independently
+  accepted GO (DEC-0054).
+- L2W-2 micro content pack compilation implemented by Hermes (2026-07-30):
+  `pipeline/adaptation.py` with frozen dataclass models, AdaptationPlan
+  structural validation, binding + coverage + cross-object compilation,
+  staged atomic write with loader validation and manifest re-validate.
+  44 focused tests, 954 full tests. Pending GPT-5.6-sol independent acceptance
+  (DEC-0055).
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

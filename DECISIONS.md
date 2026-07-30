@@ -1263,3 +1263,27 @@
 - Consequences: L2W-1 scope is complete. Cross-chapter merging, formal canon
   registry, and game adaptation remain for future slices.
 - Supersedes: None. Does not authorize L2W-2 or any subsequent work.
+
+## DEC-0055: L2W-2 micro content pack compilation from canon draft
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: After L2W-1 GO, the project owner authorized L2W-2: compile a
+  fixed micro-vignette content pack (1 room, 1 character, 1 plain item,
+  1 no-effects dialogue, 1 auto-accepted collect_item quest) from a
+  CanonDraft + explicit AdaptationPlan.
+- Decision: (a) New `pipeline/adaptation.py` with frozen data models,
+  `validate_adaptation_plan()` (structural), `compile_micro_pack()`
+  (binding + coverage + cross-object references), `write_micro_pack()`
+  (staged write + loader validate + manifest revalidate + atomic publish),
+  and CLI `main()`. (b) `MicroContentPack` uses `tuple[CompiledDocument,...]`
+  for deep immutability. (c) Text fields copied verbatim from plan. (d) Item
+  output excludes heal/slot/bonus fields. (e) Quest auto-accepted via
+  trigger_room. (f) Dialogue effects=[]. (g) adaptation_manifest.json sidecar.
+  (h) Atomic publish rejects any existing output path. (i) 44 focused tests.
+- Consequences: L2W-2 scope is complete. Pending GPT-5.6-sol independent
+  acceptance.
+- Evidence: `pipeline/adaptation.py`, `schemas/adaptation_plan.schema.json`,
+  `schemas/adaptation_manifest.schema.json`, `tests/test_adaptation.py`,
+  `tests/fixtures/adaptation/`, `docs/adaptation_plan_format.md`.
+- Supersedes: None.

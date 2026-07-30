@@ -4,6 +4,18 @@
 
 ### Added
 
+- Added micro content pack compilation (L2W-2): `pipeline/adaptation.py` with
+  frozen `AdaptationPlan`, `AdaptationManifest`, `MicroContentPack`,
+  `CompiledDocument` dataclass models, `validate_adaptation_plan()`,
+  `compile_micro_pack()`, `write_micro_pack()` (atomic, staged),
+  `validate_adaptation_manifest_document()`, and deterministic `main()` CLI.
+  44 focused tests. Adaptation plan single-object profile (1 room/character/
+  item/quest/dialogue). Item output excludes heal/slot/bonus fields. Quest
+  auto-accepted via trigger_room. Dialogue effects=[]. Full provenance via
+  adaptation_manifest.json sidecar.
+- Added `schemas/adaptation_plan.schema.json` and
+  `schemas/adaptation_manifest.schema.json` (draft 2020-12).
+- Added `docs/adaptation_plan_format.md`.
 - Added canon draft promotion (L2W-1): `pipeline/canon.py` with frozen
   `PromotionPlan`, `CanonDraft`, `CanonEntity`, `CanonClaim` dataclass models,
   `validate_canon_promotion_plan()`, `build_canon_draft()`,
