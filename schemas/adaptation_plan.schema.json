@@ -9,8 +9,8 @@
   "additionalProperties": false,
   "properties": {
     "format_version": { "const": 1 },
-    "adaptation_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
-    "source_promotion_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
+    "adaptation_id": { "$ref": "#/$defs/stable_id" },
+    "source_promotion_id": { "$ref": "#/$defs/stable_id" },
     "source_chapter": { "type": "string", "pattern": "^chapter_[0-9]{6}$" },
     "pack": { "$ref": "#/$defs/pack" },
     "room": { "$ref": "#/$defs/entity_adaptation" },
@@ -23,6 +23,29 @@
   "$defs": {
     "stable_id": { "type": "string", "pattern": "^[a-z][a-z0-9_]*$" },
     "non_blank": { "type": "string", "pattern": "\\S" },
+    "pack": {
+      "type": "object",
+      "required": ["id", "name", "version", "start_room_id", "player"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/stable_id" },
+        "name": { "$ref": "#/$defs/non_blank" },
+        "version": { "type": "string" },
+        "start_room_id": { "$ref": "#/$defs/stable_id" },
+        "player": {
+          "type": "object",
+          "required": ["max_hp", "attack", "defense", "inventory_capacity", "coins"],
+          "additionalProperties": false,
+          "properties": {
+            "max_hp": { "type": "integer", "minimum": 1 },
+            "attack": { "type": "integer", "minimum": 1 },
+            "defense": { "type": "integer", "minimum": 0 },
+            "inventory_capacity": { "type": "integer", "minimum": 1 },
+            "coins": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
     "entity_adaptation": {
       "type": "object",
       "required": ["canon_entity_ref", "game_id", "name", "description", "canon_claim_refs", "adaptation_notes"],
@@ -38,7 +61,8 @@
     },
     "quest_adaptation": {
       "type": "object",
-      "required": ["game_id", "kind", "name", "description", "target_item_id", "required_quantity", "reward_experience", "adaptation_notes"],
+      "required": ["game_id", "kind", "name", "description", "target_item_id",
+        "required_quantity", "reward_experience", "adaptation_notes"],
       "additionalProperties": false,
       "properties": {
         "game_id": { "$ref": "#/$defs/stable_id" },
@@ -58,7 +82,7 @@
       "properties": {
         "game_id": { "$ref": "#/$defs/stable_id" },
         "character_id": { "$ref": "#/$defs/stable_id" },
-        "start_node_id": { "type": "string", "pattern": "\\S" },
+        "start_node_id": { "$ref": "#/$defs/stable_id" },
         "nodes": {
           "type": "array",
           "minItems": 1,
@@ -72,7 +96,7 @@
       "required": ["id", "text", "options"],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "\\S" },
+        "id": { "$ref": "#/$defs/stable_id" },
         "text": { "$ref": "#/$defs/non_blank" },
         "options": {
           "type": "array",
@@ -86,9 +110,9 @@
       "required": ["id", "text", "next_node_id", "effects"],
       "additionalProperties": false,
       "properties": {
-        "id": { "type": "string", "pattern": "\\S" },
+        "id": { "$ref": "#/$defs/stable_id" },
         "text": { "$ref": "#/$defs/non_blank" },
-        "next_node_id": { "oneOf": [{ "type": "null" }, { "type": "string", "pattern": "\\S" }] },
+        "next_node_id": { "oneOf": [{ "type": "null" }, { "$ref": "#/$defs/stable_id" }] },
         "effects": { "type": "array", "maxItems": 0 }
       }
     },

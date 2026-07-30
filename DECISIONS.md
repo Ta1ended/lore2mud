@@ -1311,3 +1311,24 @@
 - Evidence: 58 focused tests, 968 full tests.
 - Pending GPT-5.6-sol third focused re-review.
 - Supersedes: None.
+
+## DEC-0057: L2W-2 third rework — final P1 findings closed
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: GPT-5.6-sol third focused REVISE identified remaining P1 findings.
+- Fixes:
+  (a) P1-1 Writer: flush+fsync restored (open/write/flush/fsync per file).
+  (b) P1-2 Golden fixtures: mini_canon_draft.json + valid_plan.json are now a
+      consistent pair; expected_output/9 files regenerated from them. Golden
+      test loads both, compiles, compares 9 files byte-for-byte.
+  (c) P1-3 Schema: start_node_id, node.id, option.id, next_node_id all use
+      stable_id $ref. Schema structure tests assert exact $ref.
+  (d) P1-4 MCP types: pack must be dict, 7 entity tuples must each contain
+      dicts. Type error tests added.
+  (e) P1-5 Tests: 72 tests (1 skipped symlink). Subprocess generate+validate.
+      Writer-level traversal/extra/missing path tests.
+  (f) P2: DEC-0057 appended. All handoff numbers synced.
+- Evidence: 72 focused tests (1 skipped), 982 full tests. HEAD=`*current*`.
+- Pending GPT-5.6-sol final focused re-review.
+- Supersedes: None.

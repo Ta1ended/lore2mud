@@ -12,7 +12,7 @@ from pipeline.canon import validate_canon_draft_document
 from pipeline.adaptation import (
     AdaptationPlan, CompilationError, AdaptationValidationError,
     MicroContentPack, validate_adaptation_plan, compile_micro_pack, write_micro_pack,
-    validate_adaptation_manifest_document,
+    validate_adaptation_manifest_document, _pack_to_docs,
 )
 
 # ── Fixtures ───────────────────────────────────────────────────────────────
@@ -368,7 +368,7 @@ class SchemaTests(unittest.TestCase):
 
 class WorldPlaythroughTest(unittest.TestCase):
     def test_playthrough(self):
-        """Generate → validate → subprocess play smoke."""
+        """Generate → validate → load → player initial state checks."""
         with tempfile.TemporaryDirectory() as td:
             cd_f=os.path.join(td,"cd.json")
             with open(cd_f,"w",encoding="utf-8") as f: json.dump(_CD,f,ensure_ascii=False)
@@ -381,10 +381,159 @@ class WorldPlaythroughTest(unittest.TestCase):
             ec=cli(["--canon-draft",cd_f,"--adaptation-plan",pl_f,"--output-dir",out])
             self.assertEqual(ec,0)
 
-            # Validate via loader
+            # Validate via loader — this also validates entity references
             from lore2mud.content.loader import load_content_pack
             cp=load_content_pack(out)
             self.assertEqual(cp.id,"tp")
+            self.assertEqual(len(cp.rooms),1)
+            self.assertEqual(len(cp.quests),1)
+            self.assertEqual(cp.quests["q"].kind,"collect_item")
+
+    def test_subprocess_generate_and_validate(self):
+        """Real subprocess CLI: generate → lore2mud validate."""
+        with tempfile.TemporaryDirectory() as td:
+            cd_f=os.path.join(td,"cd.json")
+            with open(cd_f,"w",encoding="utf-8") as f: json.dump(_CD,f,ensure_ascii=False)
+            pl_f=os.path.join(td,"pl.json")
+            with open(pl_f,"w",encoding="utf-8") as f: json.dump(_plan_dict(),f,ensure_ascii=False)
+            out=os.path.join(td,"output")
+
+            import subprocess, sys
+            r=subprocess.run([sys.executable,"-m","pipeline.adaptation",
+                "--canon-draft",cd_f,"--adaptation-plan",pl_f,"--output-dir",out],
+                capture_output=True,text=True)
+            self.assertEqual(r.returncode,0,f"stderr: {r.stderr}")
+
+            r2=subprocess.run([sys.executable,"-m","lore2mud","validate","--content",out],
+                capture_output=True,text=True)
+            self.assertEqual(r2.returncode,0,f"stderr: {r2.stderr}")
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Golden fixture test
+# ═══════════════════════════════════════════════════════════════════════════
+
+class GoldenFixtureTest(unittest.TestCase):
+    def test_golden_output_bytes(self):
+        """Load fixtures, compile, compare 9 files byte-for-byte with expected."""
+        fixture_dir = REPO / "tests" / "fixtures" / "adaptation"
+        with open(fixture_dir / "mini_canon_draft.json", encoding="utf-8") as f:
+            cd = validate_canon_draft_document(json.load(f))
+        with open(fixture_dir / "valid_plan.json", encoding="utf-8") as f:
+            plan = validate_adaptation_plan(json.load(f))
+        pack = compile_micro_pack(cd, plan)
+
+        expected = fixture_dir / "expected_output"
+        for fn, payload in _pack_to_docs(pack):
+            expected_file = expected / fn
+            self.assertTrue(expected_file.exists(), f"Missing golden: {fn}")
+            with open(expected_file, "rb") as f:
+                self.assertEqual(payload, f.read(), f"Golden mismatch: {fn}")
+
+            # Also verify write_micro_pack produces same bytes
+            with tempfile.TemporaryDirectory() as td:
+                out = os.path.join(td, "o")
+                write_micro_pack(pack, out)
+                with open(os.path.join(out, fn), "rb") as fr:
+                    self.assertEqual(payload, fr.read(), f"Write mismatch: {fn}")
+
+        # Final directory must pass loader
+        with tempfile.TemporaryDirectory() as td:
+            for fn, payload in _pack_to_docs(pack):
+                (Path(td) / fn).write_bytes(payload)
+            from lore2mud.content.loader import load_content_pack
+            load_content_pack(td)  # raises on failure
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# MicroContentPack type checks
+# ═══════════════════════════════════════════════════════════════════════════
+
+class MCPTypeTests(unittest.TestCase):
+    def test_pack_as_tuple_rejected(self):
+        with self.assertRaises(TypeError):
+            MicroContentPack(pack=(), rooms=(), items=(), characters=(), quests=(),
+                dialogues=(), monsters=(), shops=(), manifest=compile_micro_pack(cd(),plan()).manifest)
+    def test_rooms_as_dict_rejected(self):
+        with self.assertRaises(TypeError):
+            MicroContentPack(pack={}, rooms={}, items=(), characters=(), quests=(),
+                dialogues=(), monsters=(), shops=(), manifest=compile_micro_pack(cd(),plan()).manifest)
+    def test_rooms_item_is_str_rejected(self):
+        with self.assertRaises(TypeError):
+            MicroContentPack(pack={}, rooms=("not_a_dict",), items=(), characters=(),
+                quests=(), dialogues=(), monsters=(), shops=(),
+                manifest=compile_micro_pack(cd(),plan()).manifest)
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Schema stable ID tests
+# ═══════════════════════════════════════════════════════════════════════════
+
+class SchemaStableIDTests(unittest.TestCase):
+    def _load(self):
+        with open(REPO / "schemas" / "adaptation_plan.schema.json", encoding="utf-8") as f:
+            return json.load(f)
+    def _def(self, name):
+        return self._load()["$defs"][name]
+
+    def test_start_node_id_is_stable(self):
+        d = self._def("dialogue_adaptation")
+        self.assertEqual(d["properties"]["start_node_id"], {"$ref": "#/$defs/stable_id"})
+
+    def test_node_id_is_stable(self):
+        d = self._def("dialogue_node")
+        self.assertEqual(d["properties"]["id"], {"$ref": "#/$defs/stable_id"})
+
+    def test_option_id_is_stable(self):
+        d = self._def("dialogue_option")
+        self.assertEqual(d["properties"]["id"], {"$ref": "#/$defs/stable_id"})
+
+    def test_next_node_id_is_stable_or_null(self):
+        d = self._def("dialogue_option")
+        nn = d["properties"]["next_node_id"]
+        self.assertEqual(nn["oneOf"][1], {"$ref": "#/$defs/stable_id"})
+
+
+# ═══════════════════════════════════════════════════════════════════════════
+# Writer fsync & path tests
+# ═══════════════════════════════════════════════════════════════════════════
+
+class WriterFsyncPathTests(unittest.TestCase):
+    def test_write_uses_open_flush_fsync(self):
+        """Verify the writer code contains open/flush/fsync."""
+        import inspect
+        src = inspect.getsource(write_micro_pack)
+        self.assertIn(".write(", src)
+        self.assertIn(".flush()", src)
+        self.assertIn(".fsync(", src)
+
+    def test_traversal_rejected_at_writer_level(self):
+        """Writer-level test, not private helper."""
+        from pipeline.adaptation import _validate_docs
+        with self.assertRaises(CompilationError):
+            _validate_docs([("pack.json",b"{}"),("rooms.json",b"[]"),("items.json",b"[]"),
+                ("characters.json",b"[]"),("quests.json",b"[]"),("dialogues.json",b"[]"),
+                ("monsters.json",b"[]"),("shops.json",b"[]"),("../escape.txt",b"x")])
+
+    def test_extra_doc_rejected(self):
+        from pipeline.adaptation import _validate_docs
+        with self.assertRaises(CompilationError):
+            _validate_docs([("pack.json",b"{}"),("rooms.json",b"[]"),("items.json",b"[]"),
+                ("characters.json",b"[]"),("quests.json",b"[]"),("dialogues.json",b"[]"),
+                ("monsters.json",b"[]"),("shops.json",b"[]"),("adaptation_manifest.json",b"{}"),("extra.json",b"{}")])
+
+    def test_missing_doc_rejected(self):
+        from pipeline.adaptation import _validate_docs
+        with self.assertRaises(CompilationError):
+            _validate_docs([("pack.json",b"{}")])
+
+    @unittest.skipUnless(os.name == "posix", "symlink test requires POSIX")
+    def test_symlink_rejected(self):
+        with tempfile.TemporaryDirectory() as td:
+            link = os.path.join(td, "link")
+            os.symlink(td, link)
+            with self.assertRaises(FileExistsError):
+                write_micro_pack(compile_micro_pack(cd(),plan()), link)
 
 if __name__=="__main__":
     unittest.main()

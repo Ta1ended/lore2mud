@@ -1,1 +1,99 @@
-{"format_version": 1, "adaptation_id": "adapt_fixture", "source_promotion_id": "promo_t", "source_chapter": "chapter_000001", "pack": {"id": "tp", "name": "tp", "version": "0.1.0", "start_room_id": "r", "player": {"max_hp": 20, "attack": 5, "defense": 1, "inventory_capacity": 20, "coins": 0}}, "room": {"canon_entity_ref": "e_loc", "game_id": "r", "name": "r", "description": "d.", "canon_claim_refs": ["c1"], "adaptation_notes": "n."}, "character": {"canon_entity_ref": "e_char", "game_id": "c", "name": "c", "description": "d.", "canon_claim_refs": ["c2"], "adaptation_notes": "n."}, "item": {"canon_entity_ref": "e_item", "game_id": "i", "name": "i", "description": "d.", "canon_claim_refs": [], "adaptation_notes": "n."}, "quest": {"game_id": "q", "kind": "collect_item", "name": "q", "description": "d.", "target_item_id": "i", "required_quantity": 1, "reward_experience": 10, "adaptation_notes": "n."}, "dialogue": {"game_id": "di", "character_id": "c", "start_node_id": "start", "nodes": [{"id": "start", "text": "hi.", "options": [{"id": "o", "text": "bye.", "next_node_id": "end", "effects": []}]}, {"id": "end", "text": "end.", "options": [{"id": "o2", "text": "bye.", "next_node_id": null, "effects": []}]}], "adaptation_notes": "n."}, "omissions": [{"canon_entity_ref": "e_x", "reason": "x."}, {"canon_entity_ref": "e_y", "reason": "y."}]}
+{
+  "format_version": 1,
+  "adaptation_id": "adapt_t",
+  "source_promotion_id": "promo_t",
+  "source_chapter": "chapter_000001",
+  "pack": {
+    "id": "tp",
+    "name": "tp",
+    "version": "0.1.0",
+    "start_room_id": "r",
+    "player": {
+      "max_hp": 20,
+      "attack": 5,
+      "defense": 1,
+      "inventory_capacity": 20,
+      "coins": 0
+    }
+  },
+  "room": {
+    "canon_entity_ref": "e_loc",
+    "game_id": "r",
+    "name": "r",
+    "description": "d.",
+    "canon_claim_refs": [
+      "c1"
+    ],
+    "adaptation_notes": "n."
+  },
+  "character": {
+    "canon_entity_ref": "e_char",
+    "game_id": "c",
+    "name": "c",
+    "description": "d.",
+    "canon_claim_refs": [
+      "c2"
+    ],
+    "adaptation_notes": "n."
+  },
+  "item": {
+    "canon_entity_ref": "e_item",
+    "game_id": "i",
+    "name": "i",
+    "description": "d.",
+    "canon_claim_refs": [],
+    "adaptation_notes": "n."
+  },
+  "quest": {
+    "game_id": "q",
+    "kind": "collect_item",
+    "name": "q",
+    "description": "d.",
+    "target_item_id": "i",
+    "required_quantity": 1,
+    "reward_experience": 10,
+    "adaptation_notes": "n."
+  },
+  "dialogue": {
+    "game_id": "di",
+    "character_id": "c",
+    "start_node_id": "start",
+    "nodes": [
+      {
+        "id": "start",
+        "text": "hi.",
+        "options": [
+          {
+            "id": "o",
+            "text": "bye.",
+            "next_node_id": "end",
+            "effects": []
+          }
+        ]
+      },
+      {
+        "id": "end",
+        "text": "end.",
+        "options": [
+          {
+            "id": "o2",
+            "text": "bye.",
+            "next_node_id": null,
+            "effects": []
+          }
+        ]
+      }
+    ],
+    "adaptation_notes": "n."
+  },
+  "omissions": [
+    {
+      "canon_entity_ref": "e_x",
+      "reason": "x."
+    },
+    {
+      "canon_entity_ref": "e_y",
+      "reason": "y."
+    }
+  ]
+}

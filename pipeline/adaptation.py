@@ -145,10 +145,15 @@ class MicroContentPack:
     manifest: AdaptationManifest
 
     def __post_init__(self) -> None:
-        for attr in _FILE_FIELDS:
+        if not isinstance(self.pack, dict):
+            raise TypeError(f"pack 必须为 dict，收到 {type(self.pack).__name__}")
+        for attr in _FILE_FIELDS[1:]:
             val = getattr(self, attr)
-            if not isinstance(val, (dict, tuple)):
-                raise TypeError(f"{attr} 必须为 dict 或 tuple")
+            if not isinstance(val, tuple):
+                raise TypeError(f"{attr} 必须为 tuple，收到 {type(val).__name__}")
+            for vi, v in enumerate(val):
+                if not isinstance(v, dict):
+                    raise TypeError(f"{attr}[{vi}] 必须为 dict，收到 {type(v).__name__}")
         if not isinstance(self.manifest, AdaptationManifest):
             raise TypeError("manifest 必须为 AdaptationManifest")
 
@@ -462,7 +467,10 @@ def write_micro_pack(micro_pack: MicroContentPack, output_dir: str | Path) -> Pa
     tmp_dir = Path(tempfile.mkdtemp(dir=parent, prefix=".l2w_adaptation_"))
     try:
         for fname, payload in docs:
-            (tmp_dir / fname).write_bytes(payload)
+            with open(tmp_dir / fname, "wb") as f:
+                f.write(payload)
+                f.flush()
+                os.fsync(f.fileno())
 
         load_content_pack(tmp_dir)
 
