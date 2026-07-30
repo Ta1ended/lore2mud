@@ -1,0 +1,35 @@
+{
+  "format_version": 2,
+  "source_encoding": null,
+  "chapter_count": 2,
+  "chapters": [
+    {
+      "chapter_id": "chapter_000001",
+      "title": "第一行文本",
+      "source_chapter_label": null,
+      "source_title": null,
+      "volume_label": null,
+      "source_offset": null,
+      "source_line": null,
+      "path": "chapter_000001.txt",
+      "character_count": 500,
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "previous_id": null,
+      "next_id": "chapter_000002"
+    },
+    {
+      "chapter_id": "chapter_000002",
+      "title": "另一行文本",
+      "source_chapter_label": null,
+      "source_title": null,
+      "volume_label": null,
+      "source_offset": null,
+      "source_line": null,
+      "path": "chapter_000002.txt",
+      "character_count": 600,
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "previous_id": "chapter_000001",
+      "next_id": null
+    }
+  ]
+}

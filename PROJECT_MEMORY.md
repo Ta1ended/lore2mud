@@ -95,6 +95,13 @@ stale.
   and 730 full tests. GPT-5.6-sol independently accepted Phase 1.0 GO with no
   remaining findings (DEC-0039). The acceptance snapshot before its documentation
   seal was HEAD=`3442d2d`, `origin/main`=`afdb235`, ahead/behind=2/0, not pushed.
+- Phase 1.1 manifest validation and source binding implemented by Hermes (2026-07-30):
+  `pipeline/chapter_manifests.py` with frozen dataclass models (ChapterManifestEntry,
+  ChapterManifest), primary/scan conditional validation, consecutive chapter ID,
+  chain adjacency, path safety, SHA-256 format, monotonic offset/line. Source binding
+  via `validate_fact_candidate_sources()`. JSON Schema at
+  `schemas/chapter_manifest.schema.json`. 73 focused tests, 803 full tests pass.
+  Pending GPT-5.6-sol independent acceptance (DEC-0041).
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

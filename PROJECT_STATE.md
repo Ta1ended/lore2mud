@@ -182,9 +182,10 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 无活动实施切片。Phase 1.0 fact-candidate validation 已由 GPT-5.6-sol 独立
-  验收 GO（DEC-0039），DEC-0038 findings 全部关闭。任何后续工作须项目负责人
-  新的明确授权。
+- Phase 1.1 manifest validation and source binding已由 Hermes 实现，
+  等待 GPT-5.6-sol 独立验收（DEC-0041）。实现位于 `pipeline/chapter_manifests.py`，
+  不涉及 `src/`、现有 Schema、original_demo 或 save 格式。73 项聚焦测试和
+  803 项全量测试通过；compileall、内容校验、安全扫描和 diff 检查均通过。
 
 ## Blockers
 

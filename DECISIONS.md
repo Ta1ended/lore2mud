@@ -959,3 +959,31 @@
 - Evidence: `DEC-0039`, `CHANGELOG.md`, `NEXT_TASK.md`, `PROJECT_MEMORY.md`,
   `PROJECT_STATE.md`.
 - Supersedes: DEC-0038's focused-re-review-pending status.
+
+## DEC-0041: Phase 1.1 manifest validation and candidate source binding
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: Phase 1.0 established the fact-candidate document contract. Phase 1.1
+  adds manifest v2 structural validation and binds validated fact-candidate documents
+  to manifest chapters by source_chapter existence.
+- Decision: (a) New `pipeline/chapter_manifests.py` with frozen `ChapterManifestEntry`
+  (12 fields) and `ChapterManifest` dataclasses. (b) `validate_chapter_manifest()`
+  checks: format_version=2, source_encoding enum or null, chapter_count equals array
+  length, chapter_id consecutive from chapter_000001, path equals `<chapter_id>.txt`
+  with no separators/traversal, sha256 64-lowercase-hex, chain adjacency for
+  previous_id/next_id, primary path requires non-blank label/non-null offset≥0/
+  line≥1 with monotonic increase, scan path requires all 5 null. All unknown fields
+  rejected. (c) `validate_fact_candidate_sources()` checks each
+  `FactCandidateDocument.source_chapter` exists in manifest chapter_ids; returns
+  ordered tuple; empty sequence valid; non-document elements rejected. (d) New
+  `schemas/chapter_manifest.schema.json` (draft 2020-12). (e) 73 focused tests
+  including build_manifest integration (primary, scan, empty). (f) Not modified:
+  `pipeline/build_manifest.py`, `src/`, existing schemas, original_demo, save.
+- Consequences: Manifest v2 is now structurally validated. Fact-candidate documents
+  can be bound to verified chapters. Review decisions, canon writing, entity
+  resolution, and file-content verification remain for future slices.
+- Evidence: `pipeline/chapter_manifests.py`, `schemas/chapter_manifest.schema.json`,
+  `tests/test_chapter_manifests.py`, `tests/fixtures/chapter_manifests/`,
+  `docs/chapter_manifest_format.md`.
+- Supersedes: None.

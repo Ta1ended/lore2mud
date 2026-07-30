@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/chapter_manifest.schema.json",
+  "title": "Chapter Manifest v2",
+  "description": "A v2 chapter manifest produced by split_novel + build_manifest. Schema expresses structural constraints; Python adds semantic checks (consecutive IDs, chain adjacency, monotonic offset/line, count equality).",
+  "type": "object",
+  "required": ["format_version", "source_encoding", "chapter_count", "chapters"],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": {
+      "const": 2,
+      "description": "Must be exactly 2."
+    },
+    "source_encoding": {
+      "oneOf": [
+        { "type": "null" },
+        { "type": "string", "enum": ["utf-8-sig", "utf-8", "gbk", "gb18030"] }
+      ],
+      "description": "Null for scan-compat path; one of four encodings for primary path."
+    },
+    "chapter_count": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Must equal the length of the chapters array."
+    },
+    "chapters": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/entry" },
+      "description": "Array of chapter entries. May be empty."
+    }
+  },
+  "$defs": {
+    "chapter_id": {
+      "type": "string",
+      "pattern": "^chapter_[0-9]{6}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "non_blank": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "entry": {
+      "type": "object",
+      "required": [
+        "chapter_id", "title", "source_chapter_label", "source_title",
+        "volume_label", "source_offset", "source_line", "path",
+        "character_count", "sha256", "previous_id", "next_id"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "chapter_id": { "$ref": "#/$defs/chapter_id" },
+        "title": { "$ref": "#/$defs/non_blank" },
+        "source_chapter_label": {},
+        "source_title": {},
+        "volume_label": {},
+        "source_offset": {},
+        "source_line": {},
+        "path": { "type": "string" },
+        "character_count": { "type": "integer", "minimum": 0 },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "previous_id": {},
+        "next_id": {}
+      }
+    }
+  }
+}

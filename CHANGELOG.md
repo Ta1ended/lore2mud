@@ -4,6 +4,21 @@
 
 ### Added
 
+- Added v2 chapter manifest validation: `pipeline/chapter_manifests.py` with
+  frozen `ChapterManifestEntry` and `ChapterManifest` dataclasses, primary/scan
+  conditional validation, consecutive chapter ID enforcement, chain adjacency,
+  path safety, SHA-256 format, and monotonic offset/line checks.
+- Added `schemas/chapter_manifest.schema.json` (draft 2020-12, `additionalProperties`
+  false, `source_encoding` oneOf conditional).
+- Added `validate_fact_candidate_sources()` for binding validated
+  `FactCandidateDocument` instances to a `ChapterManifest` by source_chapter
+  existence check.
+- Added `tests/test_chapter_manifests.py` with 73 focused tests covering fixtures,
+  frozen types, build_manifest integration (primary + scan + empty), ID consecutive/
+  duplicate/skip, path safety, SHA-256 format, chain adjacency, primary/scan
+  conditions, offset/line monotonic, source binding, and Schema structure.
+- Added `tests/fixtures/chapter_manifests/valid_primary.json` and `valid_scan.json`.
+- Added `docs/chapter_manifest_format.md`.
 - Added v1 fact-candidate document validation contract: `pipeline/fact_candidates.py`
   with frozen dataclass models (`FactCandidateDocument`, `Candidate`, `Claim`,
   five value branches), stable-ID regex, NFKC alias dedup, relation cross-reference,

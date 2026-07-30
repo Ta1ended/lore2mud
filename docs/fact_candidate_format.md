@@ -218,3 +218,18 @@ checks that the Schema cannot express:
 - `source_chapters` equality with `document.source_chapter`
 - `bool` rejection for `format_version` and `value.numeric.number`
 - `NaN` / `Infinity` rejection for floats
+
+## Source binding
+
+After a `FactCandidateDocument` is validated, its `source_chapter` can be
+checked against a validated `ChapterManifest`:
+
+```python
+from pipeline.chapter_manifests import validate_fact_candidate_sources
+
+validated = validate_fact_candidate_sources(manifest, [doc1, doc2])
+```
+
+This ensures every extraction document references a chapter that exists in
+the manifest. Multiple documents per chapter are allowed; no deduplication
+or merging is performed.

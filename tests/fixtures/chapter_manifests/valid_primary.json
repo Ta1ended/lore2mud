@@ -1,0 +1,49 @@
+{
+  "format_version": 2,
+  "source_encoding": "gbk",
+  "chapter_count": 3,
+  "chapters": [
+    {
+      "chapter_id": "chapter_000001",
+      "title": "第一章 雾中来客",
+      "source_chapter_label": "第一章",
+      "source_title": "雾中来客",
+      "volume_label": "第一卷 雾岭边站",
+      "source_offset": 0,
+      "source_line": 1,
+      "path": "chapter_000001.txt",
+      "character_count": 1234,
+      "sha256": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+      "previous_id": null,
+      "next_id": "chapter_000002"
+    },
+    {
+      "chapter_id": "chapter_000002",
+      "title": "第二章 渡台微光",
+      "source_chapter_label": "第二章",
+      "source_title": "渡台微光",
+      "volume_label": "第一卷 雾岭边站",
+      "source_offset": 5000,
+      "source_line": 100,
+      "path": "chapter_000002.txt",
+      "character_count": 2345,
+      "sha256": "b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3",
+      "previous_id": "chapter_000001",
+      "next_id": "chapter_000003"
+    },
+    {
+      "chapter_id": "chapter_000003",
+      "title": "第三章 山路尽头",
+      "source_chapter_label": "第三章",
+      "source_title": "山路尽头",
+      "volume_label": "第二卷 远行",
+      "source_offset": 12000,
+      "source_line": 250,
+      "path": "chapter_000003.txt",
+      "character_count": 3456,
+      "sha256": "c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4",
+      "previous_id": "chapter_000002",
+      "next_id": null
+    }
+  ]
+}
