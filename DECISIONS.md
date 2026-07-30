@@ -1178,3 +1178,27 @@
 - Evidence: `docs/fact_candidate_format.md`, `NEXT_TASK.md`,
   `PROJECT_MEMORY.md`, `PROJECT_STATE.md`.
 - Supersedes: None.
+
+## DEC-0051: Phase 1.2 independent acceptance — GO
+
+- Date: 2026-07-30
+- Status: Accepted
+- Context: Phase 1.2 fact-review document validation was implemented (`80fd916`)
+  with two P2 documentation corrections (DEC-0049, DEC-0050). GPT-5.6-sol
+  performed final independent review and confirmed all findings closed.
+- Decision: Record Phase 1.2 as independently accepted GO by GPT-5.6-sol.
+  Applicable commits: `80fd916` (initial), `ceae065` (binding boundaries),
+  `e742d20` (Markdown/DEC range). Accepted evidence: 43 fact-review focused,
+  280 Phase 1.2+1.1+1.0 regression, 860 full unittest, compileall,
+  original-demo validation, `check_repo_safety.py --history`,
+  `git fsck --full --no-dangling`, `git diff --check` all passing.
+  Local HEAD=`e742d20`, `origin/main`=`a55c7d8`, ahead/behind=3/0, worktree
+  clean, not pushed. Direct remote query not refreshed this session; must
+  recheck before publishing.
+- Consequences: Phase 1.2 is complete. No new implementation is authorized.
+  Phase 1.3 (entity resolution, canon writing, model integration, or any
+  other work) requires a separate, explicit, scoped project-owner authorization.
+  This does not authorize push.
+- Evidence: `pipeline/fact_reviews.py`, `schemas/fact_review.schema.json`,
+  `tests/test_fact_reviews.py`, `docs/fact_review_format.md`.
+- Supersedes: Only DEC-0048's independent-acceptance-pending status.

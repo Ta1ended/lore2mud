@@ -113,8 +113,9 @@ stale.
   by Hermes (2026-07-30): `pipeline/fact_reviews.py` with frozen dataclass
   models, four-state decisions, superseded conditional, (candidate_id,claim_id)
   uniqueness, candidate-document binding. 43 focused, 280 Phase 1.2+1.1+1.0
-  regression, 860 full tests verified. Pending GPT-5.6-sol independent acceptance
-  (DEC-0048 to DEC-0050).
+  regression, 860 full tests. GPT-5.6-sol independently accepted Phase 1.2 GO
+  with no remaining findings (DEC-0051). Local HEAD=`e742d20`,
+  `origin/main`=`a55c7d8`.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

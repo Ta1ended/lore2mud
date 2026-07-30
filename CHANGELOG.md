@@ -355,6 +355,13 @@
   scan, git fsck, diff check, Schema primary/scan path verification, and
   build_manifest integration all passing. Local HEAD=`56edcb2`,
   `origin/main`=`1585a98`, ahead/behind=7/0, not pushed.
+- GPT-5.6-sol independently accepted Phase 1.2 fact-review validation and
+  claim-level review states as GO with no remaining findings (DEC-0051).
+  Implementation `80fd916` + 2 P2 doc fixes (`ceae065`, `e742d20`) closed
+  all findings. Accepted evidence: 43 fact-review focused, 280 Phase 1.2+1.1+1.0
+  regression, 860 full tests, compileall, original-demo validation, safety
+  history scan, git fsck, and diff check all passing. Local HEAD=`e742d20`,
+  `origin/main`=`a55c7d8`, ahead/behind=3/0, not pushed.
 
 
 - GPT-5.6-sol independently accepted M8 as GO after focused review: the Git-snapshot
