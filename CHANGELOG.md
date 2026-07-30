@@ -22,7 +22,10 @@
   findings are closed locally in DEC-0061. Rework verification passed 1066 full
   tests (2 skipped), compileall, original-demo validation, Schema + fixture checks,
   history safety, fsck, diff checking, and a repository-external module CLI whose
-  output matched the golden bytes; second independent acceptance is pending.
+  output matched the golden bytes. A fresh GPT-5.6-sol task independently accepted
+  correction `1c9a20bfade5bdb292ca3a801f00279cf0450e30` as GO with no findings
+  (DEC-0062); the 6245-byte golden output, provenance mutations, three hardlink
+  input classes, full scope, and clean Git snapshot were independently rechecked.
 - Added micro content pack compilation (L2W-2): `pipeline/adaptation.py` with
   frozen `AdaptationPlan`, `AdaptationManifest`, and semantic `MicroContentPack`
   dataclass models, `validate_adaptation_plan()`,

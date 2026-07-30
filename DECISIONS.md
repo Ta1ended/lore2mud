@@ -1437,3 +1437,33 @@
   correction. L2W-4, private processing, engine/content/save changes, and push are
   still outside this rework.
 - Supersedes: None; refines DEC-0060 validation and acceptance evidence.
+
+## DEC-0062: L2W-3 independent acceptance — GO
+
+- Date: 2026-07-31
+- Status: Accepted
+- Context: A new GPT-5.6-sol Codex task with no implementation context performed a
+  read-only re-review of acceptance correction `1c9a20bfade5bdb292ca3a801f00279cf0450e30`
+  relative to initial implementation `a89fdc6d819b976b80b82a74e575ff851ba86448`.
+- Decision: L2W-3 is accepted GO with no findings. The prior P1 relation-target
+  traceability gap and three P2 candidate-provenance, golden-byte, and link-alias
+  gaps are closed. The review independently confirmed semantic counterexamples,
+  forward relations, full provenance correspondence, writer/in-process/subprocess
+  golden bytes, all three hardlink input classes, and the complete one-commit scope.
+- Evidence: 84 focused tests (1 Windows symlink permission skip), 1066 full tests
+  (2 skips), compileall, original-demo validation, two Draft 2020-12 Schemas and
+  fixtures, history safety, `git fsck --full --no-dangling`, `git diff --check`,
+  and repository-external CLI all pass. Golden output is 6245 bytes with SHA-256
+  `1f41c14cafec915e8e16bdc9a3c467aa64edd445ef1b6e66508790c2453bcfc6`.
+  Scope is one 8-file commit (`+231/-66`), with no private material, `src/`, Schema,
+  original-demo, save, content, or dependency changes. Acceptance snapshot:
+  clean worktree, `origin/main=a89fdc6d`, ahead 1, not pushed.
+- Residual risk: This Windows host cannot create symlinks (`WinError 1314`), so that
+  path is statically reviewed and conditionally skipped. Cross-object provenance is
+  intentionally enforced by Python rather than JSON Schema. Generic path-swap TOCTOU
+  remains outside the trusted local CLI contract.
+- Consequences: L2W-3 is complete. The project owner requested an immediate pause;
+  no L2W-4 implementation starts in this session. The next bounded candidate is a
+  registry-backed micro adaptation that keeps L2W-2's one-room profile.
+- Supersedes: DEC-0061's pending acceptance status; it does not alter DEC-0060's
+  implemented contract or historical first-review evidence.

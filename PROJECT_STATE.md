@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-31（L2W-3 验收修正完成；第二次独立验收 pending）_
+_Last updated: 2026-07-31（L2W-3 独立验收 GO；按负责人要求暂停）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -20,8 +20,9 @@ relation 目标缺少同 promotion member 约束、source candidate provenance �
 未通过 writer/CLI 实测，以及链接别名测试缺口。DEC-0061 已在本地关闭四项 finding：每个
 `(promotion_id, source_candidate_id)` 唯一，relation 目标必须恰含一个 claim 来源 promotion
 member，writer/CLI 与 golden 逐字节相等，hardlink 拒绝和有权限时 symlink 拒绝均有回归。
-该修正未读取私有小说，未修改引擎、内容包、save、Schema 或依赖；第二次独立验收尚未执行，
-因此当前状态仍不是 GO。
+新的 GPT-5.6-sol 干净任务随后对 `a89fdc6d..1c9a20b` 独立复验，结论 GO、无 findings
+（DEC-0062）。该修正未读取私有小说，未修改引擎、内容包、save、Schema 或依赖。
+项目负责人已要求今天在此封板并暂停，因此当前没有活动实施切片。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
@@ -196,20 +197,25 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- L2W-3 首次验收的四项 finding 已完成本地修正，等待新的 Codex GPT-5.6-sol
-  任务或干净上下文相对初始提交 `a89fdc6d819b976b80b82a74e575ff851ba86448`
-  只读复验修正提交并给出 GO/REVISE。
-- 验收前不得把当前实现上下文的完成报告写成 GO，也不开始 L2W-4、一般化改编、
-  私有资料处理或 push。
+- None. L2W-3 已独立验收 GO；项目按负责人要求停在干净检查点。
+- 今天不开始 L2W-4、一般化改编、私有资料处理或 push。
 
 ## Blockers
 
-- 无技术阻塞；当前门槛是 L2W-3 第二次独立验收。网络不佳时，push 可由项目负责人在
-  明确授权后通过 GitHub Desktop 手动完成。
+- 无技术阻塞。当前暂停是项目负责人主动要求；本地提交未 push，网络不佳时可在恢复后
+  由项目负责人通过 GitHub Desktop 手动完成。
 
 ## Verification
 
-- L2W-3 acceptance rework（2026-07-31，Codex，第二次独立验收 pending）：相对初始
+- L2W-3 independent acceptance GO（2026-07-31，fresh Codex GPT-5.6-sol，DEC-0062）：
+  相对 `a89fdc6d819b976b80b82a74e575ff851ba86448` 的修正提交
+  `1c9a20bfade5bdb292ca3a801f00279cf0450e30` 无 findings。独立复验确认 84 项聚焦
+  （1 skipped）、1066 项全量（2 skipped）、compileall、original-demo、两份 Draft
+  2020-12 Schema + fixture、history safety、fsck、diff 和仓库外 CLI 全部通过；golden
+  为 6245 bytes，SHA-256 `1f41c14cafec915e8e16bdc9a3c467aa64edd445ef1b6e66508790c2453bcfc6`。
+  三类输入 hardlink 与 provenance 反例均实际拒绝；Windows symlink 因 WinError 1314
+  无权限而条件跳过。验收范围为 1 commit、8 files、`+231/-66`，工作树干净、未 push。
+- L2W-3 acceptance rework（2026-07-31，Codex；后续已由 DEC-0062 accepted）：相对初始
   提交 `a89fdc6d819b976b80b82a74e575ff851ba86448` 关闭首次验收的 1 个 P1 与 3 个 P2。
   84 项聚焦测试（1 skipped）、1066 项全量 unittest（2 skipped）、compileall、
   original-demo 内容校验、Draft 2020-12 Schema + golden fixture、
