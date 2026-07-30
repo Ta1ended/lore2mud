@@ -234,9 +234,13 @@ This ensures every extraction document references a chapter that exists in
 the manifest. Multiple documents per chapter are allowed; no deduplication
 or merging is performed.
 
-## Review binding
+|## Review binding
 
-Reviewed claims can be validated against a FactCandidateDocument via:
+Reviewed claims can be validated against a single, pre-validated
+`FactCandidateDocument` (returned by `validate_fact_candidate_document()`).
+The caller must explicitly pass the correct document for the review; the
+binding function does not auto-discover or match by `source_chapter` alone,
+because the same chapter may have multiple extraction documents.
 
 ```python
 from pipeline.fact_reviews import validate_fact_review_bindings
@@ -245,3 +249,4 @@ validate_fact_review_bindings(review, candidate_doc)
 ```
 
 See [fact_review_format.md](fact_review_format.md) for the review document format.
+|

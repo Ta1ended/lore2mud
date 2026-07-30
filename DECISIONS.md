@@ -1141,3 +1141,24 @@
   `tests/test_fact_reviews.py`, `tests/fixtures/fact_reviews/`,
   `docs/fact_review_format.md`.
 - Supersedes: None.
+
+## DEC-0049: Phase 1.2 review binding documentation and test evidence
+
+- Date: 2026-07-30
+- Status: Implemented locally; independent acceptance pending.
+- Context: Independent review found two P2 issues. P2-1: NEXT_TASK.md stated
+  "full test pending" but 860 full tests had been verified. P2-2: fact-review
+  documentation did not clarify that binding requires an explicit, pre-validated
+  FactCandidateDocument, that source_chapter is not a global unique key, and
+  that auto-discovery/file-matching/persistence are out of v1 scope.
+- Decision: (a) Update NEXT_TASK.md, PROJECT_MEMORY.md, PROJECT_STATE.md with
+  43/280/860 test evidence. (b) Expand Binding section in
+  docs/fact_review_format.md with caller responsibility and boundary constraints.
+  (c) Update docs/fact_candidate_format.md Review binding section to cross-
+  reference the same boundary. No code, Schema, test, fixture, or CHANGELOG
+  changes.
+- Consequences: Documentation now accurately describes the binding boundary
+  and test evidence. Pending GPT-5.6-sol focused re-review.
+- Evidence: `docs/fact_review_format.md`, `docs/fact_candidate_format.md`,
+  `NEXT_TASK.md`, `PROJECT_MEMORY.md`, `PROJECT_STATE.md`.
+- Supersedes: None.

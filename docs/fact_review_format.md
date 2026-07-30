@@ -47,13 +47,28 @@ appearing in the decisions array are considered unreviewed.
 
 ## Binding
 
+The binding function accepts exactly one pre-validated
+`FactCandidateDocument` (returned by `validate_fact_candidate_document()`).
+The caller is responsible for selecting the correct candidate document for
+this review.
+
+Key boundary constraints:
+
+- `review.source_chapter` must equal `candidate_document.source_chapter`.
+  However, `source_chapter` is **not** a globally unique key for candidate
+  documents: the same chapter may have multiple extraction runs, each
+  producing a separate `FactCandidateDocument`.  The caller must explicitly
+  pass the single document being reviewed.
+- Auto-discovery of candidate documents by `source_chapter`, file matching,
+  persistence, and cross-document conflict resolution are **not** in v1 scope.
+
+Per-decision checks:
+
 ```python
 from pipeline.fact_reviews import validate_fact_review_bindings
 
 validate_fact_review_bindings(review, candidate_document)
 ```
-
-Validates:
 - `review.source_chapter` equals `candidate_document.source_chapter`.
 - Every `candidate_id` exists in the candidate document.
 - Every `claim_id` belongs to its parent candidate.
