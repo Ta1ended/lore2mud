@@ -1249,3 +1249,17 @@
 - Evidence: 50 focused tests, 910 full tests, compileall, validate, safety, diff.
 - Pending GPT-5.6-sol focused re-review.
 - Supersedes: None.
+
+## DEC-0054: L2W-1 independent acceptance — GO
+
+- Date: 2026-07-30
+- Status: Accepted
+- Context: L2W-1 canon draft promotion from reviewed facts. Initial
+  implementation at `2941641`. Acceptance rework at `1f01207` closed all
+  P1-1 through P1-5 and related P2 findings.
+- Decision: GPT-5.6-sol independently accepted L2W-1 GO with no remaining
+  findings. 50 focused tests, 910 full tests, compileall, validate, safety,
+  diff, fsck, and three CLI smokes all pass.
+- Consequences: L2W-1 scope is complete. Cross-chapter merging, formal canon
+  registry, and game adaptation remain for future slices.
+- Supersedes: None. Does not authorize L2W-2 or any subsequent work.

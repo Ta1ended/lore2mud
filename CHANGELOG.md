@@ -373,6 +373,12 @@
   regression, 860 full tests, compileall, original-demo validation, safety
   history scan, git fsck, and diff check all passing. Local HEAD=`e742d20`,
   `origin/main`=`a55c7d8`, ahead/behind=3/0, not pushed.
+- GPT-5.6-sol independently accepted L2W-1 canon draft promotion as GO with
+  no remaining findings (DEC-0054). Initial implementation `2941641`. Focus
+  fix `1f01207` closed P1-1 through P1-5 and P2. Accepted evidence: 50 canon
+  focused, 910 full tests, compileall, original-demo validation, safety
+  history scan, git fsck, and diff check all passing. Local HEAD=`1f01207`,
+  `origin/main`=`a52b21c`, ahead/behind=2/0, not pushed.
 
 
 - GPT-5.6-sol independently accepted M8 as GO after focused review: the Git-snapshot
