@@ -852,7 +852,9 @@ def validate_canon_registry_document(data: object) -> CanonRegistry:
 
     parsed_entities: list[RegistryEntity] = []
     global_members: set[tuple[str, str]] = set()
+    global_source_candidates: set[tuple[str, str]] = set()
     global_claims: set[tuple[str, str, str]] = set()
+    relation_targets: list[tuple[str, str, str]] = []
     for (
         raw_entity,
         entity_loc,
@@ -918,6 +920,7 @@ def validate_canon_registry_document(data: object) -> CanonRegistry:
                     issues,
                 )
                 member_key = (promotion_id, source_entity_id)
+                source_candidate_key = (promotion_id, source_candidate_id)
                 if promotion_id not in sources_by_promotion:
                     issues.append(
                         f"{member_loc}.promotion_id 不存在于 sources：{promotion_id}"
@@ -931,9 +934,15 @@ def validate_canon_registry_document(data: object) -> CanonRegistry:
                     )
                 if member_key in global_members:
                     issues.append(f"{member_loc} 被多个 entity 重复使用：{member_key!r}")
+                if source_candidate_key in global_source_candidates:
+                    issues.append(
+                        f"{member_loc}.source_candidate_id 在同一 promotion 中重复："
+                        f"{source_candidate_key!r}"
+                    )
                 local_member_keys.add(member_key)
                 local_member_promotions.add(promotion_id)
                 global_members.add(member_key)
+                global_source_candidates.add(source_candidate_key)
                 members.append(
                     RegistryMember(
                         promotion_id=promotion_id,
@@ -1028,14 +1037,16 @@ def validate_canon_registry_document(data: object) -> CanonRegistry:
                 value = _parse_claim_value(
                     raw_claim.get("value"), f"{claim_loc}.value", issues
                 )
-                if (
-                    isinstance(value, CanonRelationValue)
-                    and value.entity_ref not in entity_ids
-                ):
-                    issues.append(
-                        f"{claim_loc}.value.entity_ref 不存在于 registry："
-                        f"{value.entity_ref}"
-                    )
+                if isinstance(value, CanonRelationValue):
+                    if value.entity_ref not in entity_ids:
+                        issues.append(
+                            f"{claim_loc}.value.entity_ref 不存在于 registry："
+                            f"{value.entity_ref}"
+                        )
+                    else:
+                        relation_targets.append(
+                            (claim_loc, promotion_id, value.entity_ref)
+                        )
 
                 raw_chapters = raw_claim.get("source_chapters")
                 source_chapters: tuple[str, ...] = ()
@@ -1135,6 +1146,23 @@ def validate_canon_registry_document(data: object) -> CanonRegistry:
                 merge_reason=merge_reason,
             )
         )
+
+    member_promotion_counts: dict[str, dict[str, int]] = {}
+    for entity in parsed_entities:
+        promotion_counts = member_promotion_counts.setdefault(entity.entity_id, {})
+        for member in entity.members:
+            promotion_counts[member.promotion_id] = (
+                promotion_counts.get(member.promotion_id, 0) + 1
+            )
+    for claim_loc, promotion_id, target_entity_id in relation_targets:
+        target_count = member_promotion_counts.get(target_entity_id, {}).get(
+            promotion_id, 0
+        )
+        if target_count != 1:
+            issues.append(
+                f"{claim_loc}.value.entity_ref 的目标 entity 必须恰好包含一个同来源 "
+                f"promotion member：{promotion_id!r} -> {target_entity_id!r}"
+            )
 
     unused_sources = set(sources_by_promotion) - {
         promotion_id for promotion_id, _ in global_members

@@ -163,7 +163,10 @@ Every registry claim retains the composite source key:
 This key, rather than `source_claim_id` alone, is unique. Two chapters may both
 contain `claim_role`; both claims remain present and independently traceable.
 `source_chapters[0]` must equal the chapter declared by the matching registry
-source.
+source. Registry members also preserve both chapter-local identities. Within one
+promotion, `source_entity_id` and `source_candidate_id` must each occur exactly
+once across the registry, so a rewritten document cannot attach two source
+entities to the same candidate provenance.
 
 ### Relation rewriting
 
@@ -172,7 +175,10 @@ assembly, the target `(promotion_id, entity_ref)` is looked up in the exact
 RegistryPlan mapping and rewritten to the target registry `entity_id`. A missing
 mapping or dangling registry relation is rejected. Because each registry entity
 has at most one member from a promotion, the original chapter-local target remains
-recoverable from the target registry entity's members.
+recoverable from the target registry entity's members. The validator therefore
+requires every relation target to contain exactly one member whose `promotion_id`
+matches the relation claim's source promotion; an existing registry ID from only
+another chapter is not a valid target.
 
 ### Conflict behavior
 

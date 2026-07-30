@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-31（L2W-3 本地实现完成；独立验收 pending）_
+_Last updated: 2026-07-31（L2W-3 验收修正完成；第二次独立验收 pending）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -14,11 +14,14 @@ _Last updated: 2026-07-31（L2W-3 本地实现完成；独立验收 pending）_
 规划、实现、测试和交接由 Codex 完成；需要独立验收时使用新的 Codex 复验任务或
 干净上下文。Hermes 不再承担新任务，其既有提交与决定归属保持为历史事实。
 
-项目负责人已授权 Codex 自定下一范围受限切片。Codex 选择并完成 L2W-3 多章 canon
-registry 本地实现（DEC-0060）：两个或更多 CanonDraft v1 经显式 RegistryPlan 完整映射为
-CanonRegistry v1；来源名称、别名、candidate、claim、审核字段和章节绑定全部保留，relation
-改写为 registry ID，重复或冲突 claim 不自动去重或裁决。该实现未读取私有小说，未修改
-引擎、内容包、save 或依赖。独立 GPT-5.6-sol 验收尚未执行，因此当前状态不是 GO。
+项目负责人已授权 Codex 自定下一范围受限切片。Codex 在 `a89fdc6d` 完成 L2W-3 多章
+canon registry 初始实现（DEC-0060）。首次新的 GPT-5.6-sol 只读验收结论为 REVISE：发现
+relation 目标缺少同 promotion member 约束、source candidate provenance 可重复、golden bytes
+未通过 writer/CLI 实测，以及链接别名测试缺口。DEC-0061 已在本地关闭四项 finding：每个
+`(promotion_id, source_candidate_id)` 唯一，relation 目标必须恰含一个 claim 来源 promotion
+member，writer/CLI 与 golden 逐字节相等，hardlink 拒绝和有权限时 symlink 拒绝均有回归。
+该修正未读取私有小说，未修改引擎、内容包、save、Schema 或依赖；第二次独立验收尚未执行，
+因此当前状态仍不是 GO。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
@@ -193,25 +196,26 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- L2W-3 实施与本地验证已完成，等待新的 Codex GPT-5.6-sol 任务或干净上下文
-  相对基线 `b22bee33cacb154a2efc7e4eef0e3182ccc8319c` 只读独立验收。
+- L2W-3 首次验收的四项 finding 已完成本地修正，等待新的 Codex GPT-5.6-sol
+  任务或干净上下文相对初始提交 `a89fdc6d819b976b80b82a74e575ff851ba86448`
+  只读复验修正提交并给出 GO/REVISE。
 - 验收前不得把当前实现上下文的完成报告写成 GO，也不开始 L2W-4、一般化改编、
   私有资料处理或 push。
 
 ## Blockers
 
-- 无技术阻塞；发布门槛是 L2W-3 独立验收。网络不佳时，push 可由项目负责人在
+- 无技术阻塞；当前门槛是 L2W-3 第二次独立验收。网络不佳时，push 可由项目负责人在
   明确授权后通过 GitHub Desktop 手动完成。
 
 ## Verification
 
-- L2W-3 local verification（2026-07-31，Codex，独立验收 pending）：相对基线
-  `b22bee33cacb154a2efc7e4eef0e3182ccc8319c` 新增确定性多章 registry 模块、两份
-  draft-2020-12 Schema、80 项聚焦测试、四份公开虚构夹具和格式文档。80 项聚焦测试、
-  1062 项全量 unittest（1 skipped）、compileall、original-demo 内容校验、
+- L2W-3 acceptance rework（2026-07-31，Codex，第二次独立验收 pending）：相对初始
+  提交 `a89fdc6d819b976b80b82a74e575ff851ba86448` 关闭首次验收的 1 个 P1 与 3 个 P2。
+  84 项聚焦测试（1 skipped）、1066 项全量 unittest（2 skipped）、compileall、
+  original-demo 内容校验、Draft 2020-12 Schema + golden fixture、
   `check_repo_safety.py --history`、`git fsck --full --no-dangling`、`git diff --check`
-  和真实 `python -m pipeline.canon_registry` CLI/golden 往返均通过。未访问私有小说；
-  `src/`、游戏内容 Schema、original_demo、save 和依赖均未修改。
+  和仓库外真实 `python -m pipeline.canon_registry` CLI/golden bytes 均通过。未访问私有
+  小说；`src/`、Schema、original_demo、save 和依赖均未修改。
 - Phase 1.0 independent acceptance GO（2026-07-30，GPT-5.6-sol，DEC-0039）：
   聚焦复验确认 DEC-0038 三个 findings 全部关闭。131 项聚焦测试、730 项全量
   unittest、compileall、original-demo 校验、安全历史扫描和 diff 检查通过。

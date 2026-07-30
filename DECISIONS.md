@@ -1408,3 +1408,32 @@
   remain outside this decision.
 - Independent acceptance: Pending a fresh Codex GPT-5.6-sol read-only review.
 - Supersedes: None.
+
+## DEC-0061: L2W-3 independent-acceptance rework
+
+- Date: 2026-07-31
+- Status: Implemented locally; second independent acceptance pending.
+- Context: A fresh GPT-5.6-sol read-only review of implementation commit
+  `a89fdc6d819b976b80b82a74e575ff851ba86448` returned REVISE with one P1 and
+  three P2 findings. Registry relation validation only required an existing target
+  ID, members could reuse `(promotion_id, source_candidate_id)`, determinism tests
+  bypassed the writer's exact bytes, and input/output link aliases lacked tests.
+- Decision: (a) `validate_canon_registry_document()` requires each relation target
+  to contain exactly one member from the relation claim's source promotion.
+  (b) Registry members must be globally unique by both
+  `(promotion_id, source_entity_id)` and `(promotion_id, source_candidate_id)`.
+  (c) Writer, in-process CLI, and subprocess CLI tests compare output directly with
+  the golden fixture bytes. (d) CLI alias tests cover hardlinks and cover symlinks
+  when the runtime grants link-creation permission, while asserting source bytes
+  remain unchanged. (e) The format document states these provenance constraints;
+  no Schema change is needed because they are cross-object semantic checks.
+- Evidence: 84 focused tests pass with one Windows symlink permission skip; 1066
+  full tests pass with two skips. Compileall, original-demo validation, Draft
+  2020-12 Schema + fixture validation, history safety, `git fsck --full
+  --no-dangling`, `git diff --check`, and a repository-external real CLI whose
+  output equals the golden bytes all pass.
+- Consequences: All four first-review findings are closed locally, but L2W-3 is not
+  GO until a new GPT-5.6-sol task or clean context independently re-reviews the
+  correction. L2W-4, private processing, engine/content/save changes, and push are
+  still outside this rework.
+- Supersedes: None; refines DEC-0060 validation and acceptance evidence.

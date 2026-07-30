@@ -402,6 +402,17 @@ class RegistryDocumentValidationTests(unittest.TestCase):
         with self.assertRaises(CanonRegistryValidationError):
             validate_canon_registry_document(raw)
 
+    def test_source_candidate_cannot_be_reused_within_promotion(self) -> None:
+        raw = _registry_document()
+        mira = _entity(raw, "canon_mira")
+        tower = _entity(raw, "canon_glass_tower")
+        tower["members"][0]["source_candidate_id"] = mira["members"][0][
+            "source_candidate_id"
+        ]
+        with self.assertRaises(CanonRegistryValidationError) as caught:
+            validate_canon_registry_document(raw)
+        self.assertIn("source_candidate_id 在同一 promotion 中重复", str(caught.exception))
+
     def test_entity_cannot_have_two_members_from_one_source(self) -> None:
         raw = _registry_document()
         mira = _entity(raw, "canon_mira")
@@ -437,6 +448,20 @@ class RegistryDocumentValidationTests(unittest.TestCase):
         mira["claims"][0]["value"]["entity_ref"] = "canon_missing"
         with self.assertRaises(CanonRegistryValidationError):
             validate_canon_registry_document(raw)
+
+    def test_relation_target_requires_member_from_claim_promotion(self) -> None:
+        raw = _registry_document()
+        mira = _entity(raw, "canon_mira")
+        claim = next(
+            item
+            for item in mira["claims"]
+            if item["source"]["promotion_id"] == "promo_ch001"
+            and item["value"]["kind"] == "relation"
+        )
+        claim["value"]["entity_ref"] = "canon_valley_gate"
+        with self.assertRaises(CanonRegistryValidationError) as caught:
+            validate_canon_registry_document(raw)
+        self.assertIn("必须恰好包含一个同来源 promotion member", str(caught.exception))
 
     def test_claim_chapter_must_match_promotion_source(self) -> None:
         raw = _registry_document()
@@ -527,18 +552,16 @@ class GoldenAndSchemaTests(unittest.TestCase):
         self.assertEqual(_registry_document(), _load("expected_registry.json"))
 
     def test_generated_bytes_are_deterministic(self) -> None:
-        first = json.dumps(
-            _registry_document(), ensure_ascii=False, sort_keys=True, indent=2
-        )
-        second = json.dumps(
-            canon_registry_to_document(
-                build_canon_registry(tuple(reversed(_drafts())), _plan())
-            ),
-            ensure_ascii=False,
-            sort_keys=True,
-            indent=2,
-        )
-        self.assertEqual(first, second)
+        expected = (FIXTURE_DIR / "expected_registry.json").read_bytes()
+        with tempfile.TemporaryDirectory() as temp_dir:
+            first = Path(temp_dir) / "first.json"
+            second = Path(temp_dir) / "second.json"
+            write_canon_registry(_registry(), first)
+            write_canon_registry(
+                build_canon_registry(tuple(reversed(_drafts())), _plan()), second
+            )
+            self.assertEqual(first.read_bytes(), expected)
+            self.assertEqual(second.read_bytes(), expected)
 
     def test_schema_documents_parse(self) -> None:
         for name in ("canon_registry_plan.schema.json", "canon_registry.schema.json"):
@@ -638,8 +661,10 @@ class WriterAndCliTests(unittest.TestCase):
                 ]
             )
             self.assertEqual(exit_code, 0)
-            with open(output, "r", encoding="utf-8") as handle:
-                self.assertEqual(json.load(handle), _load("expected_registry.json"))
+            self.assertEqual(
+                output.read_bytes(),
+                (FIXTURE_DIR / "expected_registry.json").read_bytes(),
+            )
 
     def test_cli_requires_two_draft_arguments(self) -> None:
         with contextlib.redirect_stderr(io.StringIO()):
@@ -673,6 +698,64 @@ class WriterAndCliTests(unittest.TestCase):
             )
         self.assertEqual(exit_code, 1)
         self.assertIn("指向同一文件", stderr.getvalue())
+
+    def test_cli_rejects_hardlink_output_alias(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            registry_plan = Path(temp_dir) / "registry_plan.json"
+            registry_plan.write_bytes((FIXTURE_DIR / "valid_plan.json").read_bytes())
+            output = Path(temp_dir) / "output.json"
+            try:
+                os.link(registry_plan, output)
+            except OSError as exc:
+                self.skipTest(f"hard links unavailable: {exc}")
+            before = registry_plan.read_bytes()
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                exit_code = main(
+                    [
+                        "--canon-draft",
+                        str(FIXTURE_DIR / "draft_ch001.json"),
+                        "--canon-draft",
+                        str(FIXTURE_DIR / "draft_ch002.json"),
+                        "--registry-plan",
+                        str(registry_plan),
+                        "--output",
+                        str(output),
+                    ]
+                )
+            self.assertEqual(exit_code, 1)
+            self.assertIn("指向同一文件", stderr.getvalue())
+            self.assertEqual(registry_plan.read_bytes(), before)
+            self.assertEqual(output.read_bytes(), before)
+
+    def test_cli_rejects_symlink_output_alias_when_supported(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            registry_plan = Path(temp_dir) / "registry_plan.json"
+            registry_plan.write_bytes((FIXTURE_DIR / "valid_plan.json").read_bytes())
+            output = Path(temp_dir) / "output.json"
+            try:
+                os.symlink(registry_plan, output)
+            except OSError as exc:
+                self.skipTest(f"symbolic links unavailable: {exc}")
+            before = registry_plan.read_bytes()
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                exit_code = main(
+                    [
+                        "--canon-draft",
+                        str(FIXTURE_DIR / "draft_ch001.json"),
+                        "--canon-draft",
+                        str(FIXTURE_DIR / "draft_ch002.json"),
+                        "--registry-plan",
+                        str(registry_plan),
+                        "--output",
+                        str(output),
+                    ]
+                )
+            self.assertEqual(exit_code, 1)
+            self.assertIn("指向同一文件", stderr.getvalue())
+            self.assertEqual(registry_plan.read_bytes(), before)
+            self.assertEqual(output.read_bytes(), before)
 
     def test_cli_bad_json_returns_one(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -740,6 +823,10 @@ class WriterAndCliTests(unittest.TestCase):
                 check=False,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                output.read_bytes(),
+                (FIXTURE_DIR / "expected_registry.json").read_bytes(),
+            )
             with open(output, "r", encoding="utf-8") as handle:
                 validate_canon_registry_document(json.load(handle))
 
