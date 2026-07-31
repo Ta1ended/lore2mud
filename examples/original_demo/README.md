@@ -57,7 +57,7 @@ quit
 
 ## 三类任务与分段接取任务
 
-演示内容包 0.9.0 在起始房间自动接取三条完全原创任务：
+演示内容包 0.10.0 在起始房间自动接取三条完全原创任务：
 
 - `quest_collect_linglu_pills`：背包中收集 2 枚灵露丸（`collect_item`）。
 - `quest_reach_silent_observatory`：抵达静默观测站（`reach_room`）。
@@ -89,6 +89,10 @@ quit
 写入 `flag_chen_warned_ash_mite=true`、接取 `quest_collect_ash_mite_gel`、获得 3 点经验、
 获得 `item_chen_token`。重复选择会因任务已经接取而整体拒绝，不重复发放经验、物品或标记。
 
+信标心室的「让信标重新点亮」选项使用内容包声明的无脚本条件：它要求 bool、范围受限 int 和
+enum 叙事状态仍分别为 `true`、至少 `1` 和 `standby`，同时要求持有核心、位于心室且最终任务
+已经完成。不满足时该选项不会投影给 CLI 或 Web；这些状态由 `narrative_state.json` 定义并随存档保存。
+
 ## 金币与商店
 
 玩家初始有 20 金币。琉草小径的 `shop_chen_travel_goods`（陈伯的行囊）固定出售并收购
@@ -119,11 +123,12 @@ quit
 `character_beacon_echo` 对话并选择点亮信标后，World 写入 `flag_beacon_restored=true`。
 `quests`、`status` 和 save/load 可以分别确认最终任务、结局 flag 和完整终局状态。
 
-## 0.8.0 存档迁移
+## 存档兼容性
 
-save 格式仍是 v7，但 0.9.0 新增了 World-owned 房间、任务和战利品状态。严格 loader 不会猜测
-旧档里最终哨卫是否已掉落核心，也不会补造结局，因此 0.8.0 存档会以内容包版本不匹配明确拒绝。
-需要继续旧进度时使用原 0.8.0 内容包读取；进入完整冒险时在 0.9.0 新开游戏。没有隐式迁移。
+本演示内容包 0.10.0 声明了 `narrative_state.json`，因此新存档使用 v8；其中精确保存任务、房间、
+战利品、flags 和叙事状态。v7 只能由没有叙事状态定义的内容包只读加载，不能用于本演示内容包，
+因为它不能表达所需的叙事状态。严格 loader 不会猜测旧档状态，也不会隐式迁移内容包版本；需要继续
+旧进度时请使用创建该存档的原内容包，进入本演示时请在 0.10.0 新开游戏。
 
 ## 物品交互
 
