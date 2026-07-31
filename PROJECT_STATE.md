@@ -69,8 +69,12 @@ fsync、replace，CLI 拒绝输入/输出的直接路径、hardlink、symlink �
 fixture 仅使用既有虚构 registry。该切片不修改 `src/`、运行时、save、Web、Forge、内容包或
 依赖，也不访问私有小说、摘要、canon 或派生产物。当前本地验证为 43 项专门测试（2 个
 Windows symlink 权限跳过）、1297 项完整 unittest 与 1288 项 pytest（各 9 个条件跳过）、
-Ruff、Pyright、compileall 和 original_demo 校验全部通过。历史安全扫描、fsck 和干净上下文
-独立验收仍 pending；在 `GO` 前不得整合、改动 `main`、push、release 或扩大范围。
+Ruff、Pyright、compileall 和 original_demo 校验全部通过。首次干净上下文验收发现 P2：文档允许
+所有 scope claim 带理由省略，但 `claim_uses` 的 parser 和两份 Schema 错误地要求至少一个 use。
+当前最小修复允许空 use 数组，并以 plan、compiler、模型和 Schema 回归证明所有 scope claim 仍必须
+显式使用或带理由省略。修复后全量 unittest 为 1298 项、pytest 为 1289 项（各 9 个条件跳过）；
+Ruff、Pyright、compileall、original_demo、历史安全扫描、fsck 和仓库外标准 golden/全省略 CLI
+路径均通过。新的干净上下文复验仍 pending；在新的 `GO` 前不得整合、改动 `main`、push、release 或扩大范围。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。

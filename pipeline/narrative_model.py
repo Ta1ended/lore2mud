@@ -423,7 +423,7 @@ def _parse_scope(raw: object, loc: str, issues: list[str]) -> NarrativeScope:
         raw.get("entity_refs"), f"{loc}.entity_refs", issues, nonempty=True
     )
     claim_uses = _parse_claim_refs(
-        raw.get("claim_uses"), f"{loc}.claim_uses", issues, nonempty=True
+        raw.get("claim_uses"), f"{loc}.claim_uses", issues, nonempty=False
     )
     omissions: list[NarrativeClaimOmission] = []
     omission_keys: set[tuple[str, str, str]] = set()

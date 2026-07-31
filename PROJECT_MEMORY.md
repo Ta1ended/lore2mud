@@ -29,9 +29,12 @@ stale.
   content packs, model providers, or private material. Local evidence is 43
   focused tests (2 Windows symlink permission skips), 1297 full unittest cases,
   and 1288 pytest cases (each full suite with 9 skips), plus Ruff, Pyright,
-  compileall, and original-demo validation. History safety and fsck remain part
-  of the pre-commit gate. A fresh clean read-only acceptance is required before
-  integration, main update, push, release, or further scope.
+  compileall, and original-demo validation. Its first clean review returned one
+  P2: the code and Schemas rejected a plan that reasonedly omitted every scoped
+  claim despite the documented complete use/omission contract. The local
+  correction permits an empty `claim_uses` array while retaining required
+  accounting for every scoped registry claim; a fresh clean re-review is now
+  required before integration, main update, push, release, or further scope.
 - Repository: `lore2mud`; active local branch: `main` at
   `D:\MUD game kaifa\lore2mud`. Published baseline, tracking `origin/main`, and
   direct GitHub `main` resolve to

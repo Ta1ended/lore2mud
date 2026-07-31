@@ -108,6 +108,24 @@ def _remove_claim(document: dict, claim_ref: dict[str, str]) -> None:
         ]
 
 
+def _all_claims_omitted_plan_document() -> dict:
+    document = _plan_document()
+    claim_uses = copy.deepcopy(document["scope"]["claim_uses"])
+    document["scope"]["claim_uses"] = []
+    document["scope"]["claim_omissions"] = [
+        {
+            "claim_ref": claim_ref,
+            "reason": "This reviewed claim is outside the selected narrative cut.",
+        }
+        for claim_ref in claim_uses
+    ]
+    for proposition in document["propositions"]:
+        proposition["claim_refs"] = []
+        if proposition["status"] in {"canon_supported", "conflicted"}:
+            proposition["status"] = "unknown"
+    return document
+
+
 class PlanValidationTests(unittest.TestCase):
     def test_valid_plan_is_frozen_and_canonical(self) -> None:
         plan = _plan()
@@ -168,6 +186,11 @@ class PlanValidationTests(unittest.TestCase):
         document["scope"]["claim_uses"].append(
             copy.deepcopy(document["scope"]["claim_uses"][0])
         )
+        with self.assertRaises(NarrativeModelValidationError):
+            validate_narrative_plan_document(document)
+
+        document = _plan_document()
+        del document["scope"]["claim_uses"]
         with self.assertRaises(NarrativeModelValidationError):
             validate_narrative_plan_document(document)
 
@@ -319,6 +342,23 @@ class CompilationTests(unittest.TestCase):
             ["promo_ch001", "promo_ch002"],
         )
         self.assertEqual(narrative_model_to_document(model), _read_json(MODEL_PATH))
+
+    def test_all_scoped_claims_may_be_reasonedly_omitted(self) -> None:
+        plan = validate_narrative_plan_document(_all_claims_omitted_plan_document())
+        self.assertEqual(plan.scope.claim_uses, ())
+        self.assertEqual(len(plan.scope.claim_omissions), 6)
+
+        model = compile_narrative_model(_registry(), plan)
+        self.assertEqual(model.scope.claim_uses, ())
+        self.assertEqual(len(model.scope.claim_omissions), 6)
+        self.assertEqual(
+            [source.promotion_id for source in model.source_registry.sources],
+            ["promo_ch001", "promo_ch002"],
+        )
+        self.assertEqual(
+            validate_narrative_model_document(narrative_model_to_document(model)),
+            model,
+        )
 
     def test_registry_identity_and_version_must_match(self) -> None:
         for field, value in (("registry_id", "other_registry"), ("registry_version", 2)):
@@ -530,6 +570,12 @@ class SchemaAndGoldenTests(unittest.TestCase):
             self.assertEqual(plan["$defs"][name], model["$defs"][name])
         self.assertIn("source_registry_ref", plan["$defs"])
         self.assertIn("source_registry_snapshot", model["$defs"])
+        self.assertNotIn(
+            "minItems", plan["$defs"]["scope"]["properties"]["claim_uses"]
+        )
+        self.assertNotIn(
+            "minItems", model["$defs"]["scope"]["properties"]["claim_uses"]
+        )
 
     def test_golden_document_validates_and_matches_compiler(self) -> None:
         expected = _read_json(MODEL_PATH)

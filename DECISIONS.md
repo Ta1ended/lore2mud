@@ -13,6 +13,34 @@
 - Evidence: `pyproject.toml`, `src/lore2mud/`, `tests/`.
 - Supersedes: None.
 
+## DEC-0073: NarrativeModel v1 all-omission accounting correction - re-review pending
+
+- Date: 2026-08-01
+- Status: First independent acceptance returned REVISE/P2; local correction pending fresh re-review.
+- Context: The original v1 documentation and decision require every scoped registry
+  claim to be accounted for by a proposition use or a reasoned omission. The first
+  clean reviewer constructed a plan that omitted every fixture claim with a non-blank
+  reason and converted the affected propositions to `unknown`. It was otherwise
+  valid but the parser and both Schemas rejected its empty `claim_uses` array.
+- Decision: `scope.claim_uses` remains a required array but may be empty. The
+  compiler remains responsible for binding the selected entities to the registry and
+  rejects a claim unless it appears exactly as a use or a reasoned omission. Plan and
+  model Schemas, parser, format documentation, and regressions all use this same
+  contract.
+- Evidence: The correction adds public plan/compiler/model/Schema coverage for an
+  all-omission fixture-derived plan. It passes 42 focused tests with 2 Windows
+  symlink permission skips, 1298 full unittest cases, and 1289 pytest cases with
+  9 conditional skips per full suite. Ruff, Pyright, compileall, original-demo
+  validation, history safety, fsck, and a repository-external standard golden plus
+  all-omission CLI run pass. A fresh clean GPT-5.6-sol reviewer must inspect the
+  final range before GO.
+- Consequences: This correction neither generates canon nor relaxes foreign/missing
+  provenance rejection. It does not authorize integration, `main` changes, push,
+  release, private-material access, campaign compilation, Forge v2, or a review
+  workbench.
+- Supersedes: The empty-`claim_uses` restriction implied by the initial DEC-0072
+  implementation only; DEC-0072's explicit complete-accounting rationale remains.
+
 ## DEC-0002: Canon facts remain outside game rules
 
 - Date: 2026-07-27

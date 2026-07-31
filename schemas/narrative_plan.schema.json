@@ -95,7 +95,6 @@
         },
         "claim_uses": {
           "type": "array",
-          "minItems": 1,
           "uniqueItems": true,
           "items": { "$ref": "#/$defs/claim_ref" }
         },

@@ -47,6 +47,10 @@ once in one of these ways:
 - `claim_omissions` contains the same composite identity with a non-blank human
   reason.
 
+Both arrays are required. `claim_uses` may be empty when every scoped claim is
+recorded in `claim_omissions`; compilation still rejects any scoped claim that
+is neither used nor reasonedly omitted.
+
 A claim reference is always the full tuple
 `(promotion_id, source_entity_id, source_claim_id)`. The compiler rejects a
 missing, foreign, or unaccounted claim. It preserves no raw claim value in the
