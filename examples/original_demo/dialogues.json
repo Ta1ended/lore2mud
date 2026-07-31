@@ -64,6 +64,41 @@
             "id": "opt_restore_beacon",
             "text": "让信标重新点亮。",
             "next_node_id": null,
+            "condition": {
+              "kind": "all",
+              "conditions": [
+                {
+                  "kind": "state_equals",
+                  "state_id": "state_beacon_enabled",
+                  "value": true
+                },
+                {
+                  "kind": "state_compare",
+                  "state_id": "state_signal_strength",
+                  "operator": "gte",
+                  "value": 1
+                },
+                {
+                  "kind": "state_equals",
+                  "state_id": "state_station_mode",
+                  "value": "standby"
+                },
+                {
+                  "kind": "has_item",
+                  "item_id": "item_beacon_core",
+                  "quantity": 1
+                },
+                {
+                  "kind": "at_location",
+                  "location_id": "room_beacon_heart"
+                },
+                {
+                  "kind": "quest_status",
+                  "quest_id": "quest_restore_beacon",
+                  "status": "completed"
+                }
+              ]
+            },
             "effects": [
               {"kind": "set_flag", "flag_id": "flag_beacon_restored", "value": true}
             ]

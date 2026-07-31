@@ -20,7 +20,7 @@ class OriginalAdventureDefinitionTests(unittest.TestCase):
         self.pack = load_content_pack(DEMO_PATH)
 
     def test_finale_requires_the_climax_loot_and_has_a_persistent_confirmation(self) -> None:
-        self.assertEqual(self.pack.version, "0.9.0")
+        self.assertEqual(self.pack.version, "0.10.0")
         platform = self.pack.rooms["room_afterglow_beacon_platform"]
         finale_exit = platform.exits["east"]
         self.assertEqual(finale_exit.target_room_id, "room_beacon_heart")
@@ -170,7 +170,7 @@ class OriginalAdventureScenarioTests(unittest.TestCase):
             service = SaveLoadService(self.pack, Path(temp_dir))
             service.save(self.world)
             old_save = service.save_path.read_text("utf-8").replace(
-                '"version": "0.9.0"',
+                '"version": "0.10.0"',
                 '"version": "0.8.0"',
             )
             service.save_path.write_text(old_save, encoding="utf-8")

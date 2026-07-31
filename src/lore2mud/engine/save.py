@@ -22,8 +22,14 @@ from lore2mud.engine.models import (
 )
 from lore2mud.engine.world import World
 from lore2mud.inventory.models import EquippedItems, Inventory, Item, ItemStack
+from lore2mud.narrative.models import (
+    NarrativeStateDefinition,
+    NarrativeValue,
+    narrative_value_is_valid,
+)
 
-SAVE_FORMAT_VERSION = 7
+SAVE_FORMAT_VERSION = 8
+LEGACY_SAVE_FORMAT_VERSION = 7
 DEFAULT_SLOT = "default.json"
 _SLOT_NAME_PATTERN = re.compile(r"[a-z0-9][a-z0-9_-]{0,31}")
 _WINDOWS_RESERVED_SLOT_NAMES = frozenset(
@@ -31,7 +37,7 @@ _WINDOWS_RESERVED_SLOT_NAMES = frozenset(
     | {f"com{number}" for number in range(1, 10)}
     | {f"lpt{number}" for number in range(1, 10)}
 )
-_SAVE_TOP_LEVEL_KEYS = frozenset(
+_SAVE_V7_TOP_LEVEL_KEYS = frozenset(
     {
         "save_format_version",
         "content_pack",
@@ -44,6 +50,7 @@ _SAVE_TOP_LEVEL_KEYS = frozenset(
         "active_dialogue",
     }
 )
+_SAVE_V8_TOP_LEVEL_KEYS = _SAVE_V7_TOP_LEVEL_KEYS | {"narrative_state"}
 _CONTENT_PACK_KEYS = frozenset({"id", "version"})
 _PLAYER_KEYS = frozenset(
     {
@@ -105,6 +112,37 @@ def _validate_flags(raw: object, location: str) -> dict[str, bool]:
     return result
 
 
+def _validate_narrative_state(
+    raw: object,
+    definitions: dict[str, NarrativeStateDefinition],
+    location: str,
+) -> dict[str, NarrativeValue]:
+    if not isinstance(raw, dict):
+        raise SaveLoadError(f"{location} 必须是对象")
+    expected_ids = set(definitions)
+    actual_ids = set(raw)
+    if actual_ids != expected_ids:
+        parts: list[str] = []
+        missing = expected_ids - actual_ids
+        extra = actual_ids - expected_ids
+        if missing:
+            parts.append(f"缺少：{sorted(missing)}")
+        if extra:
+            parts.append(f"多余：{sorted(extra)}")
+        raise SaveLoadError(f"{location} 状态键集合不匹配：{'; '.join(parts)}")
+
+    result: dict[str, NarrativeValue] = {}
+    for state_id in sorted(definitions):
+        value = raw[state_id]
+        definition = definitions[state_id]
+        if not narrative_value_is_valid(definition, value):
+            raise SaveLoadError(
+                f"{location}.{state_id} 不符合 {definition.kind} 声明"
+            )
+        result[state_id] = value
+    return result
+
+
 def _serialize_stacks(stacks: list[ItemStack]) -> list[dict]:
     return [{"item_id": s.item_id, "quantity": s.quantity} for s in stacks]
 
@@ -114,6 +152,11 @@ def _serialize_world(world: World) -> dict:
     player = world.player
     coins = _validate_int(player.coins, "player.coins", minimum=0)
     flags = _validate_flags(world.flags, "flags")
+    narrative_state = _validate_narrative_state(
+        world.narrative_state,
+        world.narrative_state_defs,
+        "narrative_state",
+    )
     rooms_data: dict[str, dict] = {}
     for room_id, room in world.rooms.items():
         rooms_data[room_id] = {
@@ -160,6 +203,7 @@ def _serialize_world(world: World) -> dict:
         "monsters": monsters_data,
         "quest_states": quest_states_data,
         "flags": flags,
+        "narrative_state": narrative_state,
         "active_dialogue": (
             {
                 "dialogue_id": world.active_dialogue.dialogue_id,
@@ -186,6 +230,10 @@ def _serialize_world(world: World) -> dict:
         if not node.options:
             raise SaveLoadError(
                 f"active_dialogue 指向终端节点 {node_id!r}"
+            )
+        if not world.available_dialogue_options(dlg_id, node_id):
+            raise SaveLoadError(
+                f"active_dialogue 节点 {node_id!r} 当前没有可用选项"
             )
         char = world.characters.get(dlg.character_id)
         if char is None:
@@ -271,14 +319,25 @@ def _validate_stacks(
 
 def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
     """Validate save data and build a new World. Raises SaveLoadError on any issue."""
-    _reject_unknown_fields(data, _SAVE_TOP_LEVEL_KEYS, "存档顶层")
-
     # --- save_format_version ---
     fmt = data.get("save_format_version")
-    if isinstance(fmt, bool) or not isinstance(fmt, int) or fmt != SAVE_FORMAT_VERSION:
+    if (
+        isinstance(fmt, bool)
+        or not isinstance(fmt, int)
+        or fmt not in {LEGACY_SAVE_FORMAT_VERSION, SAVE_FORMAT_VERSION}
+    ):
         raise SaveLoadError(
-            f"存档格式版本不匹配：期望 {SAVE_FORMAT_VERSION}，实际 {fmt}"
+            f"存档格式版本不匹配：期望 {SAVE_FORMAT_VERSION}"
+            f"（或兼容的 {LEGACY_SAVE_FORMAT_VERSION}），实际 {fmt}"
         )
+    if fmt == LEGACY_SAVE_FORMAT_VERSION:
+        if pack.narrative_state_defs:
+            raise SaveLoadError(
+                "save v7 不包含 narrative_state，不能用于声明了叙事状态的内容包"
+            )
+        _reject_unknown_fields(data, _SAVE_V7_TOP_LEVEL_KEYS, "存档顶层")
+    else:
+        _reject_unknown_fields(data, _SAVE_V8_TOP_LEVEL_KEYS, "存档顶层")
 
     # --- content_pack identity ---
     cp = data.get("content_pack")
@@ -518,6 +577,18 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         raise SaveLoadError("存档缺少 flags 字段")
     flags = _validate_flags(data["flags"], "flags")
 
+    # --- typed narrative state (required in v8) ---
+    if fmt == SAVE_FORMAT_VERSION:
+        if "narrative_state" not in data:
+            raise SaveLoadError("存档缺少 narrative_state 字段")
+        narrative_state = _validate_narrative_state(
+            data["narrative_state"],
+            pack.narrative_state_defs,
+            "narrative_state",
+        )
+    else:
+        narrative_state = {}
+
     # --- equipped (symmetric hand + body) ---
     equipped_raw = data.get("equipped")
     if not isinstance(equipped_raw, dict):
@@ -674,7 +745,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
     }
 
     # --- Build World ---
-    return World(
+    world = World(
         pack_id=pack.id,
         pack_name=pack.name,
         pack_version=pack.version,
@@ -698,12 +769,20 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         quest_defs=dict(pack.quests),
         quest_states=quest_states,
         flags=flags,
+        narrative_state_defs=dict(pack.narrative_state_defs),
+        narrative_state=narrative_state,
         equipped=equipped,
         characters=characters,
         dialogue_defs=dict(pack.dialogues),
         shop_defs=dict(pack.shops),
         active_dialogue=active_dialogue,
     )
+    if active_dialogue is not None and not world.available_dialogue_options(
+        active_dialogue.dialogue_id,
+        active_dialogue.current_node_id,
+    ):
+        raise SaveLoadError("active_dialogue 当前没有可用选项")
+    return world
 
 
 class SaveLoadService:

@@ -5,6 +5,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Literal, TypeAlias
 
+from lore2mud.narrative.models import (
+    NarrativeCondition,
+    NarrativeStateDefinition,
+)
+
 
 @dataclass(frozen=True, slots=True)
 class CanonReference:
@@ -186,6 +191,7 @@ class DialogueOption:
     text: str
     next_node_id: str | None = None
     effects: tuple[DialogueEffect, ...] = ()
+    condition: NarrativeCondition | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -247,4 +253,7 @@ class ContentPack:
     quests: dict[str, QuestDefinition]
     dialogues: dict[str, DialogueDefinition] = field(default_factory=dict)
     shops: dict[str, ShopDefinition] = field(default_factory=dict)
+    narrative_state_defs: dict[str, NarrativeStateDefinition] = field(
+        default_factory=dict
+    )
     extensions: dict[str, Any] = field(default_factory=dict)

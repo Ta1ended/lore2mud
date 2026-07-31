@@ -44,7 +44,7 @@ def _world() -> World:
 
 
 def _mutable_state(world: World) -> tuple[object, ...]:
-    """Capture every mutable World branch relevant to save v7."""
+    """Capture every mutable World branch relevant to save v8."""
     player = world.player
     return (
         (
@@ -414,8 +414,8 @@ class HelpRegistryTests(unittest.TestCase):
 
     def test_save_format_and_content_versions_are_current(self) -> None:
         pack = load_content_pack(DEMO_PATH)
-        self.assertEqual(SAVE_FORMAT_VERSION, 7)
-        self.assertEqual(pack.version, "0.9.0")
+        self.assertEqual(SAVE_FORMAT_VERSION, 8)
+        self.assertEqual(pack.version, "0.10.0")
 
 
 if __name__ == "__main__":

@@ -442,6 +442,7 @@ class PlayerSession:
         dialogue = self._world.dialogue_defs[active.dialogue_id]
         character = self._world.characters[dialogue.character_id]
         node = dialogue.nodes[active.current_node_id]
+        options = self._world.available_dialogue_options(dialogue.id, node.id)
         return {
             "dialogue_id": dialogue.id,
             "character_id": character.id,
@@ -450,7 +451,7 @@ class PlayerSession:
             "text": node.text,
             "options": [
                 {"index": index, "id": option.id, "text": option.text}
-                for index, option in enumerate(node.options, 1)
+                for index, option in enumerate(options, 1)
             ],
         }
 

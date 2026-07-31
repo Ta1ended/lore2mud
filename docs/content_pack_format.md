@@ -13,11 +13,13 @@ content_pack/
 ├─ characters.json
 ├─ quests.json
 ├─ dialogues.json
-└─ shops.json
+├─ shops.json
+└─ narrative_state.json  # 可选
 ```
 
-当前格式要求八个文件都存在；没有角色、任务、对话或商店时使用空数组。所有文本为 UTF-8
-JSON。稳定 ID 必须匹配：
+前八个文件必须存在；没有角色、任务、对话或商店时使用空数组。`narrative_state.json`
+是可选的：缺失时内容包没有类型化叙事状态，且对话条件不能引用状态。所有文本为 UTF-8 JSON。
+稳定 ID 必须匹配：
 
 ```text
 ^[a-z][a-z0-9_]*$
@@ -48,6 +50,29 @@ JSON。稳定 ID 必须匹配：
 其中内容。
 
 `player.coins` 必填，必须是非负整数；bool、负数、字符串和缺失字段均被拒绝。
+
+## `narrative_state.json`
+
+该可选文件的格式版本固定为 1，用于声明通用叙事状态，而不是存放玩家运行时数据：
+
+```json
+{
+  "format_version": 1,
+  "states": [
+    {"id": "state_gate_open", "kind": "bool", "initial": false},
+    {"id": "state_signal", "kind": "int", "initial": 1, "minimum": 0, "maximum": 3},
+    {"id": "state_mode", "kind": "enum", "initial": "idle", "values": ["idle", "ready"]}
+  ]
+}
+```
+
+- 每个 `id` 是内容包内唯一的稳定 ID，且不得与对话 `set_flag.flag_id` 重名。
+- `bool.initial` 必须是真正的 bool。
+- `int.initial`、可选 `minimum` 和可选 `maximum` 都是 bool 以外的整数；同时给出范围时
+  `minimum <= maximum`，`initial` 必须在范围内。
+- `enum.values` 是至少一个、不重复的稳定 ID 字符串；`initial` 必须属于该集合。
+- 运行时 `World` 以这些定义初始化 `narrative_state`。save v8 精确保存该映射；没有此文件的
+  内容包可只读加载旧 v7 存档，但带定义的内容包拒绝 v7。
 
 ## 房间
 
@@ -298,6 +323,16 @@ null` 属于非法内容，加载器拒绝内容包。
   - `{"kind": "set_flag", "flag_id": "...", "value": true}`：稳定 flag ID 和真正 bool 值。
   同一选项不得重复 `grant_item.item_id`、`accept_quest.quest_id`、`set_flag.flag_id`，且最多一个
   `grant_experience`；不同 kind 和不同目标可按原数组顺序组合。
+- `condition`：可选的受限对象。它只能使用 `state_equals`、`state_compare`、`has_item`、
+  `at_location`、`quest_status`、`all`、`any` 或 `not`，严格拒绝未知字段和任意脚本。
+  - `state_equals` 的值必须符合被引用状态的精确类型和值域；`state_compare` 只引用 int 状态，
+    使用 `lt`、`lte`、`gt` 或 `gte`。
+  - `has_item`、`at_location` 和 `quest_status` 分别引用已有物品、房间和任务；任务状态只能是
+    `not_accepted`、`active` 或 `completed`。
+  - `all` 和 `any` 至少有一个子条件，`not` 恰有一个子条件。单个条件树最大深度为 16、最大
+    节点数为 256。
+  - 每个非终端节点至少保留一个没有 `condition` 的选项。运行时只显示
+    `World.available_dialogue_options()` 返回的顺序，并以该投影重新编号。
 
 ### 对话交互
 

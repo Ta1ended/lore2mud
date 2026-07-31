@@ -7,6 +7,7 @@ from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field
 import re
+from types import MappingProxyType
 from typing import Literal
 
 from lore2mud.combat.service import CombatRound, resolve_combat_round
@@ -16,6 +17,7 @@ from lore2mud.content.models import (
     CollectItemQuestDefinition,
     DialogueDefinition,
     DialogueEffect,
+    DialogueOption,
     GrantExperienceEffect,
     GrantItemEffect,
     MonsterDefeatedQuestDefinition,
@@ -34,6 +36,14 @@ from lore2mud.engine.models import (
     Room,
 )
 from lore2mud.inventory.models import EquippedItems, Inventory, Item, ItemStack
+from lore2mud.narrative.conditions import evaluate_condition
+from lore2mud.narrative.models import (
+    ConditionContext,
+    NarrativeStateDefinition,
+    NarrativeValue,
+    QuestStatus,
+    narrative_value_is_valid,
+)
 from lore2mud.progression.service import LevelGain, grant_experience
 
 
@@ -318,6 +328,10 @@ class World:
     quest_defs: dict[str, QuestDefinition] = field(default_factory=dict)
     quest_states: dict[str, QuestState] = field(default_factory=dict)
     flags: dict[str, bool] = field(default_factory=dict)
+    narrative_state_defs: dict[str, NarrativeStateDefinition] = field(
+        default_factory=dict
+    )
+    narrative_state: dict[str, NarrativeValue] = field(default_factory=dict)
     equipped: EquippedItems = field(default_factory=EquippedItems)
     characters: dict[str, Character] = field(default_factory=dict)
     dialogue_defs: dict[str, DialogueDefinition] = field(default_factory=dict)
@@ -419,6 +433,11 @@ class World:
             characters=characters,
             dialogue_defs=dialogue_defs,
             shop_defs=dict(pack.shops),
+            narrative_state_defs=dict(pack.narrative_state_defs),
+            narrative_state={
+                state_id: definition.initial
+                for state_id, definition in pack.narrative_state_defs.items()
+            },
         )
         # A newly accepted quest can already be satisfied in the starting state.
         # There is no command action to render here; ``quests`` exposes the
@@ -538,6 +557,7 @@ class World:
             deepcopy(self.player),
             deepcopy(self.quest_states),
             deepcopy(self.flags),
+            deepcopy(self.narrative_state),
             deepcopy(self.equipped),
             deepcopy(self.active_dialogue),
         )
@@ -550,6 +570,7 @@ class World:
                 self.player,
                 self.quest_states,
                 self.flags,
+                self.narrative_state,
                 self.equipped,
                 self.active_dialogue,
             ) = snapshot
@@ -558,6 +579,55 @@ class World:
     @property
     def current_room(self) -> Room:
         return self.rooms[self.player.room_id]
+
+    def set_narrative_state(self, state_id: str, value: NarrativeValue) -> None:
+        """Set one declared narrative value through the World authority."""
+        definition = self.narrative_state_defs.get(state_id)
+        if definition is None:
+            raise WorldRuleError(f"叙事状态 {state_id!r} 不存在。")
+        if not narrative_value_is_valid(definition, value):
+            raise WorldRuleError(
+                f"叙事状态 {state_id!r} 的值不符合 {definition.kind} 声明。"
+            )
+        self.narrative_state[state_id] = value
+
+    def condition_context(self) -> ConditionContext:
+        """Return a detached, read-only snapshot for pure condition evaluation."""
+        inventory_quantities = {
+            stack.item_id: stack.quantity
+            for stack in self.player.inventory.stacks
+        }
+        quest_statuses: dict[str, QuestStatus] = {}
+        for quest_id in self.quest_defs:
+            state = self.quest_states.get(quest_id)
+            if state is None:
+                quest_statuses[quest_id] = "not_accepted"
+            elif state.completed:
+                quest_statuses[quest_id] = "completed"
+            else:
+                quest_statuses[quest_id] = "active"
+        return ConditionContext(
+            state_values=MappingProxyType(dict(self.narrative_state)),
+            inventory_quantities=MappingProxyType(inventory_quantities),
+            location_id=self.player.room_id,
+            quest_statuses=MappingProxyType(quest_statuses),
+        )
+
+    def available_dialogue_options(
+        self,
+        dialogue_id: str,
+        node_id: str,
+    ) -> tuple[DialogueOption, ...]:
+        """Return the authoritative ordered options available right now."""
+        dialogue = self.dialogue_defs[dialogue_id]
+        node = dialogue.nodes[node_id]
+        context = self.condition_context()
+        return tuple(
+            option
+            for option in node.options
+            if option.condition is None
+            or evaluate_condition(option.condition, context)
+        )
 
     def _require_alive(self) -> None:
         """Gate: reject all modifying actions when the player is dead."""
@@ -1189,6 +1259,9 @@ class World:
             and self.active_dialogue.dialogue_id == dialogue.id
         ):
             node = dialogue.nodes[self.active_dialogue.current_node_id]
+            options = self.available_dialogue_options(dialogue.id, node.id)
+            if not options:
+                self.active_dialogue = None
             return TalkOutcome(
                 character_id=character.id,
                 character_name=character.name,
@@ -1197,16 +1270,19 @@ class World:
                 node_text=node.text,
                 options=tuple(
                     DialogueOptionSummary(opt.id, opt.text)
-                    for opt in node.options
+                    for opt in options
                 ),
-                ended=False,
+                ended=not options,
             )
 
         # End old dialogue if switching
         self.active_dialogue = None
 
         start_node = dialogue.nodes[dialogue.start_node_id]
-        if start_node.options:
+        start_options = self.available_dialogue_options(
+            dialogue.id, start_node.id
+        )
+        if start_options:
             self.active_dialogue = DialogueState(
                 dialogue_id=dialogue.id,
                 current_node_id=start_node.id,
@@ -1219,7 +1295,7 @@ class World:
                 node_text=start_node.text,
                 options=tuple(
                     DialogueOptionSummary(opt.id, opt.text)
-                    for opt in start_node.options
+                    for opt in start_options
                 ),
                 ended=False,
             )
@@ -1313,10 +1389,13 @@ class World:
 
         dialogue = self.dialogue_defs[self.active_dialogue.dialogue_id]
         node = dialogue.nodes[self.active_dialogue.current_node_id]
-        if index < 1 or index > len(node.options):
+        available_options = self.available_dialogue_options(
+            dialogue.id, node.id
+        )
+        if index < 1 or index > len(available_options):
             raise WorldRuleError(f"无效的选项：{index}。")
 
-        option = node.options[index - 1]
+        option = available_options[index - 1]
         character = self.characters[dialogue.character_id]
         self._preflight_dialogue_effects(option.effects)
 
@@ -1399,7 +1478,10 @@ class World:
                 return TalkOutcome(ended=True, **common)
 
             next_node = dialogue.nodes[option.next_node_id]
-            if next_node.options:
+            next_options = self.available_dialogue_options(
+                dialogue.id, next_node.id
+            )
+            if next_options:
                 self.active_dialogue = DialogueState(
                     dialogue_id=dialogue.id,
                     current_node_id=next_node.id,
@@ -1409,7 +1491,7 @@ class World:
                     node_text=next_node.text,
                     options=tuple(
                         DialogueOptionSummary(opt.id, opt.text)
-                        for opt in next_node.options
+                        for opt in next_options
                     ),
                     ended=False,
                     **common,

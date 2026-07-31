@@ -32,7 +32,8 @@
                 "effects": {
                   "type": "array",
                   "items": {"$ref": "#/$defs/dialogue_effect"}
-                }
+                },
+                "condition": {"$ref": "#/$defs/narrative_condition"}
               }
             }
           }
@@ -81,6 +82,82 @@
             "kind": {"const": "set_flag"},
             "flag_id": {"$ref": "common.schema.json#/$defs/stable_id"},
             "value": {"type": "boolean"}
+          }
+        }
+      ]
+    },
+    "narrative_condition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "state_id", "value"],
+          "properties": {
+            "kind": {"const": "state_equals"},
+            "state_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "value": {"type": ["boolean", "integer", "string"]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "state_id", "operator", "value"],
+          "properties": {
+            "kind": {"const": "state_compare"},
+            "state_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "operator": {"enum": ["lt", "lte", "gt", "gte"]},
+            "value": {"type": "integer"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "item_id", "quantity"],
+          "properties": {
+            "kind": {"const": "has_item"},
+            "item_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "quantity": {"$ref": "common.schema.json#/$defs/positive_integer"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "location_id"],
+          "properties": {
+            "kind": {"const": "at_location"},
+            "location_id": {"$ref": "common.schema.json#/$defs/stable_id"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "quest_id", "status"],
+          "properties": {
+            "kind": {"const": "quest_status"},
+            "quest_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "status": {"enum": ["not_accepted", "active", "completed"]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "conditions"],
+          "properties": {
+            "kind": {"enum": ["all", "any"]},
+            "conditions": {
+              "type": "array",
+              "minItems": 1,
+              "items": {"$ref": "#/$defs/narrative_condition"}
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "condition"],
+          "properties": {
+            "kind": {"const": "not"},
+            "condition": {"$ref": "#/$defs/narrative_condition"}
           }
         }
       ]

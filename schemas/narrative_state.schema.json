@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/lore2mud/narrative_state.schema.json",
+  "title": "lore2mud narrative state definitions",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format_version", "states"],
+  "properties": {
+    "format_version": {"const": 1},
+    "states": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/state_definition"}
+    }
+  },
+  "$defs": {
+    "state_definition": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "kind", "initial"],
+          "properties": {
+            "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "kind": {"const": "bool"},
+            "initial": {"type": "boolean"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "kind", "initial"],
+          "properties": {
+            "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "kind": {"const": "int"},
+            "initial": {"type": "integer"},
+            "minimum": {"type": "integer"},
+            "maximum": {"type": "integer"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "kind", "initial", "values"],
+          "properties": {
+            "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "kind": {"const": "enum"},
+            "initial": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "values": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {"$ref": "common.schema.json#/$defs/stable_id"}
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -588,7 +588,7 @@ class QuestDialogueAndSaveTests(unittest.TestCase):
             service = SaveLoadService(pack, Path(td))
             service.save(world)
             saved = json.loads(service.save_path.read_text("utf-8"))
-            self.assertEqual(saved["save_format_version"], 7)
+            self.assertEqual(saved["save_format_version"], 8)
             self.assertEqual(
                 set(saved["quest_states"][default.id]),
                 {"completed"},
@@ -610,7 +610,7 @@ class QuestDialogueAndSaveTests(unittest.TestCase):
             self.assertEqual(loaded.player.level, 2)
             self.assertEqual(loaded.player.experience, 5)
 
-    def test_v7_rejects_a_save_from_the_old_0_8_content_pack(self) -> None:
+    def test_v8_rejects_a_save_from_the_old_0_8_content_pack(self) -> None:
         pack = load_content_pack(DEMO_PATH)
         world = World.from_content_pack(pack)
         with tempfile.TemporaryDirectory() as td:
@@ -618,19 +618,19 @@ class QuestDialogueAndSaveTests(unittest.TestCase):
             service.save(world)
             save_text = service.save_path.read_text("utf-8")
             service.save_path.write_text(
-                save_text.replace('"version": "0.9.0"', '"version": "0.8.0"'),
+                save_text.replace('"version": "0.10.0"', '"version": "0.8.0"'),
                 encoding="utf-8",
             )
             with self.assertRaises(SaveLoadError) as context:
                 service.load()
         self.assertIn("版本", str(context.exception))
 
-    def test_save_format_and_quest_state_shape_are_v7(self) -> None:
+    def test_save_format_and_quest_state_shape_are_v8(self) -> None:
         world = World.from_content_pack(load_content_pack(DEMO_PATH))
         serialized = _serialize_world(world)
 
-        self.assertEqual(SAVE_FORMAT_VERSION, 7)
-        self.assertEqual(serialized["save_format_version"], 7)
+        self.assertEqual(SAVE_FORMAT_VERSION, 8)
+        self.assertEqual(serialized["save_format_version"], 8)
         self.assertEqual(
             set(serialized["quest_states"]["quest_clear_ash_mite"]),
             {"completed"},

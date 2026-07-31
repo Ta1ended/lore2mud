@@ -33,6 +33,23 @@ from lore2mud.content.models import (
     ShopDefinition,
     ShopListingDefinition,
 )
+from lore2mud.narrative.models import (
+    AllCondition,
+    AnyCondition,
+    AtLocationCondition,
+    BoolStateDefinition,
+    EnumStateDefinition,
+    HasItemCondition,
+    IntStateDefinition,
+    NarrativeCondition,
+    NarrativeStateDefinition,
+    NarrativeValue,
+    NotCondition,
+    QuestStatusCondition,
+    StateCompareCondition,
+    StateEqualsCondition,
+    narrative_value_is_valid,
+)
 
 STABLE_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 ENTITY_FILES = (
@@ -44,6 +61,10 @@ ENTITY_FILES = (
     "dialogues.json",
     "shops.json",
 )
+NARRATIVE_STATE_FILE = "narrative_state.json"
+NARRATIVE_STATE_FORMAT_VERSION = 1
+MAX_CONDITION_DEPTH = 16
+MAX_CONDITION_NODES = 256
 
 
 class ContentValidationError(ValueError):
@@ -232,6 +253,333 @@ def _unique_map(
     return result
 
 
+def _signed_integer(
+    value: object,
+    location: str,
+    validator: _Validator,
+    *,
+    required: bool = True,
+) -> int | None:
+    if value is None and not required:
+        return None
+    if not isinstance(value, int) or isinstance(value, bool):
+        validator.issues.append(f"{location} 必须是整数")
+        return None
+    return value
+
+
+def _load_narrative_state_definitions(
+    root: Path,
+    validator: _Validator,
+) -> dict[str, NarrativeStateDefinition]:
+    path = root / NARRATIVE_STATE_FILE
+    if not path.exists():
+        return {}
+    try:
+        raw = _read_json(path)
+    except ContentValidationError as exc:
+        validator.issues.extend(exc.issues)
+        return {}
+
+    document = validator.object(raw, NARRATIVE_STATE_FILE)
+    validator.keys(
+        document,
+        {"format_version", "states"},
+        NARRATIVE_STATE_FILE,
+    )
+    raw_version = document.get("format_version")
+    if (
+        not isinstance(raw_version, int)
+        or isinstance(raw_version, bool)
+        or raw_version != NARRATIVE_STATE_FORMAT_VERSION
+    ):
+        validator.issues.append(
+            f"{NARRATIVE_STATE_FILE}.format_version 必须是 "
+            f"{NARRATIVE_STATE_FORMAT_VERSION}"
+        )
+
+    if "states" not in document:
+        validator.issues.append(f"{NARRATIVE_STATE_FILE}.states 是必填字段")
+        raw_states: list[Any] = []
+    else:
+        raw_states = validator.array(
+            document["states"], f"{NARRATIVE_STATE_FILE}.states"
+        )
+
+    definitions: list[NarrativeStateDefinition] = []
+    for index, raw_definition in enumerate(raw_states):
+        location = f"{NARRATIVE_STATE_FILE}.states[{index}]"
+        obj = validator.object(raw_definition, location)
+        raw_kind = obj.get("kind")
+        state_id = validator.stable_id(
+            validator.text(obj, "id", location), f"{location}.id"
+        )
+
+        if raw_kind == "bool":
+            validator.keys(obj, {"id", "kind", "initial"}, location)
+            raw_initial = obj.get("initial")
+            if not isinstance(raw_initial, bool):
+                validator.issues.append(f"{location}.initial 必须是布尔值")
+                initial = False
+            else:
+                initial = raw_initial
+            definitions.append(BoolStateDefinition(state_id, initial))
+        elif raw_kind == "int":
+            validator.keys(
+                obj,
+                {"id", "kind", "initial", "minimum", "maximum"},
+                location,
+            )
+            initial = _signed_integer(
+                obj.get("initial"), f"{location}.initial", validator
+            )
+            minimum = _signed_integer(
+                obj.get("minimum"),
+                f"{location}.minimum",
+                validator,
+                required=False,
+            )
+            maximum = _signed_integer(
+                obj.get("maximum"),
+                f"{location}.maximum",
+                validator,
+                required=False,
+            )
+            if minimum is not None and maximum is not None and minimum > maximum:
+                validator.issues.append(
+                    f"{location}.minimum 不得大于 maximum"
+                )
+            definition = IntStateDefinition(
+                state_id,
+                0 if initial is None else initial,
+                minimum,
+                maximum,
+            )
+            if initial is not None and not narrative_value_is_valid(
+                definition, initial
+            ):
+                validator.issues.append(
+                    f"{location}.initial 必须在声明的整数范围内"
+                )
+            definitions.append(definition)
+        elif raw_kind == "enum":
+            validator.keys(
+                obj, {"id", "kind", "initial", "values"}, location
+            )
+            values = validator.string_list(
+                obj.get("values"), f"{location}.values"
+            )
+            if not values:
+                validator.issues.append(f"{location}.values 至少需要一个值")
+            for value_index, value in enumerate(values):
+                validator.stable_id(
+                    value, f"{location}.values[{value_index}]"
+                )
+            initial = validator.stable_id(
+                validator.text(obj, "initial", location),
+                f"{location}.initial",
+            )
+            if initial and initial not in values:
+                validator.issues.append(
+                    f"{location}.initial 必须是 values 中的一个值"
+                )
+            definitions.append(EnumStateDefinition(state_id, initial, values))
+        else:
+            validator.keys(obj, {"id", "kind"}, location)
+            validator.issues.append(
+                f"{location}.kind 必须是 bool、int 或 enum"
+            )
+
+    return _unique_map(definitions, NARRATIVE_STATE_FILE, validator)
+
+
+def _condition_value(
+    raw: object,
+    location: str,
+    validator: _Validator,
+) -> NarrativeValue:
+    if isinstance(raw, bool):
+        return raw
+    if isinstance(raw, int):
+        return raw
+    if isinstance(raw, str):
+        return raw
+    validator.issues.append(f"{location} 必须是布尔值、整数或字符串")
+    return False
+
+
+def _parse_narrative_condition(
+    raw: object,
+    location: str,
+    validator: _Validator,
+    *,
+    state_defs: dict[str, NarrativeStateDefinition],
+    rooms: dict[str, RoomDefinition],
+    items: dict[str, ItemDefinition],
+    quests: dict[str, QuestDefinition],
+    depth: int,
+    node_count: list[int],
+) -> NarrativeCondition:
+    node_count[0] += 1
+    if depth > MAX_CONDITION_DEPTH:
+        validator.issues.append(
+            f"{location} 超过条件最大深度 {MAX_CONDITION_DEPTH}"
+        )
+        return AllCondition(())
+    if node_count[0] > MAX_CONDITION_NODES:
+        validator.issues.append(
+            f"{location} 超过条件最大节点数 {MAX_CONDITION_NODES}"
+        )
+        return AllCondition(())
+
+    obj = validator.object(raw, location)
+    raw_kind = obj.get("kind")
+    if raw_kind == "state_equals":
+        validator.keys(obj, {"kind", "state_id", "value"}, location)
+        state_id = validator.stable_id(
+            validator.text(obj, "state_id", location),
+            f"{location}.state_id",
+        )
+        value = _condition_value(obj.get("value"), f"{location}.value", validator)
+        definition = state_defs.get(state_id)
+        if definition is None:
+            validator.issues.append(
+                f"{location}.state_id 引用了不存在的叙事状态：{state_id}"
+            )
+        elif not narrative_value_is_valid(definition, value):
+            validator.issues.append(
+                f"{location}.value 不符合状态 {state_id} 的类型或值域"
+            )
+        return StateEqualsCondition(state_id, value)
+
+    if raw_kind == "state_compare":
+        validator.keys(
+            obj, {"kind", "state_id", "operator", "value"}, location
+        )
+        state_id = validator.stable_id(
+            validator.text(obj, "state_id", location),
+            f"{location}.state_id",
+        )
+        raw_operator = obj.get("operator")
+        if raw_operator not in {"lt", "lte", "gt", "gte"}:
+            validator.issues.append(
+                f"{location}.operator 必须是 lt、lte、gt 或 gte"
+            )
+            operator = "lt"
+        else:
+            operator = raw_operator
+        value = _signed_integer(
+            obj.get("value"), f"{location}.value", validator
+        )
+        definition = state_defs.get(state_id)
+        if not isinstance(definition, IntStateDefinition):
+            validator.issues.append(
+                f"{location}.state_id 必须引用 int 叙事状态：{state_id}"
+            )
+        elif value is not None and not narrative_value_is_valid(definition, value):
+            validator.issues.append(
+                f"{location}.value 必须在状态 {state_id} 的整数范围内"
+            )
+        return StateCompareCondition(state_id, operator, 0 if value is None else value)
+
+    if raw_kind == "has_item":
+        validator.keys(obj, {"kind", "item_id", "quantity"}, location)
+        item_id = validator.stable_id(
+            validator.text(obj, "item_id", location), f"{location}.item_id"
+        )
+        quantity = validator.integer(
+            obj, "quantity", location, minimum=1, default=1
+        )
+        item = items.get(item_id)
+        if item is None:
+            validator.issues.append(
+                f"{location}.item_id 引用了不存在的物品：{item_id}"
+            )
+        elif quantity > item.stack_limit:
+            validator.issues.append(
+                f"{location}.quantity {quantity} 超过物品 {item_id} 的栈上限 "
+                f"({item.stack_limit})"
+            )
+        return HasItemCondition(item_id, quantity)
+
+    if raw_kind == "at_location":
+        validator.keys(obj, {"kind", "location_id"}, location)
+        location_id = validator.stable_id(
+            validator.text(obj, "location_id", location),
+            f"{location}.location_id",
+        )
+        if location_id not in rooms:
+            validator.issues.append(
+                f"{location}.location_id 引用了不存在的房间：{location_id}"
+            )
+        return AtLocationCondition(location_id)
+
+    if raw_kind == "quest_status":
+        validator.keys(obj, {"kind", "quest_id", "status"}, location)
+        quest_id = validator.stable_id(
+            validator.text(obj, "quest_id", location),
+            f"{location}.quest_id",
+        )
+        if quest_id not in quests:
+            validator.issues.append(
+                f"{location}.quest_id 引用了不存在的任务：{quest_id}"
+            )
+        raw_status = obj.get("status")
+        if raw_status not in {"not_accepted", "active", "completed"}:
+            validator.issues.append(
+                f"{location}.status 必须是 not_accepted、active 或 completed"
+            )
+            status = "not_accepted"
+        else:
+            status = raw_status
+        return QuestStatusCondition(quest_id, status)
+
+    if raw_kind in {"all", "any"}:
+        validator.keys(obj, {"kind", "conditions"}, location)
+        raw_children = validator.array(
+            obj.get("conditions"), f"{location}.conditions"
+        )
+        if not raw_children:
+            validator.issues.append(f"{location}.conditions 至少需要一个条件")
+        children = tuple(
+            _parse_narrative_condition(
+                child,
+                f"{location}.conditions[{index}]",
+                validator,
+                state_defs=state_defs,
+                rooms=rooms,
+                items=items,
+                quests=quests,
+                depth=depth + 1,
+                node_count=node_count,
+            )
+            for index, child in enumerate(raw_children)
+        )
+        return AllCondition(children) if raw_kind == "all" else AnyCondition(children)
+
+    if raw_kind == "not":
+        validator.keys(obj, {"kind", "condition"}, location)
+        child = _parse_narrative_condition(
+            obj.get("condition"),
+            f"{location}.condition",
+            validator,
+            state_defs=state_defs,
+            rooms=rooms,
+            items=items,
+            quests=quests,
+            depth=depth + 1,
+            node_count=node_count,
+        )
+        return NotCondition(child)
+
+    validator.keys(obj, {"kind"}, location)
+    validator.issues.append(
+        f"{location}.kind 必须是 state_equals、state_compare、has_item、"
+        "at_location、quest_status、all、any 或 not"
+    )
+    return AllCondition(())
+
+
 def load_content_pack(path: str | Path) -> ContentPack:
     root = Path(path).resolve()
     validator = _Validator()
@@ -296,6 +644,8 @@ def load_content_pack(path: str | Path) -> ContentPack:
             default=0,
         ),
     )
+
+    narrative_state_defs = _load_narrative_state_definitions(root, validator)
 
     room_defs: list[RoomDefinition] = []
     for index, obj in enumerate(
@@ -741,6 +1091,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
 
     # --- dialogues ---
     dialogue_defs_list: list[DialogueDefinition] = []
+    legacy_flag_ids: set[str] = set()
     dialogue_character_ids: set[str] = set()
     for index, obj in enumerate(
         _load_entity_array(root, "dialogues.json", validator)
@@ -796,7 +1147,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 opt_obj = validator.object(opt_obj, oloc)
                 validator.keys(
                     opt_obj,
-                    {"id", "text", "next_node_id", "effects"},
+                    {"id", "text", "next_node_id", "effects", "condition"},
                     oloc,
                 )
                 oid = validator.stable_id(
@@ -896,6 +1247,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                                 f"{oloc}.effects 不得重复 set_flag.flag_id：{flag_id}"
                             )
                         set_flag_ids.add(flag_id)
+                        legacy_flag_ids.add(flag_id)
                         effects.append(SetFlagEffect(flag_id, value))
                     else:
                         validator.keys(effect_obj, {"kind"}, eloc)
@@ -903,6 +1255,19 @@ def load_content_pack(path: str | Path) -> ContentPack:
                             f"{eloc}.kind 必须是 grant_item、grant_experience、"
                             "accept_quest 或 set_flag"
                         )
+                condition: NarrativeCondition | None = None
+                if "condition" in opt_obj:
+                    condition = _parse_narrative_condition(
+                        opt_obj["condition"],
+                        f"{oloc}.condition",
+                        validator,
+                        state_defs=narrative_state_defs,
+                        rooms=rooms,
+                        items=items,
+                        quests=quests,
+                        depth=1,
+                        node_count=[0],
+                    )
                 if oid in opt_ids_seen:
                     validator.issues.append(f"{nloc} 选项 ID 重复：{oid}")
                 opt_ids_seen.add(oid)
@@ -912,7 +1277,13 @@ def load_content_pack(path: str | Path) -> ContentPack:
                         text=otxt,
                         next_node_id=next_id,
                         effects=tuple(effects),
+                        condition=condition,
                     )
+                )
+
+            if opts and not any(option.condition is None for option in opts):
+                validator.issues.append(
+                    f"{nloc}.options 至少需要一个无条件选项"
                 )
 
             if nid in node_map:
@@ -949,6 +1320,10 @@ def load_content_pack(path: str | Path) -> ContentPack:
         )
 
     dialogues = _unique_map(dialogue_defs_list, "dialogues.json", validator)
+    for state_id in sorted(set(narrative_state_defs) & legacy_flag_ids):
+        validator.issues.append(
+            f"叙事状态 ID {state_id} 不得与 legacy flag ID 重复"
+        )
 
     # --- shops ---
     shop_defs_list: list[ShopDefinition] = []
@@ -1281,6 +1656,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
         quests=quests,
         dialogues=dialogues,
         shops=shops,
+        narrative_state_defs=narrative_state_defs,
         extensions=extensions,
     )
 

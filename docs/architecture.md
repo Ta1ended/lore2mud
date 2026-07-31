@@ -42,7 +42,8 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
   `reach_room.target_room_id` 或 `collect_item.target_item_id` 与
   `required_quantity`；分支目标字段互斥，收集数量必须在 1 和物品 `stack_limit` 之间；
 - `pack.json`、`rooms.json`、`items.json`、`monsters.json`、`characters.json`、
-  `quests.json`、`dialogues.json` 和 `shops.json` 八个必需内容文件；
+  `quests.json`、`dialogues.json` 和 `shops.json` 八个必需内容文件，以及可选的
+  `narrative_state.json`；
 - 同一实体的重复放置；
 - 怪物 `room_id` 与房间 `monster_ids` 一致性；
 - 对话节点/选项的交叉引用与唯一性；
@@ -50,6 +51,18 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
 
 仓库中的 JSON Schema 是格式契约和编辑器提示；运行时使用标准库实现等价的
 关键校验，因此不依赖第三方 Schema 库。
+
+### `narrative`
+
+`narrative` 提供内容可声明、运行时可验证的通用叙事状态，而不执行用户提供的脚本。
+可选 `narrative_state.json` 的 v1 定义支持 `bool`、范围受限 `int` 与枚举 `enum`；
+`World.narrative_state` 保存与定义精确同键、同类型的可变值。没有该文件的内容包保持
+空状态集合。
+
+条件是冻结的受限 AST：`state_equals`、`state_compare`、`has_item`、`at_location`、
+`quest_status`、`all`、`any` 和 `not`。加载器在引用解析后检查状态类型、物品/房间/任务
+引用、最大深度与节点数；求值器只读取由 `World.condition_context()` 生成的只读快照。
+不会使用 `eval`、任意脚本或外部模型。
 
 ## 状态生命周期
 
@@ -111,7 +124,7 @@ move_with_outcome / take / attack / select_option(effects) / buy
 `required_item_id`。加载器把旧的字符串出口和对象出口统一规范化；`World.move()`
 在修改房间、触发任务或清理活动对话前检查背包。缺少所需物品时，错误同时显示物品名
 和稳定 ID，且不改变任何运行时状态；通过时物品不会被消耗。出口定义属于内容包，
-不写入 save v7 的可变状态。
+不写入存档中的可变状态。
 
 `CommandProcessor.look()` 只读取当前房间的出口定义、物品定义和背包 ID，并显示门禁
 出口所需物品及“未持有”或“已持有”状态；它不复刻、放宽或执行门禁规则。门禁的唯一
@@ -162,7 +175,7 @@ original_demo 0.6.0 或 save v7。
 内容定义（不可变）
   DialogueDefinition（对话树）
   → DialogueNode（节点 + 台词）
-  → DialogueOption（选项 + next_node_id + 必填有序 DialogueEffect 列表）
+  → DialogueOption（选项 + next_node_id + 必填有序 DialogueEffect 列表 + 可选条件）
 
 运行时状态（World 持有）
   characters: dict[str, Character]          # 角色位置由 room_id 决定
@@ -172,6 +185,13 @@ original_demo 0.6.0 或 save v7。
 
 对话状态所有权在 `World`。`CommandProcessor` 只负责解析裸整数 / bye / talk
 指令，将意图转给 World，再将 `TalkOutcome` 渲染为文本。
+
+### 叙事条件投影
+
+`World.available_dialogue_options(dialogue_id, node_id)` 对当前不可变对话定义和只读条件
+上下文进行纯投影，是 CLI、Web 和选择索引的唯一可用选项来源。每个非终端节点必须至少有
+一个无条件选项，保证状态变化不会留下无法结束的活动对话；条件不满足的选项不会显示，也
+不能通过旧索引选择。`World.set_narrative_state()` 是唯一受类型和值域验证的状态写入入口。
 
 ### 终端节点
 
@@ -190,13 +210,15 @@ bye。结束选项（`next_node_id=null`）则立即结束对话。
 
 ### 存档
 
-`active_dialogue`、`quest_states` 和顶层 `flags` 是 save v7 的必填字段；`player` 还必须
-保存非负整数 `coins`。save v7 使用 `inventory_stacks` 和每个房间的 `item_stacks` 数组保存
-`{item_id, quantity}`，而 `flags` 是稳定 ID 到真正 bool 的映射；每个任务状态仍只有
-`completed`。v6 按格式版本明确拒绝，不做隐式迁移；original_demo 内容包为 0.9.0，因此
-引用 0.8.0 的存档会由内容包版本检查拒绝。0.9.0 新增房间、任务和战利品，旧存档缺少这些
-World-owned 状态键，迁移策略是保留 0.8.0 内容包读取旧档，或在 0.9.0 开始新游戏；不得静默
-补造终局状态或怪物战利品。
+`active_dialogue`、`quest_states`、顶层 `flags` 和 `narrative_state` 是 save v8 的必填字段；
+`player` 还必须保存非负整数 `coins`。save v8 使用 `inventory_stacks` 和每个房间的
+`item_stacks` 数组保存 `{item_id, quantity}`，而 `flags` 是稳定 ID 到真正 bool 的映射；
+`narrative_state` 的键集合必须与内容包声明完全一致，且每个值都满足对应的 bool、int 范围或
+enum 定义。每个任务状态仍只有 `completed`。
+
+v7 只在内容包没有 `narrative_state.json` 时可读，读取后会写回 v8；声明叙事状态的内容包
+拒绝 v7，以免默默补造状态。v6 按格式版本明确拒绝，不做隐式迁移；original_demo 内容包为
+0.10.0，其他内容包版本创建的存档会由内容包版本检查拒绝。
 
 加载时只校验并恢复已保存的 `quest_states`、`coins`、`flags` 和其他运行时状态；不执行对话
 effects，不调用任务接取、条件检查、奖励发放或商店交易。商店定义从当前 ContentPack 重建，
@@ -214,7 +236,7 @@ effects，不调用任务接取、条件检查、奖励发放或商店交易。�
 由 `save <槽位>` / `load <槽位>` 传入，并只映射到保存目录内的 `<槽位>.json`：名称必须是
 1–32 位小写 ASCII 字母、数字、`-` 或 `_`，以字母或数字开头，且拒绝路径片段、扩展名和
 Windows 保留设备名。路径验证发生在序列化、读取或替换世界之前；槽位只选择文件，不改变
-save v7 的 JSON 契约。
+save v8 的 JSON 契约。
 
 `SaveLoadService.save()` 在服务边界把文件系统 `OSError` 转换为带原始异常链的
 `SaveLoadError`，因此 `CommandProcessor` 能将写入失败渲染为正常的“存档失败”文本，

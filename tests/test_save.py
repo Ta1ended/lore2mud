@@ -194,7 +194,7 @@ class SaveIncludesAllMutableStateTests(unittest.TestCase):
     def test_save_includes_content_pack_identity(self) -> None:
         data = _serialize_world(self.world)
         self.assertEqual(data["content_pack"]["id"], "original_demo")
-        self.assertEqual(data["content_pack"]["version"], "0.9.0")
+        self.assertEqual(data["content_pack"]["version"], "0.10.0")
         self.assertEqual(data["save_format_version"], SAVE_FORMAT_VERSION)
 
     def test_save_includes_equipped_field(self) -> None:
@@ -207,6 +207,10 @@ class SaveIncludesAllMutableStateTests(unittest.TestCase):
     def test_save_includes_flags_field(self) -> None:
         data = _serialize_world(self.world)
         self.assertEqual(data["flags"], {})
+
+    def test_save_includes_declared_narrative_state(self) -> None:
+        data = _serialize_world(self.world)
+        self.assertEqual(data["narrative_state"], self.world.narrative_state)
 
 
 class SaveLoadServiceTests(unittest.TestCase):

@@ -537,10 +537,10 @@ class SaveLoadRecoverTests(unittest.TestCase):
 
     def test_save_format_version_unchanged(self) -> None:
         from lore2mud.engine.save import SAVE_FORMAT_VERSION
-        self.assertEqual(SAVE_FORMAT_VERSION, 7)
+        self.assertEqual(SAVE_FORMAT_VERSION, 8)
 
     def test_content_pack_version_is_current(self) -> None:
-        self.assertEqual(self.pack.version, "0.9.0")
+        self.assertEqual(self.pack.version, "0.10.0")
 
 
 if __name__ == "__main__":

@@ -290,15 +290,15 @@ class LootTests(unittest.TestCase):
         self.assertEqual(gel_stack.quantity, 1)
 
 
-class SaveV7Tests(unittest.TestCase):
-    """Save format v7 with stacks, coins, and flags."""
+class SaveV8Tests(unittest.TestCase):
+    """Save format v8 with stacks, coins, flags, and narrative state."""
 
     def setUp(self) -> None:
         self.pack = load_content_pack(DEMO_PATH)
         self.tmpdir = tempfile.mkdtemp()
         self.service = SaveLoadService(self.pack, Path(self.tmpdir))
 
-    def test_save_v7_round_trip(self) -> None:
+    def test_save_v8_round_trip(self) -> None:
         world = World.from_content_pack(self.pack)
         world.take("item_linglu_pill", 2)
         self.service.save(world)
@@ -311,15 +311,15 @@ class SaveV7Tests(unittest.TestCase):
         self.assertIsNotNone(gel)
         self.assertEqual(gel.quantity, 1)
 
-    def test_save_format_version_is_7(self) -> None:
-        self.assertEqual(SAVE_FORMAT_VERSION, 7)
+    def test_save_format_version_is_8(self) -> None:
+        self.assertEqual(SAVE_FORMAT_VERSION, 8)
 
-    def test_save_v7_rejects_v6(self) -> None:
+    def test_save_v8_rejects_v6(self) -> None:
         """A v6 save must be rejected."""
         import json
         v6_data = {
             "save_format_version": 6,
-            "content_pack": {"id": "original_demo", "version": "0.9.0"},
+            "content_pack": {"id": "original_demo", "version": "0.10.0"},
             "player": {
                 "id": "player_local", "name": "test", "room_id": "room_ember_wharf",
                 "max_hp": 20, "hp": 20, "attack": 5, "defense": 1,
@@ -337,7 +337,7 @@ class SaveV7Tests(unittest.TestCase):
         with self.assertRaises(SaveLoadError):
             self.service.load()
 
-    def test_save_v7_load_failure_preserves_world(self) -> None:
+    def test_save_v8_load_failure_preserves_world(self) -> None:
         """Failed load must not replace the current world."""
         world = World.from_content_pack(self.pack)
         self.service.save(world)

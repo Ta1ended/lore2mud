@@ -20,7 +20,7 @@ class ContentLoaderTests(unittest.TestCase):
     def test_original_demo_loads(self) -> None:
         pack = load_content_pack(DEMO_PATH)
         self.assertEqual(pack.id, "original_demo")
-        self.assertEqual(pack.version, "0.9.0")
+        self.assertEqual(pack.version, "0.10.0")
         self.assertEqual(len(pack.rooms), 9)
         self.assertEqual(len(pack.monsters), 4)
         self.assertEqual(len(pack.quests), 8)

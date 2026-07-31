@@ -823,6 +823,10 @@ class SaveLoadDialogueTests(unittest.TestCase):
                 },
                 "quest_states": {},
                 "flags": {},
+                "narrative_state": {
+                    state_id: definition.initial
+                    for state_id, definition in pack.narrative_state_defs.items()
+                },
                 "active_dialogue": {
                     "dialogue_id": "d_term",
                     "current_node_id": "n2",

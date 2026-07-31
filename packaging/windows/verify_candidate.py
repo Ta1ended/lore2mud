@@ -53,6 +53,7 @@ CONTENT_MEMBERS = frozenset({
     "original_demo/dialogues.json",
     "original_demo/items.json",
     "original_demo/monsters.json",
+    "original_demo/narrative_state.json",
     "original_demo/pack.json",
     "original_demo/quests.json",
     "original_demo/rooms.json",

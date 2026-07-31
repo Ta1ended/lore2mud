@@ -53,7 +53,7 @@ class WindowsPackagingTests(unittest.TestCase):
         expected_version = json.loads(
             (ROOT / "examples/original_demo/pack.json").read_text(encoding="utf-8")
         )["version"]
-        self.assertEqual(expected_version, "0.9.0")
+        self.assertEqual(expected_version, "0.10.0")
         self.assertEqual(metadata["format"], 2)
         self.assertEqual(metadata["runtime"], "zipapp")
         self.assertEqual(metadata["default_mode"], "web")
@@ -65,6 +65,7 @@ class WindowsPackagingTests(unittest.TestCase):
         self.assertIn(f"-content-{expected_version}", self.artifact.name)
         names = set(metadata["files"])
         self.assertIn("lore2mud.pyz", names)
+        self.assertIn("original_demo/narrative_state.json", names)
         self.assertIn("original_demo/pack.json", names)
         self.assertIn("Start Lore2MUD.cmd", names)
         self.assertIn("LICENSE", names)
@@ -82,6 +83,13 @@ class WindowsPackagingTests(unittest.TestCase):
                     ).read_bytes()
                     self.assertEqual(packaged, source)
         self.assertIn("lore2mud/cli.py", app_names)
+        self.assertTrue(
+            {
+                "lore2mud/narrative/__init__.py",
+                "lore2mud/narrative/conditions.py",
+                "lore2mud/narrative/models.py",
+            }.issubset(app_names)
+        )
         self.assertNotIn("pipeline/__init__.py", app_names)
 
     def test_zipapp_preserves_web_resource_types(self) -> None:
@@ -237,11 +245,15 @@ class WindowsPackagingTests(unittest.TestCase):
             ".".join(str(part) for part in BUILD.sys.version_info[:3]),
         )
         self.assertEqual(metadata["pyinstaller_version"], "6.21.0")
-        self.assertEqual(metadata["content_pack_version"], "0.9.0")
+        self.assertEqual(metadata["content_pack_version"], "0.10.0")
         self.assertIn("-windows-pyinstaller-", artifact.name)
 
         with zipfile.ZipFile(artifact) as candidate:
             self.assertEqual(candidate.read("runtime/lore2mud.exe")[:2], b"MZ")
+            self.assertEqual(
+                candidate.read("original_demo/narrative_state.json"),
+                (ROOT / "examples" / "original_demo" / "narrative_state.json").read_bytes(),
+            )
             for asset_name in BUILD.WEB_ASSETS:
                 packaged = candidate.read(
                     f"runtime/_internal/lore2mud/web/static/{asset_name}"

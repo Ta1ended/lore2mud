@@ -92,8 +92,11 @@ quit
 - `use <ID或名称> [数量]`：使用背包内的消耗品（数量可选，默认 1）。
 - typed stacks：不可变内容 `ItemStackDefinition` 与运行时 `ItemStack` 统一房间、背包、
   战利品和对话奖励；容量按栈位计算，`stack_limit` 限制每栈数量。
-- 当前原创内容包为 0.9.0；本地存档为 v7，使用 `inventory_stacks`、`item_stacks`、
-  `player.coins` 与顶层 `flags`，明确拒绝 v6 存档；旧 0.8.0 内容包存档也会按内容包版本拒绝。
+- 当前原创内容包为 0.10.0；本地存档为 v8，使用 `inventory_stacks`、`item_stacks`、
+  `player.coins`、顶层 `flags` 与严格类型化的 `narrative_state`。没有叙事状态定义的内容包
+  可以只读加载 v7 存档；v6 和为其他内容包版本创建的存档会被明确拒绝。
+- 可选 `narrative_state.json` 声明 bool、范围受限 int 和 enum 状态。对话选项可使用无脚本、
+  有深度/节点上限的条件树检查状态、背包、位置和任务；World 是 CLI 与 Web 可用选项的唯一权威。
 - `original_demo` 现在是一段可完成的原创冒险：早期 NPC 提供路线和任务反馈，断轨岔口允许选择
   可选补给战，棱镜哨卫掉落的唯一核心解锁信标心室，最终任务与 `flag_beacon_restored` 明确记录结局。
 - `equip <ID或名称>`：装备 hand 或 body 槽物品。
@@ -131,6 +134,7 @@ lore2mud/
 │  ├─ combat/          # 确定性战斗规则
 │  ├─ progression/     # 经验与升级
 │  ├─ inventory/       # 物品与背包
+│  ├─ narrative/       # 受限叙事状态与条件求值
 │  └─ content/         # JSON 内容包模型、加载与引用校验
 ├─ pipeline/           # 本地小说拆章与 manifest 工具
 ├─ schemas/            # 内容格式的 JSON Schema 文档

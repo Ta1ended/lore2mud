@@ -32,6 +32,7 @@ CONTENT_FILES = frozenset({
     "dialogues.json",
     "items.json",
     "monsters.json",
+    "narrative_state.json",
     "pack.json",
     "quests.json",
     "rooms.json",

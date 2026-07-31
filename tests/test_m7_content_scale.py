@@ -20,7 +20,7 @@ class M7ContentScaleDefinitionTests(unittest.TestCase):
         self.pack = load_content_pack(DEMO_PATH)
 
     def test_m7_scale_target_is_reached_with_reciprocal_content_references(self) -> None:
-        self.assertEqual(self.pack.version, "0.9.0")
+        self.assertEqual(self.pack.version, "0.10.0")
         self.assertGreaterEqual(len(self.pack.rooms), 8)
         self.assertEqual(len(self.pack.monsters), 4)
         self.assertGreaterEqual(len(self.pack.quests), 7)
@@ -171,7 +171,7 @@ class M7ContentScaleScenarioTests(unittest.TestCase):
         self.assertIn("雾核潜行者 被击败", defeated.text)
         self.assertIn("任务完成：清除雾核潜行者", defeated.text)
 
-    def test_completed_scale_path_round_trips_through_v7_save(self) -> None:
+    def test_completed_scale_path_round_trips_through_v8_save(self) -> None:
         self._reach_junction_after_existing_encounters()
         self.world.move("north")
         self._defeat("monster_mist_crawler")

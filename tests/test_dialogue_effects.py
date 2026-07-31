@@ -377,7 +377,7 @@ class DialogueEffectsCommandAndSaveTests(unittest.TestCase):
         self.assertEqual(result.text.count("任务完成：收集灰壳凝胶"), 1)
         self.assertEqual(result.text.count("你升到了 2 级！"), 1)
 
-    def test_v7_flags_round_trip_and_load_does_not_execute_pending_effects(self) -> None:
+    def test_v8_flags_round_trip_and_load_does_not_execute_pending_effects(self) -> None:
         pack = load_content_pack(DEMO_PATH)
         world = World.from_content_pack(pack)
         world.move("east")
@@ -391,7 +391,7 @@ class DialogueEffectsCommandAndSaveTests(unittest.TestCase):
             service = SaveLoadService(pack, Path(td))
             service.save(world)
             loaded = service.load()
-            self.assertEqual(SAVE_FORMAT_VERSION, 7)
+            self.assertEqual(SAVE_FORMAT_VERSION, 8)
             self.assertEqual(loaded.flags, {})
             self.assertNotIn("quest_collect_ash_mite_gel", loaded.quest_states)
             self.assertEqual(loaded.player.experience, 0)

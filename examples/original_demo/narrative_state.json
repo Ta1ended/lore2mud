@@ -1,0 +1,23 @@
+{
+  "format_version": 1,
+  "states": [
+    {
+      "id": "state_beacon_enabled",
+      "kind": "bool",
+      "initial": true
+    },
+    {
+      "id": "state_signal_strength",
+      "kind": "int",
+      "initial": 1,
+      "minimum": 0,
+      "maximum": 3
+    },
+    {
+      "id": "state_station_mode",
+      "kind": "enum",
+      "initial": "standby",
+      "values": ["standby", "active", "silent"]
+    }
+  ]
+}
