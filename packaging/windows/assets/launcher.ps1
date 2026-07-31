@@ -1,4 +1,9 @@
 $ErrorActionPreference = 'Stop'
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[Console]::InputEncoding = $utf8NoBom
+[Console]::OutputEncoding = $utf8NoBom
+$OutputEncoding = $utf8NoBom
+$env:LORE2MUD_UTF8_IO = '1'
 
 function Write-LauncherError([string]$Message) {
     [Console]::Error.WriteLine("[ERROR] $Message")

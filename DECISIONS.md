@@ -1691,3 +1691,82 @@
   not change the artifact source commit.
 - Supersedes: DEC-0067's final-acceptance-pending state and all REVISE findings
   listed there; it does not authorize automatic push or release.
+
+## DEC-0069: Frozen Windows CLI output is explicitly UTF-8
+
+- Date: 2026-07-31
+- Status: Implemented locally; independent acceptance pending.
+- Context: After `6761e0850a367308a29f9b8189cb08715fb0cb03` reached GitHub
+  `main`, Actions `quality` run `30642616305` succeeded. Separate `tests` run
+  `30642616101` passed all three Python unittest jobs but failed
+  `windows-candidate`. The pinned PyInstaller
+  executable built and started successfully; its diagnostic `validate` call then
+  raised `UnicodeEncodeError` at `src/lore2mud/cli.py:69` while printing Chinese
+  through redirected `cp1252` stdout. The verifier already supplied
+  `PYTHONUTF8=1` and `PYTHONIOENCODING=utf-8`, but the isolated frozen runtime did
+  not use those environment settings.
+- Decision: `lore2mud.cli.main()` reconfigures stdout and stderr to UTF-8 before
+  argparse or command output only for a PyInstaller frozen process or when the
+  official launcher supplies `LORE2MUD_UTF8_IO=1`. Streams without `reconfigure`
+  remain unchanged, and ordinary embedded/test calls do not mutate their host
+  streams. The bundled PowerShell launcher supplies that signal and aligns console
+  input, console output, and pipeline output to UTF-8 so a fixed executable does
+  not merely replace the crash with mojibake. A regression invokes real validation
+  with `cp1252` `TextIOWrapper` streams under a simulated frozen runtime and asserts
+  UTF-8 Chinese output. No content, save, Web protocol, dependency, or private-
+  material contract changes.
+- Evidence: The pre-fix local `cp1252` reproduction raised the same traceback at
+  `cli.py:69`; the corrected frozen-runtime reproduction exits 0 and decodes the
+  success line as UTF-8. The final 25-test CLI suite proves both the frozen UTF-8
+  path and ordinary host-stream preservation. After installing the pinned
+  toolchain, the real PyInstaller 6.21.0 resource and repository-external
+  diagnostic/console/Web cold-start test passed. The full unittest suite passed
+  1254 tests with 7 existing conditional skips; xdist pytest passed 1247 with the
+  same 7 skips using a fresh repository-local `--basetemp` after the host's default
+  pytest temp root returned `WinError 5` before collection. Ruff, Pyright,
+  compileall, original-demo validation, history safety,
+  `git fsck --full --no-dangling`, and `git diff --check` also passed.
+- Git snapshot: local `HEAD=origin/main=GitHub main=6761e0850a367308a29f9b8189cb08715fb0cb03`.
+  The implementation and handoff are an uncommitted working-tree diff; no push or
+  release occurred in this task.
+- Consequences: DEC-0068 remains the historical integration acceptance, but its
+  Windows delivery evidence is not sufficient for the published runner locale.
+  This narrow correction requires fresh clean-context independent acceptance
+  before a local commit or project-owner-authorized push. The next remote run must
+  be checked directly; local success is not proof that GitHub Actions is green.
+- Supersedes: Only the immediate direct-push next action recorded after DEC-0068;
+  it does not supersede the accepted Core, Forge, Player, Quality, or Ship scope.
+
+## DEC-0070: Windows UTF-8 CI hotfix - GO
+
+- Date: 2026-08-01
+- Status: Accepted.
+- Context: A fresh GPT-5.6-sol Codex review independently inspected the complete
+  eight-file working-tree diff against published baseline
+  `6761e0850a367308a29f9b8189cb08715fb0cb03`. The review also queried GitHub
+  Actions directly: `tests` run `30642616101` has three successful Python jobs
+  and only `windows-candidate` failed, specifically at `Test Windows packaging`;
+  `quality` run `30642616305` succeeded at the same source commit.
+- Decision: Accept the DEC-0069 hotfix GO with no P0-P3 findings. The frozen
+  runtime guard fixes the failing PyInstaller path, the launcher signal covers the
+  zipapp path, streams without `reconfigure` remain supported, and an ordinary
+  embedded call preserves its host encoding. The scope remains limited to CLI
+  delivery encoding, the official launcher, regression tests, and handoff records.
+- Evidence: The combined CLI and Windows packaging suite passed all 38 tests and
+  built a real pinned PyInstaller 6.21.0 executable. Repository-external
+  diagnostic, console, and Web/API cold starts passed for PyInstaller and zipapp
+  candidates. Full unittest passed 1254 tests with 7 conditional skips; focused
+  pytest passed 38 tests; full xdist pytest passed 1247 tests with the same 7
+  skips. Ruff passed, Pyright reported 0 errors, and compileall, original-demo
+  validation, history safety, `git fsck --full --no-dangling`, and
+  `git diff --check` passed.
+- Git snapshot: Before the local hotfix commit, local `HEAD`, tracking
+  `origin/main`, and direct GitHub `main` all resolved to
+  `6761e0850a367308a29f9b8189cb08715fb0cb03`; ahead/behind was 0/0 and the
+  reviewed diff contained only the three implementation/test paths plus five
+  synchronized handoff files. No push or release occurred during acceptance.
+- Consequences: The reviewed diff may be recorded as one local commit on `main`
+  and is then ready for the project owner to push after a fresh remote ancestry
+  check. The pushed commit still requires new GitHub `quality` and `tests` runs;
+  local GO is not remote CI success and does not authorize release or new scope.
+- Supersedes: DEC-0069's independent-acceptance-pending state only.

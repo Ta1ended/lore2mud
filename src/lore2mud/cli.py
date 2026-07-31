@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from collections.abc import Sequence
 from pathlib import Path
@@ -15,6 +16,16 @@ from lore2mud.content.loader import (
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.save import SaveLoadService
 from lore2mud.engine.world import World
+
+
+def _configure_output_encoding() -> None:
+    """Keep Unicode CLI output stable under frozen and redirected runtimes."""
+    if not getattr(sys, "frozen", False) and os.environ.get("LORE2MUD_UTF8_IO") != "1":
+        return
+    for stream in (sys.stdout, sys.stderr):
+        reconfigure = getattr(stream, "reconfigure", None)
+        if callable(reconfigure):
+            reconfigure(encoding="utf-8")
 
 
 def run_game(world: World, save_service: SaveLoadService) -> int:
@@ -227,6 +238,7 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     """Entry point for the lore2mud CLI."""
+    _configure_output_encoding()
     raw = list(argv) if argv is not None else sys.argv[1:]
     effective = _inject_legacy_subcommand(raw)
 

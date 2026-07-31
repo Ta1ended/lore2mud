@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import io
 import json
+import os
 import shutil
 import tempfile
 import unittest
@@ -33,6 +34,53 @@ class ValidateSuccessTests(unittest.TestCase):
             main(["validate", "--content", str(DEMO_PATH)])
         self.assertIn("[OK]", stdout.getvalue())
         self.assertIn("内容包校验通过", stdout.getvalue())
+
+    def test_cli_reconfigures_legacy_output_streams_to_utf8(self) -> None:
+        stdout_bytes = io.BytesIO()
+        stderr_bytes = io.BytesIO()
+        stdout = io.TextIOWrapper(stdout_bytes, encoding="cp1252")
+        stderr = io.TextIOWrapper(stderr_bytes, encoding="cp1252")
+        try:
+            with (
+                mock.patch("sys.stdout", stdout),
+                mock.patch("sys.stderr", stderr),
+                mock.patch("lore2mud.cli.sys.frozen", True, create=True),
+            ):
+                exit_code = main(["validate", "--content", str(DEMO_PATH)])
+                stdout.flush()
+
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(stdout.encoding, "utf-8")
+            self.assertEqual(stderr.encoding, "utf-8")
+            self.assertIn(
+                "内容包校验通过",
+                stdout_bytes.getvalue().decode("utf-8"),
+            )
+        finally:
+            stdout.detach()
+            stderr.detach()
+
+    def test_embedded_cli_preserves_host_output_encoding(self) -> None:
+        stdout_bytes = io.BytesIO()
+        stderr_bytes = io.BytesIO()
+        stdout = io.TextIOWrapper(stdout_bytes, encoding="cp1252")
+        stderr = io.TextIOWrapper(stderr_bytes, encoding="cp1252")
+        try:
+            with (
+                mock.patch.dict(os.environ, {"LORE2MUD_UTF8_IO": "0"}),
+                mock.patch("sys.stdout", stdout),
+                mock.patch("sys.stderr", stderr),
+                mock.patch("lore2mud.cli.sys.frozen", False, create=True),
+                mock.patch("lore2mud.web.server.serve"),
+            ):
+                exit_code = main(["web", "--content", str(DEMO_PATH)])
+
+            self.assertEqual(exit_code, 0)
+            self.assertEqual(stdout.encoding, "cp1252")
+            self.assertEqual(stderr.encoding, "cp1252")
+        finally:
+            stdout.detach()
+            stderr.detach()
 
     def test_validate_does_not_start_game(self) -> None:
         """run_game must never be called during validation."""

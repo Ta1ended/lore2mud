@@ -19,12 +19,21 @@ stale.
 ## Current checkpoint
 
 - Repository: `lore2mud`; active local branch: `main` at
-  `D:\MUD game kaifa\lore2mud`. The accepted code candidate
-  `a172a82a0c70812b8ff5429de3ec4b309ad75cd5` and integration handoff
-  `3dafa23bfcfbda63263b65080a96d602f2d5ccbd` were fast-forwarded into local
-  `main` on 2026-07-31. The current successor commit is documentation-only and
-  records that local sync. Local tracking `origin/main` remained
-  `13be791bc0a116f6596267b5d914a8a63e511f1f`; no push or release occurred.
+  `D:\MUD game kaifa\lore2mud`. Published baseline, tracking `origin/main`, and
+  direct GitHub `main` resolve to
+  `6761e0850a367308a29f9b8189cb08715fb0cb03`. Current local `main` contains one
+  accepted UTF-8 hotfix commit beyond that baseline; run `git rev-parse HEAD` for
+  its live hash. It has not been pushed or released.
+- GitHub Actions run `30642616101` passed every Python 3.11/3.12/3.13 job but
+  failed `windows-candidate` while its PyInstaller executable printed the Chinese
+  validation-success line through redirected `cp1252` output. DEC-0069 records the
+  narrow delivery-runtime UTF-8 correction in `src/lore2mud/cli.py`, the Windows
+  launcher, and two complementary regression tests. A fresh review accepted it GO
+  with no P0-P3 findings (DEC-0070). Real frozen and zipapp cold starts, 1254 full
+  unittest cases, 38 focused pytest cases, 1247 passing xdist pytest cases, and all
+  named static/repository gates passed. The local commit is ready for the project
+  owner to push after refreshing the remote; the resulting workflows remain to be
+  observed.
 - Current execution mode (DEC-0059, DEC-0067): new development is performed by
   GPT-5.6-sol Codex tasks. The default remains one vertical slice, while a project-
   owner-authorized sprint may use isolated parallel responsibility domains and one

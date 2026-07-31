@@ -4,6 +4,12 @@
 
 ### Changed
 
+- Frozen CLI entry points, plus zipapps started by the official Windows launcher,
+  now reconfigure supported standard output and error streams as UTF-8 before
+  parsing commands. The PowerShell launcher uses matching UTF-8 console and
+  pipeline encodings so candidates remain usable when redirected by a legacy-
+  code-page runner without mutating streams in embedded or test calls
+  (DEC-0069, DEC-0070).
 - Updated the development contract for project-owner-authorized isolated parallel
   sprints: named responsibility domains use separate worktrees/branches and one
   integration controller while `main` stays read-only. Integration, GO, push, and
@@ -25,6 +31,13 @@
   actions. Quality adds Ruff, Pyright, pytest/xdist and multi-version CI. Ship adds
   verified PyInstaller and zipapp Windows candidates with diagnostics, manifests,
   and repository-external cold-start verification (DEC-0067, DEC-0068).
+- Added a real `cp1252` stream regression for the frozen Unicode validation-success
+  path and a complementary embedded-call host-stream preservation regression.
+  A fresh clean-context review accepted the hotfix GO with no P0-P3 findings after
+  the pinned PyInstaller 6.21.0 repository-external cold start, 1254 full unittest
+  cases with 7 skips, focused pytest with 38 passing tests, and xdist pytest with
+  1247 passed / 7 skipped. Ruff, Pyright, compileall, original-demo validation,
+  history safety, fsck, and whitespace checks also passed (DEC-0070).
 - Added explicit read-only CanonRegistry inspection reports (L2W-5):
   `pipeline/registry_inspection.py` validates strict plan/report v1 contracts,
   selects only exact stable entity IDs, copies complete aliases, members,

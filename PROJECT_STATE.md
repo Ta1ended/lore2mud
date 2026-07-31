@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-31（已验收五域候选已同步到本地 main；尚未 push）_
+_Last updated: 2026-08-01（Windows CI UTF-8 热修独立验收 GO；本地提交待 push）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -39,8 +39,24 @@ L2W-5 随后新增显式稳定 ID 驱动的只读 CanonRegistry inspection repor
 问题。第二轮发现浏览器死亡后无恢复控件及 320px 死亡态溢出；`a172a82` 关闭两项。
 新的独立复验最终给出 GO、无 P0-P3 findings（DEC-0068）。代码候选
 `a172a82a0c70812b8ff5429de3ec4b309ad75cd5` 与交接封板 `3dafa23` 已按项目负责人指令
-fast-forward 到 `D:\MUD game kaifa\lore2mud` 的本地 `main`。其后的当前提交只记录这次
-本地同步；`origin/main` 的本地 tracking ref 仍为 `13be791`，尚未 push 或 release。
+fast-forward 到 `D:\MUD game kaifa\lore2mud` 的本地 `main`，随后连同同步记录发布为
+`6761e0850a367308a29f9b8189cb08715fb0cb03`。本轮已直接确认本地 `HEAD`、tracking
+`origin/main` 和 GitHub `main` 均为该提交；尚未 release。
+
+发布后的 GitHub Actions `quality` run `30642616305` 成功；`tests` run
+`30642616101` 的三个 Python unittest job 全部通过，只有 `windows-candidate` 失败。
+PyInstaller 产物已正常构建并启动，失败发生在
+`lore2mud validate` 向 runner 的重定向 `cp1252` stdout 打印中文成功消息时；冻结运行时没有
+采用验证器设置的 `PYTHONUTF8/PYTHONIOENCODING`。DEC-0069 的热修让冻结 CLI
+或官方 launcher 启动的 zipapp 在解析命令前把可重配 stdout/stderr 设为 UTF-8，并让
+PowerShell launcher 使用同一编码；普通嵌入/测试调用不改变宿主流。新增测试
+以真实 `cp1252` 文本流复现该边界。真实 PyInstaller 6.21.0 仓库外诊断、console、Web/API
+冷启动已通过；1254 项全量 unittest（7 个既有条件跳过）和 xdist pytest
+`1247 passed / 7 skipped` 均通过；Ruff、Pyright、compileall、original_demo 校验、
+历史安全扫描、fsck 和 diff 检查也通过。新的 GPT-5.6-sol 干净上下文复验还重跑了
+38 项聚焦 unittest/pytest 和全部上述门禁，结论 GO、无 P0-P3 findings（DEC-0070）。
+该热修已整理为本地 `main` 上相对发布基线 `6761e08` 的单个提交，可由项目负责人
+刷新远端后 push；尚未 push、未 release，远端新 workflow 也尚未运行。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。

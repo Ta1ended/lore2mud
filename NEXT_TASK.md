@@ -1,32 +1,34 @@
 # Next Task
 
-_Last updated: 2026-07-31（已验收候选已同步到本地 main；等待 push 授权）_
+_Last updated: 2026-08-01（Windows CI UTF-8 热修独立验收 GO；本地 main 待 push）_
 
 ## Single next action
 
-项目负责人明确授权后，由中控 push 当前干净的本地 `main`。本地 `main` 已通过
-fast-forward 接收集成封板 `3dafa23bfcfbda63263b65080a96d602f2d5ccbd`，其中的
-已验收代码候选为 `a172a82a0c70812b8ff5429de3ec4b309ad75cd5`；其后只有
-记录本地同步状态的交接文档提交。
+项目负责人从 `D:\MUD game kaifa\lore2mud` push 当前本地 `main` 到 GitHub。
+该分支只比已发布基线 `6761e0850a367308a29f9b8189cb08715fb0cb03` 多一个
+已验收 Windows UTF-8 热修提交（DEC-0070）。
 
 ## Publish gate
 
-- 独立验收已经完成，不再重复运行第三轮全量验收（DEC-0068）。
-- 发布前重新 fetch，并确认直接查询的 GitHub `main` 仍与本地 tracking
-  `origin/main=13be791bc0a116f6596267b5d914a8a63e511f1f` 一致。本轮远端查询曾遇到
-  connection reset，因此不得省略该刷新。
-- 确认本地 `main` 工作树干净，且 `origin/main..main` 只包含已验收集成提交和纯交接提交；
-  若远端或候选代码发生变化，停止并重新评估差异，不盲目 push。
-- push 后再次核对 GitHub `main` 与本地 `main` 指向同一封板提交，并保留产物来源提交
-  `a172a82a0c70812b8ff5429de3ec4b309ad75cd5` 的 manifest/hash 证据。
+- push 前 fetch 或直接查询 GitHub `main`，确认它仍为 `6761e08`；若远端已变化，
+  停止 push 并重新核对 ancestry，不做强制推送。
+- 确认工作树干净，`git rev-list --left-right --count origin/main...main` 为 `0 1`，
+  且唯一新增提交只包含 `src/lore2mud/cli.py`、Windows launcher、CLI 回归测试和
+  五个同步交接文件。
+- push 后确认 GitHub `main` 等于本地 `HEAD`，并观察新的 `quality` 与 `tests`
+  workflow；特别确认 `windows-candidate` 的 `Test Windows packaging` 和后续
+  clean candidate 冷启动均成功。
 
-## Queue After Publish
+## Acceptance evidence
 
-- 基于已交付的 Core、Forge、Player、Quality 和 Ship 能力，重新规划下一轮责任域；在新的
-  明确授权前不自动启动实现、release 或私有小说处理。
+- DEC-0070 对相对 `6761e08` 的完整 diff 给出 GO、无 P0-P3 findings。
+- 真实 pinned PyInstaller 6.21.0 与 zipapp 的仓库外诊断、console、Web/API 冷启动通过；
+  全量 unittest `1254 / 7 skipped`，聚焦 pytest `38 passed`，xdist pytest
+  `1247 passed / 7 skipped`，Ruff、Pyright、compileall、内容校验、安全扫描、fsck
+  和 diff 检查全部通过。
 
 ## Boundaries
 
 - 全程使用 GPT-5.6-sol；不可用时停止并报告，不静默切换模型。
-- 后续 `main` 修改、push 和 release 都不自动执行，必须由项目负责人明确授权。
+- 不自动 release 或启动下一切片；本任务按项目负责人要求停在本地可推送状态。
 - 不读取、扫描或复制私有小说、摘要、canon 或改编内容。
