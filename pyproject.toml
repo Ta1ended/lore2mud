@@ -29,3 +29,6 @@ lore2mud = "lore2mud.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+"lore2mud.web" = ["static/*.html", "static/*.css", "static/*.js"]

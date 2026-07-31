@@ -70,9 +70,38 @@ def _cmd_validate(args: argparse.Namespace) -> int:
     return 0
 
 
+def _cmd_web(args: argparse.Namespace) -> int:
+    """Start the local browser player on an explicit bind address."""
+    from lore2mud.web.server import serve
+
+    try:
+        serve(
+            args.content,
+            args.save_dir,
+            player_name=args.player_name,
+            host=args.host,
+            port=args.port,
+        )
+    except (OSError, ContentValidationError) as exc:
+        print(f"[ERROR] 本地界面启动失败：{exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
 # -- Parser ------------------------------------------------------------------
 
-_COMMANDS = frozenset({"play", "validate"})
+_COMMANDS = frozenset({"play", "validate", "web"})
+
+
+def _port_number(value: str) -> int:
+    """Parse one valid TCP port without argparse listing 65k choices."""
+    try:
+        port = int(value)
+    except ValueError as exc:
+        raise argparse.ArgumentTypeError("端口必须是 1-65535 的整数") from exc
+    if port < 1 or port > 65535:
+        raise argparse.ArgumentTypeError("端口必须是 1-65535 的整数")
+    return port
 
 
 def _inject_legacy_subcommand(argv: list[str]) -> list[str]:
@@ -112,7 +141,7 @@ def _inject_legacy_subcommand(argv: list[str]) -> list[str]:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    """Build the CLI parser with play/validate subcommands."""
+    """Build the CLI parser with play, validate, and web subcommands."""
     parser = argparse.ArgumentParser(
         prog="lore2mud",
         description="本地单人文字 MUD 引擎。",
@@ -156,6 +185,42 @@ def _build_parser() -> argparse.ArgumentParser:
         help="要校验的内容包目录",
     )
     validate_parser.set_defaults(func=_cmd_validate)
+
+    # -- web subcommand --
+    web_parser = subparsers.add_parser(
+        "web",
+        help="启动本地浏览器界面",
+    )
+    web_parser.add_argument(
+        "--content",
+        type=Path,
+        required=True,
+        help="内容包目录，例如 examples/original_demo",
+    )
+    web_parser.add_argument(
+        "--player-name",
+        default="旅人",
+        help="本地玩家显示名称（默认：旅人）",
+    )
+    web_parser.add_argument(
+        "--save-dir",
+        type=Path,
+        default=Path("saves"),
+        help="存档目录（默认：saves）",
+    )
+    web_parser.add_argument(
+        "--host",
+        default="127.0.0.1",
+        help="监听地址（默认仅本机：127.0.0.1）",
+    )
+    web_parser.add_argument(
+        "--port",
+        type=_port_number,
+        default=8765,
+        metavar="1-65535",
+        help="监听端口（默认：8765）",
+    )
+    web_parser.set_defaults(func=_cmd_web)
 
     return parser
 

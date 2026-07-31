@@ -4,6 +4,15 @@ The local Web player is a real single-player interface over the same authoritati
 `World` used by the CLI. It is served on loopback by Python's standard library and
 adds no runtime dependency.
 
+Start the original public demo with:
+
+```powershell
+python -m lore2mud web --content examples/original_demo --save-dir saves
+```
+
+The default URL is `http://127.0.0.1:8765/`. Use `--host` or `--port` only when an
+explicitly different local bind is required.
+
 ## Data flow
 
 ```text
