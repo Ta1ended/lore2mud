@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-08-01（GEN-1 独立验收 REVISE 修复已本地验证；重新独立验收待办）_
+_Last updated: 2026-08-01（GEN-1 与 NarrativeModel v1 已分别独立 GO；最终整合已 GO）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -58,21 +58,29 @@ PowerShell launcher 使用同一编码；普通嵌入/测试调用不改变宿�
 该热修已整理为本地 `main` 上相对发布基线 `6761e08` 的单个提交，可由项目负责人
 刷新远端后 push；尚未 push、未 release，远端新 workflow 也尚未运行。
 
-GEN-1 通用叙事状态与条件切片位于隔离 worktree
-`D:\MUD game kaifa\.codex-worktrees\gen1-narrative-conditions`，分支
-`codex/gen1-narrative-conditions`，基线为本地 `main` 的
-`e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1`。初始实现提交为 `9e2d301`：它新增
-可选 `narrative_state.json` 的 bool/int/enum 状态定义、受限且有深度/节点预算的条件
-AST、`World.available_dialogue_options()` 作为 CLI/Web 的唯一可用对话选项来源，以及
-stateful pack 的 save v8。original_demo 为 0.10.0；没有状态定义的内容包仍可只读加载
-v7。首次新的 GPT-5.6-sol 只读验收返回 REVISE，包含三项 P2：已存在的 int
-`minimum`/`maximum` 字段接受 JSON `null`、Windows 打包 README 仍称 0.9.0/v7、五个
-连续性交接文件未同步。当前最小修复使缺失边界仍表示无边界，但显式 `null` 被 loader
-拒绝，并添加 minimum/maximum 回归；打包说明同步为 0.10.0/v8；本段及其余交接文件
-记录真实状态。修复后的本地验证为 17 项 GEN-1 测试、13 项 Windows 打包测试（含真实
-PyInstaller 冷启动）、1272 项完整 unittest 和 1265 项 pytest（各有 7 个条件跳过）、Ruff、
-Pyright、compileall、original_demo 校验、历史安全扫描与 fsck 全部通过。独立复验仍 pending；此分支不得整合
-到 `main`、push、release 或扩大范围，也未访问私有小说、摘要或 canon。
+GEN-1 与 NarrativeModel v1 已合并为公共整合候选
+`D:\MUD game kaifa\.codex-worktrees\public-integration-20260801` 的
+`coord/public-integration-20260801`，当前为
+`dcd9bb0b21eb667061e2694a462f63e252636545`，共同基线是
+`e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1`。GEN-1 的最终候选
+`e7cba52` 已获新的 GPT-5.6-sol 只读复验 GO、无 P0-P3 findings：它提供可选
+bool/int/enum `narrative_state.json`、受限条件 AST、
+`World.available_dialogue_options()` 的唯一权威投影，以及 stateful pack 的
+0.10.0/save v8 契约；无状态内容包仍可只读加载 v7。此前三个 P2（显式 int 边界
+`null`、Windows v7 文档和连续性交接）均已关闭。
+
+NarrativeModel v1 的最终候选 `8ddc89c` 也已获新的 GPT-5.6-sol 只读复验 GO、无
+P0-P3 findings。它从验证后的 CanonRegistry 与显式人工 NarrativePlan 确定性编译
+通用 NarrativeModel，严格保留 claim 的使用或理由充分的省略记账、来源快照、观点、
+命题、阶段、DAG beats 与 disclosure；不会生成 canon、裁决冲突或接入 runtime/save/Web/Forge。
+`claim_uses` 仍为必填数组，但在所有 scoped claim 都有理由省略时允许为空。
+
+新的干净只读整合验收已对 `dcd9bb0` 给出 GO、无 P0-P3 findings。独立证据为 72 项
+GEN-1/NarrativeModel/Windows packaging 聚焦测试（2 项符号链接权限跳过）、1316 项
+unittest（9 项平台或权限跳过）、1307 项 pytest（9 项同类跳过）、Ruff、Pyright、
+compileall、original_demo 校验、仓库外 CLI 黄金字节、历史安全扫描、fsck 和两层 diff
+检查全部通过。该交接封板已按本轮授权 fast-forward 到本地 `main`；不自动 push、release，
+也不开始后续 lane 或访问任何私有素材。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。

@@ -18,35 +18,33 @@ stale.
 
 ## Current checkpoint
 
-- GEN-1 generic narrative state and conditions is isolated on
-  `codex/gen1-narrative-conditions`, based on
-  `e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1`. Initial implementation commit
-  `9e2d30130baf716cda0d9f52a638f10950d04cd2` adds typed bool/int/enum state,
-  an optional `narrative_state.json`, bounded declarative conditions, and
-  World-authoritative dialogue-option filtering. Its first fresh independent
-  review returned REVISE with three P2 findings: explicit JSON `null` was
-  incorrectly accepted for present integer bounds, Windows package guidance
-  still described 0.9.0/v7, and the continuity files were stale. The local
-  rework rejects present `minimum`/`maximum: null`, adds both regressions,
-  updates the package guidance to original demo 0.10.0/save v8, and records
-  this state. Local rework evidence is 17 narrative-focused tests, 13 Windows
-  packaging tests including real PyInstaller cold start, 1272 full unittest
-  cases, and 1265 pytest cases, all passing with 7 conditional skips. Ruff,
-  Pyright, compileall, original-demo validation, history safety, and fsck also
-  passed. A new clean
-  read-only acceptance is still required before any integration, main update,
-  push, release, or next feature.
-- The GEN-1 runtime contract is content pack 0.10.0 and save v8 for packs that
-  declare narrative state. v7 is read-only compatible only for packs without
-  `narrative_state.json`; it is rejected for stateful packs because it cannot
-  represent their typed state. This is branch-local until independent acceptance
-  and authorized integration.
-- Repository: `lore2mud`; active local branch: `main` at
-  `D:\MUD game kaifa\lore2mud`. Published baseline, tracking `origin/main`, and
-  direct GitHub `main` resolve to
-  `6761e0850a367308a29f9b8189cb08715fb0cb03`. Current local `main` contains one
-  accepted UTF-8 hotfix commit beyond that baseline; run `git rev-parse HEAD` for
-  its live hash. It has not been pushed or released.
+- Public integration candidate `coord/public-integration-20260801` is at
+  `dcd9bb0b21eb667061e2694a462f63e252636545`, merging the independently accepted
+  public-only GEN-1 candidate `e7cba52fcfdf0c04458fca5fb9b516ebc762f4bc` and
+  NarrativeModel v1 candidate `8ddc89c1a458e282dbea54b7419ba1db9b8207d8` from
+  baseline `e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1`. Both isolated reviews
+  returned GO with no P0-P3 findings. A separate clean, read-only integration
+  review also returned GO with no P0-P3 findings: 72 focused/package tests,
+  1316 unittest tests, and 1307 pytest tests passed, with only 9 platform or
+  Windows symlink-privilege skips. This continuity seal is fast-forwarded to
+  local `main`; push and release remain separate project-owner actions.
+- GEN-1 adds optional bool/int/enum `narrative_state.json`, bounded declarative
+  conditions, and World-authoritative dialogue option projection. Stateful packs
+  use content pack 0.10.0/save v8; v7 remains read-compatible only for packs
+  without narrative state. Its three P2 corrections reject explicit integer-bound
+  `null`, document the Windows contract correctly, and synchronize the original
+  branch records; the clean re-review accepted `e7cba52` GO.
+- NarrativeModel v1 deterministically compiles a validated CanonRegistry plus an
+  explicit human NarrativePlan without generating canon, resolving conflicts, or
+  connecting to runtime/save/Web/Forge. It records exact claim use or reasoned
+  omission accounting, including valid all-omission plans with an empty required
+  `claim_uses` array. The clean re-review accepted `8ddc89c` GO.
+- Repository: `lore2mud`; local `main` and its local tracking `origin/main` were
+  observed at `e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1` before this integration.
+  No remote was queried in this integration round. Before publishing, run
+  `git fetch origin`, confirm the refreshed `origin/main` is an ancestor of local
+  `main`, and then let the project owner choose a normal `git push origin main`.
+  If the remote advanced, stop rather than force-pushing.
 - GitHub Actions run `30642616101` passed every Python 3.11/3.12/3.13 job but
   failed `windows-candidate` while its PyInstaller executable printed the Chinese
   validation-success line through redirected `cp1252` output. DEC-0069 records the

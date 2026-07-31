@@ -1833,3 +1833,82 @@
   `main`, push, release, or another feature is authorized by this record.
 - Supersedes: No prior decision; it records the GEN-1 implementation and closes
   only the first review's local correction work.
+
+## DEC-0072: NarrativeModel v1 deterministic public compiler - recovered integration record
+
+- Date: 2026-08-01
+- Status: Individual independent acceptance now GO; final integration acceptance pending.
+- Context: The original `workstream/narrative-model-v1` decision was omitted by
+  the handoff-file merge even though the public implementation and its correction
+  were merged. This record restores the v1 scope without changing the historical
+  DEC-0073 correction record.
+- Decision: `pipeline.narrative_model` compiles a validated CanonRegistry and an
+  explicit human NarrativePlan into a deterministic NarrativeModel. Plans scope
+  exact entity IDs and account for every scoped claim as a proposition use or a
+  reasoned omission. The model retains exact composite provenance and only the
+  named claim-promotion source records. Perspectives, proposition states,
+  contiguous phases, DAG beats, disclosure states, canonical serialization,
+  atomic writing, and path-alias rejection are structurally validated. The
+  compiler neither generates canon nor resolves conflicts; all fixtures remain
+  fictional and public.
+- Evidence: The initial implementation received a REVISE for rejecting valid
+  all-omission plans. DEC-0073 corrected that contract, and a new clean
+  GPT-5.6-sol review accepted `8ddc89c1a458e282dbea54b7419ba1db9b8207d8` GO
+  with no P0-P3 findings after focused, full, Schema, external CLI, quality, and
+  repository-safety gates.
+- Consequences: This decision does not authorize runtime integration, canon
+  generation, private-material access, campaign compilation, Forge v2, a review
+  workbench, push, or release.
+- Supersedes: The missing handoff record only; DEC-0073 remains the correction
+  decision and DEC-0074 records the combined final gate.
+
+## DEC-0074: Public narrative foundations integration candidate - final acceptance pending
+
+- Date: 2026-08-01
+- Status: Both isolated slices independently accepted GO; final clean integration acceptance pending.
+- Context: The project owner authorized local-only completion of the already
+  reviewed public GEN-1 and NarrativeModel v1 slices, but not a push, release,
+  private-material access, or a new product lane.
+- Decision: Merge GEN-1 `e7cba52fcfdf0c04458fca5fb9b516ebc762f4bc` and
+  NarrativeModel v1 `8ddc89c1a458e282dbea54b7419ba1db9b8207d8` on baseline
+  `e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1` into public candidate
+  `dcd9bb0b21eb667061e2694a462f63e252636545`. Keep the runtime/save/Web changes
+  of GEN-1 and the standalone public compiler of NarrativeModel v1 separate in
+  scope, while testing their combined repository state before local `main` moves.
+- Evidence: GEN-1's clean re-review found no P0-P3 findings and passed 17 focused,
+  13 Windows packaging, 1272 unittest, and 1265 pytest cases plus the named
+  quality/safety gates. NarrativeModel's clean re-review found no P0-P3 findings
+  and passed 44 focused, 1298 unittest, and 1288 pytest cases plus Schema and
+  repository-external CLI coverage. The controller must rerun combined gates and
+  obtain a distinct clean read-only decision before claiming final GO.
+- Consequences: Until that decision, this candidate cannot update `main`, be
+  pushed, released, or expanded into RegistryCampaignPlan, Forge v2, a review
+  workbench, or private content.
+- Supersedes: The individual-acceptance-pending states in DEC-0071 and DEC-0073
+  only; it does not supersede their technical contracts.
+
+## DEC-0075: Public narrative foundations final integration acceptance
+
+- Date: 2026-08-01
+- Status: Accepted locally; continuity seal fast-forwarded to local `main`, not pushed or released.
+- Context: GEN-1 and NarrativeModel v1 had each passed an isolated clean review,
+  but their merged repository state still required its own independent decision.
+- Decision: The clean read-only review accepts public candidate
+  `dcd9bb0b21eb667061e2694a462f63e252636545` GO with no P0-P3 findings. Its
+  parents are exactly GEN-1 `e7cba52fcfdf0c04458fca5fb9b516ebc762f4bc` and
+  NarrativeModel v1 `8ddc89c1a458e282dbea54b7419ba1db9b8207d8`; baseline
+  `e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1` is an ancestor. The authorized
+  local closeout is a continuity-only commit followed by a fast-forward from
+  local `main`; it does not query or change any remote.
+- Evidence: The independent reviewer found no P0-P3 issues in the v8/v7 save
+  boundary, World-authoritative dialogue filtering, Windows package resources,
+  exact NarrativeModel use/omission accounting including all-omission plans,
+  canonical writer, CLI alias rejection, or continuity records. It verified 72
+  focused/package tests with 2 symlink-permission skips, 1316 unittest tests
+  with 9 platform/permission skips, and 1307 pytest tests with 9 corresponding
+  skips. Ruff, Pyright, compileall, original-demo validation, repository-external
+  golden CLI bytes, history safety, fsck, and diff checks passed.
+- Consequences: The project owner may refresh remote state and perform a normal
+  push only after confirming ancestry. This acceptance does not authorize a
+  release, force push, private-material access, or any subsequent lane.
+- Supersedes: DEC-0074's final-integration-pending state only.

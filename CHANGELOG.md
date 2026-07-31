@@ -13,8 +13,9 @@
 - Explicit `minimum` and `maximum` integer bounds in `narrative_state.json` now
   reject JSON `null`; omitting either field remains the only way to declare no
   bound. Windows candidate guidance now reflects original demo 0.10.0 and save
-  v8 compatibility. GEN-1 remains local re-review pending; it has not been
-  integrated, pushed, or released (DEC-0071).
+  v8 compatibility. A clean re-review accepted GEN-1 GO; it is included in the
+  local public integration candidate, whose final clean integration acceptance
+  also returned GO (DEC-0071, DEC-0074, DEC-0075).
 - Frozen CLI entry points, plus zipapps started by the official Windows launcher,
   now reconfigure supported standard output and error streams as UTF-8 before
   parsing commands. The PowerShell launcher uses matching UTF-8 console and
@@ -43,8 +44,9 @@
   coverage, and format documentation. The first independent review found that
   all-reasoned-omission plans were incorrectly rejected; the local correction
   permits empty `claim_uses` when every scoped claim is explicitly omitted and
-  is awaiting a fresh re-review. It has not been integrated, pushed, or
-  released (DEC-0072, DEC-0073).
+  has since received a clean re-review GO. It is included in the local public
+  integration candidate, whose final clean integration acceptance also returned
+  GO (DEC-0072, DEC-0073, DEC-0074, DEC-0075).
 - Integrated the five-domain public sprint. Core expands `original_demo` to
   content-pack 0.9.0 with nine rooms, eight items, four monsters, two characters,
   eight quests and a confirmable ending. Forge adds resumable
