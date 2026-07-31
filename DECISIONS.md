@@ -1501,6 +1501,10 @@
   external-temp-directory CLI plus `lore2mud validate`; external manifest output
   is 2840 bytes with SHA-256
   `4d09e4126364e3f6e3967780ae30688204e9e7030a13c3a196052cfe5f31fe7c`.
+- Implementation commit: `1fb95bf8fce42428188d6d9d06b1a68397f8d999`, relative to
+  baseline `a19707521ed0dcc162abf2448254c086a1bf58af`. After the commit,
+  `origin/main` remains `a89fdc6d819b976b80b82a74e575ff851ba86448` and the local
+  branch is ahead by 3; a direct GitHub `main` query was reset by the network.
 - Consequences: L2W-2's existing `CanonDraft + AdaptationPlan v1` route remains
   unchanged. This slice deliberately does not add semantic conflict resolution,
   mutable registry/query, multi-room expansion, or private processing. A fresh

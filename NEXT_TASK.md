@@ -6,7 +6,8 @@ _Last updated: 2026-07-31（L2W-4 本地实现与验证完成；独立验收 pen
 
 使用新的 GPT-5.6-sol Codex 任务或干净上下文，对当前 L2W-4 本地实现提交执行只读独立
 验收：复核真实 diff、严格 plan/manifest 合同、golden/CLI/loader/World 证据、安全门和
-Git 快照，并给出 GO 或 REVISE。实现上下文不得自宣 GO。
+Git 快照，并给出 GO 或 REVISE。实现上下文不得自宣 GO。主要实现提交为
+`1fb95bf8fce42428188d6d9d06b1a68397f8d999`，相对基线 `a19707521ed0dcc162abf2448254c086a1bf58af`。
 
 ## Acceptance scope
 

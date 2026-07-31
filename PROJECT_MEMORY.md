@@ -155,6 +155,10 @@ stale.
   repository-external CLI plus `lore2mud validate`, and a World pickup/quest
   completion playthrough. Independent acceptance is pending a fresh GPT-5.6-sol
   Codex task or clean context; the implementation context must not self-declare GO.
+  The implementation commit is `1fb95bf8fce42428188d6d9d06b1a68397f8d999` on top
+  of `a19707521ed0dcc162abf2448254c086a1bf58af`; local tracking `origin/main` is
+  still `a89fdc6d819b976b80b82a74e575ff851ba86448` (ahead 3). A post-commit direct
+  GitHub `main` query was reset by the network and must be retried before publishing.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

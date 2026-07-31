@@ -206,8 +206,10 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## Blockers
 
-- 无技术阻塞。当前使用 GPT-5.6-sol；实时远端与 `origin/main` 均为 `a89fdc6d`，本地
-  `HEAD=a197075`、ahead/behind `2/0`，未 push。
+- 无技术阻塞。当前使用 GPT-5.6-sol；本地跟踪 `origin/main=a89fdc6d819b976b80b82a74e575ff851ba86448`，
+  L2W-4 implementation commit 为 `1fb95bf8fce42428188d6d9d06b1a68397f8d999`，
+  当前 `HEAD=1fb95bf8`、ahead/behind `3/0`，未 push。提交后对 GitHub `main` 的直查
+  因网络连接重置未确认；恢复或 push 前必须重试。
 
 ## Verification
 
@@ -234,7 +236,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   和仓库外真实 CLI/golden bytes 均通过。输出 manifest 为 2840 bytes，SHA-256
   `4d09e4126364e3f6e3967780ae30688204e9e7030a13c3a196052cfe5f31fe7c`；真实 World
   playthrough 已自动接取任务并在拾取物品后完成任务。未访问私有小说，未修改 `src/`、
-  original_demo、save 或依赖。
+  original_demo、save 或依赖。实现提交为 `1fb95bf8fce42428188d6d9d06b1a68397f8d999`；
+  提交后 GitHub `main` 直查遇到连接重置，tracking ref 仍为 `a89fdc6d`。
 - Phase 1.0 independent acceptance GO（2026-07-30，GPT-5.6-sol，DEC-0039）：
   聚焦复验确认 DEC-0038 三个 findings 全部关闭。131 项聚焦测试、730 项全量
   unittest、compileall、original-demo 校验、安全历史扫描和 diff 检查通过。
