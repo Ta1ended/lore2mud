@@ -1595,3 +1595,99 @@
   GO. The local commit makes GitHub `main` lag by more than five commits under the
   current tracking snapshot, so development pauses for project-owner push.
 - Supersedes: None.
+
+## DEC-0066: L2W-5 independent acceptance - GO
+
+- Date: 2026-07-31
+- Status: Accepted.
+- Context: A fresh GPT-5.6-sol Codex task independently reviewed the read-only,
+  single-commit range `9f09d9691a236919648cea294c31fcdf0f105ff9..`
+  `13be791bc0a116f6596267b5d914a8a63e511f1f` (17 files, `+2455/-39`).
+- Decision: Accept L2W-5 GO with no P0-P3 findings. Exact stable-ID selection,
+  complete entity/member/candidate/claim preservation, exact claim-source subsets,
+  conflicts, external relation targets, strict Schemas, deterministic writer, and
+  repository-external CLI bytes satisfy the bounded read-only contract.
+- Evidence: 49 focused tests passed with one Windows symlink permission skip;
+  172 L2W-3/L2W-4/L2W-5 regression tests passed with three skips; 1154 full
+  unittest cases passed with four skips. Compileall, original-demo validation,
+  Schema/fixture checks, history safety, `git fsck --full --no-dangling`, diff
+  checks, and repository-external CLI/golden bytes passed. The CLI output is
+  4144 bytes with SHA-256
+  `f943f6f487bcca607d854023c32b0a663ede25069700f707637420a5857eebb5`.
+- Acceptance snapshot: `HEAD=origin/main=GitHub main=13be791bc0a116f6596267b5d914a8a63e511f1f`,
+  clean worktree. No push, release, or private-material access occurred in review.
+- Consequences: L2W-5 is complete. This GO does not authorize fuzzy search,
+  mutable registry state, conflict resolution, private processing, or release.
+- Supersedes: DEC-0065's independent-acceptance-pending status only.
+
+## DEC-0067: Project-owner-authorized isolated five-domain parallel sprint
+
+- Date: 2026-07-31
+- Status: Implemented and integrated; final acceptance recorded in DEC-0068.
+- Context: After L2W-5 GO, the project owner explicitly authorized four or more
+  concurrent GPT-5.6-sol Goal tasks. The former single-slice and five-commit lag
+  rules were too restrictive for this bounded experiment.
+- Decision: Use isolated worktrees and branches for Core, Forge, Player, Quality,
+  and Ship, with one controller owning boundaries, integration order, conflict
+  handling, final candidate, and handoff. Keep shared `main` read-only. Workers
+  commit only their responsibility domain and report cross-domain interfaces to the
+  controller. Neither local commits nor GO automatically modify `main`, push, or release.
+- Integrated scope: Core upgrades the original demo to 0.9.0 with nine rooms,
+  eight items, four monsters, two characters, eight quests and a confirmable ending.
+  Forge adds resumable `init/status/check/run/rerun` orchestration with fingerprints,
+  immutable artifacts, locking and recovery. Player adds a standard-library
+  loopback Web session/UI with structured actions. Quality adds Ruff, Pyright,
+  pytest/xdist and multi-version CI. Ship adds PyInstaller primary and zipapp
+  fallback Windows candidates, diagnostics, manifests and cold-start checks.
+- Repair history: `8207228` received REVISE for unguarded oversized
+  `Content-Length` conversion, a Forge POSIX junction mock omission, and possible
+  Windows TCP reset during early POST rejection; `a27b363` closed all three. The
+  next review found browser recovery unreachable after defeat and a 320px
+  dead-state overflow; `a172a82` closed both without expanding scope.
+- Consequences: An explicitly authorized isolated sprint is an exception to the
+  default one-slice and lag-count hard-stop rules. Once an integrated candidate
+  exists, no scope is added until acceptance and the publish gate finish. Private
+  novel material remains outside every responsibility domain.
+- Supersedes: The absolute single-slice and five-commit hard-stop rules for
+  explicitly authorized isolated parallel sprints only; default sequential
+  development and no-automatic-push rules remain in force.
+
+## DEC-0068: Five-domain parallel integration candidate - GO
+
+- Date: 2026-07-31
+- Status: Accepted.
+- Context: The integration branch contains all five domains and both repair rounds.
+  A fresh GPT-5.6-sol Codex task independently rechecked final repair range
+  `a27b363..a172a82` after the earlier full cross-platform pass.
+- Decision: Accept code candidate
+  `a172a82a0c70812b8ff5429de3ec4b309ad75cd5` GO with no P0-P3 findings.
+  Browser recovery and narrow layout are fixed; all earlier protocol, Forge,
+  packaging and platform findings remain closed. No third full acceptance cycle is
+  required unless candidate code or remote ancestry changes.
+- Cross-platform evidence: Linux Python 3.11 and 3.12 serial plus 3.13 xdist each
+  passed `1248 / 3 skipped`; Windows pytest serial and xdist each passed
+  `1243 / 8 skipped`; Windows unittest ran 1251 cases with `OK / 8 skipped`.
+  Final Web focused tests passed 35/35; Web plus packaging ran 48 cases with
+  47 passed and one expected toolchain skip. Ruff, Pyright, Node syntax,
+  compileall, validation, current/history safety, fsck, and diff checks passed.
+  At 320x720 the defeated view had `scrollWidth=clientWidth=305`; recovery restored
+  `room_ember_wharf` and HP `20/20` with no console warnings/errors.
+- Delivery evidence: repository-external PyInstaller candidate is 8,804,173 bytes,
+  72 manifest files, SHA-256
+  `a11458b491dd862618cada085df895b9db8bb42e73c992eb3a2d75acb9807c75`.
+  Zipapp fallback is 75,672 bytes, 13 manifest files, SHA-256
+  `41c85e35cd750a5cdb964bd9010ac8634d11699f5dc0f40159e377f687a176bc`.
+  Both record exact `source_commit=a172a82a0c70812b8ff5429de3ec4b309ad75cd5`
+  and passed repository-external Web/console cold starts.
+- Git snapshot: the integration worktree was clean at `a172a82`; local
+  `main=origin/main=GitHub main=13be791bc0a116f6596267b5d914a8a63e511f1f`,
+  so the integration branch was ahead/behind `13/0`. It was not merged, pushed,
+  or released during acceptance.
+- Residual risk: Windows symlink permission branches remain conditionally skipped.
+  The ignored integration-worktree `dist/windows` is an old `8207228` build and is
+  not a release candidate.
+- Consequences: The branch is ready for fast-forward and push after explicit owner
+  authorization and a fresh remote check. A following documentation-only seal does
+  not change the artifact source commit.
+- Supersedes: DEC-0067's final-acceptance-pending state and all REVISE findings
+  listed there; it does not authorize automatic push or release.

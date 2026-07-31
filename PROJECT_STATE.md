@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-31（L2W-5 本地实现与验证完成；独立验收 pending）_
+_Last updated: 2026-07-31（五域并行整合候选 `a172a82` 独立验收 GO；等待发布授权）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -12,7 +12,9 @@ _Last updated: 2026-07-31（L2W-5 本地实现与验证完成；独立验收 pen
 
 活动开发工作流已切换为 Codex 全程负责并统一使用 GPT-5.6-sol（DEC-0059）。
 规划、实现、测试和交接由 Codex 完成；需要独立验收时使用新的 Codex 复验任务或
-干净上下文。Hermes 不再承担新任务，其既有提交与决定归属保持为历史事实。
+干净上下文。Hermes 不再承担新任务，其既有提交与决定归属保持为历史事实。默认仍为
+单纵向切片；项目负责人明确授权时可采用隔离 worktree/分支的并行责任域和单一中控整合
+（DEC-0067）。冲刺期间 `main` 只读，集成 GO 不等于自动 push。
 
 项目负责人已授权 Codex 自定下一范围受限切片。Codex 在 `a89fdc6d` 完成 L2W-3 多章
 canon registry 初始实现（DEC-0060）。首次新的 GPT-5.6-sol 只读验收结论为 REVISE：发现
@@ -28,7 +30,16 @@ CanonDraft + AdaptationPlan v1 路径的前提下，让 CanonRegistry v1 通过�
 Codex 任务已独立复核真实提交和全部关键证据，结论 GO、无 P0-P3 findings（DEC-0064）。
 L2W-5 随后新增显式稳定 ID 驱动的只读 CanonRegistry inspection report（DEC-0065）：
 报告逐字段保留所选实体、member/candidate provenance、复合 claims 与实际 claim sources，
-不搜索名称、不裁决冲突、不修改 registry。当前本地实现和验证已完成，独立验收仍 pending。
+不搜索名称、不裁决冲突、不修改 registry。新的 GPT-5.6-sol 只读任务已对
+`9f09d969..13be791` 完成独立验收，结论 GO、无 P0-P3 findings（DEC-0066）。
+
+项目负责人随后授权五域隔离并行冲刺。中控已按 Core、Forge、Player、Quality、Ship 顺序
+整合 13 个提交到 `coord/parallel-sprint-integration`。首次验收在 `8207228` 返回 REVISE；
+`a27b363` 关闭超长 `Content-Length`、Forge POSIX mock 和 Windows TCP orderly response
+问题。第二轮发现浏览器死亡后无恢复控件及 320px 死亡态溢出；`a172a82` 关闭两项。
+新的独立复验最终给出 GO、无 P0-P3 findings（DEC-0068）。当前集成工作树干净，代码候选
+`a172a82a0c70812b8ff5429de3ec4b309ad75cd5` 相对 `origin/main=13be791` 为
+ahead/behind `13/0`；尚未合入 `main`、push 或 release。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
@@ -54,13 +65,13 @@ M8 技术审计基线为 `f486e12`，审计记录为 `6510e2d`，Git 快照 P2 �
 验收时本地 `HEAD=origin/main=6502a72`、工作树干净、ahead/behind 为 0/0；GitHub Desktop push
 已反映到本地跟踪分支，命令行远端直查超时。该里程碑结论不授权 M9、新功能、发布或私有小说事实层。
 
-当前公开契约为 content pack 0.8.0、save v7、强类型有序 `DialogueEffect`、World-owned
+当前整合契约为 content pack 0.9.0、save v7、强类型有序 `DialogueEffect`、World-owned
 `flags`、非负 `coins` 和冻结的固定无限商店目录。`World` 预检并原子执行 effects/买入；
 `accept_quest` 显式重复会整体失败；`load` 只恢复状态，绝不重放效果、自动接取、检查、奖励
 或交易。`shop`/`buy`/`sell` 不引入可变库存。M7.2 未改变 Schema、引擎、命令或 save v7；
-0.7.0 内容包存档由既有版本检查拒绝。original_demo 现有 8/8 房间、4/4 怪物和 7 条任务，
-M7 内容规模条件已由独立验收确认满足；M8 的后续独立验收已完成 M1–M8 公共引擎路线，但不扩展
-到任何后续路线图或私有事实层。
+0.7.0 内容包存档由既有版本检查拒绝。original_demo 现有 9 个房间、8 个物品、4 只怪物、
+2 个角色、8 条任务和一个可确认结局。集成候选另含可恢复 Forge 工作台、loopback Web Player、
+质量工具链和 Windows 双交付候选；这些均不授权访问私有事实层。
 
 M4+M5 独立验收记录的证据为 12 项 M4 专项、13 项 M5 专项和 569 项全量 unittest，以及
 compileall、original_demo 校验、历史安全扫描、diff 检查和仓库外 CLI 流程。CLI 精确覆盖
@@ -203,21 +214,29 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- L2W-5 本地实现与全量验证完成；实现上下文不得自宣 GO。下一技术动作是在远端同步后，
-  由新的 GPT-5.6-sol Codex 任务或干净上下文只读复核 baseline `9f09d969` 到实现提交。
-- 保持公开虚构 fixture 范围；不读取私有资料，不做名称搜索、实体归并、冲突裁决、
-  adaptation、多房间扩容、`src/`、original_demo、save 或依赖变更。
+- 没有代码实施或独立验收仍在运行。唯一下一动作是等待项目负责人授权中控将已验收的
+  集成分支 fast-forward 到 `main` 并 push；详见 `NEXT_TASK.md`。
 
 ## Blockers
 
-- 提交前 GitHub API 已确认远端 `main=a89fdc6d819b976b80b82a74e575ff851ba86448`；
-  baseline `HEAD=9f09d9691a236919648cea294c31fcdf0f105ff9`、ahead/behind `5/0`。
-  L2W-5 的单次实现/交接提交会使远端落后超过 5 个提交，触发项目负责人的暂停规则：
-  本地提交后停止开发，等待项目负责人使用 GitHub Desktop push 并刷新 tracking ref。
+- 技术验收无 blocker。发布门仍需项目负责人明确授权；授权前不得修改 `main` 或 push。
+- 发布前必须刷新远端状态并确认 GitHub `main` 仍为 `13be791`，否则停止并审查新差异。
 
 ## Verification
 
-- L2W-5 local verification（2026-07-31，Codex；DEC-0065，独立验收 pending）：49 项
+- Parallel integration final GO（2026-07-31，fresh GPT-5.6-sol Codex，DEC-0068）：
+  Linux 3.11/3.12 serial 与 3.13 xdist 各 `1248 passed / 3 skipped`；Windows pytest
+  serial/xdist 各 `1243 passed / 8 skipped`，unittest 1251 项 `OK / 8 skipped`。
+  最终 Web focused 35 项通过；Web+packaging 48 项为 47 passed、1 expected skip。
+  Ruff、Pyright、Node syntax、compileall、original-demo validation、history safety、fsck
+  和 diff checks 均通过。320x720 死亡态 `scrollWidth=clientWidth=305`，唯一恢复按钮将
+  玩家送回 `room_ember_wharf` 且 HP `20/20`，浏览器控制台无 warning/error。
+  仓库外 PyInstaller 候选为 8,804,173 bytes，SHA-256
+  `a11458b491dd862618cada085df895b9db8bb42e73c992eb3a2d75acb9807c75`；zipapp
+  候选为 75,672 bytes，SHA-256
+  `41c85e35cd750a5cdb964bd9010ac8634d11699f5dc0f40159e377f687a176bc`。
+  两者均记录 `source_commit=a172a82a0c70812b8ff5429de3ec4b309ad75cd5` 并通过仓库外冷启动。
+- L2W-5 independent acceptance GO（2026-07-31，fresh GPT-5.6-sol Codex；DEC-0066）：49 项
   `tests.test_registry_inspection` 通过（1 Windows symlink permission skip）；172 项
   L2W-3/L2W-4/L2W-5 聚焦与回归通过（3 skips）；1154 项全量 unittest 通过（4 skips）。
   Compileall、两份 Schema 的 `Draft202012Validator` 校验、original-demo 内容校验、
@@ -225,7 +244,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   仓库外 subprocess CLI 输出恰含 1 entity、2 members、4 claims、2 sources，逐字节匹配
   4144-byte golden，SHA-256
   `f943f6f487bcca607d854023c32b0a663ede25069700f707637420a5857eebb5`；registry/plan
-  输入哈希不变。未访问私有小说，未修改 `src/`、original_demo、save 或依赖。
+  输入哈希不变。验收范围为 `9f09d969..13be791` 的单提交、17 files、`+2455/-39`；
+  结论 GO、无 P0-P3 findings。未访问私有小说，未修改 `src/`、original_demo、save 或依赖。
 - L2W-3 independent acceptance GO（2026-07-31，fresh Codex GPT-5.6-sol，DEC-0062）：
   相对 `a89fdc6d819b976b80b82a74e575ff851ba86448` 的修正提交
   `1c9a20bfade5bdb292ca3a801f00279cf0450e30` 无 findings。独立复验确认 84 项聚焦

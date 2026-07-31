@@ -18,11 +18,16 @@ stale.
 
 ## Current checkpoint
 
-- Repository: `lore2mud`; branch: `main`.
-- Current execution mode (DEC-0059): Codex is the sole active development Agent;
-  planning, implementation, verification, handoff, and independent-review tasks all
-  use GPT-5.6-sol. Independent acceptance uses a fresh Codex review task or clean
-  context. Hermes remains historical attribution only; manual inter-Agent transfer is retired.
+- Repository: `lore2mud`; integration branch: `coord/parallel-sprint-integration`.
+  Accepted code candidate: `a172a82a0c70812b8ff5429de3ec4b309ad75cd5`;
+  `main=origin/main=13be791bc0a116f6596267b5d914a8a63e511f1f` at the
+  pre-handoff snapshot. The integration worktree was clean and ahead/behind `13/0`.
+- Current execution mode (DEC-0059, DEC-0067): new development is performed by
+  GPT-5.6-sol Codex tasks. The default remains one vertical slice, while a project-
+  owner-authorized sprint may use isolated parallel responsibility domains and one
+  integration controller. Independent acceptance uses a fresh Codex review task or
+  clean context. Hermes remains historical attribution only; local commits never
+  automatically modify `main`, push, or release.
 - M7.2 independent acceptance compares
   `147633e0f139c9bc04919d8f69e75666e511fadc` with baseline
   `549785912418bff56d1521437a51c25718edbc34`; M7.1's independently accepted
@@ -47,7 +52,7 @@ stale.
   line direct remote query timed out. Recheck Git live after every handoff commit
   and before any later publishing decision. M8 GO does not authorize M9, other
   feature work, or private novel fact-layer access.
-- Current public-engine contract: content pack 0.8.0; save v7; typed
+- Current integrated public-engine contract: content pack 0.9.0; save v7; typed
   `ItemStackDefinition`/`ItemStack`; quantity-aware `take`/`drop`/`use`;
   required ordered dialogue effects; World-owned flags; nonnegative coins; and
   frozen fixed-price, unlimited shop catalogs without serialized stock. v6 and
@@ -161,8 +166,9 @@ stale.
   still `a89fdc6d819b976b80b82a74e575ff851ba86448`; the independent-acceptance
   snapshot was clean at `77f1fa795bd3f7c0ba6b565a57809459db31ee0d`, ahead/behind
   `4/0`. A direct GitHub `main` query timed out and must be retried before publishing.
-- L2W-5 explicit read-only registry inspection is implemented locally by Codex
-  (DEC-0065). `pipeline/registry_inspection.py` consumes a validated CanonRegistry
+- L2W-5 explicit read-only registry inspection was implemented by Codex and
+  independently accepted GO with no P0-P3 findings (DEC-0065, DEC-0066).
+  `pipeline/registry_inspection.py` consumes a validated CanonRegistry
   and an exact-ID `RegistryInspectionPlan v1`, then copies the selected frozen
   entities into a deterministic `RegistryInspectionReport v1`. It retains aliases,
   members, source candidate IDs, every composite claim and conflict, while deriving
@@ -175,10 +181,20 @@ stale.
   subprocess CLI. The 4144-byte golden report has SHA-256
   `f943f6f487bcca607d854023c32b0a663ede25069700f707637420a5857eebb5` and exactly
   1 entity, 2 members, 4 claims and 2 source records; input hashes stay unchanged.
-  Independent GPT-5.6-sol acceptance remains pending. Baseline is
-  `9f09d9691a236919648cea294c31fcdf0f105ff9`; the implementation is the local commit
-  containing DEC-0065. That commit takes local-vs-GitHub lag above five, so pause
-  for a project-owner GitHub Desktop push before further development.
+  The accepted range is `9f09d9691a236919648cea294c31fcdf0f105ff9..`
+  `13be791bc0a116f6596267b5d914a8a63e511f1f`: one commit, 17 files,
+  `+2455/-39`. Independent verification repeated the focused/regression/full suites,
+  compileall, Schema/fixture checks, original-demo validation, history safety, fsck,
+  diff checks, and a repository-external CLI/golden-byte run.
+- The project owner then authorized an isolated five-domain parallel sprint
+  (DEC-0067). Core expands the fully original demo to 0.9.0 with a confirmable
+  ending; Forge adds a resumable conversion workbench; Player adds a standard-
+  library loopback Web UI and structured actions; Quality adds Ruff, Pyright,
+  pytest/xdist and multi-version CI; Ship adds verified PyInstaller and zipapp
+  Windows candidates. The controller integrated all domains in dependency order.
+  Two acceptance rounds found and closed protocol, Forge portability, browser
+  recovery, and 320px overflow defects. Candidate `a172a82` is independently
+  accepted GO with no P0-P3 findings (DEC-0068).
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).
@@ -193,7 +209,8 @@ stale.
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo. The private corpus remains outside the repository and is not read
   for public-engine work.
-- No Agent should start background work automatically when the project is resumed.
+- No new implementation should start automatically when the project is resumed;
+  the only active action is the publish gate in `NEXT_TASK.md`.
 
 ## Historical checkpoints (pre-M2; not current)
 

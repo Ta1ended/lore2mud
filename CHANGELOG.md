@@ -4,6 +4,10 @@
 
 ### Changed
 
+- Updated the development contract for project-owner-authorized isolated parallel
+  sprints: named responsibility domains use separate worktrees/branches and one
+  integration controller while `main` stays read-only. Integration, GO, push, and
+  release remain distinct gates (DEC-0067).
 - Aligned the README workflow summary with DEC-0059: Codex now owns planning,
   implementation, testing, handoff, local commits, and clean-context acceptance;
   Hermes remains historical attribution only, and local commits are not pushed
@@ -13,6 +17,14 @@
 
 ### Added
 
+- Integrated the five-domain public sprint. Core expands `original_demo` to
+  content-pack 0.9.0 with nine rooms, eight items, four monsters, two characters,
+  eight quests and a confirmable ending. Forge adds resumable
+  `init/status/check/run/rerun` workspaces with fingerprints, immutable artifacts,
+  locks and recovery. Player adds a loopback standard-library Web UI with structured
+  actions. Quality adds Ruff, Pyright, pytest/xdist and multi-version CI. Ship adds
+  verified PyInstaller and zipapp Windows candidates with diagnostics, manifests,
+  and repository-external cold-start verification (DEC-0067, DEC-0068).
 - Added explicit read-only CanonRegistry inspection reports (L2W-5):
   `pipeline/registry_inspection.py` validates strict plan/report v1 contracts,
   selects only exact stable entity IDs, copies complete aliases, members,
@@ -24,7 +36,8 @@
   skip). Verification passed 172 L2W-3/L2W-4/L2W-5 tests (3 skips), 1154 full
   unittest cases (4 skips), compileall, real Schema validation, original-demo
   validation, history safety, fsck, whitespace checks, and a repository-external
-  golden-byte CLI. Independent GPT-5.6-sol acceptance remains pending (DEC-0065).
+  golden-byte CLI. A fresh GPT-5.6-sol task independently accepted the single-commit
+  implementation GO with no P0-P3 findings (DEC-0065, DEC-0066).
 
 - Added registry-backed micro adaptation (L2W-4):
   `pipeline/registry_adaptation.py` validates a strict `RegistryAdaptationPlan v1`,
@@ -342,6 +355,10 @@
 
 ### Fixed
 
+- Closed all five findings raised during parallel integration acceptance: bounded
+  oversized `Content-Length` parsing, portable Forge junction mocks, orderly Windows
+  POST rejection, reachable structured browser recovery after defeat, and 320px
+  dead-state overflow. Repairs are in `a27b363` and `a172a82` (DEC-0067, DEC-0068).
 - Phase 1.0 P1-1: enum fields (`entity_type`, `source_support`, `certainty`) no longer
   leak `TypeError` on unhashable JSON types (list, dict). All JSON-compatible types
   are now caught and reported as `FactCandidateValidationError`.
@@ -429,6 +446,21 @@
 
 ### Verified
 
+- GPT-5.6-sol independently accepted five-domain integration candidate `a172a82`
+  GO with no P0-P3 findings (DEC-0068). Linux Python 3.11/3.12 serial and 3.13
+  xdist each passed 1248 tests with 3 skips; Windows pytest serial/xdist each passed
+  1243 with 8 skips, and unittest ran 1251 `OK` with 8 skips. Final Web focused
+  tests passed 35/35; Web plus packaging passed 47/48 with one expected toolchain
+  skip. Ruff, Pyright, Node syntax, compileall, validation, safety, fsck, diff,
+  responsive browser recovery, and both repository-external delivery candidates
+  passed. PyInstaller SHA-256 is
+  `a11458b491dd862618cada085df895b9db8bb42e73c992eb3a2d75acb9807c75`;
+  zipapp SHA-256 is
+  `41c85e35cd750a5cdb964bd9010ac8634d11699f5dc0f40159e377f687a176bc`.
+- GPT-5.6-sol independently accepted L2W-5 registry inspection GO with no P0-P3
+  findings (DEC-0066): 49 focused (1 skip), 172 regression (3 skips), 1154 full
+  unittest cases (4 skips), compileall, Schema/fixture checks, original-demo
+  validation, history safety, fsck, diff, and 4144-byte external golden CLI passed.
 - GPT-5.6-sol independently accepted Phase 1.0 fact-candidate validation as GO
   with no remaining findings (DEC-0039). Initial implementation `e2b8136` (119
   focused, 718 full) was NO-GO; focus fix `3442d2d` closed P1-1 (enum TypeError),
