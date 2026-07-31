@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>lore2mud 本地界面</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-block">
+      <span class="signal-mark" aria-hidden="true"></span>
+      <div>
+        <p class="eyebrow">LOCAL PLAYER</p>
+        <h1 id="pack-name">lore2mud</h1>
+      </div>
+    </div>
+    <div class="save-controls" aria-label="存档控制">
+      <label for="save-slot">存档槽</label>
+      <input id="save-slot" name="save-slot" value="default" maxlength="32" autocomplete="off">
+      <button class="button quiet" id="save-button" type="button">保存</button>
+      <button class="button quiet" id="load-button" type="button">读取</button>
+    </div>
+  </header>
+
+  <section class="vitals" aria-label="玩家状态">
+    <div class="vital primary">
+      <span>生命</span>
+      <strong id="hp-value">--</strong>
+      <div class="meter"><span id="hp-meter"></span></div>
+    </div>
+    <div class="vital"><span>等级</span><strong id="level-value">--</strong></div>
+    <div class="vital"><span>经验</span><strong id="xp-value">--</strong></div>
+    <div class="vital"><span>攻击</span><strong id="attack-value">--</strong></div>
+    <div class="vital"><span>防御</span><strong id="defense-value">--</strong></div>
+    <div class="vital coin"><span>金币</span><strong id="coin-value">--</strong></div>
+  </section>
+
+  <main class="game-grid">
+    <aside class="rail inventory-rail" aria-labelledby="inventory-title">
+      <div class="section-heading">
+        <h2 id="inventory-title">行囊</h2>
+        <span id="inventory-count">0 / 0</span>
+      </div>
+      <section class="equipment" aria-labelledby="equipment-title">
+        <h3 id="equipment-title">装备</h3>
+        <div id="equipment-list"></div>
+      </section>
+      <section aria-labelledby="bag-title">
+        <h3 id="bag-title">背包</h3>
+        <div id="inventory-list" class="item-list"></div>
+      </section>
+    </aside>
+
+    <section class="world-stage" aria-labelledby="room-name">
+      <div class="map-frame">
+        <canvas id="route-map" aria-label="当前房间与出口路线图"></canvas>
+        <div class="map-key"><span class="key-current"></span>当前 <span class="key-locked"></span>锁定</div>
+      </div>
+      <div class="room-heading">
+        <div>
+          <p class="eyebrow" id="room-id">ROOM</p>
+          <h2 id="room-name">载入中</h2>
+        </div>
+        <span class="alive-state" id="alive-state">连接中</span>
+      </div>
+      <p class="room-description" id="room-description"></p>
+
+      <section class="action-section" aria-labelledby="exits-title">
+        <h3 id="exits-title">出口</h3>
+        <div id="exit-list" class="action-grid"></div>
+      </section>
+      <section class="action-section" aria-labelledby="encounter-title">
+        <h3 id="encounter-title">当前地点</h3>
+        <div id="encounter-list" class="encounter-list"></div>
+      </section>
+      <section class="dialogue-panel" id="dialogue-panel" aria-live="polite" hidden>
+        <div class="section-heading">
+          <h3 id="dialogue-character">对话</h3>
+          <button class="icon-button" id="end-dialogue" type="button" title="结束对话" aria-label="结束对话">x</button>
+        </div>
+        <p id="dialogue-text"></p>
+        <div id="dialogue-options" class="dialogue-options"></div>
+      </section>
+      <section class="shop-panel" id="shop-panel" aria-labelledby="shop-title" hidden>
+        <h3 id="shop-title">商店</h3>
+        <div id="shop-list"></div>
+      </section>
+    </section>
+
+    <aside class="rail journal-rail" aria-labelledby="quest-title">
+      <div class="section-heading">
+        <h2 id="quest-title">任务</h2>
+        <span id="quest-count">0</span>
+      </div>
+      <div id="quest-list" class="quest-list"></div>
+      <section class="event-section" aria-labelledby="event-title">
+        <div class="section-heading">
+          <h3 id="event-title">旅程记录</h3>
+          <button class="icon-button" id="clear-log" type="button" title="清空记录" aria-label="清空记录">x</button>
+        </div>
+        <ol id="event-log" class="event-log" aria-live="polite"></ol>
+      </section>
+    </aside>
+  </main>
+
+  <details class="command-dock">
+    <summary>命令入口</summary>
+    <form id="command-form">
+      <label class="sr-only" for="command-input">输入命令</label>
+      <input id="command-input" autocomplete="off" placeholder="look / help / status">
+      <button class="button command-button" type="submit">执行</button>
+    </form>
+  </details>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script src="/static/app.js" defer></script>
+</body>
+</html>
