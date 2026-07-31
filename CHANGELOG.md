@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Aligned the README workflow summary with DEC-0059: Codex now owns planning,
+  implementation, testing, handoff, local commits, and clean-context acceptance;
+  Hermes remains historical attribution only, and local commits are not pushed
+  automatically. Added the registry-backed adaptation CLI to the public pipeline
+  entry points.
+
 ### Added
 
 - Added registry-backed micro adaptation (L2W-4):
@@ -16,7 +24,10 @@
   passed 1105 full unittest cases (3 skips), compileall, Schema/fixture parsing,
   original-demo validation, `check_repo_safety.py --history`, `git fsck`,
   `git diff --check`, and a repository-external CLI whose bytes match the golden
-  output. Independent GPT-5.6-sol acceptance remains pending (DEC-0063).
+  output. A fresh GPT-5.6-sol task independently reran the focused, L2W-2
+  regression, full, Schema, safety, CLI, loader, golden-byte, and World evidence
+  and accepted L2W-4 GO with no P0-P3 findings (DEC-0064).
+
 - Added deterministic multi-chapter canon registry assembly (L2W-3):
   `pipeline/canon_registry.py` validates explicit `RegistryPlan v1` identity
   mappings, requires exact coverage of two or more unique CanonDraft sources,

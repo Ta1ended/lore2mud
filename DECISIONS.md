@@ -1512,3 +1512,40 @@
   implementation commit before the slice can be called GO. Local commits are not
   pushed automatically.
 - Supersedes: None.
+
+## DEC-0064: L2W-4 independent acceptance - GO
+
+- Date: 2026-07-31
+- Status: Accepted
+- Context: A fresh GPT-5.6-sol Codex task performed a read-only review of
+  implementation commit `1fb95bf8fce42428188d6d9d06b1a68397f8d999`
+  relative to baseline `a19707521ed0dcc162abf2448254c086a1bf58af`.
+- Decision: L2W-4 is accepted GO with no P0-P3 findings. The review independently
+  confirmed the frozen plan and manifest contracts, exact entity/claim/omission
+  coverage, composite provenance, registry identity and version checks, derived
+  chapters, deterministic nine-file output, staged loader validation, atomic
+  writer behavior, and the unchanged one-room gameplay profile.
+- Evidence: 39 focused tests passed with one Windows symlink permission skip;
+  72 unchanged L2W-2 regression tests passed with one skip; 1105 full unittest
+  cases passed with three skips. Compileall, both Draft 2020-12 Schemas, the
+  fictional plan and golden fixture, original-demo validation, history safety,
+  `git fsck --full --no-dangling`, working-tree and implementation-range
+  `git diff --check`, repository-external CLI compilation, loader validation,
+  and a real World pickup/quest playthrough all passed. All nine output files
+  matched golden bytes; the manifest is 2840 bytes with SHA-256
+  `4d09e4126364e3f6e3967780ae30688204e9e7030a13c3a196052cfe5f31fe7c`.
+- Acceptance snapshot: clean worktree at
+  `77f1fa795bd3f7c0ba6b565a57809459db31ee0d`; tracking
+  `origin/main=a89fdc6d819b976b80b82a74e575ff851ba86448`, ahead/behind
+  `4/0`, not pushed. A direct `git ls-remote --heads origin main` timed out, so
+  no live GitHub state is claimed.
+- Residual risk: This Windows host cannot create symlinks, so that conditional
+  alias test remains skipped and its `lexists` path was statically reviewed. The
+  narrow check-to-replace TOCTOU window remains inside the trusted local CLI
+  assumption.
+- Consequences: L2W-4 is complete. Semantic conflict resolution, mutable registry
+  storage, multi-room adaptation, private-material processing, release, and push
+  remain outside this acceptance. The next public-safe slice may add a bounded,
+  read-only registry inspection artifact without changing canon or game state.
+- Supersedes: Only DEC-0063's independent-acceptance-pending status; it does not
+  change the implemented L2W-4 contract.

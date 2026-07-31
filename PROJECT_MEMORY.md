@@ -142,7 +142,7 @@ stale.
   `1c9a20bfade5bdb292ca3a801f00279cf0450e30` as GO with no findings (DEC-0062).
   Its acceptance snapshot was one 8-file commit (`+231/-66`) after `a89fdc6d`,
   with a clean worktree and `origin/main` still at `a89fdc6d` (ahead 1, not pushed).
-- L2W-4 registry-backed micro adaptation is implemented locally by Codex in the
+- L2W-4 registry-backed micro adaptation was implemented by Codex in the
   separate `pipeline/registry_adaptation.py` route. It consumes a validated
   `CanonRegistry v1` plus an explicit `RegistryAdaptationPlan v1`, preserves every
   selected composite claim reference, derives chapters, and emits the unchanged
@@ -153,12 +153,14 @@ stale.
   1105 full unittest cases (3 skips), compileall, Schema JSON parsing, fixture and
   golden bytes, original-demo validation, history safety, fsck, diff checking,
   repository-external CLI plus `lore2mud validate`, and a World pickup/quest
-  completion playthrough. Independent acceptance is pending a fresh GPT-5.6-sol
-  Codex task or clean context; the implementation context must not self-declare GO.
+  completion playthrough. A fresh GPT-5.6-sol Codex task independently reran the
+  implementation-range, test, Schema, golden, writer, CLI, loader, World, safety,
+  and Git checks and accepted L2W-4 GO with no P0-P3 findings (DEC-0064).
   The implementation commit is `1fb95bf8fce42428188d6d9d06b1a68397f8d999` on top
   of `a19707521ed0dcc162abf2448254c086a1bf58af`; local tracking `origin/main` is
-  still `a89fdc6d819b976b80b82a74e575ff851ba86448` (ahead 3). A post-commit direct
-  GitHub `main` query was reset by the network and must be retried before publishing.
+  still `a89fdc6d819b976b80b82a74e575ff851ba86448`; the independent-acceptance
+  snapshot was clean at `77f1fa795bd3f7c0ba6b565a57809459db31ee0d`, ahead/behind
+  `4/0`. A direct GitHub `main` query timed out and must be retried before publishing.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

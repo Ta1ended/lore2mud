@@ -1,9 +1,9 @@
 # lore2mud
 
 `lore2mud` 是一个面向本地单人文字 MUD 的现代 Python 项目基底。它把
-通用游戏引擎、小说资料处理工具、原作事实和具体游戏数值分成不同层。GPT-5.6-sol
-担任设计与审查顾问，Codex 作为唯一执行者每次完成一个可测试的纵向功能；项目负责人
-在两个对话之间人工转交顾问 prompt 和执行报告。
+通用游戏引擎、小说资料处理工具、原作事实和具体游戏数值分成不同层。Codex 全程使用
+GPT-5.6-sol 完成方案、实现、测试、交接和本地提交；需要独立验收时，由新的 Codex 任务
+或干净上下文只读复核真实提交。Hermes 仅保留历史贡献归属，不再承担新任务。
 
 当前版本提供一个完全原创的八房间演示世界，包含移动、拾取、背包、确定性
 战斗、装备、消耗品、任务和对话系统。运行时只使用 Python 标准库。
@@ -217,6 +217,20 @@ python pipeline/split_novel.py `
 审核后的单章 canon 草稿可通过显式 RegistryPlan 组装为多章 CanonRegistry；该步骤
 保留每条 claim 的复合来源，不自动识别同名实体或裁决冲突。格式见
 [Canon Registry Format v1](docs/canon_registry_format.md)。
+
+经过验证的 CanonRegistry 可通过显式 RegistryAdaptationPlan 编译为一个公开安全的
+单房间 micro content pack；游戏文本和数值只来自人工计划，registry claims 仅用于
+来源追溯。该流程不裁决冲突或读取私有资料：
+
+```powershell
+python -m pipeline.registry_adaptation `
+  --canon-registry tests/fixtures/registry_adaptation/canon_registry.json `
+  --adaptation-plan tests/fixtures/registry_adaptation/valid_plan.json `
+  --output-dir C:\Temp\registry_micro_demo
+```
+
+格式与完整验证规则见
+[Registry Adaptation Format v1](docs/registry_adaptation_format.md)。
 
 ## 生产工作流
 

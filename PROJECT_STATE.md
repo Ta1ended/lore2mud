@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-31（L2W-4 本地实现与验证完成；独立验收 pending）_
+_Last updated: 2026-07-31（L2W-4 独立验收 GO；准备 L2W-5）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -22,10 +22,10 @@ relation 目标缺少同 promotion member 约束、source candidate provenance �
 member，writer/CLI 与 golden 逐字节相等，hardlink 拒绝和有权限时 symlink 拒绝均有回归。
 新的 GPT-5.6-sol 干净任务随后对 `a89fdc6d..1c9a20b` 独立复验，结论 GO、无 findings
 （DEC-0062）。该修正未读取私有小说，未修改引擎、内容包、save、Schema 或依赖。
-项目负责人随后恢复持续 goal 与项目开发。L2W-4 当前已完成本地实现与验证：在不修改既有
+项目负责人随后恢复持续 goal 与项目开发。L2W-4 已完成本地实现与验证：在不修改既有
 CanonDraft + AdaptationPlan v1 路径的前提下，让 CanonRegistry v1 通过显式人工计划
-生成相同单房间规模的 micro content pack，并保留多章复合 provenance。独立验收仍须由
-新的 GPT-5.6-sol Codex 任务或干净上下文执行，当前不能自宣 GO。
+生成相同单房间规模的 micro content pack，并保留多章复合 provenance。新的 GPT-5.6-sol
+Codex 任务已独立复核真实提交和全部关键证据，结论 GO、无 P0-P3 findings（DEC-0064）。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
@@ -200,16 +200,18 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- L2W-4 implementation 已完成本地验证；下一阶段仅为独立只读验收，不扩展新功能。
-- 保持一房间、一角色、一物品、一 game-only quest、一 game-only dialogue；不修改
-  `src/`、original_demo、save、依赖，不做冲突裁决、多房间扩容或私有资料处理。
+- L2W-4 已独立验收 GO。下一切片是 L2W-5：从经过验证的 CanonRegistry 生成一个
+  显式选择、确定排序、只读的 registry inspection report，供人工计划前复核实体、成员、
+  claims 和来源；不修改 registry 或任何游戏状态。
+- L2W-5 保持公开虚构 fixture 范围，不读取私有资料，不做名称搜索、实体归并、冲突裁决、
+  adaptation、多房间扩容、`src/`、original_demo、save 或依赖变更。
 
 ## Blockers
 
-- 无技术阻塞。当前使用 GPT-5.6-sol；本地跟踪 `origin/main=a89fdc6d819b976b80b82a74e575ff851ba86448`，
-  L2W-4 implementation commit 为 `1fb95bf8fce42428188d6d9d06b1a68397f8d999`，
-  当前 `HEAD=1fb95bf8`、ahead/behind `3/0`，未 push。提交后对 GitHub `main` 的直查
-  因网络连接重置未确认；恢复或 push 前必须重试。
+- 无技术阻塞。当前使用 GPT-5.6-sol；L2W-4 独立验收快照的工作树干净，
+  `HEAD=77f1fa795bd3f7c0ba6b565a57809459db31ee0d`，本地跟踪
+  `origin/main=a89fdc6d819b976b80b82a74e575ff851ba86448`，ahead/behind `4/0`，未 push。
+  `git ls-remote --heads origin main` 超时，恢复或 push 前必须重试实时远端核对。
 
 ## Verification
 
@@ -228,16 +230,16 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   `check_repo_safety.py --history`、`git fsck --full --no-dangling`、`git diff --check`
   和仓库外真实 `python -m pipeline.canon_registry` CLI/golden bytes 均通过。未访问私有
   小说；`src/`、Schema、original_demo、save 和依赖均未修改。
-- L2W-4 local verification（2026-07-31，Codex；DEC-0063，独立验收 pending）：39 项
+- L2W-4 independent acceptance GO（2026-07-31，fresh Codex GPT-5.6-sol，DEC-0064）：
+  对 `a19707521..1fb95bf8` 的 23 文件实现差异无 P0-P3 findings。独立复验确认 39 项
   `tests.test_registry_adaptation` 聚焦测试通过（1 Windows symlink permission skip），
-  1105 项全量 unittest 通过（3 skips）；compileall、两份 Draft 2020-12 Schema JSON
-  解析、虚构 registry/plan/golden、`lore2mud validate --content examples/original_demo`、
-  `check_repo_safety.py --history`、`git fsck --full --no-dangling`、`git diff --check`
-  和仓库外真实 CLI/golden bytes 均通过。输出 manifest 为 2840 bytes，SHA-256
-  `4d09e4126364e3f6e3967780ae30688204e9e7030a13c3a196052cfe5f31fe7c`；真实 World
-  playthrough 已自动接取任务并在拾取物品后完成任务。未访问私有小说，未修改 `src/`、
-  original_demo、save 或依赖。实现提交为 `1fb95bf8fce42428188d6d9d06b1a68397f8d999`；
-  提交后 GitHub `main` 直查遇到连接重置，tracking ref 仍为 `a89fdc6d`。
+  72 项 L2W-2 回归通过（1 skip），1105 项全量 unittest 通过（3 skips）；compileall、
+  两份 Draft 2020-12 Schema、虚构 registry/plan/golden、original-demo 校验、history safety、
+  fsck、working-tree 和 implementation-range diff、仓库外真实 CLI、loader 与 World 流程
+  均通过。九个文件逐字节匹配 golden；manifest 为 2840 bytes，SHA-256
+  `4d09e4126364e3f6e3967780ae30688204e9e7030a13c3a196052cfe5f31fe7c`；World 已自动
+  接取任务并在拾取物品后完成。未访问私有小说，未修改 `src/`、original_demo、save 或依赖。
+  Windows symlink 创建无权限，相关条件测试跳过；`lexists` 路径已静态复核。
 - Phase 1.0 independent acceptance GO（2026-07-30，GPT-5.6-sol，DEC-0039）：
   聚焦复验确认 DEC-0038 三个 findings 全部关闭。131 项聚焦测试、730 项全量
   unittest、compileall、original-demo 校验、安全历史扫描和 diff 检查通过。
