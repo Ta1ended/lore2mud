@@ -232,6 +232,18 @@ python -m pipeline.registry_adaptation `
 格式与完整验证规则见
 [Registry Adaptation Format v1](docs/registry_adaptation_format.md)。
 
+需要在编写改编计划前缩小审阅范围时，可按精确 registry entity ID 生成只读报告；
+工具保留完整成员、candidate 与复合 claim 来源，不做名称搜索或冲突裁决：
+
+```powershell
+python -m pipeline.registry_inspection `
+  --canon-registry tests/fixtures/canon_registry/expected_registry.json `
+  --inspection-plan tests/fixtures/registry_inspection/valid_plan.json `
+  --output C:\Temp\mira_inspection.json
+```
+
+格式见 [Registry Inspection Format v1](docs/registry_inspection_format.md)。
+
 ## 生产工作流
 
 Codex 全程使用 GPT-5.6-sol 完成方案、实现、测试、交接和本地提交；项目负责人

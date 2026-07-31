@@ -151,6 +151,15 @@ claim 来源；所有其它 registry entity 必须显式写入 omissions。游�
 和 `registry_adaptation_manifest.json`，保留跨章冲突而不做裁决。格式规范见
 [registry_adaptation_format.md](registry_adaptation_format.md)。
 
+### L2W-5：只读 registry inspection report
+
+经过验证的 CanonRegistry 可通过显式 `RegistryInspectionPlan v1` 按稳定 entity ID
+选出一个或多个实体，生成确定排序的只读报告。报告逐字段保留所选实体的 aliases、members、
+`source_candidate_id` 和全部复合 claim 来源，只附带这些 claims 实际使用的完整 source
+records。冲突 claims 与指向未选实体的 relation refs 原样保留；工具不搜索名称、不扩展选择、
+不裁决冲突，也不修改 registry。格式规范见
+[registry_inspection_format.md](registry_inspection_format.md)。
+
 ## 第三步：实体归并
 
 中央注册表负责稳定 ID。并行提取的候选不能各自永久决定实体 ID。别名、称号和

@@ -1549,3 +1549,49 @@
   read-only registry inspection artifact without changing canon or game state.
 - Supersedes: Only DEC-0063's independent-acceptance-pending status; it does not
   change the implemented L2W-4 contract.
+
+## DEC-0065: L2W-5 explicit read-only registry inspection report
+
+- Date: 2026-07-31
+- Status: Implemented locally; independent acceptance pending.
+- Context: After L2W-4 independent GO, the autonomous GPT-5.6-sol Goal selected
+  the smallest public-safe follow-up needed before larger adaptation planning:
+  reviewers need a deterministic way to isolate exact registry entities without
+  name search, semantic inference, or a mutable query layer.
+- Decision: (a) `pipeline.registry_inspection` consumes a fully validated
+  `CanonRegistry v1` and a strict `RegistryInspectionPlan v1`. The plan matches
+  registry ID/version and selects one or more unique stable entity IDs. (b) The
+  `RegistryInspectionReport v1` contains exactly that sorted entity set and copies
+  every entity field, member, source candidate ID, and composite claim source
+  without rewriting or resolving conflicts. Relation targets may remain outside
+  the selected set. (c) The report source array contains exactly the complete
+  source records used by selected claims; an entity with no claims has an empty
+  source subset while retaining its members. (d) Python validators enforce exact
+  selection/source coverage, nested CanonRegistry contracts, NFKC alias rules,
+  member/candidate/claim provenance uniqueness, claim/source chapter binding, and
+  canonical order. Two Draft 2020-12 Schemas provide strict structural contracts.
+  (e) The CLI rejects registry, plan, and output path aliases, including hardlinks
+  and symlinks when available. Its single-file writer revalidates before creating
+  a same-directory tempfile, then writes, flushes, fsyncs, and atomically replaces;
+  failure preserves an existing unrelated output and cleans its own tempfile.
+- Evidence: 49 L2W-5 focused tests pass with one Windows symlink permission skip;
+  172 L2W-3/L2W-4/L2W-5 focused and regression tests pass with three skips; 1154
+  full unittest cases pass with four skips. Compileall, both Schemas under
+  `Draft202012Validator`, original-demo validation, history safety,
+  `git fsck --full --no-dangling`, whitespace checks, and a repository-external
+  subprocess CLI all pass. The fictional golden report copies one cross-chapter
+  character, two members, four claims, two source records, conflicting role claims,
+  and unselected relation targets. It is 4144 bytes with SHA-256
+  `f943f6f487bcca607d854023c32b0a663ede25069700f707637420a5857eebb5`;
+  registry and plan input hashes remain unchanged.
+- Implementation baseline: `9f09d9691a236919648cea294c31fcdf0f105ff9`.
+  The implementation and handoff are one local commit containing this decision;
+  use live `git rev-parse HEAD` for its commit ID.
+- Consequences: L2W-5 does not modify CanonRegistry v1, L2W-2, L2W-4, `src/`,
+  original_demo, save, dependencies, or private material. Fuzzy/full-text/semantic
+  search, mutable storage, conflict resolution, adaptation, multi-room output,
+  private processing, release, and push remain outside scope. A fresh GPT-5.6-sol
+  Codex task or clean context must independently review the implementation before
+  GO. The local commit makes GitHub `main` lag by more than five commits under the
+  current tracking snapshot, so development pauses for project-owner push.
+- Supersedes: None.

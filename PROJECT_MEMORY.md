@@ -161,6 +161,24 @@ stale.
   still `a89fdc6d819b976b80b82a74e575ff851ba86448`; the independent-acceptance
   snapshot was clean at `77f1fa795bd3f7c0ba6b565a57809459db31ee0d`, ahead/behind
   `4/0`. A direct GitHub `main` query timed out and must be retried before publishing.
+- L2W-5 explicit read-only registry inspection is implemented locally by Codex
+  (DEC-0065). `pipeline/registry_inspection.py` consumes a validated CanonRegistry
+  and an exact-ID `RegistryInspectionPlan v1`, then copies the selected frozen
+  entities into a deterministic `RegistryInspectionReport v1`. It retains aliases,
+  members, source candidate IDs, every composite claim and conflict, while deriving
+  only the source records used by those claims. It performs no name search,
+  inference, conflict resolution, registry update, adaptation, or game-state change.
+- L2W-5 evidence is 49 focused tests (1 Windows symlink permission skip), 172
+  L2W-3/L2W-4/L2W-5 tests (3 skips), and 1154 full unittest cases (4 skips), plus
+  compileall, both Draft 2020-12 Schemas under `Draft202012Validator`, original-demo
+  validation, history safety, fsck, whitespace checks, and a repository-external
+  subprocess CLI. The 4144-byte golden report has SHA-256
+  `f943f6f487bcca607d854023c32b0a663ede25069700f707637420a5857eebb5` and exactly
+  1 entity, 2 members, 4 claims and 2 source records; input hashes stay unchanged.
+  Independent GPT-5.6-sol acceptance remains pending. Baseline is
+  `9f09d9691a236919648cea294c31fcdf0f105ff9`; the implementation is the local commit
+  containing DEC-0065. That commit takes local-vs-GitHub lag above five, so pause
+  for a project-owner GitHub Desktop push before further development.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

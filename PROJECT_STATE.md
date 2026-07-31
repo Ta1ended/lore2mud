@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-31（L2W-4 独立验收 GO；准备 L2W-5）_
+_Last updated: 2026-07-31（L2W-5 本地实现与验证完成；独立验收 pending）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -26,6 +26,9 @@ member，writer/CLI 与 golden 逐字节相等，hardlink 拒绝和有权限时 
 CanonDraft + AdaptationPlan v1 路径的前提下，让 CanonRegistry v1 通过显式人工计划
 生成相同单房间规模的 micro content pack，并保留多章复合 provenance。新的 GPT-5.6-sol
 Codex 任务已独立复核真实提交和全部关键证据，结论 GO、无 P0-P3 findings（DEC-0064）。
+L2W-5 随后新增显式稳定 ID 驱动的只读 CanonRegistry inspection report（DEC-0065）：
+报告逐字段保留所选实体、member/candidate provenance、复合 claims 与实际 claim sources，
+不搜索名称、不裁决冲突、不修改 registry。当前本地实现和验证已完成，独立验收仍 pending。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
@@ -200,21 +203,29 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- L2W-4 已独立验收 GO。下一切片是 L2W-5：从经过验证的 CanonRegistry 生成一个
-  显式选择、确定排序、只读的 registry inspection report，供人工计划前复核实体、成员、
-  claims 和来源；不修改 registry 或任何游戏状态。
-- L2W-5 保持公开虚构 fixture 范围，不读取私有资料，不做名称搜索、实体归并、冲突裁决、
+- L2W-5 本地实现与全量验证完成；实现上下文不得自宣 GO。下一技术动作是在远端同步后，
+  由新的 GPT-5.6-sol Codex 任务或干净上下文只读复核 baseline `9f09d969` 到实现提交。
+- 保持公开虚构 fixture 范围；不读取私有资料，不做名称搜索、实体归并、冲突裁决、
   adaptation、多房间扩容、`src/`、original_demo、save 或依赖变更。
 
 ## Blockers
 
-- 无技术阻塞。当前使用 GPT-5.6-sol；L2W-4 独立验收快照的工作树干净，
-  `HEAD=77f1fa795bd3f7c0ba6b565a57809459db31ee0d`，本地跟踪
-  `origin/main=a89fdc6d819b976b80b82a74e575ff851ba86448`，ahead/behind `4/0`，未 push。
-  `git ls-remote --heads origin main` 超时，恢复或 push 前必须重试实时远端核对。
+- 提交前 GitHub API 已确认远端 `main=a89fdc6d819b976b80b82a74e575ff851ba86448`；
+  baseline `HEAD=9f09d9691a236919648cea294c31fcdf0f105ff9`、ahead/behind `5/0`。
+  L2W-5 的单次实现/交接提交会使远端落后超过 5 个提交，触发项目负责人的暂停规则：
+  本地提交后停止开发，等待项目负责人使用 GitHub Desktop push 并刷新 tracking ref。
 
 ## Verification
 
+- L2W-5 local verification（2026-07-31，Codex；DEC-0065，独立验收 pending）：49 项
+  `tests.test_registry_inspection` 通过（1 Windows symlink permission skip）；172 项
+  L2W-3/L2W-4/L2W-5 聚焦与回归通过（3 skips）；1154 项全量 unittest 通过（4 skips）。
+  Compileall、两份 Schema 的 `Draft202012Validator` 校验、original-demo 内容校验、
+  `check_repo_safety.py --history`、`git fsck --full --no-dangling` 和 whitespace 检查通过。
+  仓库外 subprocess CLI 输出恰含 1 entity、2 members、4 claims、2 sources，逐字节匹配
+  4144-byte golden，SHA-256
+  `f943f6f487bcca607d854023c32b0a663ede25069700f707637420a5857eebb5`；registry/plan
+  输入哈希不变。未访问私有小说，未修改 `src/`、original_demo、save 或依赖。
 - L2W-3 independent acceptance GO（2026-07-31，fresh Codex GPT-5.6-sol，DEC-0062）：
   相对 `a89fdc6d819b976b80b82a74e575ff851ba86448` 的修正提交
   `1c9a20bfade5bdb292ca3a801f00279cf0450e30` 无 findings。独立复验确认 84 项聚焦
@@ -368,6 +379,14 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   `tests/fixtures/registry_adaptation/` - L2W-4 semantic, writer, CLI, golden,
   and World coverage.
 - `docs/registry_adaptation_format.md` - L2W-4 plan/manifest contract.
+- `pipeline/registry_inspection.py` - L2W-5 exact-ID plan/report validation,
+  source-preserving subset compilation, atomic writer, and CLI.
+- `schemas/registry_inspection_plan.schema.json` /
+  `schemas/registry_inspection_report.schema.json` - L2W-5 structural contracts.
+- `tests/test_registry_inspection.py` and
+  `tests/fixtures/registry_inspection/` - L2W-5 semantic, golden, writer, alias,
+  and subprocess CLI coverage.
+- `docs/registry_inspection_format.md` - L2W-5 plan/report and source-subset contract.
 - `src/lore2mud/engine/world.py` - authoritative state for quests, effects, flags,
   coins, fixed shops, inventory, equipment, and dialogue.
 - `src/lore2mud/engine/save.py` - strict v7 save/load service with coins and flags.
@@ -417,6 +436,11 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   do not send the entire corpus to a cloud model by default.
 - History rewriting can leave Git hosting caches and pre-existing external clones with
   old objects; repository checks only cover currently reachable refs.
+- L2W-5 reports intentionally preserve relation targets outside the selected entity
+  subset; consumers must use the named source registry for target resolution. Its
+  source array covers claim promotions only, so a selected claimless entity has an
+  empty source array while retaining member provenance. Private-derived reports must
+  remain outside the public repository.
 - 项目负责人提供的历史 GPT-5.6-sol 审计已在 `2ecead1` 上完成，结论为 `CONDITIONAL GO`：
   写入 I/O 错误契约已补齐；审计报告的 43 个 dangling blob 未读取内容，也不受可达历史
   安全扫描覆盖。当前 `drop` 切片仅在项目负责人授权的 Terra 临时流程下自审，不得表述为

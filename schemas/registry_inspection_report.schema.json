@@ -1,0 +1,262 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/registry_inspection_report.schema.json",
+  "title": "Registry Inspection Report v1",
+  "description": "A deterministic source-preserving subset of explicitly selected CanonRegistry entities.",
+  "type": "object",
+  "required": [
+    "format_version",
+    "inspection_id",
+    "source_registry_id",
+    "source_registry_version",
+    "selected_entity_refs",
+    "sources",
+    "entities"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": { "const": 1 },
+    "inspection_id": { "$ref": "#/$defs/stable_id" },
+    "source_registry_id": { "$ref": "#/$defs/stable_id" },
+    "source_registry_version": { "type": "integer", "minimum": 1 },
+    "selected_entity_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stable_id" }
+    },
+    "sources": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "entities": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/entity" }
+    }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "non_blank": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "chapter_id": {
+      "type": "string",
+      "pattern": "^chapter_[0-9]{6}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "promotion_id",
+        "chapter_id",
+        "chapter_sha256",
+        "extracted_by",
+        "review_id",
+        "reviewed_by"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "promotion_id": { "$ref": "#/$defs/stable_id" },
+        "chapter_id": { "$ref": "#/$defs/chapter_id" },
+        "chapter_sha256": { "$ref": "#/$defs/sha256" },
+        "extracted_by": { "$ref": "#/$defs/non_blank" },
+        "review_id": { "$ref": "#/$defs/stable_id" },
+        "reviewed_by": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "member": {
+      "type": "object",
+      "required": [
+        "promotion_id",
+        "source_entity_id",
+        "source_candidate_id",
+        "source_canonical_name",
+        "source_aliases"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "promotion_id": { "$ref": "#/$defs/stable_id" },
+        "source_entity_id": { "$ref": "#/$defs/stable_id" },
+        "source_candidate_id": { "$ref": "#/$defs/stable_id" },
+        "source_canonical_name": { "$ref": "#/$defs/non_blank" },
+        "source_aliases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/non_blank" }
+        }
+      }
+    },
+    "claim_source": {
+      "type": "object",
+      "required": ["promotion_id", "source_entity_id", "source_claim_id"],
+      "additionalProperties": false,
+      "properties": {
+        "promotion_id": { "$ref": "#/$defs/stable_id" },
+        "source_entity_id": { "$ref": "#/$defs/stable_id" },
+        "source_claim_id": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "text_value": {
+      "type": "object",
+      "required": ["kind", "text"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "text" },
+        "text": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "relation_value": {
+      "type": "object",
+      "required": ["kind", "entity_ref"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "relation" },
+        "entity_ref": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "numeric_value": {
+      "type": "object",
+      "required": ["kind", "number", "unit"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "numeric" },
+        "number": { "type": "number" },
+        "unit": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/stable_id" }
+          ]
+        }
+      }
+    },
+    "boolean_value": {
+      "type": "object",
+      "required": ["kind", "flag"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "boolean" },
+        "flag": { "type": "boolean" }
+      }
+    },
+    "enum_value": {
+      "type": "object",
+      "required": ["kind", "enum_value"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "enum" },
+        "enum_value": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "canon_value": {
+      "oneOf": [
+        { "$ref": "#/$defs/text_value" },
+        { "$ref": "#/$defs/relation_value" },
+        { "$ref": "#/$defs/numeric_value" },
+        { "$ref": "#/$defs/boolean_value" },
+        { "$ref": "#/$defs/enum_value" }
+      ]
+    },
+    "claim": {
+      "type": "object",
+      "required": [
+        "source",
+        "predicate",
+        "value",
+        "source_chapters",
+        "source_support",
+        "certainty",
+        "inference_basis",
+        "review_reason"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "source": { "$ref": "#/$defs/claim_source" },
+        "predicate": { "$ref": "#/$defs/stable_id" },
+        "value": { "$ref": "#/$defs/canon_value" },
+        "source_chapters": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": { "$ref": "#/$defs/chapter_id" }
+        },
+        "source_support": {
+          "type": "string",
+          "enum": ["explicit", "inferred"]
+        },
+        "certainty": {
+          "type": "string",
+          "enum": ["certain", "uncertain"]
+        },
+        "inference_basis": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/non_blank" }
+          ]
+        },
+        "review_reason": { "$ref": "#/$defs/non_blank" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "source_support": { "const": "inferred" } },
+            "required": ["source_support"]
+          },
+          "then": {
+            "properties": { "inference_basis": { "$ref": "#/$defs/non_blank" } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "source_support": { "const": "explicit" } },
+            "required": ["source_support"]
+          },
+          "then": {
+            "properties": { "inference_basis": { "type": "null" } }
+          }
+        }
+      ]
+    },
+    "entity": {
+      "type": "object",
+      "required": [
+        "entity_id",
+        "entity_type",
+        "canonical_name",
+        "aliases",
+        "members",
+        "claims",
+        "merge_reason"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "entity_id": { "$ref": "#/$defs/stable_id" },
+        "entity_type": {
+          "type": "string",
+          "enum": ["character", "location", "organization", "skill", "item", "event"]
+        },
+        "canonical_name": { "$ref": "#/$defs/non_blank" },
+        "aliases": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/non_blank" }
+        },
+        "members": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/member" }
+        },
+        "claims": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/claim" }
+        },
+        "merge_reason": { "$ref": "#/$defs/non_blank" }
+      }
+    }
+  }
+}

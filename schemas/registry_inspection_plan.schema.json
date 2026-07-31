@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/registry_inspection_plan.schema.json",
+  "title": "Registry Inspection Plan v1",
+  "description": "An explicit stable-ID selection for a read-only CanonRegistry inspection report.",
+  "type": "object",
+  "required": [
+    "format_version",
+    "inspection_id",
+    "source_registry_id",
+    "source_registry_version",
+    "entity_refs"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": { "const": 1 },
+    "inspection_id": { "$ref": "#/$defs/stable_id" },
+    "source_registry_id": { "$ref": "#/$defs/stable_id" },
+    "source_registry_version": { "type": "integer", "minimum": 1 },
+    "entity_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stable_id" }
+    }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    }
+  }
+}

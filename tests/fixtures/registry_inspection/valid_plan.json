@@ -1,0 +1,9 @@
+{
+  "entity_refs": [
+    "canon_mira"
+  ],
+  "format_version": 1,
+  "inspection_id": "inspection_mira_review",
+  "source_registry_id": "fixture_registry",
+  "source_registry_version": 1
+}

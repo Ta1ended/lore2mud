@@ -8,9 +8,23 @@
   implementation, testing, handoff, local commits, and clean-context acceptance;
   Hermes remains historical attribution only, and local commits are not pushed
   automatically. Added the registry-backed adaptation CLI to the public pipeline
-  entry points.
+  entry points. Documented the autonomous-Goal stop rule when confirmed GitHub
+  lag exceeds five local commits.
 
 ### Added
+
+- Added explicit read-only CanonRegistry inspection reports (L2W-5):
+  `pipeline/registry_inspection.py` validates strict plan/report v1 contracts,
+  selects only exact stable entity IDs, copies complete aliases, members,
+  candidate provenance and composite claims, and derives the exact claim-source
+  subset without search, inference, conflict resolution, or registry mutation.
+  Added two Draft 2020-12 Schemas, a public fictional plan and 4144-byte golden
+  report, deterministic atomic/fsync writer, direct/subprocess CLI coverage,
+  format and pipeline docs, and 49 focused tests (1 Windows symlink permission
+  skip). Verification passed 172 L2W-3/L2W-4/L2W-5 tests (3 skips), 1154 full
+  unittest cases (4 skips), compileall, real Schema validation, original-demo
+  validation, history safety, fsck, whitespace checks, and a repository-external
+  golden-byte CLI. Independent GPT-5.6-sol acceptance remains pending (DEC-0065).
 
 - Added registry-backed micro adaptation (L2W-4):
   `pipeline/registry_adaptation.py` validates a strict `RegistryAdaptationPlan v1`,

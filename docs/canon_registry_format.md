@@ -224,7 +224,9 @@ an existing output and clean up the invocation's temporary file.
 
 - automatic entity matching from names or aliases;
 - semantic claim deduplication or conflict resolution;
-- mutable registry storage, incremental updates, indexing, or queries;
+- mutable registry storage, incremental updates, indexing, or general queries;
+  L2W-5 provides a separate explicit-ID, read-only
+  [inspection report](registry_inspection_format.md) without changing registry v1;
 - cross-registry references;
 - adaptation of a registry into a multi-room game content pack;
 - model or LLM integration;
