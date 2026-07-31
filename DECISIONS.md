@@ -1770,3 +1770,38 @@
   check. The pushed commit still requires new GitHub `quality` and `tests` runs;
   local GO is not remote CI success and does not authorize release or new scope.
 - Supersedes: DEC-0069's independent-acceptance-pending state only.
+
+## DEC-0071: GEN-1 generic narrative state and conditions - re-review pending
+
+- Date: 2026-08-01
+- Status: Local REVISE corrections verified; fresh independent acceptance pending.
+- Context: The isolated branch `codex/gen1-narrative-conditions` starts from
+  `e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1`; its initial implementation is
+  `9e2d30130baf716cda0d9f52a638f10950d04cd2`. It adds a generic narrative
+  state/condition foundation without reading or writing any private material.
+  The first fresh review returned three P2 findings: present `int.minimum` and
+  `int.maximum` accepted JSON `null`, Windows delivery guidance still described
+  0.9.0/v7, and required continuity files were stale.
+- Decision: (a) An absent integer bound remains optional, but a present bound
+  must be a non-bool integer; explicit `null` is rejected by the loader and is
+  covered for both `minimum` and `maximum`. (b) The Windows candidate document
+  names `content-0.10.0`, save v8, and v7's narrow compatibility only for packs
+  without narrative state. (c) All five continuity files record the corrected
+  local state; the changelog, state, task, memory, and decision records preserve
+  that independent re-review is pending. (d) The underlying GEN-1 contract remains
+  typed bool/int/enum state, a strict bounded condition AST, World-authoritative
+  dialogue projection, and save v8 for stateful packs; it does not add scripts,
+  `eval`, LLM integration, runtime authority outside World, or private content.
+- Evidence: The correction passes 17 focused GEN-1 tests, 13 Windows packaging
+  tests including a real PyInstaller cold start, 1272 full unittest cases, and
+  1265 pytest cases, each suite with 7 conditional skips. Ruff, Pyright,
+  compileall, original-demo validation, `check_repo_safety.py --history`, and
+  `git fsck --full --no-dangling` pass.
+  `jsonschema` is not installed and is not added for meta-validation; JSON
+  parsing, strict loader contracts, and runtime coverage provide the local gate.
+- Consequences: This is not a GO. A new clean GPT-5.6-sol read-only review must
+  inspect `e6070bd..HEAD`, the exact null-bound rejection, packaging guidance,
+  handoff synchronization, and named evidence before integration. No change to
+  `main`, push, release, or another feature is authorized by this record.
+- Supersedes: No prior decision; it records the GEN-1 implementation and closes
+  only the first review's local correction work.

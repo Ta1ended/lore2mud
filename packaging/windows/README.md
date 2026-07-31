@@ -43,18 +43,20 @@ Runtime content remains read-only in the extracted bundle. Mutable data uses:
 ```text
 %LOCALAPPDATA%\lore2mud\
 `-- saves\
-    `-- content-0.9.0\
+    `-- content-0.10.0\
 ```
 
 Set `LORE2MUD_DATA_DIR` to an absolute path before launch to use a portable or
 managed data location. The launcher never writes saves beside the application.
 
 Save directories are isolated by `content_pack_version`. The current public
-demo is `0.9.0`, and Core explicitly rejects `0.8.0` saves rather than silently
-loading incompatible state. JSON saves directly under the legacy `saves`
-directory and other `content-*` directories produce warnings and remain
-untouched. Before replacing or removing an old bundle, back up the complete
-`%LOCALAPPDATA%\lore2mud` directory.
+demo is `0.10.0` and writes save v8 with typed narrative state. Its saves reject
+older content-pack versions and v7 data because v7 cannot represent that state.
+v7 remains read-compatible only for content packs that declare no narrative
+state. JSON saves directly under the legacy `saves` directory and other
+`content-*` directories produce warnings and remain untouched. Before replacing
+or removing an old bundle, back up the complete `%LOCALAPPDATA%\lore2mud`
+directory.
 
 ## Maintainer workflow
 
@@ -125,7 +127,7 @@ not modified.
 
 ## Runtime decision
 
-Measurements below are from the integrated `0.1.0` application / `0.9.0`
+Measurements below are from the integrated `0.1.0` application / `0.10.0`
 content candidate built on Windows 11 x64 with Python 3.13.14 and PyInstaller
 6.21.0. Runtime and compression versions can change exact sizes.
 
@@ -142,7 +144,7 @@ local delivery path; publishing remains separately authorized.
 
 ## Scope and integration
 
-Ship consumes the merged public CLI, package-data declaration, and `0.9.0`
+Ship consumes the merged public CLI, package-data declaration, and `0.10.0`
 content contract. This follow-up does not modify `src/lore2mud/cli.py` or
 `pyproject.toml`. Any later CLI, Web-resource, application-version, or content
 change requires rebuilding and rerunning the complete candidate verifier.

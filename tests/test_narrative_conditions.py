@@ -108,6 +108,8 @@ class NarrativeStateContentTests(unittest.TestCase):
             lambda doc: doc["states"][1].update(initial=True),
             lambda doc: doc["states"][1].update(initial=4),
             lambda doc: doc["states"][1].update(minimum=4, maximum=2),
+            lambda doc: doc["states"][1].update(minimum=None),
+            lambda doc: doc["states"][1].update(maximum=None),
             lambda doc: doc["states"][2].update(initial="missing"),
             lambda doc: doc["states"][2].update(values=["standby", "standby"]),
             lambda doc: doc["states"][0].update(kind="float"),

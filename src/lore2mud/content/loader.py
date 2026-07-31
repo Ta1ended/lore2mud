@@ -257,11 +257,7 @@ def _signed_integer(
     value: object,
     location: str,
     validator: _Validator,
-    *,
-    required: bool = True,
 ) -> int | None:
-    if value is None and not required:
-        return None
     if not isinstance(value, int) or isinstance(value, bool):
         validator.issues.append(f"{location} 必须是整数")
         return None
@@ -333,17 +329,19 @@ def _load_narrative_state_definitions(
             initial = _signed_integer(
                 obj.get("initial"), f"{location}.initial", validator
             )
-            minimum = _signed_integer(
-                obj.get("minimum"),
-                f"{location}.minimum",
-                validator,
-                required=False,
+            minimum = (
+                _signed_integer(
+                    obj["minimum"], f"{location}.minimum", validator
+                )
+                if "minimum" in obj
+                else None
             )
-            maximum = _signed_integer(
-                obj.get("maximum"),
-                f"{location}.maximum",
-                validator,
-                required=False,
+            maximum = (
+                _signed_integer(
+                    obj["maximum"], f"{location}.maximum", validator
+                )
+                if "maximum" in obj
+                else None
             )
             if minimum is not None and maximum is not None and minimum > maximum:
                 validator.issues.append(

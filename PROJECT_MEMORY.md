@@ -18,6 +18,29 @@ stale.
 
 ## Current checkpoint
 
+- GEN-1 generic narrative state and conditions is isolated on
+  `codex/gen1-narrative-conditions`, based on
+  `e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1`. Initial implementation commit
+  `9e2d30130baf716cda0d9f52a638f10950d04cd2` adds typed bool/int/enum state,
+  an optional `narrative_state.json`, bounded declarative conditions, and
+  World-authoritative dialogue-option filtering. Its first fresh independent
+  review returned REVISE with three P2 findings: explicit JSON `null` was
+  incorrectly accepted for present integer bounds, Windows package guidance
+  still described 0.9.0/v7, and the continuity files were stale. The local
+  rework rejects present `minimum`/`maximum: null`, adds both regressions,
+  updates the package guidance to original demo 0.10.0/save v8, and records
+  this state. Local rework evidence is 17 narrative-focused tests, 13 Windows
+  packaging tests including real PyInstaller cold start, 1272 full unittest
+  cases, and 1265 pytest cases, all passing with 7 conditional skips. Ruff,
+  Pyright, compileall, original-demo validation, history safety, and fsck also
+  passed. A new clean
+  read-only acceptance is still required before any integration, main update,
+  push, release, or next feature.
+- The GEN-1 runtime contract is content pack 0.10.0 and save v8 for packs that
+  declare narrative state. v7 is read-only compatible only for packs without
+  `narrative_state.json`; it is rejected for stateful packs because it cannot
+  represent their typed state. This is branch-local until independent acceptance
+  and authorized integration.
 - Repository: `lore2mud`; active local branch: `main` at
   `D:\MUD game kaifa\lore2mud`. Published baseline, tracking `origin/main`, and
   direct GitHub `main` resolve to
