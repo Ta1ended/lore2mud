@@ -31,6 +31,7 @@
     "attack": 4,
     "defense": 3,
     "experience_reward": 20,
+    "loot_item": {"item_id": "item_condensed_mist", "quantity": 1},
     "adaptation_notes": "本仓库原创演示怪物。"
   },
   {
@@ -42,6 +43,7 @@
     "attack": 5,
     "defense": 4,
     "experience_reward": 22,
+    "loot_item": {"item_id": "item_beacon_core", "quantity": 1},
     "adaptation_notes": "本仓库原创演示怪物。"
   }
 ]

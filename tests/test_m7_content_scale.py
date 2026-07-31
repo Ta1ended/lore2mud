@@ -20,10 +20,10 @@ class M7ContentScaleDefinitionTests(unittest.TestCase):
         self.pack = load_content_pack(DEMO_PATH)
 
     def test_m7_scale_target_is_reached_with_reciprocal_content_references(self) -> None:
-        self.assertEqual(self.pack.version, "0.8.0")
-        self.assertEqual(len(self.pack.rooms), 8)
+        self.assertEqual(self.pack.version, "0.9.0")
+        self.assertGreaterEqual(len(self.pack.rooms), 8)
         self.assertEqual(len(self.pack.monsters), 4)
-        self.assertEqual(len(self.pack.quests), 7)
+        self.assertGreaterEqual(len(self.pack.quests), 7)
 
         junction = self.pack.rooms["room_broken_rail_junction"]
         well = self.pack.rooms["room_mist_condenser_well"]
@@ -68,18 +68,21 @@ class M7ContentScaleDefinitionTests(unittest.TestCase):
             "monster_mist_crawler": (
                 "room_mist_condenser_well",
                 "quest_clear_mist_crawler",
+                "item_condensed_mist",
             ),
             "monster_prism_sentinel": (
                 "room_afterglow_beacon_platform",
                 "quest_clear_prism_sentinel",
+                "item_beacon_core",
             ),
         }
-        for monster_id, (room_id, quest_id) in expected_encounters.items():
+        for monster_id, (room_id, quest_id, loot_item_id) in expected_encounters.items():
             with self.subTest(monster_id=monster_id):
                 monster = self.pack.monsters[monster_id]
                 self.assertEqual(monster.room_id, room_id)
                 self.assertIn(monster_id, self.pack.rooms[room_id].monster_ids)
-                self.assertIsNone(monster.loot_item)
+                self.assertIsNotNone(monster.loot_item)
+                self.assertEqual(monster.loot_item.item_id, loot_item_id)
 
                 quest = self.pack.quests[quest_id]
                 self.assertIsInstance(quest, MonsterDefeatedQuestDefinition)

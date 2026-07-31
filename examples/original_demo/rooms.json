@@ -101,12 +101,27 @@
     "name": "余辉信标台",
     "description": "信标外壳裂开一道长缝，残余光束掠过平台，照亮了守候在此的构造体。",
     "exits": {
-      "west": "room_lens_archive"
+      "west": "room_lens_archive",
+      "east": {
+        "target_room_id": "room_beacon_heart",
+        "required_item_id": "item_beacon_core"
+      }
     },
     "item_stacks": [],
     "monster_ids": [
       "monster_prism_sentinel"
     ],
+    "adaptation_notes": "本仓库原创演示地点。"
+  },
+  {
+    "id": "room_beacon_heart",
+    "name": "信标心室",
+    "description": "狭小的心室悬在信标内部，四周的导光片随着你的脚步逐一点亮。",
+    "exits": {
+      "west": "room_afterglow_beacon_platform"
+    },
+    "item_stacks": [],
+    "monster_ids": [],
     "adaptation_notes": "本仓库原创演示地点。"
   }
 ]

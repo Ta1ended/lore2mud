@@ -50,5 +50,28 @@
       }
     ],
     "adaptation_notes": "本仓库原创演示对话。"
+  },
+  {
+    "id": "dialogue_beacon_echo",
+    "character_id": "character_beacon_echo",
+    "start_node_id": "node_beacon_greeting",
+    "nodes": [
+      {
+        "id": "node_beacon_greeting",
+        "text": "核心归位了。微光边站又有了可以指向远方的心跳。",
+        "options": [
+          {
+            "id": "opt_restore_beacon",
+            "text": "让信标重新点亮。",
+            "next_node_id": null,
+            "effects": [
+              {"kind": "set_flag", "flag_id": "flag_beacon_restored", "value": true}
+            ]
+          },
+          {"id": "opt_beacon_bye", "text": "先听一会儿回声。", "next_node_id": null, "effects": []}
+        ]
+      }
+    ],
+    "adaptation_notes": "本仓库原创演示终局对话。"
   }
 ]

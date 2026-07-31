@@ -92,8 +92,10 @@ quit
 - `use <ID或名称> [数量]`：使用背包内的消耗品（数量可选，默认 1）。
 - typed stacks：不可变内容 `ItemStackDefinition` 与运行时 `ItemStack` 统一房间、背包、
   战利品和对话奖励；容量按栈位计算，`stack_limit` 限制每栈数量。
-- 当前原创内容包为 0.8.0；本地存档为 v7，使用 `inventory_stacks`、`item_stacks`、
-  `player.coins` 与顶层 `flags`，明确拒绝 v6 存档；旧 0.7.0 内容包存档也会按内容包版本拒绝。
+- 当前原创内容包为 0.9.0；本地存档为 v7，使用 `inventory_stacks`、`item_stacks`、
+  `player.coins` 与顶层 `flags`，明确拒绝 v6 存档；旧 0.8.0 内容包存档也会按内容包版本拒绝。
+- `original_demo` 现在是一段可完成的原创冒险：早期 NPC 提供路线和任务反馈，断轨岔口允许选择
+  可选补给战，棱镜哨卫掉落的唯一核心解锁信标心室，最终任务与 `flag_beacon_restored` 明确记录结局。
 - `equip <ID或名称>`：装备 hand 或 body 槽物品。
 - `unequip [hand|body]`：卸下指定槽位；省略时默认为 hand。
 - `save [槽位]` / `load [槽位]`：保存或读取默认 `default` 槽位，或使用一个安全的命名槽位。

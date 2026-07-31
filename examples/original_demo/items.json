@@ -46,5 +46,20 @@
     "heal_amount": 6,
     "stack_limit": 3,
     "adaptation_notes": "本仓库原创演示怪物战利品。"
+  },
+  {
+    "id": "item_condensed_mist",
+    "name": "凝雾晶滴",
+    "description": "雾核潜行者留下的晶莹水滴，含着足以撑过一场硬仗的冷意。",
+    "heal_amount": 12,
+    "stack_limit": 2,
+    "adaptation_notes": "本仓库原创演示可选支线战利品。"
+  },
+  {
+    "id": "item_beacon_core",
+    "name": "信标核心",
+    "description": "棱镜哨卫胸腔里的暖光核心，仍在有节奏地发出微弱脉冲。",
+    "stack_limit": 1,
+    "adaptation_notes": "本仓库原创演示终局门禁物品。"
   }
 ]

@@ -5,5 +5,12 @@
     "description": "一位年迈的行商，皮肤被风沙磨得粗糙，腰间挂着一串铜铃。",
     "room_id": "room_glassgrass_path",
     "adaptation_notes": "本仓库原创演示角色。"
+  },
+  {
+    "id": "character_beacon_echo",
+    "name": "信标回声",
+    "description": "从心室导光片里传出的温和回声，像是边站终于重新记起了自己的名字。",
+    "room_id": "room_beacon_heart",
+    "adaptation_notes": "本仓库原创演示终局角色。"
   }
 ]

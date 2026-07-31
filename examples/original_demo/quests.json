@@ -70,5 +70,15 @@
     "target_monster_id": "monster_prism_sentinel",
     "reward_experience": 22,
     "adaptation_notes": "本仓库原创演示任务。"
+  },
+  {
+    "id": "quest_restore_beacon",
+    "name": "点亮余辉信标",
+    "description": "带着信标核心进入信标心室，让这座边站重新拥有方向。",
+    "kind": "reach_room",
+    "trigger_room_id": "room_afterglow_beacon_platform",
+    "target_room_id": "room_beacon_heart",
+    "reward_experience": 25,
+    "adaptation_notes": "本仓库原创演示终局任务。"
   }
 ]

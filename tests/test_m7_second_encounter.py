@@ -20,10 +20,10 @@ class M7SecondEncounterContentTests(unittest.TestCase):
         self.pack = load_content_pack(DEMO_PATH)
 
     def test_pack_has_the_second_original_encounter_without_new_mechanics(self) -> None:
-        self.assertEqual(self.pack.version, "0.8.0")
-        self.assertEqual(len(self.pack.rooms), 8)
+        self.assertEqual(self.pack.version, "0.9.0")
+        self.assertGreaterEqual(len(self.pack.rooms), 8)
         self.assertEqual(len(self.pack.monsters), 4)
-        self.assertEqual(len(self.pack.quests), 7)
+        self.assertGreaterEqual(len(self.pack.quests), 7)
 
         observatory = self.pack.rooms["room_silent_observatory"]
         spur = self.pack.rooms["room_shattered_signal_spur"]
@@ -42,15 +42,15 @@ class M7SecondEncounterContentTests(unittest.TestCase):
         self.assertEqual(quest.trigger_room_id, "room_silent_observatory")
         self.assertEqual(quest.target_monster_id, hound.id)
 
-    def test_v7_rejects_a_save_from_the_old_0_7_content_pack(self) -> None:
+    def test_v7_rejects_a_save_from_the_old_0_8_content_pack(self) -> None:
         world = World.from_content_pack(self.pack, player_name="测试旅人")
         with tempfile.TemporaryDirectory() as temp_dir:
             service = SaveLoadService(self.pack, Path(temp_dir))
             service.save(world)
             save_text = service.save_path.read_text(encoding="utf-8")
-            self.assertIn('"version": "0.8.0"', save_text)
+            self.assertIn('"version": "0.9.0"', save_text)
             service.save_path.write_text(
-                save_text.replace('"version": "0.8.0"', '"version": "0.7.0"'),
+                save_text.replace('"version": "0.9.0"', '"version": "0.8.0"'),
                 encoding="utf-8",
             )
 

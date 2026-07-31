@@ -415,7 +415,7 @@ class HelpRegistryTests(unittest.TestCase):
     def test_save_format_and_content_versions_are_current(self) -> None:
         pack = load_content_pack(DEMO_PATH)
         self.assertEqual(SAVE_FORMAT_VERSION, 7)
-        self.assertEqual(pack.version, "0.8.0")
+        self.assertEqual(pack.version, "0.9.0")
 
 
 if __name__ == "__main__":
