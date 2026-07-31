@@ -30,7 +30,7 @@
     "workspace_path": {
       "type": "string",
       "minLength": 1,
-      "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*//)[^/]+(?:/[^/]+)*$"
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*[\\u0000-\\u001F\\u007F<>:\"|?*])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*[. ](?:/|$))(?!.*(?:^|/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\.[^/]*)?(?:/|$))[^/]+(?:/[^/]+)*$"
     },
     "artifact": {
       "type": "object",
@@ -61,7 +61,7 @@
           "if": { "properties": { "status": { "const": "succeeded" } } },
           "then": {
             "properties": {
-              "outputs": { "minItems": 1 },
+              "outputs": { "minItems": 1, "maxItems": 1 },
               "error": { "type": "null" }
             }
           }

@@ -7,12 +7,15 @@ import copy
 import io
 import json
 import os
+import re
+import shutil
+import stat
 import subprocess
 import sys
 import tempfile
 import unittest
 from types import SimpleNamespace
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from unittest.mock import patch
 
 import pipeline.forge as forge
@@ -54,6 +57,19 @@ def _stage(report: dict[str, object], name: str) -> dict[str, object]:
     return next(stage for stage in stages if stage["stage"] == name)
 
 
+def _replace_success_output(
+    state: dict[str, object], stage: str, output: dict[str, object]
+) -> None:
+    stages = state["stages"]
+    assert isinstance(stages, dict)
+    stage_state = stages[stage]
+    assert isinstance(stage_state, dict)
+    for key in ("last_run", "last_success"):
+        record = stage_state[key]
+        assert isinstance(record, dict)
+        record["outputs"] = [copy.deepcopy(output)]
+
+
 class WorkspaceValidationTests(unittest.TestCase):
     def _document(self) -> dict[str, object]:
         document = _read_json(TEMPLATE / "forge-workspace.json")
@@ -88,12 +104,30 @@ class WorkspaceValidationTests(unittest.TestCase):
             "inputs/./registry.json",
             "/absolute/registry.json",
             "inputs\\registry.json",
+            "C:inputs/registry.json",
+            "inputs/control\u0000.json",
+            "inputs/con.json",
+            "inputs/trailing.",
+            "inputs/question?.json",
         ):
             with self.subTest(value=value):
                 document = self._document()
                 document["source_registry"] = value
                 with self.assertRaises(ForgeValidationError):
                     validate_forge_workspace(document)
+
+    @unittest.skipUnless(os.name == "nt", "case alias applies to Windows")
+    def test_windows_case_aliases_cannot_bypass_reserved_paths(self) -> None:
+        document = self._document()
+        document["artifact_root"] = ".FORGE/artifacts"
+        with self.assertRaises(ForgeValidationError):
+            validate_forge_workspace(document)
+
+        document = self._document()
+        document["source_registry"] = "INPUTS/source.json"
+        document["inspection_plan"] = "inputs/SOURCE.json"
+        with self.assertRaises(ForgeValidationError):
+            validate_forge_workspace(document)
 
     def test_inputs_must_be_distinct_and_outside_artifact_root(self) -> None:
         document = self._document()
@@ -155,6 +189,46 @@ class ForgeWorkspaceTests(unittest.TestCase):
         target = self.parent / "from-unsafe-template"
         with self.assertRaises(ForgeValidationError):
             initialize_forge_workspace(target, template)
+
+    def test_template_walker_rejects_junction_before_descending(self) -> None:
+        outside = self.parent / "outside"
+        outside.mkdir()
+        entry = SimpleNamespace(
+            name="junction",
+            path=str(outside),
+            stat=lambda *, follow_symlinks: SimpleNamespace(
+                st_mode=stat.S_IFDIR,
+                st_file_attributes=0x400,
+            ),
+        )
+
+        class FakeScanner:
+            def __enter__(self) -> list[object]:
+                return [entry]
+
+            def __exit__(self, *args: object) -> None:
+                return None
+
+        with patch("pipeline.forge.os.scandir", return_value=FakeScanner()) as scandir:
+            with self.assertRaises(ForgeValidationError) as caught:
+                list(forge._iter_template_entries(self.workspace))
+        self.assertEqual(scandir.call_count, 1)
+        self.assertEqual(len(caught.exception.issues), 1)
+        self.assertIn("junction", caught.exception.issues[0])
+
+    def test_template_leaf_junction_error_is_one_issue(self) -> None:
+        source = TEMPLATE / "forge-workspace.json"
+        target = self.parent / "leaf-race-target"
+        with patch(
+            "pipeline.forge._iter_template_entries",
+            return_value=iter(((source, Path("forge-workspace.json")),)),
+        ), patch(
+            "pipeline.forge._is_link_or_junction", side_effect=(False, True)
+        ):
+            with self.assertRaises(ForgeValidationError) as caught:
+                initialize_forge_workspace(target, TEMPLATE)
+        self.assertEqual(len(caught.exception.issues), 1)
+        self.assertIn("junction", caught.exception.issues[0])
 
     def test_first_run_publishes_valid_report_pack_and_state(self) -> None:
         inputs_before = {
@@ -331,6 +405,7 @@ class ForgeWorkspaceTests(unittest.TestCase):
             with self.assertRaises(ForgeValidationError) as caught:
                 load_forge_workspace(self.workspace)
         self.assertIn("junction", str(caught.exception))
+        self.assertEqual(len(caught.exception.issues), 1)
 
     def test_workspace_lock_rejects_a_second_runner(self) -> None:
         loaded = load_forge_workspace(self.workspace)
@@ -338,6 +413,35 @@ class ForgeWorkspaceTests(unittest.TestCase):
             with self.assertRaises(ForgeExecutionError):
                 with _WorkspaceLock(loaded):
                     self.fail("second lock unexpectedly acquired")
+
+    def test_workspace_lock_rejects_hardlink_without_writing_target(self) -> None:
+        forge_dir = self.workspace / ".forge"
+        forge_dir.mkdir()
+        target = self.parent / "outside-lock-target"
+        target.write_bytes(b"outside")
+        try:
+            os.link(target, forge_dir / "run.lock")
+        except OSError as exc:
+            self.skipTest(f"hard links unavailable: {exc}")
+        with self.assertRaises(ForgeValidationError) as caught:
+            with _WorkspaceLock(load_forge_workspace(self.workspace)):
+                self.fail("hardlinked lock unexpectedly opened")
+        self.assertIn("hard link", str(caught.exception))
+        self.assertEqual(target.read_bytes(), b"outside")
+
+    def test_workspace_lock_rejects_symlink_without_writing_target(self) -> None:
+        forge_dir = self.workspace / ".forge"
+        forge_dir.mkdir()
+        target = self.parent / "outside-lock-target"
+        target.write_bytes(b"outside")
+        try:
+            os.symlink(target, forge_dir / "run.lock")
+        except OSError as exc:
+            self.skipTest(f"symbolic links unavailable: {exc}")
+        with self.assertRaises(ForgeValidationError):
+            with _WorkspaceLock(load_forge_workspace(self.workspace)):
+                self.fail("linked lock unexpectedly opened")
+        self.assertEqual(target.read_bytes(), b"outside")
 
     def test_state_replace_failure_preserves_previous_bytes(self) -> None:
         run_forge_workspace(self.workspace, stages=("inspection",))
@@ -388,6 +492,172 @@ class ForgeWorkspaceTests(unittest.TestCase):
             list((self.workspace / "artifacts" / "inspection_runs").iterdir()), []
         )
 
+    def test_a_b_a_input_race_compiles_the_hashed_snapshot(self) -> None:
+        plan = self.workspace / "plans" / "registry_adaptation_plan.json"
+        original = plan.read_bytes()
+        changed = _read_json(plan)
+        assert isinstance(changed, dict)
+        changed["pack"]["name"] = "Changed During Run"
+        changed_bytes = (
+            json.dumps(changed, ensure_ascii=False, indent=2) + "\n"
+        ).encode("utf-8")
+        original_snapshot = forge._stage_snapshot
+        original_writer = forge.write_registry_micro_pack
+        changed_once = False
+
+        def snapshot_then_change(*args: object, **kwargs: object) -> dict[str, object]:
+            nonlocal changed_once
+            result = original_snapshot(*args, **kwargs)  # type: ignore[arg-type]
+            if not changed_once:
+                plan.write_bytes(changed_bytes)
+                changed_once = True
+            return result
+
+        def write_then_restore(compiled: object, output: Path) -> Path:
+            result = original_writer(compiled, output)  # type: ignore[arg-type]
+            plan.write_bytes(original)
+            return result
+
+        with patch("pipeline.forge._stage_snapshot", side_effect=snapshot_then_change), patch(
+            "pipeline.forge.write_registry_micro_pack", side_effect=write_then_restore
+        ):
+            report, succeeded = run_forge_workspace(
+                self.workspace, stages=("adaptation",)
+            )
+        self.assertTrue(succeeded)
+        stage = _stage(report, "adaptation")
+        self.assertEqual(stage["status"], "CURRENT")
+        output = self.workspace / stage["outputs"][0]["path"]
+        self.assertEqual(load_content_pack(output).name, "Registry Micro Demo")
+
+    def test_empty_directory_changes_adaptation_artifact_hash(self) -> None:
+        report, _ = run_forge_workspace(self.workspace, stages=("adaptation",))
+        output = self.workspace / _stage(report, "adaptation")["outputs"][0]["path"]
+        (output / "empty-extra").mkdir()
+        stale = inspect_forge_workspace(self.workspace)
+        self.assertEqual(_stage(stale, "adaptation")["status"], "STALE")
+
+    def test_forged_non_json_inspection_never_becomes_current(self) -> None:
+        report, _ = run_forge_workspace(self.workspace, stages=("inspection",))
+        output = self.workspace / _stage(report, "inspection")["outputs"][0]["path"]
+        output.write_bytes(b"not-json\n")
+        loaded = load_forge_workspace(self.workspace)
+        state = copy.deepcopy(_load_state(loaded))
+        forged = forge._artifact_record(
+            loaded, PurePosixPath(output.relative_to(self.workspace).as_posix())
+        )
+        forged.pop("state")
+        _replace_success_output(state, "inspection", forged)
+        _write_state(loaded, state)
+        stale = inspect_forge_workspace(self.workspace)
+        self.assertEqual(_stage(stale, "inspection")["status"], "STALE")
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(main(["check", str(self.workspace)]), 1)
+
+    def test_forged_empty_adaptation_directory_never_becomes_current(self) -> None:
+        report, _ = run_forge_workspace(self.workspace, stages=("adaptation",))
+        output = self.workspace / _stage(report, "adaptation")["outputs"][0]["path"]
+        shutil.rmtree(output)
+        output.mkdir()
+        loaded = load_forge_workspace(self.workspace)
+        state = copy.deepcopy(_load_state(loaded))
+        forged = forge._artifact_record(
+            loaded, PurePosixPath(output.relative_to(self.workspace).as_posix())
+        )
+        forged.pop("state")
+        _replace_success_output(state, "adaptation", forged)
+        _write_state(loaded, state)
+        stale = inspect_forge_workspace(self.workspace)
+        self.assertEqual(_stage(stale, "adaptation")["status"], "STALE")
+
+    def test_input_hardlink_cannot_be_forged_as_an_output(self) -> None:
+        report, _ = run_forge_workspace(self.workspace, stages=("inspection",))
+        output = self.workspace / _stage(report, "inspection")["outputs"][0]["path"]
+        output.unlink()
+        registry = self.workspace / "inputs" / "canon_registry.json"
+        try:
+            os.link(registry, output)
+        except OSError as exc:
+            self.skipTest(f"hard links unavailable: {exc}")
+        loaded = load_forge_workspace(self.workspace)
+        state = copy.deepcopy(_load_state(loaded))
+        forged = forge._artifact_record(
+            loaded, PurePosixPath(output.relative_to(self.workspace).as_posix())
+        )
+        forged.pop("state")
+        _replace_success_output(state, "inspection", forged)
+        _write_state(loaded, state)
+        self.assertEqual(
+            _stage(inspect_forge_workspace(self.workspace), "inspection")["status"],
+            "STALE",
+        )
+
+    def test_semantically_valid_but_unexpected_report_is_stale(self) -> None:
+        report, _ = run_forge_workspace(self.workspace, stages=("inspection",))
+        output = self.workspace / _stage(report, "inspection")["outputs"][0]["path"]
+        document = _read_json(output)
+        assert isinstance(document, dict)
+        document["inspection_id"] = "different_inspection"
+        output.write_text(
+            json.dumps(document, ensure_ascii=False, sort_keys=True, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        validate_registry_inspection_report_document(_read_json(output))
+        loaded = load_forge_workspace(self.workspace)
+        state = copy.deepcopy(_load_state(loaded))
+        forged = forge._artifact_record(
+            loaded, PurePosixPath(output.relative_to(self.workspace).as_posix())
+        )
+        forged.pop("state")
+        _replace_success_output(state, "inspection", forged)
+        _write_state(loaded, state)
+        self.assertEqual(
+            _stage(inspect_forge_workspace(self.workspace), "inspection")["status"],
+            "STALE",
+        )
+
+    def test_state_write_failure_rolls_back_only_the_new_output(self) -> None:
+        first, _ = run_forge_workspace(self.workspace, stages=("adaptation",))
+        first_output = self.workspace / _stage(first, "adaptation")["outputs"][0]["path"]
+        state_path = self.workspace / ".forge" / "state.json"
+        state_before = state_path.read_bytes()
+        with patch("pipeline.forge._write_state", side_effect=OSError("blocked")):
+            with self.assertRaises(OSError):
+                run_forge_workspace(
+                    self.workspace, stages=("adaptation",), force=True
+                )
+        self.assertEqual(state_path.read_bytes(), state_before)
+        self.assertEqual(
+            list((self.workspace / "artifacts" / "adaptation_runs").iterdir()),
+            [first_output],
+        )
+
+    def test_state_write_and_rollback_failure_is_not_silenced(self) -> None:
+        with patch("pipeline.forge._write_state", side_effect=OSError("blocked")), patch(
+            "pipeline.forge._remove_output_artifact",
+            side_effect=OSError("cleanup blocked"),
+        ):
+            with self.assertRaises(ForgeExecutionError) as caught:
+                run_forge_workspace(self.workspace, stages=("inspection",))
+        self.assertIn("rollback failed", str(caught.exception))
+
+    def test_state_rejects_drive_relative_and_empty_success_outputs(self) -> None:
+        run_forge_workspace(self.workspace, stages=("inspection",))
+        loaded = load_forge_workspace(self.workspace)
+        state = copy.deepcopy(_load_state(loaded))
+        stage_state = state["stages"]["inspection"]
+        stage_state["last_success"]["outputs"][0]["path"] = (
+            "C:artifacts/inspection_runs/forged.json"
+        )
+        with self.assertRaises(ForgeValidationError):
+            _write_state(loaded, state)
+
+        state = copy.deepcopy(_load_state(loaded))
+        state["stages"]["inspection"]["last_run"]["outputs"] = []
+        state["stages"]["inspection"]["last_success"]["outputs"] = []
+        with self.assertRaises(ForgeValidationError):
+            _write_state(loaded, state)
+
 
 class SchemaTests(unittest.TestCase):
     def test_schemas_declare_strict_draft_2020_12_contracts(self) -> None:
@@ -400,6 +670,21 @@ class SchemaTests(unittest.TestCase):
             self.assertFalse(schema["additionalProperties"])
             self.assertIsInstance(schema["required"], list)
             self.assertIsInstance(schema["$defs"], dict)
+            path_pattern = schema["$defs"]["workspace_path"]["pattern"]
+            self.assertIsNotNone(re.fullmatch(path_pattern, "inputs/valid.json"))
+            for unsafe in (
+                "inputs/./invalid.json",
+                "C:inputs/invalid.json",
+                "inputs/con.json",
+                "inputs/control\u0000.json",
+            ):
+                self.assertIsNone(re.fullmatch(path_pattern, unsafe), unsafe)
+        succeeded_outputs = state_schema["$defs"]["run_record"]["allOf"][0][
+            "then"
+        ]["properties"]["outputs"]
+        self.assertEqual(succeeded_outputs, {"minItems": 1, "maxItems": 1})
+        artifact_not = workspace_schema["properties"]["artifact_root"]["allOf"][1]
+        self.assertIsNotNone(re.search(artifact_not["not"]["pattern"], ".FORGE/x"))
         validate_forge_workspace(_read_json(TEMPLATE / "forge-workspace.json"))
 
     def test_generated_state_matches_the_python_contract(self) -> None:
@@ -413,6 +698,7 @@ class SchemaTests(unittest.TestCase):
                     _read_json(workspace_path / ".forge" / "state.json"),
                     loaded.config.workspace_id,
                     loaded.config.artifact_root,
+                    loaded.root,
                 ),
                 _read_json(workspace_path / ".forge" / "state.json"),
             )
@@ -460,6 +746,22 @@ class CliTests(unittest.TestCase):
             with contextlib.redirect_stderr(stderr):
                 self.assertEqual(main(["status", temp_dir]), 1)
             self.assertIn("missing forge-workspace.json", stderr.getvalue())
+            self.assertNotIn("Traceback", stderr.getvalue())
+
+    def test_unsafe_manifest_path_returns_one_without_traceback(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            workspace = Path(temp_dir) / "workspace"
+            initialize_forge_workspace(workspace, TEMPLATE)
+            manifest = _read_json(workspace / "forge-workspace.json")
+            assert isinstance(manifest, dict)
+            manifest["source_registry"] = "inputs/control\u0000.json"
+            (workspace / "forge-workspace.json").write_text(
+                json.dumps(manifest), encoding="utf-8"
+            )
+            stderr = io.StringIO()
+            with contextlib.redirect_stderr(stderr):
+                self.assertEqual(main(["status", str(workspace)]), 1)
+            self.assertIn("control characters", stderr.getvalue())
             self.assertNotIn("Traceback", stderr.getvalue())
 
     def test_missing_cli_arguments_exit_two(self) -> None:

@@ -60,15 +60,22 @@ hand-edit `.forge/state.json` or generated artifacts.
 
 ## Safety boundary
 
-All manifest paths must be normalized, forward-slash, workspace-relative paths.
-Forge rejects path traversal, input hardlink aliases, symbolic links in managed
-paths, Windows junctions and other reparse points, unsafe template entries, and
-concurrent runs of the same workspace. State output records must remain under the
-run root for their stage. State publication uses a same-directory temporary file,
-`flush`, `fsync`, and atomic replace. Stage outputs use unique run paths, so reruns
-never overwrite known-good artifacts. Forge recomputes each stage's input
-fingerprint after publishing; if inputs changed during execution, it removes only
-that invocation's new output and records the attempt as failed.
+All manifest paths must be normalized, forward-slash, workspace-relative paths
+that are portable to Windows. Forge rejects traversal, device names, control
+characters, drive-relative paths, case aliases of `.forge`, input hardlink aliases,
+links and reparse points in managed paths, unsafe template entries, and concurrent
+runs. Lock files are opened without following reparse points and must have one link.
+
+Each stage reads its inputs once. The fingerprint, JSON validation, and compiler all
+consume that same immutable byte snapshot. A `CURRENT` result also requires the
+stored artifact to remain under its stage run root, differ from every input file,
+pass its real report/content validators, and match the deterministic bytes compiled
+from the current snapshot. Directory hashes include empty-directory markers.
+
+State publication uses a same-directory temporary file, `flush`, `fsync`, and atomic
+replace. Stage outputs use unique run paths, so reruns never overwrite known-good
+artifacts. If inputs change during execution or state publication fails, Forge
+strictly removes only that invocation's new output; cleanup failures are surfaced.
 
 The checked-in example is entirely fictional. Private novel text, summaries, canon,
 extractions, indexes, databases, model files, and derived private content remain

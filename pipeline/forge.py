@@ -29,9 +29,9 @@ import tempfile
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Any, Literal, TypeAlias
+from typing import Any, BinaryIO, Literal, TypeAlias
 
-from lore2mud.content.loader import ContentValidationError
+from lore2mud.content.loader import ContentValidationError, load_content_pack
 from pipeline.canon_registry import (
     CanonRegistryValidationError,
     validate_canon_registry_document,
@@ -40,6 +40,8 @@ from pipeline.registry_adaptation import (
     RegistryAdaptationValidationError,
     RegistryCompilationError,
     compile_registry_micro_pack,
+    registry_pack_to_documents,
+    validate_registry_adaptation_manifest_document,
     validate_registry_adaptation_plan,
     write_registry_micro_pack,
 )
@@ -47,6 +49,8 @@ from pipeline.registry_inspection import (
     RegistryInspectionBuildError,
     RegistryInspectionValidationError,
     compile_registry_inspection,
+    registry_inspection_report_to_document,
+    validate_registry_inspection_report_document,
     validate_registry_inspection_plan,
     write_registry_inspection_report,
 )
@@ -63,6 +67,25 @@ _STAGES: tuple[StageName, ...] = ("inspection", "adaptation")
 _STABLE_ID_RE = re.compile(r"^[a-z][a-z0-9_]*$")
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 _REPARSE_POINT = getattr(stat, "FILE_ATTRIBUTE_REPARSE_POINT", 0x400)
+_WINDOWS_FORBIDDEN_CHARS = frozenset('<>:"|?*')
+_WINDOWS_RESERVED_NAMES = frozenset(
+    {"con", "prn", "aux", "nul"}
+    | {f"com{index}" for index in range(1, 10)}
+    | {f"lpt{index}" for index in range(1, 10)}
+)
+_ADAPTATION_FILES = frozenset(
+    {
+        "pack.json",
+        "rooms.json",
+        "items.json",
+        "characters.json",
+        "quests.json",
+        "dialogues.json",
+        "monsters.json",
+        "shops.json",
+        "registry_adaptation_manifest.json",
+    }
+)
 
 
 class ForgeValidationError(ValueError):
@@ -93,6 +116,14 @@ class LoadedWorkspace:
     config: ForgeWorkspace
 
 
+@dataclass(frozen=True, slots=True)
+class StageInputSnapshot:
+    stage: StageName
+    records: tuple[dict[str, object], ...]
+    payloads: tuple[bytes | None, ...]
+    fingerprint: str
+
+
 def _unknown_keys(
     value: dict[str, Any], allowed: frozenset[str], loc: str, issues: list[str]
 ) -> None:
@@ -118,11 +149,37 @@ def _workspace_path(raw: str, loc: str, issues: list[str]) -> PurePosixPath:
     if not raw or any(part in {"", ".", ".."} for part in components):
         issues.append(f"{loc} must be a normalized relative workspace path")
         return PurePosixPath("invalid")
+    if any(ord(character) < 32 or ord(character) == 127 for character in raw):
+        issues.append(f"{loc} must not contain control characters")
+        return PurePosixPath("invalid")
+    if any(character in _WINDOWS_FORBIDDEN_CHARS for character in raw):
+        issues.append(f"{loc} contains a character forbidden in Windows paths")
+        return PurePosixPath("invalid")
+    for component in components:
+        if component.endswith((".", " ")):
+            issues.append(f"{loc} components must not end with a dot or space")
+            return PurePosixPath("invalid")
+        device_name = component.split(".", 1)[0].casefold()
+        if device_name in _WINDOWS_RESERVED_NAMES:
+            issues.append(f"{loc} contains a reserved Windows device name")
+            return PurePosixPath("invalid")
     result = PurePosixPath(raw)
     if result.is_absolute():
         issues.append(f"{loc} must be relative to the workspace")
         return PurePosixPath("invalid")
     return result
+
+
+def _path_key(path: PurePosixPath) -> tuple[str, ...]:
+    """Return a component key using the host filesystem's case semantics."""
+
+    return tuple(os.path.normcase(component) for component in path.parts)
+
+
+def _path_is_same_or_below(path: PurePosixPath, parent: PurePosixPath) -> bool:
+    path_key = _path_key(path)
+    parent_key = _path_key(parent)
+    return len(path_key) >= len(parent_key) and path_key[: len(parent_key)] == parent_key
 
 
 def validate_forge_workspace(data: object) -> ForgeWorkspace:
@@ -159,18 +216,18 @@ def validate_forge_workspace(data: object) -> ForgeWorkspace:
         raw = _required_text(data, key, "workspace", issues)
         paths[key] = _workspace_path(raw, f"workspace.{key}", issues)
 
-    input_paths = {
+    input_paths = (
         paths["source_registry"],
         paths["inspection_plan"],
         paths["adaptation_plan"],
-    }
-    if len(input_paths) != 3:
+    )
+    if len({_path_key(path) for path in input_paths}) != 3:
         issues.append("workspace input paths must be distinct")
     artifact_root = paths["artifact_root"]
-    if artifact_root.parts[0] == ".forge":
+    if os.path.normcase(artifact_root.parts[0]) == os.path.normcase(".forge"):
         issues.append("workspace.artifact_root must not be inside .forge")
     for input_path in input_paths:
-        if input_path == artifact_root or artifact_root in input_path.parents:
+        if _path_is_same_or_below(input_path, artifact_root):
             issues.append(
                 f"workspace input must not be inside artifact_root: {input_path.as_posix()}"
             )
@@ -204,14 +261,17 @@ def _read_json(path: Path) -> object:
         return json.load(stream)
 
 
+def _stat_is_reparse(stat_result: os.stat_result | Any) -> bool:
+    return bool(getattr(stat_result, "st_file_attributes", 0) & _REPARSE_POINT)
+
+
 def _is_link_or_junction(path: Path) -> bool:
     """Reject symlinks and Windows reparse points, including junctions."""
 
     try:
         if os.path.islink(path):
             return True
-        attributes = getattr(os.lstat(path), "st_file_attributes", 0)
-        return bool(attributes & _REPARSE_POINT)
+        return _stat_is_reparse(os.lstat(path))
     except OSError:
         return False
 
@@ -297,27 +357,55 @@ def _sha256_file(path: Path) -> tuple[str, int]:
     return digest.hexdigest(), size
 
 
+def _iter_safe_tree(
+    root: Path, *, context: str
+) -> Iterator[tuple[Path, PurePosixPath, os.stat_result | Any]]:
+    """Walk without descending into a link or reparse point."""
+
+    def walk(directory: Path, prefix: PurePosixPath) -> Iterator[
+        tuple[Path, PurePosixPath, os.stat_result | Any]
+    ]:
+        entries: list[tuple[str, Path, os.stat_result | Any]] = []
+        with os.scandir(directory) as scanner:
+            for entry in scanner:
+                entries.append(
+                    (entry.name, Path(entry.path), entry.stat(follow_symlinks=False))
+                )
+        for name, source, stat_result in sorted(entries, key=lambda item: item[0]):
+            relative = prefix / name if prefix.parts else PurePosixPath(name)
+            if stat.S_ISLNK(stat_result.st_mode) or _stat_is_reparse(stat_result):
+                raise ForgeValidationError(
+                    (
+                        f"{context} contains a symbolic link or junction: "
+                        f"{relative.as_posix()}",
+                    )
+                )
+            yield source, relative, stat_result
+            if stat.S_ISDIR(stat_result.st_mode):
+                yield from walk(source, relative)
+
+    yield from walk(root, PurePosixPath())
+
+
 def _sha256_directory(path: Path) -> tuple[str, int]:
     digest = hashlib.sha256()
     total_size = 0
-    files: list[Path] = []
-    for candidate in path.rglob("*"):
-        if _is_link_or_junction(candidate):
-            raise ForgeValidationError(
-                (f"artifact directory contains a symbolic link or junction: {candidate}",)
-            )
-        if candidate.is_file():
-            files.append(candidate)
-        elif not candidate.is_dir():
-            raise ForgeValidationError((f"unsupported artifact entry: {candidate}",))
-    for candidate in sorted(files, key=lambda item: item.relative_to(path).as_posix()):
-        relative = candidate.relative_to(path).as_posix().encode("utf-8")
-        file_digest, size = _sha256_file(candidate)
+    for candidate, relative_path, stat_result in _iter_safe_tree(
+        path, context="artifact directory"
+    ):
+        relative = relative_path.as_posix().encode("utf-8")
+        digest.update(b"D" if stat.S_ISDIR(stat_result.st_mode) else b"F")
         digest.update(len(relative).to_bytes(8, "big"))
         digest.update(relative)
-        digest.update(bytes.fromhex(file_digest))
-        digest.update(size.to_bytes(8, "big"))
-        total_size += size
+        if stat.S_ISREG(stat_result.st_mode):
+            file_digest, size = _sha256_file(candidate)
+            digest.update(bytes.fromhex(file_digest))
+            digest.update(size.to_bytes(8, "big"))
+            total_size += size
+        elif not stat.S_ISDIR(stat_result.st_mode):
+            raise ForgeValidationError(
+                (f"unsupported artifact entry: {relative_path.as_posix()}",)
+            )
     return digest.hexdigest(), total_size
 
 
@@ -365,11 +453,81 @@ def _fingerprint(stage: StageName, records: Sequence[dict[str, object]]) -> str:
     return hashlib.sha256(payload).hexdigest()
 
 
+def _capture_stage_inputs(
+    loaded: LoadedWorkspace, stage: StageName
+) -> StageInputSnapshot:
+    records: list[dict[str, object]] = []
+    payloads: list[bytes | None] = []
+    for relative in _stage_inputs(loaded.config, stage):
+        path = _resolve_member(loaded.root, relative)
+        base: dict[str, object] = {"path": relative.as_posix()}
+        try:
+            stream = open(path, "rb")
+        except FileNotFoundError:
+            records.append({**base, "state": "missing"})
+            payloads.append(None)
+            continue
+        with stream:
+            stat_result = os.fstat(stream.fileno())
+            if not stat.S_ISREG(stat_result.st_mode) or _stat_is_reparse(stat_result):
+                records.append(
+                    {
+                        **base,
+                        "state": "unsafe",
+                        "reason": "not a regular file",
+                    }
+                )
+                payloads.append(None)
+                continue
+            payload = stream.read()
+        records.append(
+            {
+                **base,
+                "state": "present",
+                "kind": "file",
+                "sha256": hashlib.sha256(payload).hexdigest(),
+                "size": len(payload),
+            }
+        )
+        payloads.append(payload)
+    return StageInputSnapshot(
+        stage=stage,
+        records=tuple(records),
+        payloads=tuple(payloads),
+        fingerprint=_fingerprint(stage, records),
+    )
+
+
+def _json_from_snapshot(payload: bytes | None, relative: PurePosixPath) -> object:
+    if payload is None:
+        raise FileNotFoundError(f"missing or unsafe input: {relative.as_posix()}")
+    return json.loads(payload.decode("utf-8"))
+
+
+def _compile_stage_snapshot(
+    loaded: LoadedWorkspace, snapshot: StageInputSnapshot
+) -> tuple[Any, Any]:
+    input_paths = _stage_inputs(loaded.config, snapshot.stage)
+    registry = validate_canon_registry_document(
+        _json_from_snapshot(snapshot.payloads[0], input_paths[0])
+    )
+    if snapshot.stage == "inspection":
+        plan = validate_registry_inspection_plan(
+            _json_from_snapshot(snapshot.payloads[1], input_paths[1])
+        )
+        return registry, compile_registry_inspection(registry, plan)
+    plan = validate_registry_adaptation_plan(
+        _json_from_snapshot(snapshot.payloads[1], input_paths[1])
+    )
+    return registry, compile_registry_micro_pack(registry, plan)
+
+
 def _validate_artifact_record(
     data: object,
     loc: str,
     issues: list[str],
     expected_root: PurePosixPath | None = None,
+    workspace_root: Path | None = None,
 ) -> None:
     if not isinstance(data, dict):
         issues.append(f"{loc} must be an object")
@@ -380,13 +538,28 @@ def _validate_artifact_record(
     path = _required_text(data, "path", loc, issues)
     parsed_path: PurePosixPath | None = None
     if path:
+        issue_count = len(issues)
         parsed_path = _workspace_path(path, f"{loc}.path", issues)
-        if expected_root is not None and (
-            parsed_path == expected_root or expected_root not in parsed_path.parents
-        ):
-            issues.append(
-                f"{loc}.path must be under {expected_root.as_posix()}"
-            )
+        if len(issues) == issue_count and expected_root is not None:
+            if not _path_is_same_or_below(parsed_path, expected_root) or (
+                _path_key(parsed_path) == _path_key(expected_root)
+            ):
+                issues.append(f"{loc}.path must be under {expected_root.as_posix()}")
+            elif workspace_root is not None:
+                try:
+                    resolved_root = _resolve_member(
+                        workspace_root, expected_root
+                    ).resolve(strict=False)
+                    resolved_candidate = _resolve_member(
+                        workspace_root, parsed_path
+                    ).resolve(strict=False)
+                    relative_candidate = resolved_candidate.relative_to(resolved_root)
+                    if not relative_candidate.parts:
+                        raise ValueError("artifact path equals its stage root")
+                except (ForgeValidationError, OSError, RuntimeError, ValueError):
+                    issues.append(
+                        f"{loc}.path must resolve under {expected_root.as_posix()}"
+                    )
     if data.get("kind") not in {"file", "directory"}:
         issues.append(f"{loc}.kind must be file or directory")
     digest = data.get("sha256")
@@ -402,6 +575,7 @@ def _validate_run_record(
     loc: str,
     issues: list[str],
     expected_root: PurePosixPath | None = None,
+    workspace_root: Path | None = None,
 ) -> None:
     if not isinstance(data, dict):
         issues.append(f"{loc} must be an object")
@@ -424,19 +598,28 @@ def _validate_run_record(
     else:
         for index, output in enumerate(outputs):
             _validate_artifact_record(
-                output, f"{loc}.outputs[{index}]", issues, expected_root
+                output,
+                f"{loc}.outputs[{index}]",
+                issues,
+                expected_root,
+                workspace_root,
             )
     error = data.get("error")
     if status == "succeeded" and error is not None:
         issues.append(f"{loc}.error must be null after success")
+    if status == "succeeded" and isinstance(outputs, list) and len(outputs) != 1:
+        issues.append(f"{loc}.outputs must contain exactly one artifact after success")
     if status == "failed" and (not isinstance(error, str) or not error.strip()):
         issues.append(f"{loc}.error must explain a failure")
+    if status == "failed" and isinstance(outputs, list) and outputs:
+        issues.append(f"{loc}.outputs must be empty after failure")
 
 
 def validate_forge_state(
     data: object,
     workspace_id: str,
     artifact_root: PurePosixPath | None = None,
+    workspace_root: Path | None = None,
 ) -> dict[str, object]:
     """Validate the internal v1 state document before trusting or writing it."""
 
@@ -475,10 +658,22 @@ def validate_forge_state(
             if artifact_root is not None and stage in _STAGES:
                 run_name = "inspection_runs" if stage == "inspection" else "adaptation_runs"
                 stage_root = artifact_root / run_name
-            _validate_run_record(last_run, f"{loc}.last_run", issues, stage_root)
+            _validate_run_record(
+                last_run,
+                f"{loc}.last_run",
+                issues,
+                stage_root,
+                workspace_root,
+            )
             last_success = record.get("last_success")
             if last_success is not None:
-                _validate_run_record(last_success, f"{loc}.last_success", issues, stage_root)
+                _validate_run_record(
+                    last_success,
+                    f"{loc}.last_success",
+                    issues,
+                    stage_root,
+                    workspace_root,
+                )
                 if isinstance(last_success, dict) and last_success.get("status") != "succeeded":
                     issues.append(f"{loc}.last_success.status must be succeeded")
     if issues:
@@ -497,7 +692,10 @@ def _load_state(loaded: LoadedWorkspace) -> dict[str, object]:
     if not state_path.is_file():
         raise ForgeValidationError((".forge/state.json must be a regular file",))
     return validate_forge_state(
-        _read_json(state_path), loaded.config.workspace_id, loaded.config.artifact_root
+        _read_json(state_path),
+        loaded.config.workspace_id,
+        loaded.config.artifact_root,
+        loaded.root,
     )
 
 
@@ -508,7 +706,12 @@ def _json_bytes(data: object) -> bytes:
 
 
 def _write_state(loaded: LoadedWorkspace, state: dict[str, object]) -> None:
-    validate_forge_state(state, loaded.config.workspace_id, loaded.config.artifact_root)
+    validate_forge_state(
+        state,
+        loaded.config.workspace_id,
+        loaded.config.artifact_root,
+        loaded.root,
+    )
     forge_dir = _resolve_member(loaded.root, PurePosixPath(".forge"))
     if os.path.lexists(forge_dir) and not forge_dir.is_dir():
         raise ForgeValidationError((".forge must be a directory",))
@@ -539,6 +742,68 @@ def _write_state(loaded: LoadedWorkspace, state: dict[str, object]) -> None:
         raise
 
 
+def _open_windows_lock_descriptor(path: Path) -> int:
+    import ctypes
+    import msvcrt
+    from ctypes import wintypes
+
+    kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    create_file = kernel32.CreateFileW
+    create_file.argtypes = (
+        wintypes.LPCWSTR,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.LPVOID,
+        wintypes.DWORD,
+        wintypes.DWORD,
+        wintypes.HANDLE,
+    )
+    create_file.restype = wintypes.HANDLE
+    close_handle = kernel32.CloseHandle
+    close_handle.argtypes = (wintypes.HANDLE,)
+    close_handle.restype = wintypes.BOOL
+    handle = create_file(
+        str(path),
+        0x80000000 | 0x40000000,  # GENERIC_READ | GENERIC_WRITE
+        0x00000001 | 0x00000002 | 0x00000004,  # share read/write/delete
+        None,
+        4,  # OPEN_ALWAYS
+        0x00000080 | 0x00200000,  # NORMAL | OPEN_REPARSE_POINT
+        None,
+    )
+    invalid_handle = ctypes.c_void_p(-1).value
+    if handle == invalid_handle:
+        raise ctypes.WinError(ctypes.get_last_error())
+    try:
+        return msvcrt.open_osfhandle(
+            int(handle), os.O_RDWR | getattr(os, "O_BINARY", 0)
+        )
+    except BaseException:
+        close_handle(handle)
+        raise
+
+
+def _open_lock_stream(path: Path) -> BinaryIO:
+    if _is_link_or_junction(path):
+        raise ForgeValidationError((".forge/run.lock must not be a link or junction",))
+    if os.name == "nt":
+        descriptor = _open_windows_lock_descriptor(path)
+    else:
+        flags = os.O_RDWR | os.O_CREAT | getattr(os, "O_CLOEXEC", 0)
+        flags |= getattr(os, "O_NOFOLLOW", 0)
+        descriptor = os.open(path, flags, 0o600)
+    try:
+        stat_result = os.fstat(descriptor)
+        if not stat.S_ISREG(stat_result.st_mode) or _stat_is_reparse(stat_result):
+            raise ForgeValidationError((".forge/run.lock must be a regular file",))
+        if stat_result.st_nlink != 1:
+            raise ForgeValidationError((".forge/run.lock must not be a hard link",))
+        return os.fdopen(descriptor, "r+b", buffering=0)
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
 class _WorkspaceLock:
     def __init__(self, loaded: LoadedWorkspace) -> None:
         self._loaded = loaded
@@ -549,8 +814,8 @@ class _WorkspaceLock:
         if os.path.lexists(forge_dir) and not forge_dir.is_dir():
             raise ForgeValidationError((".forge must be a directory",))
         forge_dir.mkdir(exist_ok=True)
-        lock_path = forge_dir / "run.lock"
-        self._stream = open(lock_path, "a+b")
+        lock_path = _resolve_member(self._loaded.root, LOCK_RELATIVE_PATH)
+        self._stream = _open_lock_stream(lock_path)
         try:
             self._stream.seek(0, os.SEEK_END)
             if self._stream.tell() == 0:
@@ -590,38 +855,96 @@ class _WorkspaceLock:
 
 
 def _load_stage_inputs(loaded: LoadedWorkspace, stage: StageName) -> tuple[Any, Any]:
-    registry_path = _resolve_member(loaded.root, loaded.config.source_registry)
-    registry = validate_canon_registry_document(_read_json(registry_path))
+    return _compile_stage_snapshot(loaded, _capture_stage_inputs(loaded, stage))
+
+
+def _output_matches_expected(
+    loaded: LoadedWorkspace,
+    stage: StageName,
+    relative: PurePosixPath,
+    compiled: Any,
+) -> bool:
+    path = _resolve_member(loaded.root, relative)
+    for input_relative in (
+        loaded.config.source_registry,
+        loaded.config.inspection_plan,
+        loaded.config.adaptation_plan,
+    ):
+        if _same_file(path, _resolve_member(loaded.root, input_relative)):
+            return False
     if stage == "inspection":
-        plan_path = _resolve_member(loaded.root, loaded.config.inspection_plan)
-        plan = validate_registry_inspection_plan(_read_json(plan_path))
-        return registry, compile_registry_inspection(registry, plan)
-    plan_path = _resolve_member(loaded.root, loaded.config.adaptation_plan)
-    plan = validate_registry_adaptation_plan(_read_json(plan_path))
-    return registry, compile_registry_micro_pack(registry, plan)
+        if not path.is_file():
+            return False
+        payload = path.read_bytes()
+        report = validate_registry_inspection_report_document(
+            json.loads(payload.decode("utf-8"))
+        )
+        expected_payload = _json_bytes(
+            registry_inspection_report_to_document(compiled)
+        )
+        return payload == expected_payload and report == compiled
+
+    if not path.is_dir():
+        return False
+    actual_files: dict[str, bytes] = {}
+    for candidate, candidate_relative, stat_result in _iter_safe_tree(
+        path, context="adaptation artifact"
+    ):
+        if not stat.S_ISREG(stat_result.st_mode) or len(candidate_relative.parts) != 1:
+            return False
+        actual_files[candidate_relative.name] = candidate.read_bytes()
+    if set(actual_files) != _ADAPTATION_FILES:
+        return False
+    expected_files = dict(registry_pack_to_documents(compiled))
+    if actual_files != expected_files:
+        return False
+    load_content_pack(path)
+    validate_registry_adaptation_manifest_document(
+        json.loads(actual_files["registry_adaptation_manifest.json"].decode("utf-8"))
+    )
+    return True
 
 
-def _record_matches(loaded: LoadedWorkspace, expected: object) -> bool:
+def _record_matches(
+    loaded: LoadedWorkspace,
+    expected: object,
+    stage: StageName,
+    compiled: Any,
+) -> bool:
     if not isinstance(expected, dict):
         return False
     path = expected.get("path")
     if not isinstance(path, str):
         return False
     try:
-        actual = _artifact_record(loaded, PurePosixPath(path))
-    except (ForgeValidationError, OSError):
+        relative = PurePosixPath(path)
+        actual = _artifact_record(loaded, relative)
+        if actual != {**expected, "state": "present"}:
+            return False
+        return _output_matches_expected(loaded, stage, relative, compiled)
+    except (
+        ContentValidationError,
+        ForgeValidationError,
+        OSError,
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+        RegistryAdaptationValidationError,
+        RegistryInspectionValidationError,
+    ):
         return False
-    return actual == {**expected, "state": "present"}
 
 
 def _stage_snapshot(
-    loaded: LoadedWorkspace, state: dict[str, object], stage: StageName
+    loaded: LoadedWorkspace,
+    state: dict[str, object],
+    stage: StageName,
+    input_snapshot: StageInputSnapshot | None = None,
 ) -> dict[str, object]:
-    input_records = [
-        _artifact_record(loaded, relative)
-        for relative in _stage_inputs(loaded.config, stage)
-    ]
-    fingerprint = _fingerprint(stage, input_records)
+    captured = input_snapshot or _capture_stage_inputs(loaded, stage)
+    if captured.stage != stage:
+        raise ForgeValidationError(("input snapshot stage does not match",))
+    input_records = [dict(record) for record in captured.records]
+    fingerprint = captured.fingerprint
     stage_state = state["stages"].get(stage)  # type: ignore[index,union-attr]
     last_run = stage_state.get("last_run") if isinstance(stage_state, dict) else None
     last_success = (
@@ -645,17 +968,18 @@ def _stage_snapshot(
         reason = f"missing or unsafe inputs: {', '.join(str(item) for item in missing)}"
     else:
         try:
-            _load_stage_inputs(loaded, stage)
+            _, compiled = _compile_stage_snapshot(loaded, captured)
             semantic_error: str | None = None
         except Exception as exc:
+            compiled = None
             semantic_error = f"{type(exc).__name__}: {exc}"
         if semantic_error is not None:
             status = "BLOCKED"
             reason = semantic_error
         elif isinstance(last_success, dict):
             same_input = last_success.get("input_fingerprint") == fingerprint
-            outputs_current = bool(outputs) and all(
-                _record_matches(loaded, output) for output in outputs
+            outputs_current = bool(outputs) and compiled is not None and all(
+                _record_matches(loaded, output, stage, compiled) for output in outputs
             )
             if same_input and outputs_current:
                 status = "CURRENT"
@@ -665,7 +989,7 @@ def _stage_snapshot(
                 reason = (
                     "inputs changed since the last successful run"
                     if not same_input
-                    else "a successful output is missing or changed"
+                    else "a successful output is missing, changed, or invalid"
                 )
         else:
             status = "READY"
@@ -732,33 +1056,58 @@ def _next_output_path(
     raise ForgeExecutionError(f"no free output name for stage {stage}")
 
 
+def _remove_output_artifact(
+    loaded: LoadedWorkspace, output: dict[str, object]
+) -> None:
+    raw_path = output.get("path")
+    if not isinstance(raw_path, str):
+        raise ForgeExecutionError("cannot roll back an output without a path")
+    path = _resolve_member(loaded.root, PurePosixPath(raw_path))
+    if _is_link_or_junction(path):
+        raise ForgeExecutionError(f"refusing to remove linked output: {raw_path}")
+    if path.is_dir():
+        shutil.rmtree(path)
+    elif path.is_file():
+        path.unlink()
+    elif os.path.lexists(path):
+        raise ForgeExecutionError(f"cannot remove unsupported output: {raw_path}")
+    else:
+        raise ForgeExecutionError(f"published output disappeared: {raw_path}")
+    if os.path.lexists(path):
+        raise ForgeExecutionError(f"failed to remove published output: {raw_path}")
+
+
 def _execute_stage(
-    loaded: LoadedWorkspace, stage: StageName, fingerprint: str
+    loaded: LoadedWorkspace, input_snapshot: StageInputSnapshot
 ) -> dict[str, object]:
-    _, compiled = _load_stage_inputs(loaded, stage)
+    stage = input_snapshot.stage
+    fingerprint = input_snapshot.fingerprint
+    _, compiled = _compile_stage_snapshot(loaded, input_snapshot)
     output_relative = _next_output_path(loaded, stage, fingerprint)
     output_path = _resolve_member(loaded.root, output_relative)
     if stage == "inspection":
         write_registry_inspection_report(compiled, output_path)
     else:
         write_registry_micro_pack(compiled, output_path)
-    post_input_records = [
-        _artifact_record(loaded, relative)
-        for relative in _stage_inputs(loaded.config, stage)
-    ]
-    post_fingerprint = _fingerprint(stage, post_input_records)
-    if post_fingerprint != fingerprint:
-        if output_path.is_dir() and not _is_link_or_junction(output_path):
-            shutil.rmtree(output_path, ignore_errors=True)
-        elif os.path.lexists(output_path):
-            output_path.unlink()
-        raise ForgeExecutionError(
-            f"stage {stage} inputs changed during execution"
-        )
-    record = _artifact_record(loaded, output_relative)
-    if record.get("state") != "present":
-        raise ForgeExecutionError(f"stage {stage} did not publish its output")
-    return {key: value for key, value in record.items() if key != "state"}
+    rollback_record: dict[str, object] = {"path": output_relative.as_posix()}
+    try:
+        record = _artifact_record(loaded, output_relative)
+        if record.get("state") != "present":
+            raise ForgeExecutionError(f"stage {stage} did not publish its output")
+        output = {key: value for key, value in record.items() if key != "state"}
+        post_snapshot = _capture_stage_inputs(loaded, stage)
+        if post_snapshot.fingerprint != fingerprint:
+            raise ForgeExecutionError(f"stage {stage} inputs changed during execution")
+        return output
+    except BaseException as execution_error:
+        if os.path.lexists(output_path):
+            try:
+                _remove_output_artifact(loaded, rollback_record)
+            except Exception as cleanup_error:
+                raise ForgeExecutionError(
+                    f"stage validation failed and output rollback failed: {cleanup_error}"
+                ) from execution_error
+        raise
 
 
 def run_forge_workspace(
@@ -784,8 +1133,9 @@ def run_forge_workspace(
     with _WorkspaceLock(loaded):
         state = _load_state(loaded)
         for stage in selected:
-            snapshot = _stage_snapshot(loaded, state, stage)
-            fingerprint = str(snapshot["input_fingerprint"])
+            input_snapshot = _capture_stage_inputs(loaded, stage)
+            snapshot = _stage_snapshot(loaded, state, stage, input_snapshot)
+            fingerprint = input_snapshot.fingerprint
             if snapshot["status"] == "CURRENT" and not force:
                 actions.append({"stage": stage, "action": "skipped", "status": "CURRENT"})
                 continue
@@ -802,26 +1152,7 @@ def run_forge_workspace(
                 previous.get("last_success") if isinstance(previous, dict) else None
             )
             try:
-                output = _execute_stage(loaded, stage, fingerprint)
-                run_record: dict[str, object] = {
-                    "status": "succeeded",
-                    "input_fingerprint": fingerprint,
-                    "outputs": [output],
-                    "error": None,
-                }
-                stage_record = {
-                    "attempts": attempts,
-                    "last_run": run_record,
-                    "last_success": run_record,
-                }
-                actions.append(
-                    {
-                        "stage": stage,
-                        "action": "reran" if force else "ran",
-                        "status": "CURRENT",
-                        "outputs": [output],
-                    }
-                )
+                output = _execute_stage(loaded, input_snapshot)
             except Exception as exc:
                 error = f"{type(exc).__name__}: {exc}"
                 run_record = {
@@ -839,8 +1170,44 @@ def run_forge_workspace(
                     {"stage": stage, "action": "failed", "status": "FAILED", "error": error}
                 )
                 succeeded = False
+                state_stages[stage] = stage_record
+                _write_state(loaded, state)
+                continue
+
+            run_record = {
+                "status": "succeeded",
+                "input_fingerprint": fingerprint,
+                "outputs": [output],
+                "error": None,
+            }
+            stage_record = {
+                "attempts": attempts,
+                "last_run": run_record,
+                "last_success": run_record,
+            }
             state_stages[stage] = stage_record
-            _write_state(loaded, state)
+            try:
+                _write_state(loaded, state)
+            except BaseException as state_error:
+                if previous is None:
+                    state_stages.pop(stage, None)
+                else:
+                    state_stages[stage] = previous
+                try:
+                    _remove_output_artifact(loaded, output)
+                except Exception as cleanup_error:
+                    raise ForgeExecutionError(
+                        f"state publication failed and output rollback failed: {cleanup_error}"
+                    ) from state_error
+                raise
+            actions.append(
+                {
+                    "stage": stage,
+                    "action": "reran" if force else "ran",
+                    "status": "CURRENT",
+                    "outputs": [output],
+                }
+            )
 
     report = inspect_forge_workspace(workspace_root)
     report["actions"] = actions
@@ -848,8 +1215,16 @@ def run_forge_workspace(
 
 
 def _iter_template_entries(template: Path) -> Iterator[tuple[Path, Path]]:
-    for source in sorted(template.rglob("*"), key=lambda item: item.relative_to(template).as_posix()):
-        yield source, source.relative_to(template)
+    for source, relative, stat_result in _iter_safe_tree(
+        template, context="template"
+    ):
+        if not stat.S_ISDIR(stat_result.st_mode) and not stat.S_ISREG(
+            stat_result.st_mode
+        ):
+            raise ForgeValidationError(
+                (f"template contains an unsupported entry: {relative.as_posix()}",)
+            )
+        yield source, Path(*relative.parts)
 
 
 def initialize_forge_workspace(
@@ -884,7 +1259,7 @@ def initialize_forge_workspace(
                 raise ForgeValidationError(
                     (
                         "template contains a symbolic link or junction: "
-                        f"{relative.as_posix()}"
+                        f"{relative.as_posix()}",
                     )
                 )
             destination = staging / relative

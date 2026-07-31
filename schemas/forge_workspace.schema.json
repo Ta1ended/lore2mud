@@ -19,7 +19,12 @@
     "source_registry": { "$ref": "#/$defs/workspace_path" },
     "inspection_plan": { "$ref": "#/$defs/workspace_path" },
     "adaptation_plan": { "$ref": "#/$defs/workspace_path" },
-    "artifact_root": { "$ref": "#/$defs/workspace_path" }
+    "artifact_root": {
+      "allOf": [
+        { "$ref": "#/$defs/workspace_path" },
+        { "not": { "pattern": "^[.][Ff][Oo][Rr][Gg][Ee](?:/|$)" } }
+      ]
+    }
   },
   "$defs": {
     "stable_id": {
@@ -29,7 +34,7 @@
     "workspace_path": {
       "type": "string",
       "minLength": 1,
-      "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*//)[^/]+(?:/[^/]+)*$"
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*[\\u0000-\\u001F\\u007F<>:\"|?*])(?!.*(?:^|/)\\.{1,2}(?:/|$))(?!.*//)(?!.*[. ](?:/|$))(?!.*(?:^|/)(?:[Cc][Oo][Nn]|[Pp][Rr][Nn]|[Aa][Uu][Xx]|[Nn][Uu][Ll]|[Cc][Oo][Mm][1-9]|[Ll][Pp][Tt][1-9])(?:\\.[^/]*)?(?:/|$))[^/]+(?:/[^/]+)*$"
     }
   }
 }
