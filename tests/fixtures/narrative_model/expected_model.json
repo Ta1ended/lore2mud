@@ -1,0 +1,261 @@
+{
+  "beats": [
+    {
+      "beat_id": "beat_arrival",
+      "disclosures": [
+        {
+          "perspective_ref": "perspective_mira",
+          "proposition_ref": "prop_open_question",
+          "state": "suspected"
+        },
+        {
+          "perspective_ref": "perspective_tower",
+          "proposition_ref": "prop_tower_setting",
+          "state": "confirmed"
+        }
+      ],
+      "perspective_refs": [
+        "perspective_mira",
+        "perspective_tower"
+      ],
+      "phase_ref": "phase_opening",
+      "predecessor_refs": [],
+      "proposition_refs": [
+        "prop_open_question",
+        "prop_tower_setting"
+      ],
+      "summary": "Arrival at the tower introduces the unresolved change."
+    },
+    {
+      "beat_id": "beat_reports",
+      "disclosures": [
+        {
+          "perspective_ref": "perspective_mira",
+          "proposition_ref": "prop_mira_home",
+          "state": "heard"
+        },
+        {
+          "perspective_ref": "perspective_mira",
+          "proposition_ref": "prop_mira_role",
+          "state": "confirmed"
+        }
+      ],
+      "perspective_refs": [
+        "perspective_mira"
+      ],
+      "phase_ref": "phase_reports",
+      "predecessor_refs": [
+        "beat_arrival"
+      ],
+      "proposition_refs": [
+        "prop_mira_home",
+        "prop_mira_role"
+      ],
+      "summary": "Mira's reports retain the incompatible claims."
+    },
+    {
+      "beat_id": "beat_choice",
+      "disclosures": [
+        {
+          "perspective_ref": "perspective_gate",
+          "proposition_ref": "prop_gate_setting",
+          "state": "confirmed"
+        },
+        {
+          "perspective_ref": "perspective_mira",
+          "proposition_ref": "prop_player_goal",
+          "state": "heard"
+        }
+      ],
+      "perspective_refs": [
+        "perspective_gate",
+        "perspective_mira"
+      ],
+      "phase_ref": "phase_choice",
+      "predecessor_refs": [
+        "beat_reports"
+      ],
+      "proposition_refs": [
+        "prop_gate_setting",
+        "prop_player_goal"
+      ],
+      "summary": "The gate frames a player-facing investigation choice."
+    }
+  ],
+  "format_version": 1,
+  "model_id": "fixture_narrative",
+  "perspectives": [
+    {
+      "entity_ref": "canon_valley_gate",
+      "perspective_id": "perspective_gate",
+      "summary": "The gate frames the later setting."
+    },
+    {
+      "entity_ref": "canon_mira",
+      "perspective_id": "perspective_mira",
+      "summary": "Mira interprets her shifting duties."
+    },
+    {
+      "entity_ref": "canon_glass_tower",
+      "perspective_id": "perspective_tower",
+      "summary": "The tower anchors the opening setting."
+    }
+  ],
+  "phases": [
+    {
+      "phase_id": "phase_opening",
+      "sequence": 1,
+      "summary": "Establish the tower and an open question."
+    },
+    {
+      "phase_id": "phase_reports",
+      "sequence": 2,
+      "summary": "Present Mira's incompatible reports."
+    },
+    {
+      "phase_id": "phase_choice",
+      "sequence": 3,
+      "summary": "Offer an investigation at the gate."
+    }
+  ],
+  "propositions": [
+    {
+      "claim_refs": [
+        {
+          "promotion_id": "promo_ch002",
+          "source_claim_id": "claim_description",
+          "source_entity_id": "source_gate"
+        }
+      ],
+      "proposition_id": "prop_gate_setting",
+      "rationale": "Use the reviewed gate description as a setting proposition.",
+      "statement": "The gate establishes a later setting.",
+      "status": "canon_supported"
+    },
+    {
+      "claim_refs": [
+        {
+          "promotion_id": "promo_ch001",
+          "source_claim_id": "claim_home",
+          "source_entity_id": "source_mira"
+        },
+        {
+          "promotion_id": "promo_ch002",
+          "source_claim_id": "claim_home",
+          "source_entity_id": "source_mira_later"
+        }
+      ],
+      "proposition_id": "prop_mira_home",
+      "rationale": "Keep both reviewed locations visible instead of resolving them.",
+      "statement": "Mira's post is represented by conflicting reviewed claims.",
+      "status": "conflicted"
+    },
+    {
+      "claim_refs": [
+        {
+          "promotion_id": "promo_ch001",
+          "source_claim_id": "claim_role",
+          "source_entity_id": "source_mira"
+        },
+        {
+          "promotion_id": "promo_ch002",
+          "source_claim_id": "claim_role",
+          "source_entity_id": "source_mira_later"
+        }
+      ],
+      "proposition_id": "prop_mira_role",
+      "rationale": "Keep the reviewed role difference explicit.",
+      "statement": "Mira's role is represented by conflicting reviewed claims.",
+      "status": "conflicted"
+    },
+    {
+      "claim_refs": [],
+      "proposition_id": "prop_open_question",
+      "rationale": "The model records the question without inventing support.",
+      "statement": "The plan keeps the cause of the change unknown.",
+      "status": "unknown"
+    },
+    {
+      "claim_refs": [],
+      "proposition_id": "prop_player_goal",
+      "rationale": "This is an explicit game-facing choice, not a canon claim.",
+      "statement": "The player can choose to investigate the change.",
+      "status": "adaptation_only"
+    },
+    {
+      "claim_refs": [
+        {
+          "promotion_id": "promo_ch001",
+          "source_claim_id": "claim_description",
+          "source_entity_id": "source_tower"
+        }
+      ],
+      "proposition_id": "prop_tower_setting",
+      "rationale": "Use the reviewed tower description as a setting proposition.",
+      "statement": "The tower establishes the opening setting.",
+      "status": "canon_supported"
+    }
+  ],
+  "scope": {
+    "claim_omissions": [],
+    "claim_uses": [
+      {
+        "promotion_id": "promo_ch001",
+        "source_claim_id": "claim_home",
+        "source_entity_id": "source_mira"
+      },
+      {
+        "promotion_id": "promo_ch001",
+        "source_claim_id": "claim_role",
+        "source_entity_id": "source_mira"
+      },
+      {
+        "promotion_id": "promo_ch001",
+        "source_claim_id": "claim_description",
+        "source_entity_id": "source_tower"
+      },
+      {
+        "promotion_id": "promo_ch002",
+        "source_claim_id": "claim_description",
+        "source_entity_id": "source_gate"
+      },
+      {
+        "promotion_id": "promo_ch002",
+        "source_claim_id": "claim_home",
+        "source_entity_id": "source_mira_later"
+      },
+      {
+        "promotion_id": "promo_ch002",
+        "source_claim_id": "claim_role",
+        "source_entity_id": "source_mira_later"
+      }
+    ],
+    "entity_refs": [
+      "canon_glass_tower",
+      "canon_mira",
+      "canon_valley_gate"
+    ]
+  },
+  "source_registry": {
+    "registry_id": "fixture_registry",
+    "registry_version": 1,
+    "sources": [
+      {
+        "chapter_id": "chapter_000001",
+        "chapter_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "extracted_by": "fictional-extractor/v1",
+        "promotion_id": "promo_ch001",
+        "review_id": "review_ch001",
+        "reviewed_by": "fixture-reviewer"
+      },
+      {
+        "chapter_id": "chapter_000002",
+        "chapter_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "extracted_by": "fictional-extractor/v1",
+        "promotion_id": "promo_ch002",
+        "review_id": "review_ch002",
+        "reviewed_by": "fixture-reviewer"
+      }
+    ]
+  }
+}

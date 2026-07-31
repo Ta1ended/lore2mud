@@ -160,6 +160,14 @@ records。冲突 claims 与指向未选实体的 relation refs 原样保留；�
 不裁决冲突，也不修改 registry。格式规范见
 [registry_inspection_format.md](registry_inspection_format.md)。
 
+### 通用 NarrativeModel v1
+
+已验证的 CanonRegistry 可与人工 `NarrativePlan v1` 编译为确定性的 NarrativeModel。
+计划必须按完整复合来源引用或明确遗漏每个已选实体的 claim，并显式定义观点、命题、阶段、
+有向无环 beat 图与 disclosure 状态。编译器不生成事实、不裁决冲突、不改变 registry，也不
+接入 runtime、save、Web 或 Forge。真实的私有 canon 派生模型仍属于私有派生资料，不能提交。
+格式规范见 [narrative_model_format.md](narrative_model_format.md)。
+
 ## 第三步：实体归并
 
 中央注册表负责稳定 ID。并行提取的候选不能各自永久决定实体 ID。别名、称号和

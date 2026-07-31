@@ -18,6 +18,20 @@ stale.
 
 ## Current checkpoint
 
+- NarrativeModel v1 is isolated on `workstream/narrative-model-v1`, based on
+  `e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1`. It adds only a public pipeline
+  compiler, two Draft 2020-12 Schemas, public fictional fixtures, tests, and
+  documentation. A human-authored `NarrativePlan` and validated
+  `CanonRegistry` compile into a deterministic `NarrativeModel` with scoped
+  claim-use/omission accounting, source-record snapshots, perspectives,
+  propositions, contiguous phases, DAG beats, disclosures, atomic output, and
+  CLI alias protection. It does not connect to runtime, save, Web, Forge,
+  content packs, model providers, or private material. Local evidence is 43
+  focused tests (2 Windows symlink permission skips), 1297 full unittest cases,
+  and 1288 pytest cases (each full suite with 9 skips), plus Ruff, Pyright,
+  compileall, and original-demo validation. History safety and fsck remain part
+  of the pre-commit gate. A fresh clean read-only acceptance is required before
+  integration, main update, push, release, or further scope.
 - Repository: `lore2mud`; active local branch: `main` at
   `D:\MUD game kaifa\lore2mud`. Published baseline, tracking `origin/main`, and
   direct GitHub `main` resolve to

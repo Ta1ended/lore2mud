@@ -23,6 +23,15 @@
 
 ### Added
 
+- Added deterministic `NarrativeModel v1` compilation from a validated
+  CanonRegistry plus an explicit human NarrativePlan. The public pipeline
+  validates exact claim use/omission accounting, scoped source snapshots,
+  perspectives, proposition states, contiguous phases, DAG beats, disclosures,
+  canonical serialization, atomic output, and CLI path-alias protection. Added
+  strict plan/model Schemas, public fictional fixtures, golden-byte and CLI
+  coverage, and format documentation. This local slice remains independent
+  re-review pending and has not been integrated, pushed, or released
+  (DEC-0072).
 - Integrated the five-domain public sprint. Core expands `original_demo` to
   content-pack 0.9.0 with nine rooms, eight items, four monsters, two characters,
   eight quests and a confirmable ending. Forge adds resumable

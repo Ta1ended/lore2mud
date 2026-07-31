@@ -1770,3 +1770,38 @@
   check. The pushed commit still requires new GitHub `quality` and `tests` runs;
   local GO is not remote CI success and does not authorize release or new scope.
 - Supersedes: DEC-0069's independent-acceptance-pending state only.
+
+## DEC-0072: NarrativeModel v1 deterministic public compiler - re-review pending
+
+- Date: 2026-08-01
+- Status: Implemented locally; independent acceptance pending.
+- Context: The isolated `workstream/narrative-model-v1` branch starts from
+  `e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1`. Reviewers need a generic,
+  deterministic narrative artifact between a validated CanonRegistry and any
+  future adaptation plan, without turning canon claims into generated story,
+  runtime content, or private repository material.
+- Decision: (a) `pipeline.narrative_model` validates an explicit NarrativePlan
+  and compiles it only from a fully validated canonical CanonRegistry. The plan
+  scopes exact entity IDs and accounts for every claim of each scoped entity as
+  a proposition use or a reasoned omission. (b) A NarrativeModel keeps exact
+  composite claim references and the complete source records for precisely the
+  claim promotions it names; it does not copy or alter raw claim values. (c)
+  Perspectives, proposition statuses, contiguous phases, DAG beats, and local
+  disclosure states are all human-authored and structurally checked. The
+  compiler neither infers support/conflicts nor resolves them. (d) Plan/model
+  Draft 2020-12 Schemas, canonical serializers, a fsync/atomic writer, and a
+  CLI with direct/hardlink/symlink/reparse alias rejection define the public
+  interchange contract. (e) All test data are fictional and public.
+- Evidence: 43 focused tests pass with 2 Windows symlink permission skips; full
+  unittest passes 1297 cases and pytest passes 1288, each with 9 conditional
+  skips. Ruff, Pyright, compileall, and original-demo validation pass. History
+  safety, fsck, diff check, and a repository-external CLI/golden-byte run remain
+  in the pre-commit gate. `jsonschema` is absent from the existing venv and is
+  not added solely for meta-validation; JSON parsing plus Python contract tests
+  cover the local implementation.
+- Consequences: This is not an acceptance decision. A fresh GPT-5.6-sol
+  read-only reviewer must inspect `e6070bd..HEAD`, actual changed paths, public
+  fixture provenance, compiler/writer/CLI behavior, tests, and the five handoff
+  files before GO. The slice does not authorize modifying `main`, push, release,
+  private-material access, campaign compilation, Forge v2, or a review workbench.
+- Supersedes: None.

@@ -1,34 +1,28 @@
 # Next Task
 
-_Last updated: 2026-08-01（Windows CI UTF-8 热修独立验收 GO；本地 main 待 push）_
+_Last updated: 2026-08-01（NarrativeModel v1 已本地验证；独立验收待办）_
 
 ## Single next action
 
-项目负责人从 `D:\MUD game kaifa\lore2mud` push 当前本地 `main` 到 GitHub。
-该分支只比已发布基线 `6761e0850a367308a29f9b8189cb08715fb0cb03` 多一个
-已验收 Windows UTF-8 热修提交（DEC-0070）。
+为 `D:\MUD game kaifa\.codex-worktrees\narrative-model-v1` 的
+`workstream/narrative-model-v1` 发起新的 GPT-5.6-sol 干净上下文、只读独立验收。验收
+范围是 `e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1..HEAD`；先运行
+`git rev-parse HEAD` 记录最终候选提交。不得以实现任务自己的本地验证替代独立 `GO`。
 
-## Publish gate
+## Re-review gate
 
-- push 前 fetch 或直接查询 GitHub `main`，确认它仍为 `6761e08`；若远端已变化，
-  停止 push 并重新核对 ancestry，不做强制推送。
-- 确认工作树干净，`git rev-list --left-right --count origin/main...main` 为 `0 1`，
-  且唯一新增提交只包含 `src/lore2mud/cli.py`、Windows launcher、CLI 回归测试和
-  五个同步交接文件。
-- push 后确认 GitHub `main` 等于本地 `HEAD`，并观察新的 `quality` 与 `tests`
-  workflow；特别确认 `windows-candidate` 的 `Test Windows packaging` 和后续
-  clean candidate 冷启动均成功。
-
-## Acceptance evidence
-
-- DEC-0070 对相对 `6761e08` 的完整 diff 给出 GO、无 P0-P3 findings。
-- 真实 pinned PyInstaller 6.21.0 与 zipapp 的仓库外诊断、console、Web/API 冷启动通过；
-  全量 unittest `1254 / 7 skipped`，聚焦 pytest `38 passed`，xdist pytest
-  `1247 passed / 7 skipped`，Ruff、Pyright、compileall、内容校验、安全扫描、fsck
-  和 diff 检查全部通过。
+- 审核严格 plan/model Schema、真实整数版本、完整 claim use/omission 记账、来源 promotion
+  snapshot、phase 连续性、DAG/引用/披露规则以及确定性排序。
+- 审核 compiler 对未知实体、foreign/missing claims、非 canonical typed input 的拒绝，以及
+  writer 的 prevalidation、atomic replace、failure preservation 与 alias 防护。
+- 复核 43 项专门测试（2 Windows symlink 权限跳过）、1297 项 full unittest 和 1288 项
+  pytest（各 9 skips）、Ruff、Pyright、compileall、original demo 校验、history safety、
+  fsck、diff 检查和仓库外 CLI/golden bytes。
+- 复核 `PROJECT_MEMORY.md`、`PROJECT_STATE.md`、`NEXT_TASK.md`、`CHANGELOG.md` 和
+  `DECISIONS.md` 的描述仍为“独立验收 pending”，不提前宣称 GO。
 
 ## Boundaries
 
-- 全程使用 GPT-5.6-sol；不可用时停止并报告，不静默切换模型。
-- 不自动 release 或启动下一切片；本任务按项目负责人要求停在本地可推送状态。
-- 不读取、扫描或复制私有小说、摘要、canon 或改编内容。
+- 本次验收只覆盖 NarrativeModel v1；不修改 GEN-1 或其他责任域。
+- 不修改 `main`、不整合、不 push、不 release；独立 GO 后也仍需项目负责人明确授权。
+- 不读取、扫描或复制私有小说、章节、摘要、canon 或派生改编内容。

@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-08-01（Windows CI UTF-8 热修独立验收 GO；本地提交待 push）_
+_Last updated: 2026-08-01（NarrativeModel v1 已本地验证；独立验收待办）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -57,6 +57,20 @@ PowerShell launcher 使用同一编码；普通嵌入/测试调用不改变宿�
 38 项聚焦 unittest/pytest 和全部上述门禁，结论 GO、无 P0-P3 findings（DEC-0070）。
 该热修已整理为本地 `main` 上相对发布基线 `6761e08` 的单个提交，可由项目负责人
 刷新远端后 push；尚未 push、未 release，远端新 workflow 也尚未运行。
+
+NarrativeModel v1 位于隔离 worktree
+`D:\MUD game kaifa\.codex-worktrees\narrative-model-v1`，分支
+`workstream/narrative-model-v1`，基线为
+`e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1`。它以已验证的 CanonRegistry 和人工
+NarrativePlan 为输入，严格绑定 scope 中每个选中实体的 claim：每条 claim 必须显式用于
+命题或带理由省略。模型保留完整复合 claim 来源、实际 promotion 的 source snapshot、显式
+观点、命题状态、连续 phases、DAG beats 和 disclosure；writer 使用同目录临时文件、flush、
+fsync、replace，CLI 拒绝输入/输出的直接路径、hardlink、symlink 和 reparse alias。公开
+fixture 仅使用既有虚构 registry。该切片不修改 `src/`、运行时、save、Web、Forge、内容包或
+依赖，也不访问私有小说、摘要、canon 或派生产物。当前本地验证为 43 项专门测试（2 个
+Windows symlink 权限跳过）、1297 项完整 unittest 与 1288 项 pytest（各 9 个条件跳过）、
+Ruff、Pyright、compileall 和 original_demo 校验全部通过。历史安全扫描、fsck 和干净上下文
+独立验收仍 pending；在 `GO` 前不得整合、改动 `main`、push、release 或扩大范围。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。

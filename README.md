@@ -246,6 +246,19 @@ python -m pipeline.registry_inspection `
 
 格式见 [Registry Inspection Format v1](docs/registry_inspection_format.md)。
 
+经过验证的 CanonRegistry 还可以与人工 NarrativePlan 编译为通用、确定性的
+NarrativeModel。它保留精确 claim provenance 记账、显式观点/命题、阶段和 DAG beats，
+但不会生成 canon、裁决冲突或接入游戏运行时：
+
+```powershell
+python -m pipeline.narrative_model `
+  --canon-registry tests/fixtures/canon_registry/expected_registry.json `
+  --narrative-plan tests/fixtures/narrative_model/valid_plan.json `
+  --output C:\Temp\fixture_narrative_model.json
+```
+
+格式与边界见 [Narrative Model Format v1](docs/narrative_model_format.md)。
+
 ## 生产工作流
 
 Codex 全程使用 GPT-5.6-sol 完成方案、实现、测试、交接和本地提交；项目负责人
