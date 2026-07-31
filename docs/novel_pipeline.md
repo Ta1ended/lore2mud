@@ -141,6 +141,16 @@ CanonRegistry。人工计划负责把每个章内实体映射到 registry 稳定
 保留 `(promotion_id, source_entity_id, source_claim_id)` 来源，不自动去重、覆盖或裁决
 冲突。格式规范见 [canon_registry_format.md](canon_registry_format.md)。
 
+### L2W-4：registry-backed micro adaptation
+
+经过验证的 CanonRegistry 可通过单独的 `RegistryAdaptationPlan v1` 编译为与 L2W-2
+相同规模的公开 micro content pack（1 房间、1 角色、1 普通物品、1 game-only
+collect quest、1 game-only dialogue）。计划必须显式列出 registry entity 与完整的复合
+claim 来源；所有其它 registry entity 必须显式写入 omissions。游戏文本和数值只来自
+计划，不能从冲突 claims 推断或改写。编译器会把选中 claims 的章节集合写入 `canon_ref`
+和 `registry_adaptation_manifest.json`，保留跨章冲突而不做裁决。格式规范见
+[registry_adaptation_format.md](registry_adaptation_format.md)。
+
 ## 第三步：实体归并
 
 中央注册表负责稳定 ID。并行提取的候选不能各自永久决定实体 ID。别名、称号和

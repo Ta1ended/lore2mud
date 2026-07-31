@@ -1,0 +1,153 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/registry_adaptation_manifest.schema.json",
+  "title": "Registry Adaptation Manifest v1",
+  "description": "Provenance sidecar for a micro content pack compiled from CanonRegistry v1.",
+  "type": "object",
+  "required": [
+    "format_version",
+    "adaptation_id",
+    "source_registry_id",
+    "source_registry_version",
+    "sources",
+    "pack",
+    "bindings",
+    "omissions",
+    "game_only"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": { "const": 1 },
+    "adaptation_id": { "$ref": "#/$defs/stable_id" },
+    "source_registry_id": { "$ref": "#/$defs/stable_id" },
+    "source_registry_version": { "type": "integer", "minimum": 1 },
+    "sources": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "pack": { "$ref": "#/$defs/pack" },
+    "bindings": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/binding" }
+    },
+    "omissions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/omission" }
+    },
+    "game_only": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/game_only" }
+    }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "non_blank": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "chapter_id": {
+      "type": "string",
+      "pattern": "^chapter_[0-9]{6}$"
+    },
+    "claim_ref": {
+      "type": "object",
+      "required": ["promotion_id", "source_entity_id", "source_claim_id"],
+      "additionalProperties": false,
+      "properties": {
+        "promotion_id": { "$ref": "#/$defs/stable_id" },
+        "source_entity_id": { "$ref": "#/$defs/stable_id" },
+        "source_claim_id": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "source": {
+      "type": "object",
+      "required": [
+        "promotion_id",
+        "chapter_id",
+        "chapter_sha256",
+        "extracted_by",
+        "review_id",
+        "reviewed_by"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "promotion_id": { "$ref": "#/$defs/stable_id" },
+        "chapter_id": { "$ref": "#/$defs/chapter_id" },
+        "chapter_sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "extracted_by": { "$ref": "#/$defs/non_blank" },
+        "review_id": { "$ref": "#/$defs/stable_id" },
+        "reviewed_by": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "pack": {
+      "type": "object",
+      "required": ["id", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/stable_id" },
+        "version": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "binding": {
+      "type": "object",
+      "required": [
+        "game_kind",
+        "game_id",
+        "registry_entity_ref",
+        "registry_claim_refs",
+        "source_chapters",
+        "adaptation_notes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "game_kind": { "type": "string", "enum": ["room", "character", "item"] },
+        "game_id": { "$ref": "#/$defs/stable_id" },
+        "registry_entity_ref": { "$ref": "#/$defs/stable_id" },
+        "registry_claim_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/claim_ref" }
+        },
+        "source_chapters": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/chapter_id" }
+        },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "omission": {
+      "type": "object",
+      "required": ["registry_entity_ref", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "registry_entity_ref": { "$ref": "#/$defs/stable_id" },
+        "reason": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "game_only": {
+      "type": "object",
+      "required": ["game_kind", "game_id", "adaptation_notes"],
+      "additionalProperties": false,
+      "properties": {
+        "game_kind": { "type": "string", "enum": ["quest", "dialogue"] },
+        "game_id": { "$ref": "#/$defs/stable_id" },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" }
+      }
+    }
+  }
+}

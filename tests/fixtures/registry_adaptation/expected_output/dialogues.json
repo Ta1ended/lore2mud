@@ -1,0 +1,34 @@
+[
+  {
+    "adaptation_notes": "Game-only conversation with no effects.",
+    "character_id": "character_lyra",
+    "id": "dialogue_lyra",
+    "nodes": [
+      {
+        "id": "bell",
+        "options": [
+          {
+            "effects": [],
+            "id": "leave",
+            "next_node_id": null,
+            "text": "Step away."
+          }
+        ],
+        "text": "Its note returns only when the small key is lifted."
+      },
+      {
+        "id": "start",
+        "options": [
+          {
+            "effects": [],
+            "id": "ask_bell",
+            "next_node_id": "bell",
+            "text": "Ask about the silent bell."
+          }
+        ],
+        "text": "Lyra turns toward the suspended bell."
+      }
+    ],
+    "start_node_id": "start"
+  }
+]

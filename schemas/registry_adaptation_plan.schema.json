@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/registry_adaptation_plan.schema.json",
+  "title": "Registry Adaptation Plan v1",
+  "description": "An explicit human plan for compiling one CanonRegistry into a micro content pack.",
+  "type": "object",
+  "required": [
+    "format_version",
+    "adaptation_id",
+    "source_registry_id",
+    "source_registry_version",
+    "pack",
+    "room",
+    "character",
+    "item",
+    "quest",
+    "dialogue",
+    "omissions"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": { "const": 1 },
+    "adaptation_id": { "$ref": "#/$defs/stable_id" },
+    "source_registry_id": { "$ref": "#/$defs/stable_id" },
+    "source_registry_version": { "type": "integer", "minimum": 1 },
+    "pack": { "$ref": "#/$defs/pack" },
+    "room": { "$ref": "#/$defs/entity_adaptation" },
+    "character": { "$ref": "#/$defs/entity_adaptation" },
+    "item": { "$ref": "#/$defs/entity_adaptation" },
+    "quest": { "$ref": "#/$defs/quest_adaptation" },
+    "dialogue": { "$ref": "#/$defs/dialogue_adaptation" },
+    "omissions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/omission" }
+    }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "non_blank": {
+      "type": "string",
+      "pattern": "\\S"
+    },
+    "claim_ref": {
+      "type": "object",
+      "required": ["promotion_id", "source_entity_id", "source_claim_id"],
+      "additionalProperties": false,
+      "properties": {
+        "promotion_id": { "$ref": "#/$defs/stable_id" },
+        "source_entity_id": { "$ref": "#/$defs/stable_id" },
+        "source_claim_id": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "pack": {
+      "type": "object",
+      "required": ["id", "name", "version", "start_room_id", "player"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/stable_id" },
+        "name": { "$ref": "#/$defs/non_blank" },
+        "version": { "$ref": "#/$defs/non_blank" },
+        "start_room_id": { "$ref": "#/$defs/stable_id" },
+        "player": {
+          "type": "object",
+          "required": ["max_hp", "attack", "defense", "inventory_capacity", "coins"],
+          "additionalProperties": false,
+          "properties": {
+            "max_hp": { "type": "integer", "minimum": 1 },
+            "attack": { "type": "integer", "minimum": 1 },
+            "defense": { "type": "integer", "minimum": 0 },
+            "inventory_capacity": { "type": "integer", "minimum": 1 },
+            "coins": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+    "entity_adaptation": {
+      "type": "object",
+      "required": [
+        "registry_entity_ref",
+        "game_id",
+        "name",
+        "description",
+        "registry_claim_refs",
+        "adaptation_notes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "registry_entity_ref": { "$ref": "#/$defs/stable_id" },
+        "game_id": { "$ref": "#/$defs/stable_id" },
+        "name": { "$ref": "#/$defs/non_blank" },
+        "description": { "$ref": "#/$defs/non_blank" },
+        "registry_claim_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/claim_ref" }
+        },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "quest_adaptation": {
+      "type": "object",
+      "required": [
+        "game_id",
+        "kind",
+        "name",
+        "description",
+        "target_item_id",
+        "required_quantity",
+        "reward_experience",
+        "adaptation_notes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "game_id": { "$ref": "#/$defs/stable_id" },
+        "kind": { "const": "collect_item" },
+        "name": { "$ref": "#/$defs/non_blank" },
+        "description": { "$ref": "#/$defs/non_blank" },
+        "target_item_id": { "$ref": "#/$defs/stable_id" },
+        "required_quantity": { "const": 1 },
+        "reward_experience": { "type": "integer", "minimum": 1 },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "dialogue_adaptation": {
+      "type": "object",
+      "required": ["game_id", "character_id", "start_node_id", "nodes", "adaptation_notes"],
+      "additionalProperties": false,
+      "properties": {
+        "game_id": { "$ref": "#/$defs/stable_id" },
+        "character_id": { "$ref": "#/$defs/stable_id" },
+        "start_node_id": { "$ref": "#/$defs/stable_id" },
+        "nodes": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/dialogue_node" }
+        },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "dialogue_node": {
+      "type": "object",
+      "required": ["id", "text", "options"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/stable_id" },
+        "text": { "$ref": "#/$defs/non_blank" },
+        "options": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/dialogue_option" }
+        }
+      }
+    },
+    "dialogue_option": {
+      "type": "object",
+      "required": ["id", "text", "next_node_id", "effects"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/stable_id" },
+        "text": { "$ref": "#/$defs/non_blank" },
+        "next_node_id": {
+          "oneOf": [
+            { "type": "null" },
+            { "$ref": "#/$defs/stable_id" }
+          ]
+        },
+        "effects": { "type": "array", "maxItems": 0 }
+      }
+    },
+    "omission": {
+      "type": "object",
+      "required": ["registry_entity_ref", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "registry_entity_ref": { "$ref": "#/$defs/stable_id" },
+        "reason": { "$ref": "#/$defs/non_blank" }
+      }
+    }
+  }
+}

@@ -142,9 +142,19 @@ stale.
   `1c9a20bfade5bdb292ca3a801f00279cf0450e30` as GO with no findings (DEC-0062).
   Its acceptance snapshot was one 8-file commit (`+231/-66`) after `a89fdc6d`,
   with a clean worktree and `origin/main` still at `a89fdc6d` (ahead 1, not pushed).
-- The project owner requested a pause immediately after the L2W-3 GO checkpoint.
-  There is no active implementation slice. On resume, recheck GPT-5.6-sol and Git,
-  then follow the single bounded L2W-4 action in `NEXT_TASK.md`.
+- L2W-4 registry-backed micro adaptation is implemented locally by Codex in the
+  separate `pipeline/registry_adaptation.py` route. It consumes a validated
+  `CanonRegistry v1` plus an explicit `RegistryAdaptationPlan v1`, preserves every
+  selected composite claim reference, derives chapters, and emits the unchanged
+  L2W-2 one-room profile with `registry_adaptation_manifest.json`. The fictional
+  two-source fixture covers one location, one cross-chapter character with
+  conflicting role claims, and one item; no private corpus was read.
+- L2W-4 local evidence is 39 focused tests (1 Windows symlink permission skip),
+  1105 full unittest cases (3 skips), compileall, Schema JSON parsing, fixture and
+  golden bytes, original-demo validation, history safety, fsck, diff checking,
+  repository-external CLI plus `lore2mud validate`, and a World pickup/quest
+  completion playthrough. Independent acceptance is pending a fresh GPT-5.6-sol
+  Codex task or clean context; the implementation context must not self-declare GO.
 - M1 was implemented by Hermes agent and independently accepted GO by
   GPT-5.6-sol on 2026-07-28 (`c329546`). M2 was implemented by Hermes agent and
   independently accepted GO by GPT-5.6-sol on 2026-07-29 (DEC-0023).

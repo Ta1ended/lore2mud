@@ -1,0 +1,15 @@
+[
+  {
+    "adaptation_notes": "A plain collectable item with no effects or equipment profile.",
+    "canon_ref": {
+      "entity_id": "canon_tuning_key",
+      "source_chapters": [
+        "chapter_000002"
+      ]
+    },
+    "description": "A small iron key rests below the bell.",
+    "id": "item_tuning_key",
+    "name": "Tuning Key",
+    "stack_limit": 1
+  }
+]

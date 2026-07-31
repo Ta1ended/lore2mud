@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-31（L2W-3 独立验收 GO；按负责人要求暂停）_
+_Last updated: 2026-07-31（L2W-4 本地实现与验证完成；独立验收 pending）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -22,7 +22,10 @@ relation 目标缺少同 promotion member 约束、source candidate provenance �
 member，writer/CLI 与 golden 逐字节相等，hardlink 拒绝和有权限时 symlink 拒绝均有回归。
 新的 GPT-5.6-sol 干净任务随后对 `a89fdc6d..1c9a20b` 独立复验，结论 GO、无 findings
 （DEC-0062）。该修正未读取私有小说，未修改引擎、内容包、save、Schema 或依赖。
-项目负责人已要求今天在此封板并暂停，因此当前没有活动实施切片。
+项目负责人随后恢复持续 goal 与项目开发。L2W-4 当前已完成本地实现与验证：在不修改既有
+CanonDraft + AdaptationPlan v1 路径的前提下，让 CanonRegistry v1 通过显式人工计划
+生成相同单房间规模的 micro content pack，并保留多章复合 provenance。独立验收仍须由
+新的 GPT-5.6-sol Codex 任务或干净上下文执行，当前不能自宣 GO。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
@@ -197,13 +200,14 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- None. L2W-3 已独立验收 GO；项目按负责人要求停在干净检查点。
-- 今天不开始 L2W-4、一般化改编、私有资料处理或 push。
+- L2W-4 implementation 已完成本地验证；下一阶段仅为独立只读验收，不扩展新功能。
+- 保持一房间、一角色、一物品、一 game-only quest、一 game-only dialogue；不修改
+  `src/`、original_demo、save、依赖，不做冲突裁决、多房间扩容或私有资料处理。
 
 ## Blockers
 
-- 无技术阻塞。当前暂停是项目负责人主动要求；本地提交未 push，网络不佳时可在恢复后
-  由项目负责人通过 GitHub Desktop 手动完成。
+- 无技术阻塞。当前使用 GPT-5.6-sol；实时远端与 `origin/main` 均为 `a89fdc6d`，本地
+  `HEAD=a197075`、ahead/behind `2/0`，未 push。
 
 ## Verification
 
@@ -222,6 +226,15 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   `check_repo_safety.py --history`、`git fsck --full --no-dangling`、`git diff --check`
   和仓库外真实 `python -m pipeline.canon_registry` CLI/golden bytes 均通过。未访问私有
   小说；`src/`、Schema、original_demo、save 和依赖均未修改。
+- L2W-4 local verification（2026-07-31，Codex；DEC-0063，独立验收 pending）：39 项
+  `tests.test_registry_adaptation` 聚焦测试通过（1 Windows symlink permission skip），
+  1105 项全量 unittest 通过（3 skips）；compileall、两份 Draft 2020-12 Schema JSON
+  解析、虚构 registry/plan/golden、`lore2mud validate --content examples/original_demo`、
+  `check_repo_safety.py --history`、`git fsck --full --no-dangling`、`git diff --check`
+  和仓库外真实 CLI/golden bytes 均通过。输出 manifest 为 2840 bytes，SHA-256
+  `4d09e4126364e3f6e3967780ae30688204e9e7030a13c3a196052cfe5f31fe7c`；真实 World
+  playthrough 已自动接取任务并在拾取物品后完成任务。未访问私有小说，未修改 `src/`、
+  original_demo、save 或依赖。
 - Phase 1.0 independent acceptance GO（2026-07-30，GPT-5.6-sol，DEC-0039）：
   聚焦复验确认 DEC-0038 三个 findings 全部关闭。131 项聚焦测试、730 项全量
   unittest、compileall、original-demo 校验、安全历史扫描和 diff 检查通过。
@@ -342,6 +355,14 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - `tests/test_canon_registry.py` - L2W-3 validation, build, determinism, provenance,
   atomic writer, Schema structure, golden fixture, and subprocess CLI coverage.
 - `docs/canon_registry_format.md` - RegistryPlan and CanonRegistry v1 contract.
+- `pipeline/registry_adaptation.py` - L2W-4 strict registry plan/manifest
+  validation, provenance-aware compiler, atomic writer, and CLI.
+- `schemas/registry_adaptation_plan.schema.json` /
+  `schemas/registry_adaptation_manifest.schema.json` - L2W-4 structural contracts.
+- `tests/test_registry_adaptation.py` and
+  `tests/fixtures/registry_adaptation/` - L2W-4 semantic, writer, CLI, golden,
+  and World coverage.
+- `docs/registry_adaptation_format.md` - L2W-4 plan/manifest contract.
 - `src/lore2mud/engine/world.py` - authoritative state for quests, effects, flags,
   coins, fixed shops, inventory, equipment, and dialogue.
 - `src/lore2mud/engine/save.py` - strict v7 save/load service with coins and flags.

@@ -1,0 +1,22 @@
+[
+  {
+    "adaptation_notes": "A single playable room authored from the selected location claim.",
+    "canon_ref": {
+      "entity_id": "canon_echo_vault",
+      "source_chapters": [
+        "chapter_000001"
+      ]
+    },
+    "description": "A bronze bell waits in the still round chamber.",
+    "exits": {},
+    "id": "room_echo_vault",
+    "item_stacks": [
+      {
+        "item_id": "item_tuning_key",
+        "quantity": 1
+      }
+    ],
+    "monster_ids": [],
+    "name": "Echo Vault"
+  }
+]

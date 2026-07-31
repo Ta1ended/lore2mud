@@ -4,6 +4,19 @@
 
 ### Added
 
+- Added registry-backed micro adaptation (L2W-4):
+  `pipeline/registry_adaptation.py` validates a strict `RegistryAdaptationPlan v1`,
+  requires exact registry entity/claim/omission coverage, preserves composite
+  `(promotion_id, source_entity_id, source_claim_id)` provenance, derives binding
+  chapters, and compiles the unchanged L2W-2 one-room profile without conflict
+  resolution or text inference. Added separate plan/manifest draft-2020-12 Schemas,
+  a fictional two-source registry and plan, nine-file golden output, format
+  documentation, atomic fsync writer, direct/subprocess CLI checks, loader/World
+  playthrough, and 39 focused tests (1 platform symlink skip). Local verification
+  passed 1105 full unittest cases (3 skips), compileall, Schema/fixture parsing,
+  original-demo validation, `check_repo_safety.py --history`, `git fsck`,
+  `git diff --check`, and a repository-external CLI whose bytes match the golden
+  output. Independent GPT-5.6-sol acceptance remains pending (DEC-0063).
 - Added deterministic multi-chapter canon registry assembly (L2W-3):
   `pipeline/canon_registry.py` validates explicit `RegistryPlan v1` identity
   mappings, requires exact coverage of two or more unique CanonDraft sources,

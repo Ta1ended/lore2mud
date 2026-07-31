@@ -1,0 +1,97 @@
+{
+  "adaptation_id": "registry_micro_fixture",
+  "bindings": [
+    {
+      "adaptation_notes": "A game description authored for this micro pack; both source roles remain in provenance.",
+      "game_id": "character_lyra",
+      "game_kind": "character",
+      "registry_claim_refs": [
+        {
+          "promotion_id": "promo_ch001",
+          "source_claim_id": "claim_role",
+          "source_entity_id": "source_lyra_early"
+        },
+        {
+          "promotion_id": "promo_ch002",
+          "source_claim_id": "claim_role",
+          "source_entity_id": "source_lyra_later"
+        }
+      ],
+      "registry_entity_ref": "canon_lyra",
+      "source_chapters": [
+        "chapter_000001",
+        "chapter_000002"
+      ]
+    },
+    {
+      "adaptation_notes": "A plain collectable item with no effects or equipment profile.",
+      "game_id": "item_tuning_key",
+      "game_kind": "item",
+      "registry_claim_refs": [
+        {
+          "promotion_id": "promo_ch002",
+          "source_claim_id": "claim_description",
+          "source_entity_id": "source_tuning_key"
+        }
+      ],
+      "registry_entity_ref": "canon_tuning_key",
+      "source_chapters": [
+        "chapter_000002"
+      ]
+    },
+    {
+      "adaptation_notes": "A single playable room authored from the selected location claim.",
+      "game_id": "room_echo_vault",
+      "game_kind": "room",
+      "registry_claim_refs": [
+        {
+          "promotion_id": "promo_ch001",
+          "source_claim_id": "claim_description",
+          "source_entity_id": "source_echo_vault"
+        }
+      ],
+      "registry_entity_ref": "canon_echo_vault",
+      "source_chapters": [
+        "chapter_000001"
+      ]
+    }
+  ],
+  "format_version": 1,
+  "game_only": [
+    {
+      "adaptation_notes": "Game-only conversation with no effects.",
+      "game_id": "dialogue_lyra",
+      "game_kind": "dialogue"
+    },
+    {
+      "adaptation_notes": "Game-only collection objective for the one-room pack.",
+      "game_id": "quest_lift_key",
+      "game_kind": "quest"
+    }
+  ],
+  "omissions": [],
+  "pack": {
+    "id": "registry_micro_demo",
+    "version": "0.1.0"
+  },
+  "source_registry_id": "fixture_registry",
+  "source_registry_version": 1,
+  "sources": [
+    {
+      "chapter_id": "chapter_000001",
+      "chapter_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "extracted_by": "fixture-extractor/v1",
+      "promotion_id": "promo_ch001",
+      "review_id": "review_ch001",
+      "reviewed_by": "fixture-reviewer"
+    },
+    {
+      "chapter_id": "chapter_000002",
+      "chapter_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "extracted_by": "fixture-extractor/v1",
+      "promotion_id": "promo_ch002",
+      "review_id": "review_ch002",
+      "reviewed_by": "fixture-reviewer"
+    }
+  ]
+}

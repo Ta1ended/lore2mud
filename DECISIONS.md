@@ -1467,3 +1467,44 @@
   registry-backed micro adaptation that keeps L2W-2's one-room profile.
 - Supersedes: DEC-0061's pending acceptance status; it does not alter DEC-0060's
   implemented contract or historical first-review evidence.
+
+## DEC-0063: L2W-4 registry-backed micro adaptation
+
+- Date: 2026-07-31
+- Status: Implemented locally; independent acceptance pending.
+- Context: After L2W-3 independent GO, the project owner restored the autonomous
+  Goal and authorized Codex to choose the next bounded public-safe slice. The
+  first registry consumer must preserve L2W-2's one-room gameplay profile while
+  making every cross-chapter claim choice explicit.
+- Decision: (a) A separate `pipeline.registry_adaptation` module consumes a
+  validated `CanonRegistry v1` and a strict `RegistryAdaptationPlan v1`.
+  (b) The plan binds exactly one location, character, and item, lists every
+  selected claim by the composite `(promotion_id, source_entity_id,
+  source_claim_id)`, and explicitly omits every other registry entity. Selected
+  claims must span at least two promotions; registry IDs and versions must match.
+  (c) Game text and numbers are copied verbatim from the plan. The compiler does
+  not infer, rewrite, merge, or resolve conflicting claims. It derives
+  `canon_ref.source_chapters` and manifest binding chapters from selected claims.
+  (d) Output remains one room, one character, one plain item, one game-only
+  collect-item quest, one game-only dialogue, and empty monsters/shops; no
+  `src/`, original demo, save, dependency, or private-material changes are in
+  scope. (e) The sidecar is
+  `registry_adaptation_manifest.json`; it records complete registry sources,
+  registry ID/version, composite refs, chapters, omissions, and game-only
+  entries. The writer validates before staging, fsyncs all nine files, loads the
+  staged pack, revalidates the manifest, checks the destination again, and uses
+  same-directory atomic replace without overwriting an existing output.
+- Evidence: 39 focused tests (1 Windows symlink permission skip), 1105 full
+  unittest cases (3 skips), compileall, both Schema JSON parses, fictional
+  fixture/golden validation, original-demo validation, `check_repo_safety.py
+  --history`, `git fsck --full --no-dangling`, `git diff --check`, and an
+  external-temp-directory CLI plus `lore2mud validate`; external manifest output
+  is 2840 bytes with SHA-256
+  `4d09e4126364e3f6e3967780ae30688204e9e7030a13c3a196052cfe5f31fe7c`.
+- Consequences: L2W-2's existing `CanonDraft + AdaptationPlan v1` route remains
+  unchanged. This slice deliberately does not add semantic conflict resolution,
+  mutable registry/query, multi-room expansion, or private processing. A fresh
+  GPT-5.6-sol Codex task or clean context must independently review the real
+  implementation commit before the slice can be called GO. Local commits are not
+  pushed automatically.
+- Supersedes: None.

@@ -1,0 +1,13 @@
+[
+  {
+    "adaptation_notes": "Game-only collection objective for the one-room pack.",
+    "description": "Lift the tuning key from beneath the bell.",
+    "id": "quest_lift_key",
+    "kind": "collect_item",
+    "name": "A Waiting Note",
+    "required_quantity": 1,
+    "reward_experience": 12,
+    "target_item_id": "item_tuning_key",
+    "trigger_room_id": "room_echo_vault"
+  }
+]

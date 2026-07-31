@@ -133,6 +133,11 @@ dialogue.
   `adaptation_notes` explaining they are game-only designs
 - `adaptation_manifest.json` records full provenance including omissions
 
+This L2W-2 manifest remains single-chapter and uses bare CanonDraft claim IDs.
+The separate registry-backed route uses composite claim references and writes
+`registry_adaptation_manifest.json`; see
+[registry_adaptation_format.md](registry_adaptation_format.md).
+
 ## AdaptationManifest
 
 The manifest is a provenance sidecar:
@@ -173,8 +178,8 @@ The manifest is a provenance sidecar:
 - Multiple rooms, characters, items, dialogues, or quests
 - Monsters, shops, equipment, consumables
 - Dialogue effects (grant_item, accept_quest, etc.)
-- Cross-chapter entity merging or conflict resolution
-- CanonRegistry input or multi-chapter adaptation; L2W-3 provides the separate
-  [Canon Registry Format v1](canon_registry_format.md), but this compiler still
-  accepts exactly one CanonDraft v1
+- Cross-chapter entity merging or conflict resolution in this L2W-2 compiler
+- CanonRegistry input; L2W-4 provides the separate
+  [Registry Adaptation Format v1](registry_adaptation_format.md) without changing
+  this compiler's single-CanonDraft contract
 - LLM or model integration

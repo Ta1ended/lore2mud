@@ -1,0 +1,169 @@
+{
+  "entities": [
+    {
+      "aliases": [],
+      "canonical_name": "Echo Vault",
+      "claims": [
+        {
+          "certainty": "certain",
+          "inference_basis": null,
+          "predicate": "description",
+          "review_reason": "The chamber is described directly.",
+          "source": {
+            "promotion_id": "promo_ch001",
+            "source_claim_id": "claim_description",
+            "source_entity_id": "source_echo_vault"
+          },
+          "source_chapters": [
+            "chapter_000001"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "kind": "text",
+            "text": "A round chamber holds a suspended bronze bell."
+          }
+        }
+      ],
+      "entity_id": "canon_echo_vault",
+      "entity_type": "location",
+      "members": [
+        {
+          "promotion_id": "promo_ch001",
+          "source_aliases": [],
+          "source_candidate_id": "candidate_echo_vault",
+          "source_canonical_name": "Echo Vault",
+          "source_entity_id": "source_echo_vault"
+        }
+      ],
+      "merge_reason": "This location has one reviewed source entity."
+    },
+    {
+      "aliases": [
+        "Bell Keeper",
+        "Road Listener"
+      ],
+      "canonical_name": "Lyra",
+      "claims": [
+        {
+          "certainty": "certain",
+          "inference_basis": null,
+          "predicate": "role",
+          "review_reason": "The first chapter names the role directly.",
+          "source": {
+            "promotion_id": "promo_ch001",
+            "source_claim_id": "claim_role",
+            "source_entity_id": "source_lyra_early"
+          },
+          "source_chapters": [
+            "chapter_000001"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "enum_value": "keeper",
+            "kind": "enum"
+          }
+        },
+        {
+          "certainty": "certain",
+          "inference_basis": null,
+          "predicate": "role",
+          "review_reason": "The second chapter names a different role directly.",
+          "source": {
+            "promotion_id": "promo_ch002",
+            "source_claim_id": "claim_role",
+            "source_entity_id": "source_lyra_later"
+          },
+          "source_chapters": [
+            "chapter_000002"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "enum_value": "wanderer",
+            "kind": "enum"
+          }
+        }
+      ],
+      "entity_id": "canon_lyra",
+      "entity_type": "character",
+      "members": [
+        {
+          "promotion_id": "promo_ch001",
+          "source_aliases": [
+            "Bell Keeper"
+          ],
+          "source_candidate_id": "candidate_lyra_early",
+          "source_canonical_name": "Lyra",
+          "source_entity_id": "source_lyra_early"
+        },
+        {
+          "promotion_id": "promo_ch002",
+          "source_aliases": [
+            "Road Listener"
+          ],
+          "source_candidate_id": "candidate_lyra_later",
+          "source_canonical_name": "Lyra",
+          "source_entity_id": "source_lyra_later"
+        }
+      ],
+      "merge_reason": "The reviewer explicitly identifies both chapter-local people as one person."
+    },
+    {
+      "aliases": [],
+      "canonical_name": "Tuning Key",
+      "claims": [
+        {
+          "certainty": "certain",
+          "inference_basis": null,
+          "predicate": "description",
+          "review_reason": "The object is described directly.",
+          "source": {
+            "promotion_id": "promo_ch002",
+            "source_claim_id": "claim_description",
+            "source_entity_id": "source_tuning_key"
+          },
+          "source_chapters": [
+            "chapter_000002"
+          ],
+          "source_support": "explicit",
+          "value": {
+            "kind": "text",
+            "text": "A small iron key carries one cut for the bronze bell."
+          }
+        }
+      ],
+      "entity_id": "canon_tuning_key",
+      "entity_type": "item",
+      "members": [
+        {
+          "promotion_id": "promo_ch002",
+          "source_aliases": [],
+          "source_candidate_id": "candidate_tuning_key",
+          "source_canonical_name": "Tuning Key",
+          "source_entity_id": "source_tuning_key"
+        }
+      ],
+      "merge_reason": "This item has one reviewed source entity."
+    }
+  ],
+  "format_version": 1,
+  "registry_id": "fixture_registry",
+  "registry_version": 1,
+  "sources": [
+    {
+      "chapter_id": "chapter_000001",
+      "chapter_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "extracted_by": "fixture-extractor/v1",
+      "promotion_id": "promo_ch001",
+      "review_id": "review_ch001",
+      "reviewed_by": "fixture-reviewer"
+    },
+    {
+      "chapter_id": "chapter_000002",
+      "chapter_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "extracted_by": "fixture-extractor/v1",
+      "promotion_id": "promo_ch002",
+      "review_id": "review_ch002",
+      "reviewed_by": "fixture-reviewer"
+    }
+  ]
+}

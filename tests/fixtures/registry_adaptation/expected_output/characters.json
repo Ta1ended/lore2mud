@@ -1,0 +1,16 @@
+[
+  {
+    "adaptation_notes": "A game description authored for this micro pack; both source roles remain in provenance.",
+    "canon_ref": {
+      "entity_id": "canon_lyra",
+      "source_chapters": [
+        "chapter_000001",
+        "chapter_000002"
+      ]
+    },
+    "description": "Lyra listens beside the bell with a travel cloak folded over one arm.",
+    "id": "character_lyra",
+    "name": "Lyra",
+    "room_id": "room_echo_vault"
+  }
+]
