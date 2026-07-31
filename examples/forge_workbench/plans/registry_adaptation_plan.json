@@ -1,0 +1,109 @@
+{
+  "adaptation_id": "registry_micro_fixture",
+  "character": {
+    "adaptation_notes": "A game description authored for this micro pack; both source roles remain in provenance.",
+    "description": "Lyra listens beside the bell with a travel cloak folded over one arm.",
+    "game_id": "character_lyra",
+    "name": "Lyra",
+    "registry_claim_refs": [
+      {
+        "promotion_id": "promo_ch002",
+        "source_claim_id": "claim_role",
+        "source_entity_id": "source_lyra_later"
+      },
+      {
+        "promotion_id": "promo_ch001",
+        "source_claim_id": "claim_role",
+        "source_entity_id": "source_lyra_early"
+      }
+    ],
+    "registry_entity_ref": "canon_lyra"
+  },
+  "dialogue": {
+    "adaptation_notes": "Game-only conversation with no effects.",
+    "character_id": "character_lyra",
+    "game_id": "dialogue_lyra",
+    "nodes": [
+      {
+        "id": "start",
+        "options": [
+          {
+            "effects": [],
+            "id": "ask_bell",
+            "next_node_id": "bell",
+            "text": "Ask about the silent bell."
+          }
+        ],
+        "text": "Lyra turns toward the suspended bell."
+      },
+      {
+        "id": "bell",
+        "options": [
+          {
+            "effects": [],
+            "id": "leave",
+            "next_node_id": null,
+            "text": "Step away."
+          }
+        ],
+        "text": "Its note returns only when the small key is lifted."
+      }
+    ],
+    "start_node_id": "start"
+  },
+  "format_version": 1,
+  "item": {
+    "adaptation_notes": "A plain collectable item with no effects or equipment profile.",
+    "description": "A small iron key rests below the bell.",
+    "game_id": "item_tuning_key",
+    "name": "Tuning Key",
+    "registry_claim_refs": [
+      {
+        "promotion_id": "promo_ch002",
+        "source_claim_id": "claim_description",
+        "source_entity_id": "source_tuning_key"
+      }
+    ],
+    "registry_entity_ref": "canon_tuning_key"
+  },
+  "omissions": [],
+  "pack": {
+    "id": "registry_micro_demo",
+    "name": "Registry Micro Demo",
+    "player": {
+      "attack": 5,
+      "coins": 0,
+      "defense": 1,
+      "inventory_capacity": 20,
+      "max_hp": 20
+    },
+    "start_room_id": "room_echo_vault",
+    "version": "0.1.0"
+  },
+  "quest": {
+    "adaptation_notes": "Game-only collection objective for the one-room pack.",
+    "description": "Lift the tuning key from beneath the bell.",
+    "game_id": "quest_lift_key",
+    "kind": "collect_item",
+    "name": "A Waiting Note",
+    "required_quantity": 1,
+    "reward_experience": 12,
+    "target_item_id": "item_tuning_key"
+  },
+  "room": {
+    "adaptation_notes": "A single playable room authored from the selected location claim.",
+    "description": "A bronze bell waits in the still round chamber.",
+    "game_id": "room_echo_vault",
+    "name": "Echo Vault",
+    "registry_claim_refs": [
+      {
+        "promotion_id": "promo_ch001",
+        "source_claim_id": "claim_description",
+        "source_entity_id": "source_echo_vault"
+      }
+    ],
+    "registry_entity_ref": "canon_echo_vault"
+  },
+  "source_registry_id": "fixture_registry",
+  "source_registry_version": 1
+}

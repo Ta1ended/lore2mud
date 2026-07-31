@@ -1,0 +1,11 @@
+{
+  "entity_refs": [
+    "canon_echo_vault",
+    "canon_lyra",
+    "canon_tuning_key"
+  ],
+  "format_version": 1,
+  "inspection_id": "forge_registry_review",
+  "source_registry_id": "fixture_registry",
+  "source_registry_version": 1
+}

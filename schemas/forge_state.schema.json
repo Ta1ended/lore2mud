@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/forge_state.schema.json",
+  "title": "Forge State v1",
+  "description": "Tool-owned resumable state for a Forge workspace.",
+  "type": "object",
+  "required": ["format_version", "workspace_id", "stages"],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": { "const": 1 },
+    "workspace_id": { "$ref": "#/$defs/stable_id" },
+    "stages": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "inspection": { "$ref": "#/$defs/stage_state" },
+        "adaptation": { "$ref": "#/$defs/stage_state" }
+      }
+    }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "workspace_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*//)[^/]+(?:/[^/]+)*$"
+    },
+    "artifact": {
+      "type": "object",
+      "required": ["path", "kind", "sha256", "size"],
+      "additionalProperties": false,
+      "properties": {
+        "path": { "$ref": "#/$defs/workspace_path" },
+        "kind": { "enum": ["file", "directory"] },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "size": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "run_record": {
+      "type": "object",
+      "required": ["status", "input_fingerprint", "outputs", "error"],
+      "additionalProperties": false,
+      "properties": {
+        "status": { "enum": ["succeeded", "failed"] },
+        "input_fingerprint": { "$ref": "#/$defs/sha256" },
+        "outputs": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/artifact" }
+        },
+        "error": { "type": ["string", "null"] }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "status": { "const": "succeeded" } } },
+          "then": {
+            "properties": {
+              "outputs": { "minItems": 1 },
+              "error": { "type": "null" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "status": { "const": "failed" } } },
+          "then": {
+            "properties": {
+              "outputs": { "maxItems": 0 },
+              "error": { "type": "string", "minLength": 1 }
+            }
+          }
+        }
+      ]
+    },
+    "success_record": {
+      "allOf": [
+        { "$ref": "#/$defs/run_record" },
+        { "properties": { "status": { "const": "succeeded" } } }
+      ]
+    },
+    "stage_state": {
+      "type": "object",
+      "required": ["attempts", "last_run", "last_success"],
+      "additionalProperties": false,
+      "properties": {
+        "attempts": { "type": "integer", "minimum": 1 },
+        "last_run": { "$ref": "#/$defs/run_record" },
+        "last_success": {
+          "anyOf": [
+            { "$ref": "#/$defs/success_record" },
+            { "type": "null" }
+          ]
+        }
+      }
+    }
+  }
+}

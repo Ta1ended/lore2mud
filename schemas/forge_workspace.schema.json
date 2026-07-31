@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/forge_workspace.schema.json",
+  "title": "Forge Workspace v1",
+  "description": "A local workspace that turns one reviewed CanonRegistry into inspectable and playable artifacts.",
+  "type": "object",
+  "required": [
+    "format_version",
+    "workspace_id",
+    "source_registry",
+    "inspection_plan",
+    "adaptation_plan",
+    "artifact_root"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": { "const": 1 },
+    "workspace_id": { "$ref": "#/$defs/stable_id" },
+    "source_registry": { "$ref": "#/$defs/workspace_path" },
+    "inspection_plan": { "$ref": "#/$defs/workspace_path" },
+    "adaptation_plan": { "$ref": "#/$defs/workspace_path" },
+    "artifact_root": { "$ref": "#/$defs/workspace_path" }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "workspace_path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*\\\\)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*//)[^/]+(?:/[^/]+)*$"
+    }
+  }
+}

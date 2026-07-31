@@ -1,0 +1,8 @@
+{
+  "adaptation_plan": "plans/registry_adaptation_plan.json",
+  "artifact_root": "artifacts",
+  "format_version": 1,
+  "inspection_plan": "plans/registry_inspection_plan.json",
+  "source_registry": "inputs/canon_registry.json",
+  "workspace_id": "forge_registry_demo"
+}
