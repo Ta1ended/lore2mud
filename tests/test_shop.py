@@ -18,7 +18,7 @@ from lore2mud.content.models import (
 )
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.models import QuestState
-from lore2mud.engine.save import SaveLoadService, _serialize_world
+from lore2mud.engine.save import SaveLoadService
 from lore2mud.engine.world import BuyOutcome, SellOutcome, ShopOutcome, World, WorldRuleError
 
 

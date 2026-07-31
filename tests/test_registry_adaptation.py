@@ -27,8 +27,6 @@ from pipeline.registry_adaptation import (
     RegistryAdaptationValidationError,
     RegistryCompilationError,
     RegistryMicroContentPack,
-    RegistryManifestBinding,
-    RegistryManifestSource,
     RegistryOmissionEntry,
     RegistryClaimRef,
     compile_registry_micro_pack,

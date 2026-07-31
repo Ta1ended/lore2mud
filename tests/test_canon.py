@@ -4,25 +4,15 @@ from __future__ import annotations
 
 import json
 import os
-import sys
 import tempfile
 import unittest
-from dataclasses import asdict
 from pathlib import Path
-from unittest import mock
 
 from pipeline.canon import (
-    CanonBooleanValue,
     CanonDraft,
     CanonDraftBuildingError,
     CanonDraftValidationError,
-    CanonEntity,
-    CanonEnumValue,
-    CanonNumericValue,
     CanonRelationValue,
-    CanonTextValue,
-    EntityPromotionMapping,
-    PromotionPlan,
     build_canon_draft,
     validate_canon_draft_document,
     validate_canon_promotion_plan,
@@ -30,7 +20,7 @@ from pipeline.canon import (
 )
 from pipeline.chapter_manifests import validate_chapter_manifest
 from pipeline.fact_candidates import validate_fact_candidate_document
-from pipeline.fact_reviews import validate_fact_review_document, FactReviewDocument
+from pipeline.fact_reviews import validate_fact_review_document
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -739,8 +729,6 @@ class CLITests(unittest.TestCase):
             with open(broken_plan, "w", encoding="utf-8") as f:
                 json.dump({"bad": True}, f)
             out = os.path.join(td, "draft.json")
-            # Check temp dir files before
-            before = set(os.listdir(td))
             main([
                 "--promotion-plan", broken_plan,
                 "--review", paths["review"],

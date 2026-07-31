@@ -8,7 +8,6 @@ from pathlib import Path
 
 from pipeline.chapter_manifests import (
     ChapterManifest,
-    ChapterManifestEntry,
     ChapterManifestValidationError,
     FactCandidateSourceValidationError,
     validate_chapter_manifest,

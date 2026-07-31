@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -16,7 +15,6 @@ from lore2mud.engine.save import (
     SaveLoadService,
     _atomic_write,
     _serialize_world,
-    _validate_and_build_world,
 )
 from lore2mud.engine.world import World
 
@@ -65,7 +63,7 @@ class SaveRoundTripTests(unittest.TestCase):
         self.world.take("item_spark_lantern")
         self.world.move("east")
         self.world.move("east")
-        outcome = self.world.attack("monster_ash_mite")
+        self.world.attack("monster_ash_mite")
 
         # Player took damage
         self.assertEqual(self.world.player.hp, 18)

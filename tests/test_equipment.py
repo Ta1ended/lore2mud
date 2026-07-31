@@ -11,7 +11,6 @@ from pathlib import Path
 
 from lore2mud.content.loader import ContentValidationError, load_content_pack
 from lore2mud.engine.commands import CommandProcessor
-from lore2mud.engine.models import Monster
 from lore2mud.engine.save import SAVE_FORMAT_VERSION, SaveLoadError, SaveLoadService
 from lore2mud.engine.world import World, WorldRuleError
 
@@ -394,7 +393,7 @@ class EquipmentSaveRoundTripTests(unittest.TestCase):
         """v2 saves (no equipped field) must be rejected."""
         self.service.save(self.world)
         txt = self.service.save_path.read_text("utf-8")
-        txt = txt.replace(f'"version": "0.2.4"', '"version": "0.2.3"')
+        txt = txt.replace('"version": "0.2.4"', '"version": "0.2.3"')
         txt = txt.replace(f'"save_format_version": {SAVE_FORMAT_VERSION}',
                           '"save_format_version": 2')
         self.service.save_path.write_text(txt, "utf-8")

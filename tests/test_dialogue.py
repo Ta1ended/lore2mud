@@ -923,7 +923,6 @@ class SaveTimeValidationTests(unittest.TestCase):
         w = _world_at_chen()
         w.start_dialogue("character_elder_chen")
         # Manually set to a terminal state
-        from lore2mud.engine.models import DialogueState
         w.active_dialogue = DialogueState(
             dialogue_id="dialogue_elder_chen",
             current_node_id="node_area",  # has options, so OK
@@ -949,7 +948,6 @@ class SaveTimeValidationTests(unittest.TestCase):
         svc.save(w)  # OK
         # Move player away (dialogue should be cleared by move,
         # but manually set it to simulate a bug)
-        from lore2mud.engine.models import DialogueState
         w.move("east")  # clears active_dialogue
         w.active_dialogue = DialogueState(
             dialogue_id="dialogue_elder_chen",
@@ -967,7 +965,6 @@ class SaveTimeValidationTests(unittest.TestCase):
         svc.save(w)  # Create initial valid save
         original_content = svc.save_path.read_text("utf-8")
         # Now make the World invalid and try to save
-        from lore2mud.engine.models import DialogueState
         w.move("east")
         w.active_dialogue = DialogueState(
             dialogue_id="dialogue_elder_chen",

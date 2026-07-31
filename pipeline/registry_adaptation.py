@@ -1415,7 +1415,9 @@ def _validate_registry_documents(documents: list[tuple[str, bytes]]) -> None:
         try:
             parsed[name] = json.loads(payload.decode("utf-8"))
         except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            raise RegistryCompilationError((f"{name} is not valid UTF-8 JSON: {exc}",))
+            raise RegistryCompilationError(
+                (f"{name} is not valid UTF-8 JSON: {exc}",)
+            ) from exc
     if not isinstance(parsed["pack.json"], dict):
         raise RegistryCompilationError(("pack.json root must be an object",))
     for name in _ALLOWED_FILES - {"pack.json", _MANIFEST_FILENAME}:

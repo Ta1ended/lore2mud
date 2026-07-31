@@ -3,14 +3,11 @@
 from __future__ import annotations
 
 import json
-import math
 import unittest
 from pathlib import Path
 
 from pipeline.fact_candidates import (
     BooleanValue,
-    Candidate,
-    Claim,
     EnumValue,
     FactCandidateDocument,
     FactCandidateValidationError,

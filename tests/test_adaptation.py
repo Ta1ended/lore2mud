@@ -2,7 +2,11 @@
 
 from __future__ import annotations
 
-import json, os, shutil, subprocess, sys, tempfile, unittest
+import json
+import os
+import sys
+import tempfile
+import unittest
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[1]
@@ -10,7 +14,7 @@ sys.path.insert(0, str(REPO))
 
 from pipeline.canon import validate_canon_draft_document
 from pipeline.adaptation import (
-    AdaptationPlan, CompilationError, AdaptationValidationError,
+    CompilationError, AdaptationValidationError,
     MicroContentPack, validate_adaptation_plan, compile_micro_pack, write_micro_pack,
     validate_adaptation_manifest_document, _pack_to_docs,
 )
@@ -299,7 +303,7 @@ class WriteTests(unittest.TestCase):
         bad_p=MicroContentPack(pack=p.pack,rooms=p.rooms,items=p.items,characters=p.characters,quests=p.quests,dialogues=p.dialogues,monsters=p.monsters,shops=p.shops,manifest=bad_m)
         with tempfile.TemporaryDirectory() as td:
             out=os.path.join(td,"o")
-            with self.assertRaises(Exception): write_micro_pack(bad_p,out)
+            with self.assertRaises(AdaptationValidationError): write_micro_pack(bad_p,out)
             self.assertFalse(os.path.exists(out))
             self.assertEqual(len([f for f in os.listdir(td) if f.startswith(".l2w_adaptation_")]),0)
     def test_preexisting_temp_not_deleted(self):
@@ -398,7 +402,8 @@ class WorldPlaythroughTest(unittest.TestCase):
             with open(pl_f,"w",encoding="utf-8") as f: json.dump(_plan_dict(),f,ensure_ascii=False)
             out=os.path.join(td,"output")
 
-            import subprocess, sys
+            import subprocess
+            import sys
             r=subprocess.run([sys.executable,"-m","pipeline.adaptation",
                 "--canon-draft",cd_f,"--adaptation-plan",pl_f,"--output-dir",out],
                 capture_output=True,text=True)

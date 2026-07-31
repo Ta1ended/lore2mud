@@ -11,10 +11,13 @@ class Combatant(Protocol):
     hp: int | None
     attack: int
     defense: int
-    experience_reward: int
 
     @property
     def is_alive(self) -> bool: ...
+
+
+class MonsterCombatant(Combatant, Protocol):
+    experience_reward: int
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,7 +36,7 @@ def calculate_damage(attack: int, defense: int) -> int:
 
 def resolve_combat_round(
     player: Combatant,
-    monster: Combatant,
+    monster: MonsterCombatant,
     *,
     player_attack: int | None = None,
     player_defense: int | None = None,

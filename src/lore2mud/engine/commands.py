@@ -5,6 +5,7 @@ from __future__ import annotations
 import re
 import shlex
 from dataclasses import dataclass
+from typing import Protocol
 
 from lore2mud.content.models import (
     CollectItemQuestDefinition,
@@ -23,6 +24,13 @@ from lore2mud.engine.world import (
     World,
     WorldRuleError,
 )
+
+
+class _SaveService(Protocol):
+    def save(self, world: World, slot: str | None = None) -> str: ...
+
+    def load(self, slot: str | None = None) -> World: ...
+
 
 _BARE_SELECTION = re.compile(r'^[1-9][0-9]{0,4}$')
 
@@ -272,7 +280,7 @@ class CommandProcessor:
     def __init__(
         self,
         world: World,
-        save_service: object | None = None,
+        save_service: _SaveService | None = None,
     ) -> None:
         self.world = world
         self._save_service = save_service
@@ -797,8 +805,9 @@ class CommandProcessor:
             return CommandResult("用法：save [槽位]")
         if self._save_service is None:
             return CommandResult("存档服务不可用。")
+        from lore2mud.engine.save import SaveLoadError
+
         try:
-            from lore2mud.engine.save import SaveLoadError
             slot = arguments[0] if arguments else None
             msg = self._save_service.save(self.world, slot)
             return CommandResult(msg)
@@ -810,8 +819,9 @@ class CommandProcessor:
             return CommandResult("用法：load [槽位]")
         if self._save_service is None:
             return CommandResult("存档服务不可用。")
+        from lore2mud.engine.save import SaveLoadError
+
         try:
-            from lore2mud.engine.save import SaveLoadError
             slot = arguments[0] if arguments else None
             new_world = self._save_service.load(slot)
             self.world = new_world

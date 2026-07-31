@@ -11,7 +11,7 @@ import re
 import tempfile
 from pathlib import Path
 
-from lore2mud.content.models import ContentPack, ItemStackDefinition, QuestDefinition
+from lore2mud.content.models import ContentPack
 from lore2mud.engine.models import (
     Character,
     DialogueState,
@@ -399,7 +399,6 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         for s in room.item_stacks:
             room_item_ids.add(s.item_id)
 
-    all_item_ids = inv_item_ids | room_item_ids
     for item_id in all_placements:
         containers = all_placements[item_id]
         if len(containers) > 1 and pack.items[item_id].stack_limit == 1:
@@ -531,6 +530,8 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
             f"equipped 包含未知字段：{sorted(unknown_equip)}"
         )
 
+    equipped_hand: str | None = None
+    equipped_body: str | None = None
     for slot_name in ("hand", "body"):
         if slot_name not in equipped_raw:
             raise SaveLoadError(f"equipped 缺少 {slot_name} 字段")

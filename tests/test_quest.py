@@ -168,10 +168,10 @@ class QuestContentLoadingTests(unittest.TestCase):
                 )
 
     def test_duplicate_concrete_conditions_are_rejected_per_kind(self) -> None:
-        for index, kind, target_field in (
-            (0, "monster_defeated", "target_monster_id"),
-            (1, "reach_room", "target_room_id"),
-            (2, "collect_item", "target_item_id"),
+        for index, kind in (
+            (0, "monster_defeated"),
+            (1, "reach_room"),
+            (2, "collect_item"),
         ):
             with self.subTest(kind=kind):
                 def add_duplicate(

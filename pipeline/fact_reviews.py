@@ -11,7 +11,6 @@ No file I/O, no private-data access, standard library only.
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 

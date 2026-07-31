@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from pipeline.split_novel import Chapter, split_file, split_text
+from pipeline.split_novel import split_file, split_text
 
 
 # ── helpers ──────────────────────────────────────────────────────────────────

@@ -10,7 +10,6 @@ from pipeline.fact_reviews import (
     FactReviewDocument,
     FactReviewValidationError,
     FactReviewBindingValidationError,
-    ReviewDecision,
     validate_fact_review_document,
     validate_fact_review_bindings,
 )

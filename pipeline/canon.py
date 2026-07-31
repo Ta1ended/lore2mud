@@ -426,7 +426,7 @@ def build_canon_draft(
     dec_map: dict[tuple[str, str], tuple[str, str]] = {}  # (cid, clid) → (state, reason)
     accepted: set[tuple[str, str]] = set()  # (cid, clid) pairs that are accepted
     accepted_candidates: set[str] = set()  # cids that have ≥1 accepted claim
-    for di, dec in enumerate(review.decisions):
+    for dec in review.decisions:
         dec_map[(dec.candidate_id, dec.claim_id)] = (dec.state, dec.reason)
         if dec.state == "accepted":
             accepted.add((dec.candidate_id, dec.claim_id))
@@ -686,7 +686,7 @@ def validate_canon_draft_document(data: object) -> CanonDraft:
         _check_unknown_keys(raw_source, allowed_src, "source", issues)
         src_cid = _require_text(raw_source, "chapter_id", "source", issues)
         if src_cid and not _CHAPTER_ID_RE.fullmatch(src_cid):
-            issues.append(f"source.chapter_id 必须匹配 ^chapter_[0-9]{{6}}$")
+            issues.append("source.chapter_id 必须匹配 ^chapter_[0-9]{6}$")
         src_sha = raw_source.get("chapter_sha256")
         if not isinstance(src_sha, str):
             issues.append("source.chapter_sha256 必须是字符串")

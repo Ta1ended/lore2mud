@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from contextlib import contextmanager
 from copy import deepcopy
 from dataclasses import dataclass, field
@@ -18,7 +18,6 @@ from lore2mud.content.models import (
     DialogueEffect,
     GrantExperienceEffect,
     GrantItemEffect,
-    ItemStackDefinition,
     MonsterDefeatedQuestDefinition,
     QuestDefinition,
     ReachRoomQuestDefinition,
@@ -877,7 +876,7 @@ class World:
 
         visible_by_type: dict[
             Literal["item", "monster", "character"],
-            tuple[list[str], dict[str, object], str, str],
+            tuple[list[str], Mapping[str, object], str, str],
         ] = {
             "item": (
                 self._visible_item_ids(),
@@ -990,12 +989,14 @@ class World:
         if item.heal_amount is None:
             raise WorldRuleError(f"物品 {item.name} 无法使用。")
 
-        missing_hp = self.player.max_hp - self.player.hp
+        current_hp = self.player.hp
+        assert current_hp is not None
+        missing_hp = self.player.max_hp - current_hp
         if missing_hp <= 0:
             raise WorldRuleError("你已经满血了。")
 
         actual_heal = min(quantity * item.heal_amount, missing_hp)
-        self.player.hp += actual_heal
+        self.player.hp = current_hp + actual_heal
         inv_stack.quantity -= quantity
         if inv_stack.quantity == 0:
             self.player.inventory.stacks.remove(inv_stack)
@@ -1473,7 +1474,7 @@ class World:
     def _resolve_id_from_ids(
         query: str,
         available_ids: list[str],
-        entities: dict[str, object],
+        entities: Mapping[str, object],
         *,
         kind: str,
     ) -> str | None:
