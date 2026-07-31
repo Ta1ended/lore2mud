@@ -456,6 +456,20 @@ class StaticPackageResourceTests(unittest.TestCase):
                 self.assertEqual(_read_static_asset(filename), resource.read_bytes())
                 self.assertTrue(resource.read_bytes())
 
+    def test_player_assets_expose_structured_recovery_and_mobile_header_contract(self) -> None:
+        static = files("lore2mud.web").joinpath("static")
+        index = static.joinpath("index.html").read_text(encoding="utf-8")
+        script = static.joinpath("app.js").read_text(encoding="utf-8")
+        styles = static.joinpath("styles.css").read_text(encoding="utf-8")
+
+        self.assertIn('id="recovery-panel"', index)
+        self.assertIn('id="recover-button"', index)
+        self.assertIn('sendAction({type: "recover"})', script)
+        self.assertIn("ui.recoveryPanel.hidden = snapshot.player.alive", script)
+        self.assertIn(".room-heading > div { min-width: 0; }", styles)
+        self.assertIn(".room-heading .eyebrow { overflow-wrap: anywhere; }", styles)
+        self.assertIn(".room-heading { flex-wrap: wrap; gap: 10px; }", styles)
+
     def test_actual_web_package_resources_load_from_zipimport(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
             archive = Path(temp_dir) / "lore2mud-player.zip"

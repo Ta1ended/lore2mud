@@ -9,6 +9,7 @@ const ui = {
   coinValue: byId("coin-value"), inventoryCount: byId("inventory-count"),
   equipmentList: byId("equipment-list"), inventoryList: byId("inventory-list"),
   exitList: byId("exit-list"), encounterList: byId("encounter-list"),
+  recoveryPanel: byId("recovery-panel"), recoverButton: byId("recover-button"),
   questCount: byId("quest-count"), questList: byId("quest-list"),
   dialoguePanel: byId("dialogue-panel"), dialogueCharacter: byId("dialogue-character"),
   dialogueText: byId("dialogue-text"), dialogueOptions: byId("dialogue-options"),
@@ -117,6 +118,8 @@ function renderRoom() {
   ui.roomDescription.textContent = room.description;
   ui.aliveState.textContent = snapshot.player.alive ? "状态正常" : "已经倒下";
   ui.aliveState.classList.toggle("dead", !snapshot.player.alive);
+  ui.recoveryPanel.hidden = snapshot.player.alive;
+  ui.recoverButton.disabled = busy;
   ui.exitList.replaceChildren();
   room.exits.forEach((exit) => {
     const node = button(directionLabel(exit.direction), {type: "move", direction: exit.direction}, `button exit-button${exit.locked ? " locked" : ""}`);
@@ -315,6 +318,7 @@ function drawRouteMap() {
 
 byId("save-button").addEventListener("click", () => sendAction({type: "save", slot: normalizedSlot()}));
 byId("load-button").addEventListener("click", () => sendAction({type: "load", slot: normalizedSlot()}));
+byId("recover-button").addEventListener("click", () => sendAction({type: "recover"}));
 byId("end-dialogue").addEventListener("click", () => sendAction({type: "end_dialogue"}));
 byId("clear-log").addEventListener("click", () => { history.length = 0; renderEvents(); });
 byId("command-form").addEventListener("submit", (event) => {
