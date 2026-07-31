@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 from http.client import HTTPConnection
+import select
 import socket
 import subprocess
 import sys
@@ -123,6 +124,52 @@ class LocalPlayerServerTests(unittest.TestCase):
         finally:
             connection.close()
 
+    def delayed_body_request(
+        self,
+        path: str,
+        headers: tuple[tuple[str, str], ...],
+        body: bytes,
+    ) -> tuple[int, dict]:
+        request_head = bytearray(f"POST {path} HTTP/1.1\r\n".encode("ascii"))
+        for name, value in headers:
+            request_head.extend(f"{name}: {value}\r\n".encode("ascii"))
+        request_head.extend(b"\r\n")
+
+        with socket.create_connection(
+            ("127.0.0.1", self.server.server_port),
+            timeout=2,
+        ) as connection:
+            connection.settimeout(2)
+            connection.sendall(request_head)
+            readable, _, _ = select.select([connection], [], [], 2)
+            self.assertTrue(readable, "server did not reject the request headers")
+            connection.sendall(body)
+            connection.shutdown(socket.SHUT_WR)
+
+            response_parts = []
+            while True:
+                chunk = connection.recv(4096)
+                if not chunk:
+                    break
+                response_parts.append(chunk)
+
+        response = b"".join(response_parts)
+        raw_headers, separator, response_body = response.partition(b"\r\n\r\n")
+        self.assertEqual(separator, b"\r\n\r\n", response)
+        header_lines = raw_headers.split(b"\r\n")
+        status_parts = header_lines[0].split(b" ", 2)
+        self.assertGreaterEqual(len(status_parts), 2, header_lines[0])
+        response_headers = {}
+        for line in header_lines[1:]:
+            name, colon, value = line.partition(b":")
+            self.assertEqual(colon, b":", line)
+            response_headers[name.lower()] = value.strip()
+        self.assertEqual(
+            int(response_headers[b"content-length"]),
+            len(response_body),
+        )
+        return int(status_parts[1]), json.loads(response_body)
+
     def test_serves_player_assets_with_security_headers(self) -> None:
         for path, content_type in (
             ("/", "text/html"),
@@ -236,6 +283,50 @@ class LocalPlayerServerTests(unittest.TestCase):
                     shutdown_write=shutdown_write,
                 )
                 self.assertEqual(status, 400)
+                self.assertFalse(result["ok"])
+
+        status, result = self.raw_request(
+            "POST",
+            "/api/action",
+            base_headers + (("Content-Length", "9" * 5000),),
+        )
+        self.assertEqual(status, 413)
+        self.assertFalse(result["ok"])
+
+        status, raw, _ = self.get("/api/snapshot")
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(raw)["room"]["id"], "room_ember_wharf")
+
+    def test_early_post_rejections_drain_late_request_bodies(self) -> None:
+        authority = f"127.0.0.1:{self.server.server_port}"
+        payload = b'{"type":"move","direction":"east"}'
+        cases = (
+            (
+                (
+                    ("Host", authority),
+                    ("Content-Type", "application/json"),
+                    ("Content-Length", str(len(payload))),
+                    ("Content-Length", str(len(payload))),
+                ),
+                400,
+            ),
+            (
+                (
+                    ("Host", authority),
+                    ("Content-Type", "text/plain"),
+                    ("Content-Length", str(len(payload))),
+                ),
+                415,
+            ),
+        )
+        for headers, expected_status in cases:
+            with self.subTest(expected_status=expected_status):
+                status, result = self.delayed_body_request(
+                    "/api/action",
+                    headers,
+                    payload,
+                )
+                self.assertEqual(status, expected_status)
                 self.assertFalse(result["ok"])
 
         status, raw, _ = self.get("/api/snapshot")

@@ -400,7 +400,10 @@ class ForgeWorkspaceTests(unittest.TestCase):
     def test_windows_junction_reparse_point_is_rejected(self) -> None:
         with patch(
             "pipeline.forge.os.lstat",
-            return_value=SimpleNamespace(st_file_attributes=0x400),
+            return_value=SimpleNamespace(
+                st_file_attributes=0x400,
+                st_mode=stat.S_IFREG,
+            ),
         ):
             with self.assertRaises(ForgeValidationError) as caught:
                 load_forge_workspace(self.workspace)

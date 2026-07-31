@@ -10,6 +10,7 @@ from importlib.resources import files
 import math
 from pathlib import Path
 import socket
+import time
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -22,6 +23,8 @@ _MAX_ACTION_BYTES = 32 * 1024
 _MAX_JSON_DEPTH = 32
 _MAX_JSON_NODES = 2048
 _REQUEST_TIMEOUT_SECONDS = 5
+_SHUTDOWN_DRAIN_SECONDS = 1.0
+_SHUTDOWN_DRAIN_BYTES = 64 * 1024
 _STATIC_FILES = {
     "/": ("index.html", "text/html; charset=utf-8"),
     "/static/app.js": ("app.js", "text/javascript; charset=utf-8"),
@@ -45,6 +48,28 @@ class LocalPlayerServer(ThreadingHTTPServer):
     ) -> None:
         self.session = session
         super().__init__(server_address, LocalPlayerHandler)
+
+    def shutdown_request(self, request: socket.socket) -> None:
+        # A rejected POST may still have body bytes in flight. Draining after the
+        # response prevents Windows from replacing that response with a TCP reset.
+        try:
+            request.shutdown(socket.SHUT_WR)
+        except OSError:
+            pass
+
+        deadline = time.monotonic() + _SHUTDOWN_DRAIN_SECONDS
+        try:
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    break
+                request.settimeout(remaining)
+                if not request.recv(_SHUTDOWN_DRAIN_BYTES):
+                    break
+        except OSError:
+            pass
+        finally:
+            self.close_request(request)
 
 
 class LocalPlayerIPv6Server(LocalPlayerServer):
@@ -123,13 +148,18 @@ class LocalPlayerHandler(BaseHTTPRequestHandler):
                 {"ok": False, "error": "action 请求 framing 无效。"},
             )
             return
-        length = int(raw_length)
-        if length > _MAX_ACTION_BYTES:
+        normalized_length = raw_length.lstrip("0") or "0"
+        maximum_length = str(_MAX_ACTION_BYTES)
+        if len(normalized_length) > len(maximum_length) or (
+            len(normalized_length) == len(maximum_length)
+            and normalized_length > maximum_length
+        ):
             self._send_json(
                 HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
                 {"ok": False, "error": "action 请求大小无效。"},
             )
             return
+        length = int(normalized_length)
         try:
             body = self.rfile.read(length)
         except (TimeoutError, socket.timeout):
