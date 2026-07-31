@@ -18,10 +18,13 @@ stale.
 
 ## Current checkpoint
 
-- Repository: `lore2mud`; integration branch: `coord/parallel-sprint-integration`.
-  Accepted code candidate: `a172a82a0c70812b8ff5429de3ec4b309ad75cd5`;
-  `main=origin/main=13be791bc0a116f6596267b5d914a8a63e511f1f` at the
-  pre-handoff snapshot. The integration worktree was clean and ahead/behind `13/0`.
+- Repository: `lore2mud`; active local branch: `main` at
+  `D:\MUD game kaifa\lore2mud`. The accepted code candidate
+  `a172a82a0c70812b8ff5429de3ec4b309ad75cd5` and integration handoff
+  `3dafa23bfcfbda63263b65080a96d602f2d5ccbd` were fast-forwarded into local
+  `main` on 2026-07-31. The current successor commit is documentation-only and
+  records that local sync. Local tracking `origin/main` remained
+  `13be791bc0a116f6596267b5d914a8a63e511f1f`; no push or release occurred.
 - Current execution mode (DEC-0059, DEC-0067): new development is performed by
   GPT-5.6-sol Codex tasks. The default remains one vertical slice, while a project-
   owner-authorized sprint may use isolated parallel responsibility domains and one

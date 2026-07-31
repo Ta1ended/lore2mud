@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-07-31（五域并行整合候选 `a172a82` 独立验收 GO；等待发布授权）_
+_Last updated: 2026-07-31（已验收五域候选已同步到本地 main；尚未 push）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -37,9 +37,10 @@ L2W-5 随后新增显式稳定 ID 驱动的只读 CanonRegistry inspection repor
 整合 13 个提交到 `coord/parallel-sprint-integration`。首次验收在 `8207228` 返回 REVISE；
 `a27b363` 关闭超长 `Content-Length`、Forge POSIX mock 和 Windows TCP orderly response
 问题。第二轮发现浏览器死亡后无恢复控件及 320px 死亡态溢出；`a172a82` 关闭两项。
-新的独立复验最终给出 GO、无 P0-P3 findings（DEC-0068）。当前集成工作树干净，代码候选
-`a172a82a0c70812b8ff5429de3ec4b309ad75cd5` 相对 `origin/main=13be791` 为
-ahead/behind `13/0`；尚未合入 `main`、push 或 release。
+新的独立复验最终给出 GO、无 P0-P3 findings（DEC-0068）。代码候选
+`a172a82a0c70812b8ff5429de3ec4b309ad75cd5` 与交接封板 `3dafa23` 已按项目负责人指令
+fast-forward 到 `D:\MUD game kaifa\lore2mud` 的本地 `main`。其后的当前提交只记录这次
+本地同步；`origin/main` 的本地 tracking ref 仍为 `13be791`，尚未 push 或 release。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
@@ -214,16 +215,21 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 没有代码实施或独立验收仍在运行。唯一下一动作是等待项目负责人授权中控将已验收的
-  集成分支 fast-forward 到 `main` 并 push；详见 `NEXT_TASK.md`。
+- 没有代码实施或独立验收仍在运行。已验收候选已进入本地 `main`；唯一下一动作是等待
+  项目负责人明确授权 push，详见 `NEXT_TASK.md`。
 
 ## Blockers
 
-- 技术验收无 blocker。发布门仍需项目负责人明确授权；授权前不得修改 `main` 或 push。
+- 技术验收无 blocker。发布门仍需项目负责人明确授权；授权前不得继续修改 `main` 或 push。
 - 发布前必须刷新远端状态并确认 GitHub `main` 仍为 `13be791`，否则停止并审查新差异。
 
 ## Verification
 
+- Local main integration（2026-07-31）：命令
+  `git merge --ff-only coord/parallel-sprint-integration` 将 `main` 从 `13be791` 线性快进到
+  交接封板 `3dafa23`，
+  没有 merge commit 或冲突。同步后的当前候选复跑为 98 focused tests passed（4 skips）和
+  Windows pytest xdist `1244 passed / 8 skipped`；工作树、fsck 和 diff checks 通过。
 - Parallel integration final GO（2026-07-31，fresh GPT-5.6-sol Codex，DEC-0068）：
   Linux 3.11/3.12 serial 与 3.13 xdist 各 `1248 passed / 3 skipped`；Windows pytest
   serial/xdist 各 `1243 passed / 8 skipped`，unittest 1251 项 `OK / 8 skipped`。
