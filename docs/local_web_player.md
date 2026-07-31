@@ -10,8 +10,9 @@ Start the original public demo with:
 python -m lore2mud web --content examples/original_demo --save-dir saves
 ```
 
-The default URL is `http://127.0.0.1:8765/`. Use `--host` or `--port` only when an
-explicitly different local bind is required.
+The default URL is `http://127.0.0.1:8765/`. `--host` accepts only literal
+loopback addresses (`127.0.0.1` or `::1`); the server is intentionally not a LAN or
+Internet service. `--port` can select another local port.
 
 ## Data flow
 
@@ -26,8 +27,11 @@ browser control
 
 The browser never derives game state from Chinese response text. Structured actions
 cover movement, taking and dropping items, item use, equipment, combat, dialogue,
-shops, recovery, and save/load. The command form is a fallback that delegates to the
-existing `CommandProcessor`; its text is displayed only in the journey log.
+shops, recovery, and save/load. The command form is a read-only fallback that
+delegates to the existing `CommandProcessor`; its text is displayed only in the
+journey log. It accepts only the no-argument `look`, `inventory` / `i`, `quests`,
+`status`, and `help` commands. Mutating actions and save/load use the structured
+controls so their success or failure never depends on parsing rendered Chinese text.
 
 ## API
 
@@ -56,16 +60,29 @@ error event, and an authoritative unchanged snapshot. Malformed HTTP requests re
 
 ## Local security boundary
 
-- The default bind address is `127.0.0.1`; exposing it on another interface is an
-  explicit operator choice.
+- The default bind address is `127.0.0.1`; wildcard and non-loopback binds are
+  rejected.
+- Every request requires exactly one numeric loopback `Host` with the active port
+  (the standard `:80` suffix may be omitted for HTTP port 80). Browser POSTs must
+  use one matching same-origin `Origin`; requests without `Origin` remain supported
+  for explicit local clients and tests.
 - Only three fixed static paths are served. Request paths are never joined to the
   filesystem.
-- Action bodies are limited to 32 KiB and validated for exact fields and primitive
-  types before dispatch.
+- Static files are loaded with `importlib.resources.files()` through the package
+  `Traversable` API, so the same server code works from a source tree, wheel, or
+  zipimport archive. Packaging targets must include `web/static/*.html`, `*.css`,
+  and `*.js`.
+- Action bodies are limited to 32 KiB, require unambiguous framing, and are validated
+  for exact fields and primitive types before dispatch. Socket reads time out after
+  five seconds; decoded JSON is
+  limited to 32 levels and 2048 nodes, with malformed Unicode and non-standard
+  numeric constants rejected as HTTP 400.
 - Responses use a restrictive Content Security Policy, `nosniff`, no referrer, and
   no-store headers.
-- One `PlayerSession` owns one World and serializes actions with a reentrant lock.
-  A successful load replaces both the session World and its command processor.
+- One process serves exactly one unauthenticated `PlayerSession`, which owns one
+  World and serializes actions with a reentrant lock. A successful load replaces
+  both the session World and its command processor. This is a loopback single-player
+  boundary, not a multi-user session model.
 
 The UI uses a responsive three-column game layout on desktop and a single ordered
 flow on mobile. Its route canvas is drawn only from structured room/exit snapshot

@@ -123,15 +123,29 @@ class PlayerSessionTests(unittest.TestCase):
         self.assertTrue(command["ok"])
         self.assertIn("浏览器旅人", command["event"]["message"])
 
-    def test_command_load_keeps_session_and_processor_on_same_world(self) -> None:
-        self.action("save", slot="command_slot")
-        self.action("move", direction="east")
+    def test_command_mutations_are_structured_failures_without_state_change(self) -> None:
+        before = self.session.snapshot()
+        for command in ("go west", "save command_slot", "load missing"):
+            with self.subTest(command=command):
+                result = self.action("command", command=command)
+                self.assertFalse(result["ok"])
+                self.assertEqual(result["event"]["type"], "error")
+                self.assertIn("仅接受无参数只读指令", result["event"]["message"])
+                self.assertEqual(result["snapshot"], before)
 
-        loaded = self.action("command", command="load command_slot")
-        moved = self.action("move", direction="east")
+    def test_command_fallback_accepts_only_reliable_read_only_matrix(self) -> None:
+        for command in ("look", "inventory", "i", "quests", "status", "help"):
+            with self.subTest(command=command):
+                result = self.action("command", command=command)
+                self.assertTrue(result["ok"])
+                self.assertEqual(result["event"]["type"], "command")
+                self.assertTrue(result["event"]["message"])
 
-        self.assertEqual(loaded["snapshot"]["room"]["id"], "room_ember_wharf")
-        self.assertEqual(moved["snapshot"]["room"]["id"], "room_glassgrass_path")
+        for command in ("help status", "shop", "examine room", 'look "'):
+            with self.subTest(command=command):
+                result = self.action("command", command=command)
+                self.assertFalse(result["ok"])
+                self.assertEqual(result["event"]["type"], "error")
 
     def test_action_schema_rejects_unknown_missing_and_extra_fields(self) -> None:
         cases = (

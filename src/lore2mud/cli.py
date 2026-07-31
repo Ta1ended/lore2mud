@@ -72,7 +72,7 @@ def _cmd_validate(args: argparse.Namespace) -> int:
 
 def _cmd_web(args: argparse.Namespace) -> int:
     """Start the local browser player on an explicit bind address."""
-    from lore2mud.web.server import serve
+    from lore2mud.web.server import LocalPlayerConfigurationError, serve
 
     try:
         serve(
@@ -82,7 +82,7 @@ def _cmd_web(args: argparse.Namespace) -> int:
             host=args.host,
             port=args.port,
         )
-    except (OSError, ContentValidationError) as exc:
+    except (OSError, ContentValidationError, LocalPlayerConfigurationError) as exc:
         print(f"[ERROR] 本地界面启动失败：{exc}", file=sys.stderr)
         return 1
     return 0

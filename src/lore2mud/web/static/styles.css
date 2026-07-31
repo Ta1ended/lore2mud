@@ -20,7 +20,7 @@
 
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: 0;
   min-height: 100vh;
   color: var(--ink);
   background: var(--bg);
@@ -215,7 +215,8 @@ input {
 @media (max-width: 430px) {
   .signal-mark { display: none; }
   .topbar { gap: 10px; }
-  h1 { max-width: 130px; }
+  .brand-block > div { min-width: 0; }
+  h1 { max-width: none; white-space: normal; overflow: visible; text-overflow: clip; line-height: 1.25; }
   .save-controls { width: 150px; }
   .action-grid { grid-template-columns: 1fr; }
   .map-key { display: none; }

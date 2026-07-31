@@ -60,6 +60,17 @@ class WebCommandTests(unittest.TestCase):
             main(["web", "--content", str(DEMO_PATH), "--port", "70000"])
         self.assertEqual(caught.exception.code, 2)
 
+    def test_web_rejects_non_loopback_host_before_serving(self) -> None:
+        stderr = io.StringIO()
+        with mock.patch("sys.stderr", stderr):
+            exit_code = main([
+                "web",
+                "--content", str(DEMO_PATH),
+                "--host", "0.0.0.0",
+            ])
+        self.assertEqual(exit_code, 1)
+        self.assertIn("loopback", stderr.getvalue())
+
     def test_explicit_web_is_not_rewritten_to_legacy_play(self) -> None:
         arguments = ["web", "--content", str(DEMO_PATH)]
         self.assertEqual(_inject_legacy_subcommand(arguments), arguments)

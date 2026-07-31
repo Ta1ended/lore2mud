@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, is_dataclass
+import shlex
 from threading import RLock
 from typing import Any, Callable
 
@@ -39,6 +40,14 @@ _ACTION_FIELDS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
     "recover": (frozenset(), frozenset()),
     "command": (frozenset({"command"}), frozenset()),
 }
+_READ_ONLY_COMMANDS = frozenset({
+    "help",
+    "i",
+    "inventory",
+    "look",
+    "quests",
+    "status",
+})
 
 
 class PlayerSession:
@@ -189,9 +198,8 @@ class PlayerSession:
             )
         if action_type == "command":
             command = self._text(action, "command", maximum=500)
+            self._validate_fallback_command(command)
             result = self._commands.execute(command)
-            if self._commands.world is not self._world:
-                self._replace_world(self._commands.world)
             return self._event(
                 "command",
                 {"command": command, "should_quit": result.should_quit},
@@ -204,6 +212,19 @@ class PlayerSession:
             self._json_value(outcome),
             self._message(action_type, outcome),
         )
+
+    @staticmethod
+    def _validate_fallback_command(command: str) -> None:
+        try:
+            parts = shlex.split(command)
+        except ValueError as exc:
+            raise PlayerActionError(f"无法解析指令：{exc}") from exc
+        if len(parts) != 1 or parts[0].casefold() not in _READ_ONLY_COMMANDS:
+            allowed = ", ".join(sorted(_READ_ONLY_COMMANDS))
+            raise PlayerActionError(
+                "命令入口仅接受无参数只读指令："
+                f"{allowed}。其他行动请使用结构化界面控件。"
+            )
 
     def _replace_world(self, world: World) -> None:
         self._world = world
