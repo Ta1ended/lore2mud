@@ -263,6 +263,20 @@ python -m pipeline.narrative_model `
 
 格式与边界见 [Narrative Model Format v1](docs/narrative_model_format.md)。
 
+经过验证的 NarrativeModel 可与显式 RegistryCampaignPlan 编译为确定性的
+CampaignSpec。该步骤保留完整来源记账，并验证有向地点、场景、目标和知识修正，
+但不生成 runtime content pack：
+
+```powershell
+python -m pipeline.campaign `
+  --narrative-model tests/fixtures/campaign/magic_event/narrative_model.json `
+  --campaign-plan tests/fixtures/campaign/magic_event/valid_plan.json `
+  --output C:\Temp\resonance_campaign_spec.json
+```
+
+真实参数、Schema 和语义边界见
+[Campaign Spec Format v1](docs/campaign_spec_format.md)。
+
 ## 生产工作流
 
 Codex 全程使用 GPT-5.6-sol 完成方案、实现、测试、交接和本地提交；项目负责人

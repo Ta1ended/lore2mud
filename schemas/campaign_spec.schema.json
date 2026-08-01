@@ -32,7 +32,7 @@
       "$ref": "registry_campaign_plan.schema.json#/$defs/campaign_scope"
     },
     "start_location_ref": {
-      "$ref": "registry_campaign_plan.schema.json#/$defs/stable_id"
+      "$ref": "registry_campaign_plan.schema.json#/$defs/campaign_start_location_ref"
     },
     "locations": {
       "type": "array",

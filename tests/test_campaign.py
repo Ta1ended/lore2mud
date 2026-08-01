@@ -18,6 +18,7 @@ from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
 from pipeline.campaign import (
+    ApplyKnowledgeCompletion,
     CampaignBuildError,
     CampaignValidationError,
     campaign_spec_to_document,
@@ -206,6 +207,50 @@ class PlanValidationTests(unittest.TestCase):
         with self.assertRaisesRegex(CampaignValidationError, "unknown target"):
             validate_registry_campaign_plan_document(document)
 
+    def test_player_start_must_equal_campaign_root_in_plan_spec_and_compile(
+        self,
+    ) -> None:
+        for document, validator in (
+            (_plan_document(), validate_registry_campaign_plan_document),
+            (_expected_document(), validate_campaign_spec_document),
+        ):
+            with self.subTest(validator=validator.__name__):
+                crown = _item(
+                    document, "locations", "location_id", "location_spire_crown"
+                )
+                crown["exits"] = []
+                player = _item(document, "actors", "actor_id", "actor_mender")
+                player["starting_location_ref"] = "location_spire_crown"
+                with self.assertRaisesRegex(
+                    CampaignValidationError, "starting_location_ref must equal"
+                ):
+                    validator(document)
+
+        plan = _plan()
+        mutated_locations = tuple(
+            replace(location, exits=())
+            if location.location_id == "location_spire_crown"
+            else location
+            for location in plan.locations
+        )
+        mutated_actors = tuple(
+            replace(actor, starting_location_ref="location_spire_crown")
+            if actor.actor_id == "actor_mender"
+            else actor
+            for actor in plan.actors
+        )
+        with self.assertRaisesRegex(
+            CampaignBuildError, "starting_location_ref must equal"
+        ):
+            compile_campaign_spec(
+                _model(),
+                replace(
+                    plan,
+                    locations=mutated_locations,
+                    actors=mutated_actors,
+                ),
+            )
+
     def test_physical_scene_dependencies_require_directed_travel(self) -> None:
         document = _plan_document()
         market = _item(
@@ -329,6 +374,114 @@ class PlanValidationTests(unittest.TestCase):
                 document["objectives"][1]["completion"] = completion
                 with self.assertRaises(CampaignValidationError):
                     validate_registry_campaign_plan_document(document)
+
+    def test_completion_targets_are_owned_by_same_phase_objective_scenes(
+        self,
+    ) -> None:
+        cases = (
+            (
+                "later_phase_knowledge",
+                "magic_event",
+                "objective_hear_echo",
+                {
+                    "kind": "apply_knowledge",
+                    "knowledge_ref": "knowledge_retuning_possible",
+                },
+                "scene_refs",
+            ),
+            (
+                "earlier_phase_knowledge",
+                "magic_event",
+                "objective_hear_echo",
+                {
+                    "kind": "apply_knowledge",
+                    "knowledge_ref": "knowledge_spire_unstable",
+                },
+                "objective phase",
+            ),
+            (
+                "unrelated_branch_knowledge",
+                "urban_investigation",
+                "objective_file_report",
+                {
+                    "kind": "apply_knowledge",
+                    "knowledge_ref": "knowledge_courier_route",
+                },
+                "scene_refs",
+            ),
+            (
+                "unrelated_location",
+                "magic_event",
+                "objective_retune_spire",
+                {
+                    "kind": "reach_location",
+                    "location_ref": "location_market_steps",
+                },
+                "scene_refs",
+            ),
+            (
+                "unrelated_actor",
+                "magic_event",
+                "objective_retune_spire",
+                {"kind": "interact_actor", "actor_ref": "actor_warden"},
+                "scene_refs",
+            ),
+            (
+                "earlier_phase_scene",
+                "magic_event",
+                "objective_hear_echo",
+                {"kind": "complete_scene", "scene_ref": "scene_arrival"},
+                "objective phase",
+            ),
+        )
+        for name, kind, objective_id, completion, expected in cases:
+            with self.subTest(name=name):
+                document = _plan_document(kind)
+                objective = _item(
+                    document, "objectives", "objective_id", objective_id
+                )
+                objective["completion"] = completion
+                with self.assertRaisesRegex(CampaignValidationError, expected):
+                    validate_registry_campaign_plan_document(document)
+
+    def test_apply_knowledge_ownership_is_shared_by_plan_spec_and_compile(
+        self,
+    ) -> None:
+        for document, validator in (
+            (_plan_document(), validate_registry_campaign_plan_document),
+            (_expected_document(), validate_campaign_spec_document),
+        ):
+            with self.subTest(validator=validator.__name__):
+                objective = _item(
+                    document,
+                    "objectives",
+                    "objective_id",
+                    "objective_hear_echo",
+                )
+                objective["completion"] = {
+                    "kind": "apply_knowledge",
+                    "knowledge_ref": "knowledge_retuning_possible",
+                }
+                with self.assertRaisesRegex(CampaignValidationError, "scene_refs"):
+                    validator(document)
+
+        plan = _plan()
+        mutated_objectives = tuple(
+            replace(
+                objective,
+                completion=ApplyKnowledgeCompletion(
+                    kind="apply_knowledge",
+                    knowledge_ref="knowledge_retuning_possible",
+                ),
+            )
+            if objective.objective_id == "objective_hear_echo"
+            else objective
+            for objective in plan.objectives
+        )
+        with self.assertRaisesRegex(CampaignBuildError, "scene_refs"):
+            compile_campaign_spec(
+                _model(), replace(plan, objectives=mutated_objectives)
+            )
 
     def test_correction_requires_retraction_confirmation_and_reachability(self) -> None:
         document = _plan_document("urban_investigation")
@@ -563,6 +716,10 @@ class CompilationTests(unittest.TestCase):
         document = _plan_document()
         parley = _item(document, "scenes", "scene_id", "scene_parley")
         parley["phase_ref"] = "phase_opening"
+        objective = _item(
+            document, "objectives", "objective_id", "objective_hear_echo"
+        )
+        objective["phase_ref"] = "phase_opening"
         plan = validate_registry_campaign_plan_document(document)
         with self.assertRaisesRegex(CampaignBuildError, "does not match"):
             compile_campaign_spec(_model(), plan)
@@ -776,6 +933,39 @@ class SchemaAndGoldenTests(unittest.TestCase):
                 )
                 self.assertFalse(schema["additionalProperties"])
                 Draft202012Validator.check_schema(schema)
+
+    def test_plan_and_spec_schemas_share_start_and_completion_contracts(
+        self,
+    ) -> None:
+        plan_schema = self.schemas["registry_campaign_plan.schema.json"]
+        spec_schema = self.schemas["campaign_spec.schema.json"]
+        self.assertEqual(
+            plan_schema["properties"]["start_location_ref"]["$ref"],
+            "#/$defs/campaign_start_location_ref",
+        )
+        self.assertEqual(
+            spec_schema["properties"]["start_location_ref"]["$ref"],
+            "registry_campaign_plan.schema.json#/$defs/campaign_start_location_ref",
+        )
+        self.assertEqual(
+            spec_schema["properties"]["objectives"]["items"]["$ref"],
+            "registry_campaign_plan.schema.json#/$defs/objective",
+        )
+        self.assertIn(
+            "must equal",
+            plan_schema["$defs"]["campaign_start_location_ref"]["description"],
+        )
+        for completion_name in (
+            "reach_location_completion",
+            "interact_actor_completion",
+            "complete_scene_completion",
+            "apply_knowledge_completion",
+        ):
+            with self.subTest(completion=completion_name):
+                self.assertIn(
+                    "objective",
+                    plan_schema["$defs"][completion_name]["description"],
+                )
 
     def test_all_plan_and_golden_instances_validate_against_schemas(self) -> None:
         plan_validator = Draft202012Validator(

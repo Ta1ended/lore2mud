@@ -51,7 +51,7 @@ The common plan/spec body contains:
 | `campaign_id` | Stable campaign ID. |
 | `adaptation_rationale` | Non-blank rationale for the campaign cut. |
 | `scope` | Complete source use/omission accounting. |
-| `start_location_ref` | Declared reachable-map root. |
+| `start_location_ref` | Authoritative reachable-map and player-entry root. |
 | `locations` | Directed campaign locations and exits. |
 | `actors` | Player, character, and adversary roles. |
 | `scenes` | Phase-bound scene DAG. |
@@ -85,6 +85,12 @@ physical scene, the later location must be reachable from the earlier location
 through directed exits. This check follows transitive scene predecessors, so a
 null-location or internal scene between the physical scenes does not permit an
 impossible traversal.
+
+Exactly one actor is the player, and that actor must have a non-null
+`starting_location_ref` equal to `start_location_ref`. Other actor starting
+locations remain independently declared. This keeps the map root, player entry,
+and first reachable campaign actions under one authority even when exits are
+directed and a remote location has no return route.
 
 An actor has a stable ID, kind, name, description, optional exact source entity
 ref, starting location ref or null, source proposition refs, and adaptation
@@ -127,8 +133,15 @@ Completion is one strict branch:
 { "kind": "apply_knowledge", "knowledge_ref": "correction_cart_report" }
 ```
 
-The tagged target is validated but not executed. It is an IR boundary for a
-separately authorized future runtime compiler.
+Every completion target must resolve through one of the containing objective's
+`scene_refs` in the objective's exact phase. `reach_location` names the location
+of such a scene, `interact_actor` names one of its participants,
+`complete_scene` names the scene directly, and `apply_knowledge` names a
+knowledge beat or correction whose `scene_ref` is that scene. The resolved scene
+still obeys the campaign scene DAG, source phase, and directed travel checks.
+This prevents a later or unrelated scene from completing an earlier objective.
+The tagged target is validated but not executed; it remains an IR boundary for
+a separately authorized future runtime compiler.
 
 ## Knowledge and Corrections
 

@@ -4,6 +4,14 @@
 
 ### Changed
 
+- Tightened CampaignSpec v1 cross-object semantics after its first independent
+  review returned REVISE. The sole player's non-null starting location must now
+  equal the authoritative campaign map root. Every completion kind resolves to
+  an objective-owned scene in the exact objective phase, preventing later or
+  unrelated knowledge, locations, actors, or scenes from completing an earlier
+  objective. Schema descriptions and the format guide state the shared plan/spec
+  rule, and README now lists the real `python -m pipeline.campaign` CLI. Local
+  corrections are verified but await a fresh independent re-review (DEC-0077).
 - Added generic, typed narrative state and bounded declarative dialogue
   conditions to the original public demo. Content packs may define bool, int,
   and enum state in optional `narrative_state.json`; `World` remains the sole
@@ -44,12 +52,13 @@
   self-contained canonical artifact through an atomic alias-protected CLI.
   Two wholly original fixture families cover a magic-like civic event and an
   urban investigation knowledge correction. Local implementation verification
-  passed 41 focused tests with 2 Windows symlink-permission skips, 1357 full
-  unittest tests with 12 skips, and 1345 full pytest tests with 12 skips, plus
+  passed 45 focused tests with 2 Windows symlink-permission skips, 1361 full
+  unittest tests with 12 skips, and 1349 full pytest tests with 12 skips, plus
   Draft 2020-12 Schema/fixture validation, Ruff, Pyright, compileall,
   original-demo validation, repository-external golden CLI bytes, history
-  safety, fsck, and whitespace checks. Independent acceptance remains pending
-  (DEC-0076).
+  safety, fsck, and whitespace checks. The first independent review returned
+  REVISE; its two P2 semantic findings and P3 README finding are closed locally,
+  with fresh independent re-review still pending (DEC-0076, DEC-0077).
 - Added deterministic `NarrativeModel v1` compilation from a validated
   CanonRegistry plus an explicit human NarrativePlan. The public pipeline
   validates exact claim use/omission accounting, scoped source snapshots,

@@ -1039,6 +1039,34 @@ def _scene_is_between(
     return after_earlier and by_later
 
 
+def _validate_objective_completion_scenes(
+    objective: CampaignObjective,
+    candidate_scene_refs: set[str],
+    scene_by_id: dict[str, CampaignScene],
+    target_label: str,
+    issues: list[str],
+) -> None:
+    owned_candidates = sorted(candidate_scene_refs & set(objective.scene_refs))
+    if not owned_candidates:
+        issues.append(
+            f"objective {objective.objective_id} {target_label} must resolve to a "
+            "scene in its scene_refs"
+        )
+        return
+
+    same_phase_candidates = [
+        scene_ref
+        for scene_ref in owned_candidates
+        if scene_by_id.get(scene_ref) is not None
+        and scene_by_id[scene_ref].phase_ref == objective.phase_ref
+    ]
+    if not same_phase_candidates:
+        issues.append(
+            f"objective {objective.objective_id} {target_label} must resolve to a "
+            f"scene in objective phase {objective.phase_ref}"
+        )
+
+
 def _canonicalize_and_validate_campaign(
     scope: CampaignScope,
     start_location_ref: str,
@@ -1104,6 +1132,16 @@ def _canonicalize_and_validate_campaign(
                 f"actor {actor.actor_id} references unknown starting location: "
                 f"{actor.starting_location_ref}"
             )
+    players = [actor for actor in actors if actor.kind == "player"]
+    if (
+        len(players) == 1
+        and players[0].starting_location_ref != start_location_ref
+    ):
+        issues.append(
+            f"player actor {players[0].actor_id} starting_location_ref must equal "
+            f"start_location_ref: {players[0].starting_location_ref!r} != "
+            f"{start_location_ref!r}"
+        )
 
     scene_predecessors = {
         value.scene_id: value.predecessor_scene_refs for value in scenes
@@ -1295,11 +1333,35 @@ def _canonicalize_and_validate_campaign(
                     f"objective {objective.objective_id} completion references unknown "
                     f"location: {completion.location_ref}"
                 )
+            else:
+                _validate_objective_completion_scenes(
+                    objective,
+                    {
+                        scene.scene_id
+                        for scene in scenes
+                        if scene.location_ref == completion.location_ref
+                    },
+                    scene_by_id,
+                    f"reach_location target {completion.location_ref}",
+                    issues,
+                )
         elif isinstance(completion, InteractActorCompletion):
             if completion.actor_ref not in actor_by_id:
                 issues.append(
                     f"objective {objective.objective_id} completion references unknown "
                     f"actor: {completion.actor_ref}"
+                )
+            else:
+                _validate_objective_completion_scenes(
+                    objective,
+                    {
+                        scene.scene_id
+                        for scene in scenes
+                        if completion.actor_ref in scene.participating_actor_refs
+                    },
+                    scene_by_id,
+                    f"interact_actor target {completion.actor_ref}",
+                    issues,
                 )
         elif isinstance(completion, CompleteSceneCompletion):
             if completion.scene_ref not in scene_by_id:
@@ -1307,16 +1369,33 @@ def _canonicalize_and_validate_campaign(
                     f"objective {objective.objective_id} completion references unknown "
                     f"scene: {completion.scene_ref}"
                 )
-            elif completion.scene_ref not in objective.scene_refs:
-                issues.append(
-                    f"objective {objective.objective_id} complete_scene target must appear "
-                    "in its scene_refs"
+            else:
+                _validate_objective_completion_scenes(
+                    objective,
+                    {completion.scene_ref},
+                    scene_by_id,
+                    f"complete_scene target {completion.scene_ref}",
+                    issues,
                 )
         elif isinstance(completion, ApplyKnowledgeCompletion):
             if completion.knowledge_ref not in all_knowledge_ids:
                 issues.append(
                     f"objective {objective.objective_id} completion references unknown "
                     f"knowledge transition: {completion.knowledge_ref}"
+                )
+            else:
+                knowledge = knowledge_by_id.get(completion.knowledge_ref)
+                transition_scene_ref = (
+                    knowledge.scene_ref
+                    if knowledge is not None
+                    else correction_by_id[completion.knowledge_ref].scene_ref
+                )
+                _validate_objective_completion_scenes(
+                    objective,
+                    {transition_scene_ref},
+                    scene_by_id,
+                    f"apply_knowledge target {completion.knowledge_ref}",
+                    issues,
                 )
     unbound_scenes = sorted(set(scene_by_id) - bound_scenes)
     if unbound_scenes:

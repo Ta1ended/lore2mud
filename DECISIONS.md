@@ -1946,3 +1946,42 @@
   authorize push/release.
 - Supersedes: The stale post-DEC-0075 pause boundary in current handoff files only;
   it does not supersede NarrativeModel, GEN-1, or their acceptance decisions.
+
+## DEC-0077: CampaignSpec v1 independent-review corrections - re-review pending
+
+- Date: 2026-08-02
+- Status: Local REVISE corrections verified; fresh independent acceptance pending.
+- Context: A fresh GPT-5.6-sol/max read-only review of
+  `812a00fe4412f4fc7068ac2e188c5c26d0a03157..8f3e53452ccf12ce6e6b262f64f85fcd0011d76b`
+  returned REVISE. It found two P2 semantic gaps: an `apply_knowledge` completion
+  needed only an existing knowledge/correction ID and could therefore complete an
+  objective from an unrelated or later scene; and `start_location_ref` could differ
+  from the sole player's starting location, so root reachability did not prove the
+  player's first required scene was reachable. It also found a P3 README omission
+  for the campaign compiler CLI and format link.
+- Decision: The sole player's `starting_location_ref` is required to be non-null
+  and exactly equal to authoritative `start_location_ref`. Completion resolution is
+  uniform across all four kinds: the target location must host, the actor must
+  participate in, the scene must be, or the knowledge transition must occur in a
+  scene listed by the containing objective and in that objective's exact phase.
+  Existing scene DAG, source-order, and directed-travel checks remain authoritative.
+  Both plan and spec share this semantic validator and Schema definitions; the
+  README exposes the exact `python -m pipeline.campaign` arguments and links the
+  format guide. No runtime, save, Web, Forge, packaging, dependency, or private
+  material scope is added.
+- Evidence: Public mutation regressions cover later and earlier phase knowledge,
+  unrelated same-graph locations and actors, an earlier completion scene, and a
+  market-root/crown-player/no-return route whose first scene remains at the base.
+  Plan, self-contained spec, and typed compile entry points reject the relevant
+  mutations. Local verification passed 45 focused campaign tests with 2 Windows
+  symlink-permission skips, 1361 unittest tests with 12 skips, and 1349 pytest tests
+  with 12 skips. Ruff, both Pyright entry points, compileall, Draft 2020-12 Schema
+  meta-validation and fixtures, original-demo validation from the candidate source
+  path, repository-external golden CLI bytes, history safety, fsck, and whitespace
+  checks passed.
+- Consequences: This correction is not a GO. A new GPT-5.6-sol/max read-only task
+  must review `812a00f..HEAD` findings-first and return explicit GO/REVISE before
+  any integration. It does not authorize modifying shared `main`, push, release,
+  private-material access, or the next public runtime slice.
+- Supersedes: DEC-0076's claim that first independent acceptance was merely pending;
+  it does not supersede the CampaignSpec v1 contract or any prior accepted slice.

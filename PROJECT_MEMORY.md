@@ -24,10 +24,16 @@ stale.
   validated NarrativeModel plus an exact-SHA-bound human plan into a canonical,
   self-contained campaign IR with complete source accounting, directed map and
   scene constraints, objective DAG/exclusion checks, and ordered knowledge
-  correction records. It does not emit runtime content or modify `src/`, save,
-  Web, Forge, packaging, dependencies, or private material. Local gates are
-  green; independent acceptance is pending. The only next action is a fresh
-  read-only review of `812a00f..HEAD`.
+  correction records. The first independent review of implementation commit
+  `8f3e53452ccf12ce6e6b262f64f85fcd0011d76b` returned REVISE with two P2
+  semantic gaps and one P3 README omission. Current HEAD requires the sole
+  player's start to equal the campaign root and requires every completion target,
+  including knowledge transitions, to resolve through an objective-owned scene
+  in the objective phase; README now exposes the real campaign CLI. The fixes
+  have local regression, full-suite, Schema, golden CLI, quality, and safety
+  evidence, but still require a fresh read-only re-review of `812a00f..HEAD`.
+  The branch does not emit runtime content or modify `src/`, save, Web, Forge,
+  packaging, dependencies, or private material.
 - Public integration candidate `coord/public-integration-20260801` is at
   `dcd9bb0b21eb667061e2694a462f63e252636545`, merging the independently accepted
   public-only GEN-1 candidate `e7cba52fcfdf0c04458fca5fb9b516ebc762f4bc` and
