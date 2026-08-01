@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-08-01（GEN-1 与 NarrativeModel v1 已分别独立 GO；最终整合已 GO）_
+_Last updated: 2026-08-02（CampaignSpec v1 本地候选已验证；独立验收 pending）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -81,6 +81,20 @@ unittest（9 项平台或权限跳过）、1307 项 pytest（9 项同类跳过�
 compileall、original_demo 校验、仓库外 CLI 黄金字节、历史安全扫描、fsck 和两层 diff
 检查全部通过。该交接封板已按本轮授权 fast-forward 到本地 `main`；不自动 push、release，
 也不开始后续 lane 或访问任何私有素材。
+
+在项目负责人新的下游私人 Demo Goal 授权下，首个后续公共切片已在隔离分支
+`workstream/campaign-spec-v1` 上从 `812a00f` 实施。`pipeline.campaign` 以验证后的
+NarrativeModel 和显式人工计划为输入，要求计划绑定该模型的规范 JSON SHA-256，并输出
+自包含、确定性的 CampaignSpec v1。IR 覆盖多地点、actor、scene、objective、knowledge
+与 correction，严格关闭 entity/perspective/proposition/beat 使用或有理由省略记账，验证
+有向地点/场景可达性、source beat 顺序、目标 DAG 与互斥祖先、知识轨迹全序、规范字节和
+原子别名保护。两个公共 fixture 完全原创，分别覆盖魔法式事件和都市调查式知识修正。
+该切片不生成 runtime content pack，也未修改 `src/`、save、Web、Forge、packaging、依赖
+或任何私有资料。实现者本地证据为 41 项专项（2 项 Windows 符号链接权限跳过）、1357 项
+full unittest（12 项条件跳过）、1345 项 full pytest（12 项同类跳过）、两份 Draft
+2020-12 Schema 与四份 fixture 实例、Ruff、Pyright、compileall、original-demo、仓库外
+golden CLI、history safety、fsck 和 diff checks 全部通过。独立验收仍为 pending，不能据此
+整合到公共候选或声明 GO（DEC-0076）。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。

@@ -1912,3 +1912,37 @@
   push only after confirming ancestry. This acceptance does not authorize a
   release, force push, private-material access, or any subsequent lane.
 - Supersedes: DEC-0074's final-integration-pending state only.
+
+## DEC-0076: CampaignSpec v1 deterministic campaign IR - independent acceptance pending
+
+- Date: 2026-08-02
+- Status: Local implementation and verification complete; fresh independent acceptance pending.
+- Context: The accepted NarrativeModel v1 remains a standalone narrative artifact.
+  A downstream private Demo requires a public-safe, genre-neutral boundary that can
+  represent a multi-location, multi-actor, multi-scene, multi-objective campaign
+  before runtime content, saves, Web, and Forge are expanded.
+- Decision: Add `RegistryCampaignPlan v1` and `CampaignSpec v1` as a pure
+  deterministic compiler in `pipeline.campaign`. A plan must bind the exact
+  canonical NarrativeModel SHA-256 and account for every model entity,
+  perspective, proposition, and beat as an exact use or one reasoned omission.
+  Campaign bindings validate a reachable directed location graph, source-ordered
+  scene DAG with physically traversable locations, objective DAGs whose mutual
+  exclusions cannot make prerequisite closure impossible, exact disclosure
+  projection, totally ordered knowledge tracks, and explicit adaptation-only
+  correction records. The spec embeds the validated NarrativeModel snapshot and
+  is written as canonical UTF-8 JSON through the existing atomic alias-resistant
+  pattern. Both public fixtures are wholly original and cover different genres.
+- Evidence: On baseline `812a00fe4412f4fc7068ac2e188c5c26d0a03157`,
+  41 focused campaign tests passed with 2 Windows symlink-permission skips;
+  1357 full unittest tests passed with 12 skips; full pytest reported
+  1345 passed / 12 skipped. Ruff, both Pyright checks, compileall, Draft 2020-12
+  meta-validation and all four plan/spec fixture instances, original-demo
+  validation, repository-external golden CLI bytes, history safety, fsck, and
+  whitespace checks passed.
+- Consequences: This is not an independent GO. A fresh GPT-5.6-sol/max read-only
+  task must inspect `812a00f..HEAD` and return GO/REVISE before integration.
+  The slice does not generate runtime content, modify `src/`, save, Web, Forge,
+  packaging or dependencies, access private material, change shared `main`, or
+  authorize push/release.
+- Supersedes: The stale post-DEC-0075 pause boundary in current handoff files only;
+  it does not supersede NarrativeModel, GEN-1, or their acceptance decisions.

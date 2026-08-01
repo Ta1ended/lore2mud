@@ -35,6 +35,21 @@
 
 ### Added
 
+- Added public `RegistryCampaignPlan v1` and `CampaignSpec v1` contracts for a
+  deterministic, genre-neutral campaign IR. The compiler binds an explicit
+  human plan to the exact canonical NarrativeModel SHA-256, closes use/omission
+  accounting for entities, perspectives, propositions, and beats, validates
+  directed location and scene traversal, objective DAG/exclusion consistency,
+  ordered knowledge transitions and explicit corrections, and emits a
+  self-contained canonical artifact through an atomic alias-protected CLI.
+  Two wholly original fixture families cover a magic-like civic event and an
+  urban investigation knowledge correction. Local implementation verification
+  passed 41 focused tests with 2 Windows symlink-permission skips, 1357 full
+  unittest tests with 12 skips, and 1345 full pytest tests with 12 skips, plus
+  Draft 2020-12 Schema/fixture validation, Ruff, Pyright, compileall,
+  original-demo validation, repository-external golden CLI bytes, history
+  safety, fsck, and whitespace checks. Independent acceptance remains pending
+  (DEC-0076).
 - Added deterministic `NarrativeModel v1` compilation from a validated
   CanonRegistry plus an explicit human NarrativePlan. The public pipeline
   validates exact claim use/omission accounting, scoped source snapshots,

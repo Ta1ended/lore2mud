@@ -1,0 +1,399 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/registry_campaign_plan.schema.json",
+  "title": "Registry Campaign Plan v1",
+  "description": "An explicit public-safe plan for compiling a NarrativeModel into a deterministic campaign IR.",
+  "type": "object",
+  "required": [
+    "format_version",
+    "campaign_id",
+    "source_narrative_model",
+    "adaptation_rationale",
+    "scope",
+    "start_location_ref",
+    "locations",
+    "actors",
+    "scenes",
+    "objectives",
+    "knowledge_beats",
+    "knowledge_corrections"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": { "type": "integer", "const": 1 },
+    "campaign_id": { "$ref": "#/$defs/stable_id" },
+    "source_narrative_model": { "$ref": "#/$defs/source_narrative_model_ref" },
+    "adaptation_rationale": { "$ref": "#/$defs/non_blank" },
+    "scope": { "$ref": "#/$defs/campaign_scope" },
+    "start_location_ref": { "$ref": "#/$defs/stable_id" },
+    "locations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/location" }
+    },
+    "actors": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/actor" }
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/scene" }
+    },
+    "objectives": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/objective" }
+    },
+    "knowledge_beats": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/knowledge_beat" }
+    },
+    "knowledge_corrections": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/knowledge_correction" }
+    }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "non_blank": {
+      "type": "string",
+      "pattern": ".*\\S.*"
+    },
+    "nullable_stable_id": {
+      "oneOf": [
+        { "$ref": "#/$defs/stable_id" },
+        { "type": "null" }
+      ]
+    },
+    "stable_id_array": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stable_id" }
+    },
+    "source_narrative_model_ref": {
+      "type": "object",
+      "required": ["format_version", "model_id", "narrative_model_sha256"],
+      "additionalProperties": false,
+      "properties": {
+        "format_version": { "type": "integer", "const": 1 },
+        "model_id": { "$ref": "#/$defs/stable_id" },
+        "narrative_model_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      }
+    },
+    "entity_omission": {
+      "type": "object",
+      "required": ["entity_ref", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "entity_ref": { "$ref": "#/$defs/stable_id" },
+        "reason": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "perspective_omission": {
+      "type": "object",
+      "required": ["perspective_ref", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "perspective_ref": { "$ref": "#/$defs/stable_id" },
+        "reason": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "proposition_omission": {
+      "type": "object",
+      "required": ["proposition_ref", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "proposition_ref": { "$ref": "#/$defs/stable_id" },
+        "reason": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "beat_omission": {
+      "type": "object",
+      "required": ["beat_ref", "reason"],
+      "additionalProperties": false,
+      "properties": {
+        "beat_ref": { "$ref": "#/$defs/stable_id" },
+        "reason": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "campaign_scope": {
+      "type": "object",
+      "required": [
+        "entity_uses",
+        "entity_omissions",
+        "perspective_uses",
+        "perspective_omissions",
+        "proposition_uses",
+        "proposition_omissions",
+        "beat_uses",
+        "beat_omissions"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "entity_uses": { "$ref": "#/$defs/stable_id_array" },
+        "entity_omissions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/entity_omission" }
+        },
+        "perspective_uses": { "$ref": "#/$defs/stable_id_array" },
+        "perspective_omissions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/perspective_omission" }
+        },
+        "proposition_uses": { "$ref": "#/$defs/stable_id_array" },
+        "proposition_omissions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/proposition_omission" }
+        },
+        "beat_uses": { "$ref": "#/$defs/stable_id_array" },
+        "beat_omissions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/beat_omission" }
+        }
+      }
+    },
+    "exit": {
+      "type": "object",
+      "required": ["direction", "name", "target_location_ref"],
+      "additionalProperties": false,
+      "properties": {
+        "direction": { "$ref": "#/$defs/non_blank" },
+        "name": { "$ref": "#/$defs/non_blank" },
+        "target_location_ref": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "location": {
+      "type": "object",
+      "required": [
+        "location_id",
+        "name",
+        "description",
+        "source_entity_refs",
+        "source_proposition_refs",
+        "adaptation_notes",
+        "exits"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "location_id": { "$ref": "#/$defs/stable_id" },
+        "name": { "$ref": "#/$defs/non_blank" },
+        "description": { "$ref": "#/$defs/non_blank" },
+        "source_entity_refs": { "$ref": "#/$defs/stable_id_array" },
+        "source_proposition_refs": { "$ref": "#/$defs/stable_id_array" },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" },
+        "exits": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/exit" }
+        }
+      }
+    },
+    "actor": {
+      "type": "object",
+      "required": [
+        "actor_id",
+        "kind",
+        "name",
+        "description",
+        "source_entity_ref",
+        "starting_location_ref",
+        "source_proposition_refs",
+        "adaptation_notes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "actor_id": { "$ref": "#/$defs/stable_id" },
+        "kind": { "enum": ["player", "character", "adversary"] },
+        "name": { "$ref": "#/$defs/non_blank" },
+        "description": { "$ref": "#/$defs/non_blank" },
+        "source_entity_ref": { "$ref": "#/$defs/nullable_stable_id" },
+        "starting_location_ref": { "$ref": "#/$defs/nullable_stable_id" },
+        "source_proposition_refs": { "$ref": "#/$defs/stable_id_array" },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "scene": {
+      "type": "object",
+      "required": [
+        "scene_id",
+        "kind",
+        "phase_ref",
+        "location_ref",
+        "participating_actor_refs",
+        "narrative_beat_refs",
+        "predecessor_scene_refs",
+        "source_proposition_refs",
+        "adaptation_notes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "scene_id": { "$ref": "#/$defs/stable_id" },
+        "kind": {
+          "enum": [
+            "exploration",
+            "conversation",
+            "conflict",
+            "ritual",
+            "internal",
+            "revelation"
+          ]
+        },
+        "phase_ref": { "$ref": "#/$defs/stable_id" },
+        "location_ref": { "$ref": "#/$defs/nullable_stable_id" },
+        "participating_actor_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stable_id" }
+        },
+        "narrative_beat_refs": { "$ref": "#/$defs/stable_id_array" },
+        "predecessor_scene_refs": { "$ref": "#/$defs/stable_id_array" },
+        "source_proposition_refs": { "$ref": "#/$defs/stable_id_array" },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "reach_location_completion": {
+      "type": "object",
+      "required": ["kind", "location_ref"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "reach_location" },
+        "location_ref": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "interact_actor_completion": {
+      "type": "object",
+      "required": ["kind", "actor_ref"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "interact_actor" },
+        "actor_ref": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "complete_scene_completion": {
+      "type": "object",
+      "required": ["kind", "scene_ref"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "complete_scene" },
+        "scene_ref": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "apply_knowledge_completion": {
+      "type": "object",
+      "required": ["kind", "knowledge_ref"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "apply_knowledge" },
+        "knowledge_ref": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "completion": {
+      "oneOf": [
+        { "$ref": "#/$defs/reach_location_completion" },
+        { "$ref": "#/$defs/interact_actor_completion" },
+        { "$ref": "#/$defs/complete_scene_completion" },
+        { "$ref": "#/$defs/apply_knowledge_completion" }
+      ]
+    },
+    "objective": {
+      "type": "object",
+      "required": [
+        "objective_id",
+        "title",
+        "description",
+        "phase_ref",
+        "scene_refs",
+        "predecessor_objective_refs",
+        "mutually_exclusive_objective_refs",
+        "source_proposition_refs",
+        "completion",
+        "adaptation_notes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "objective_id": { "$ref": "#/$defs/stable_id" },
+        "title": { "$ref": "#/$defs/non_blank" },
+        "description": { "$ref": "#/$defs/non_blank" },
+        "phase_ref": { "$ref": "#/$defs/stable_id" },
+        "scene_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "$ref": "#/$defs/stable_id" }
+        },
+        "predecessor_objective_refs": { "$ref": "#/$defs/stable_id_array" },
+        "mutually_exclusive_objective_refs": { "$ref": "#/$defs/stable_id_array" },
+        "source_proposition_refs": { "$ref": "#/$defs/stable_id_array" },
+        "completion": { "$ref": "#/$defs/completion" },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "knowledge_beat": {
+      "type": "object",
+      "required": [
+        "knowledge_id",
+        "scene_ref",
+        "actor_ref",
+        "source_beat_ref",
+        "perspective_ref",
+        "proposition_ref",
+        "state",
+        "adaptation_notes"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "knowledge_id": { "$ref": "#/$defs/stable_id" },
+        "scene_ref": { "$ref": "#/$defs/stable_id" },
+        "actor_ref": { "$ref": "#/$defs/stable_id" },
+        "source_beat_ref": { "$ref": "#/$defs/stable_id" },
+        "perspective_ref": { "$ref": "#/$defs/stable_id" },
+        "proposition_ref": { "$ref": "#/$defs/stable_id" },
+        "state": { "enum": ["heard", "suspected", "confirmed", "retracted"] },
+        "adaptation_notes": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "knowledge_correction": {
+      "type": "object",
+      "required": [
+        "correction_id",
+        "scene_ref",
+        "actor_ref",
+        "state",
+        "corrects_knowledge_ref",
+        "earlier_proposition_ref",
+        "later_proposition_ref",
+        "rationale"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "correction_id": { "$ref": "#/$defs/stable_id" },
+        "scene_ref": { "$ref": "#/$defs/stable_id" },
+        "actor_ref": { "$ref": "#/$defs/stable_id" },
+        "state": { "const": "corrected" },
+        "corrects_knowledge_ref": { "$ref": "#/$defs/stable_id" },
+        "earlier_proposition_ref": { "$ref": "#/$defs/stable_id" },
+        "later_proposition_ref": { "$ref": "#/$defs/stable_id" },
+        "rationale": { "$ref": "#/$defs/non_blank" }
+      }
+    }
+  }
+}

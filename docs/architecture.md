@@ -167,6 +167,22 @@ original_demo 0.6.0 或 save v7。
 `source_chapters` 提供追溯证据。`adaptation_notes` 解释游戏化选择。运行引擎
 只依赖游戏内容层，因此公共仓库和原创内容包不需要任何小说资料。
 
+### 公共 campaign IR
+
+`pipeline.narrative_model` 生成的已验证 `NarrativeModel v1` 可与人工编写的
+`RegistryCampaignPlan v1` 交给 `pipeline.campaign`，纯编译成自包含、确定性的
+`CampaignSpec v1`。计划同时绑定模型稳定 ID 与规范 JSON 字节的 SHA-256；输出内嵌完整
+NarrativeModel 快照，并对实体、视角、命题和 beat 做精确使用/遗漏核算。
+
+CampaignSpec 描述有向地点、角色、场景 DAG、目标 DAG、严格 tagged completion 目标以及
+知识披露/修正 IR。编译器检查地点可达性、物理场景间的有向通行、source beat 与 scene 的
+阶段/前驱顺序、目标互斥与前驱可满足性，以及同一知识轨迹在 source/scene 两张 DAG 中的
+全序关系。`corrected` 只存在于 adaptation-only 修正对象，不改写 NarrativeModel v1 的
+披露枚举或内嵌快照。
+
+该 artifact 尚不是运行时内容包。`src/`、World、存档、Web、玩家 CLI 和 Forge 不读取或
+执行 CampaignSpec；任何后续 materialization 必须作为独立授权切片定义版本和验证边界。
+
 ## 对话系统
 
 对话由内容定义和运行时状态两层构成：

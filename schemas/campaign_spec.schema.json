@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/campaign_spec.schema.json",
+  "title": "Campaign Spec v1",
+  "description": "A deterministic, self-contained campaign IR with an exact NarrativeModel snapshot.",
+  "type": "object",
+  "required": [
+    "format_version",
+    "campaign_id",
+    "source_narrative_model",
+    "adaptation_rationale",
+    "scope",
+    "start_location_ref",
+    "locations",
+    "actors",
+    "scenes",
+    "objectives",
+    "knowledge_beats",
+    "knowledge_corrections"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "format_version": { "type": "integer", "const": 1 },
+    "campaign_id": {
+      "$ref": "registry_campaign_plan.schema.json#/$defs/stable_id"
+    },
+    "source_narrative_model": { "$ref": "narrative_model.schema.json" },
+    "adaptation_rationale": {
+      "$ref": "registry_campaign_plan.schema.json#/$defs/non_blank"
+    },
+    "scope": {
+      "$ref": "registry_campaign_plan.schema.json#/$defs/campaign_scope"
+    },
+    "start_location_ref": {
+      "$ref": "registry_campaign_plan.schema.json#/$defs/stable_id"
+    },
+    "locations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "registry_campaign_plan.schema.json#/$defs/location"
+      }
+    },
+    "actors": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "registry_campaign_plan.schema.json#/$defs/actor" }
+    },
+    "scenes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "$ref": "registry_campaign_plan.schema.json#/$defs/scene" }
+    },
+    "objectives": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "registry_campaign_plan.schema.json#/$defs/objective"
+      }
+    },
+    "knowledge_beats": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "registry_campaign_plan.schema.json#/$defs/knowledge_beat"
+      }
+    },
+    "knowledge_corrections": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "$ref": "registry_campaign_plan.schema.json#/$defs/knowledge_correction"
+      }
+    }
+  }
+}

@@ -18,6 +18,16 @@ stale.
 
 ## Current checkpoint
 
+- The isolated public branch `workstream/campaign-spec-v1` starts at verified
+  baseline `812a00fe4412f4fc7068ac2e188c5c26d0a03157` and contains the local
+  `RegistryCampaignPlan v1` / `CampaignSpec v1` implementation. It compiles a
+  validated NarrativeModel plus an exact-SHA-bound human plan into a canonical,
+  self-contained campaign IR with complete source accounting, directed map and
+  scene constraints, objective DAG/exclusion checks, and ordered knowledge
+  correction records. It does not emit runtime content or modify `src/`, save,
+  Web, Forge, packaging, dependencies, or private material. Local gates are
+  green; independent acceptance is pending. The only next action is a fresh
+  read-only review of `812a00f..HEAD`.
 - Public integration candidate `coord/public-integration-20260801` is at
   `dcd9bb0b21eb667061e2694a462f63e252636545`, merging the independently accepted
   public-only GEN-1 candidate `e7cba52fcfdf0c04458fca5fb9b516ebc762f4bc` and
@@ -39,12 +49,12 @@ stale.
   connecting to runtime/save/Web/Forge. It records exact claim use or reasoned
   omission accounting, including valid all-omission plans with an empty required
   `claim_uses` array. The clean re-review accepted `8ddc89c` GO.
-- Repository: `lore2mud`; local `main` and its local tracking `origin/main` were
-  observed at `e6070bd7ba31e0a5e45dfdf4e213b51e9f3f0ca1` before this integration.
-  No remote was queried in this integration round. Before publishing, run
-  `git fetch origin`, confirm the refreshed `origin/main` is an ancestor of local
-  `main`, and then let the project owner choose a normal `git push origin main`.
-  If the remote advanced, stop rather than force-pushing.
+- Repository: `lore2mud`; on 2026-08-01 the shared local `main`, local tracking
+  `origin/main`, and live GitHub `main` were all verified at
+  `812a00fe4412f4fc7068ac2e188c5c26d0a03157`, with ahead/behind `0/0`.
+  The campaign branch is isolated and does not modify `main` or any remote.
+  Recheck live ancestry before any later integration or publish action, and
+  stop rather than force-pushing if the remote advances.
 - GitHub Actions run `30642616101` passed every Python 3.11/3.12/3.13 job but
   failed `windows-candidate` while its PyInstaller executable printed the Chinese
   validation-success line through redirected `cp1252` output. DEC-0069 records the

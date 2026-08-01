@@ -1,0 +1,315 @@
+{
+  "format_version": 1,
+  "campaign_id": "depot_investigation_campaign",
+  "source_narrative_model": {
+    "format_version": 1,
+    "model_id": "depot_investigation_model",
+    "narrative_model_sha256": "a6887f7ab4231637c16a39de9edaf869715a74160ebb8a13bf7ee85169660ea7"
+  },
+  "adaptation_rationale": "Represent an urban investigation as a source-traceable sequence of rumor, verification, correction, and player choice.",
+  "scope": {
+    "entity_uses": [
+      "entity_courier",
+      "entity_depot_records",
+      "entity_investigator",
+      "entity_shift_witness"
+    ],
+    "entity_omissions": [],
+    "perspective_uses": [
+      "perspective_courier",
+      "perspective_investigator",
+      "perspective_records",
+      "perspective_witness"
+    ],
+    "perspective_omissions": [],
+    "proposition_uses": [
+      "prop_alarm_preceded_departure",
+      "prop_cart_left_east",
+      "prop_cart_remained_locked",
+      "prop_courier_used_west_ramp",
+      "prop_investigator_assigned"
+    ],
+    "proposition_omissions": [],
+    "beat_uses": [
+      "beat_records",
+      "beat_resolution",
+      "beat_rumor"
+    ],
+    "beat_omissions": []
+  },
+  "start_location_ref": "location_depot_concourse",
+  "locations": [
+    {
+      "location_id": "location_depot_concourse",
+      "name": "Depot Concourse",
+      "description": "Closed kiosks face a loading alarm panel and the east tunnel gate.",
+      "source_entity_refs": ["entity_depot_records"],
+      "source_proposition_refs": ["prop_alarm_preceded_departure"],
+      "adaptation_notes": "The source records anchor an original navigable depot location.",
+      "exits": [
+        {
+          "direction": "inside",
+          "name": "Records office",
+          "target_location_ref": "location_records_office"
+        }
+      ]
+    },
+    {
+      "location_id": "location_records_office",
+      "name": "Records Office",
+      "description": "Key seals, access logs, and a wall clock share one narrow counter.",
+      "source_entity_refs": [],
+      "source_proposition_refs": ["prop_cart_remained_locked"],
+      "adaptation_notes": "This original inspection site carries the correction evidence.",
+      "exits": [
+        {
+          "direction": "out",
+          "name": "Depot concourse",
+          "target_location_ref": "location_depot_concourse"
+        },
+        {
+          "direction": "west",
+          "name": "Service ramp",
+          "target_location_ref": "location_west_ramp"
+        }
+      ]
+    },
+    {
+      "location_id": "location_west_ramp",
+      "name": "West Service Ramp",
+      "description": "Painted cycle marks pass beneath a row of loading lamps.",
+      "source_entity_refs": [],
+      "source_proposition_refs": ["prop_courier_used_west_ramp"],
+      "adaptation_notes": "The route proposition becomes an original branch location.",
+      "exits": [
+        {
+          "direction": "east",
+          "name": "Records office",
+          "target_location_ref": "location_records_office"
+        }
+      ]
+    }
+  ],
+  "actors": [
+    {
+      "actor_id": "actor_bicycle_courier",
+      "kind": "adversary",
+      "name": "Bicycle Courier",
+      "description": "A guarded courier waits beside a cargo bicycle at the service ramp.",
+      "source_entity_ref": "entity_courier",
+      "starting_location_ref": "location_west_ramp",
+      "source_proposition_refs": ["prop_courier_used_west_ramp"],
+      "adaptation_notes": "Adversary identifies investigative opposition without prescribing combat."
+    },
+    {
+      "actor_id": "actor_investigator",
+      "kind": "player",
+      "name": "Municipal Investigator",
+      "description": "A timeline specialist carrying blank evidence cards and a mechanical pencil.",
+      "source_entity_ref": "entity_investigator",
+      "starting_location_ref": "location_depot_concourse",
+      "source_proposition_refs": ["prop_investigator_assigned"],
+      "adaptation_notes": "The reviewed assignment becomes the sole player role."
+    },
+    {
+      "actor_id": "actor_shift_witness",
+      "kind": "character",
+      "name": "Shift Witness",
+      "description": "A tired kiosk attendant is willing to compare memory with the access log.",
+      "source_entity_ref": "entity_shift_witness",
+      "starting_location_ref": "location_depot_concourse",
+      "source_proposition_refs": ["prop_cart_left_east"],
+      "adaptation_notes": "The witness remains a source-backed reporter whose belief can change."
+    }
+  ],
+  "scenes": [
+    {
+      "scene_id": "scene_rumor",
+      "kind": "conversation",
+      "phase_ref": "phase_intake",
+      "location_ref": "location_depot_concourse",
+      "participating_actor_refs": [
+        "actor_investigator",
+        "actor_shift_witness"
+      ],
+      "narrative_beat_refs": ["beat_rumor"],
+      "predecessor_scene_refs": [],
+      "source_proposition_refs": [
+        "prop_cart_left_east",
+        "prop_investigator_assigned"
+      ],
+      "adaptation_notes": "The source heard state remains unconfirmed during intake."
+    },
+    {
+      "scene_id": "scene_records",
+      "kind": "revelation",
+      "phase_ref": "phase_verification",
+      "location_ref": "location_records_office",
+      "participating_actor_refs": [
+        "actor_investigator",
+        "actor_shift_witness"
+      ],
+      "narrative_beat_refs": ["beat_records"],
+      "predecessor_scene_refs": ["scene_rumor"],
+      "source_proposition_refs": [
+        "prop_alarm_preceded_departure",
+        "prop_cart_left_east",
+        "prop_cart_remained_locked"
+      ],
+      "adaptation_notes": "The scene projects both retraction and confirmation before adding correction."
+    },
+    {
+      "scene_id": "scene_report",
+      "kind": "internal",
+      "phase_ref": "phase_decision",
+      "location_ref": "location_records_office",
+      "participating_actor_refs": ["actor_investigator"],
+      "narrative_beat_refs": [],
+      "predecessor_scene_refs": ["scene_records"],
+      "source_proposition_refs": ["prop_cart_remained_locked"],
+      "adaptation_notes": "This original branch allows a report without inventing another source beat."
+    },
+    {
+      "scene_id": "scene_tail",
+      "kind": "conflict",
+      "phase_ref": "phase_decision",
+      "location_ref": "location_west_ramp",
+      "participating_actor_refs": [
+        "actor_bicycle_courier",
+        "actor_investigator"
+      ],
+      "narrative_beat_refs": ["beat_resolution"],
+      "predecessor_scene_refs": ["scene_records"],
+      "source_proposition_refs": ["prop_courier_used_west_ramp"],
+      "adaptation_notes": "Conflict denotes opposed goals and does not compile combat behavior."
+    }
+  ],
+  "objectives": [
+    {
+      "objective_id": "objective_file_report",
+      "title": "File the Corrected Timeline",
+      "description": "Record the corrected cart finding for the depot supervisor.",
+      "phase_ref": "phase_decision",
+      "scene_refs": ["scene_report"],
+      "predecessor_objective_refs": ["objective_verify_timeline"],
+      "mutually_exclusive_objective_refs": ["objective_shadow_courier"],
+      "source_proposition_refs": ["prop_cart_remained_locked"],
+      "completion": {
+        "kind": "complete_scene",
+        "scene_ref": "scene_report"
+      },
+      "adaptation_notes": "One original branch ends with documentation rather than pursuit."
+    },
+    {
+      "objective_id": "objective_shadow_courier",
+      "title": "Question the Courier",
+      "description": "Follow the corrected route to the courier at the west ramp.",
+      "phase_ref": "phase_decision",
+      "scene_refs": ["scene_tail"],
+      "predecessor_objective_refs": ["objective_verify_timeline"],
+      "mutually_exclusive_objective_refs": ["objective_file_report"],
+      "source_proposition_refs": ["prop_courier_used_west_ramp"],
+      "completion": {
+        "kind": "interact_actor",
+        "actor_ref": "actor_bicycle_courier"
+      },
+      "adaptation_notes": "The alternate branch records a typed actor target without runtime logic."
+    },
+    {
+      "objective_id": "objective_verify_timeline",
+      "title": "Verify the Timeline",
+      "description": "Compare the witness report with the depot's key seals and access log.",
+      "phase_ref": "phase_verification",
+      "scene_refs": [
+        "scene_records",
+        "scene_rumor"
+      ],
+      "predecessor_objective_refs": [],
+      "mutually_exclusive_objective_refs": [],
+      "source_proposition_refs": [
+        "prop_alarm_preceded_departure",
+        "prop_cart_left_east",
+        "prop_cart_remained_locked"
+      ],
+      "completion": {
+        "kind": "apply_knowledge",
+        "knowledge_ref": "correction_cart_report"
+      },
+      "adaptation_notes": "Completion points to the explicit adaptation-only correction transition."
+    }
+  ],
+  "knowledge_beats": [
+    {
+      "knowledge_id": "knowledge_assignment",
+      "scene_ref": "scene_rumor",
+      "actor_ref": "actor_investigator",
+      "source_beat_ref": "beat_rumor",
+      "perspective_ref": "perspective_investigator",
+      "proposition_ref": "prop_investigator_assigned",
+      "state": "confirmed",
+      "adaptation_notes": "Exact projection of the assignment disclosure."
+    },
+    {
+      "knowledge_id": "knowledge_cart_heard",
+      "scene_ref": "scene_rumor",
+      "actor_ref": "actor_investigator",
+      "source_beat_ref": "beat_rumor",
+      "perspective_ref": "perspective_witness",
+      "proposition_ref": "prop_cart_left_east",
+      "state": "heard",
+      "adaptation_notes": "The report remains heard rather than silently becoming fact."
+    },
+    {
+      "knowledge_id": "knowledge_alarm_confirmed",
+      "scene_ref": "scene_records",
+      "actor_ref": "actor_investigator",
+      "source_beat_ref": "beat_records",
+      "perspective_ref": "perspective_records",
+      "proposition_ref": "prop_alarm_preceded_departure",
+      "state": "confirmed",
+      "adaptation_notes": "Exact projection of the alarm record."
+    },
+    {
+      "knowledge_id": "knowledge_cart_locked",
+      "scene_ref": "scene_records",
+      "actor_ref": "actor_investigator",
+      "source_beat_ref": "beat_records",
+      "perspective_ref": "perspective_records",
+      "proposition_ref": "prop_cart_remained_locked",
+      "state": "confirmed",
+      "adaptation_notes": "Exact projection of the later correction proposition."
+    },
+    {
+      "knowledge_id": "knowledge_cart_retracted",
+      "scene_ref": "scene_records",
+      "actor_ref": "actor_investigator",
+      "source_beat_ref": "beat_records",
+      "perspective_ref": "perspective_witness",
+      "proposition_ref": "prop_cart_left_east",
+      "state": "retracted",
+      "adaptation_notes": "Exact projection of the source retraction state."
+    },
+    {
+      "knowledge_id": "knowledge_courier_route",
+      "scene_ref": "scene_tail",
+      "actor_ref": "actor_investigator",
+      "source_beat_ref": "beat_resolution",
+      "perspective_ref": "perspective_courier",
+      "proposition_ref": "prop_courier_used_west_ramp",
+      "state": "confirmed",
+      "adaptation_notes": "Exact projection of the west-ramp route disclosure."
+    }
+  ],
+  "knowledge_corrections": [
+    {
+      "correction_id": "correction_cart_report",
+      "scene_ref": "scene_records",
+      "actor_ref": "actor_investigator",
+      "state": "corrected",
+      "corrects_knowledge_ref": "knowledge_cart_heard",
+      "earlier_proposition_ref": "prop_cart_left_east",
+      "later_proposition_ref": "prop_cart_remained_locked",
+      "rationale": "The adaptation explicitly links the heard cart report to the confirmed locked-cart record after the source retraction."
+    }
+  ]
+}
