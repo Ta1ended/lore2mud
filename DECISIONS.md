@@ -1985,3 +1985,33 @@
   private-material access, or the next public runtime slice.
 - Supersedes: DEC-0076's claim that first independent acceptance was merely pending;
   it does not supersede the CampaignSpec v1 contract or any prior accepted slice.
+
+## DEC-0078: CampaignSpec completion targets are isolated across every possible scene
+
+- Date: 2026-08-02
+- Status: Local second-review correction verified; fresh independent acceptance pending.
+- Context: A fresh read-only re-review of the DEC-0077 candidate reproduced one
+  remaining P2. Completion validation accepted a target when at least one matching
+  scene was objective-owned and in-phase, even if the same location or actor also
+  appeared in an earlier or later scene. Adding an excluded branch scene to the
+  current objective also allowed that branch's knowledge transition to complete
+  both mutually exclusive objectives.
+- Decision: Validation now computes every scene in which the typed completion can
+  resolve. All such scenes must belong to the containing objective and match its
+  exact phase. None may be owned by a mutually exclusive objective. Mutual
+  exclusion does not globally prohibit shared setup scenes; a shared scene remains
+  valid when neither branch completion can fire there. Plan validation,
+  self-contained CampaignSpec validation, and typed compilation use the same rule.
+- Evidence: Regressions reproduce the shared-location earlier scene, shared-actor
+  later scene, and excluded-branch knowledge transition, plus the allowed shared
+  non-completion setup scene. Forty-eight focused campaign tests passed with two
+  Windows symlink-privilege skips; 1364 full unittest tests passed with 12 skips;
+  pytest reported 1352 passed and 12 skipped. Ruff, default and pipeline/test
+  Pyright checks, compileall, original-demo validation, repository-external golden
+  CLI coverage, history safety, fsck, and whitespace checks passed.
+- Consequences: This correction is not a GO. A new GPT-5.6-sol/max read-only task
+  must review `812a00f..HEAD` and return explicit GO or REVISE before integration.
+  Shared `main`, remotes, private material, runtime, save, Web, Forge, packaging,
+  and dependencies remain outside this correction.
+- Supersedes: DEC-0077's completion-resolution rule and re-review-pending evidence
+  only; it does not supersede the CampaignSpec v1 contract or earlier decisions.

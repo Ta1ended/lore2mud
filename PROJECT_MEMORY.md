@@ -27,11 +27,15 @@ stale.
   correction records. The first independent review of implementation commit
   `8f3e53452ccf12ce6e6b262f64f85fcd0011d76b` returned REVISE with two P2
   semantic gaps and one P3 README omission. Current HEAD requires the sole
-  player's start to equal the campaign root and requires every completion target,
-  including knowledge transitions, to resolve through an objective-owned scene
-  in the objective phase; README now exposes the real campaign CLI. The fixes
-  have local regression, full-suite, Schema, golden CLI, quality, and safety
-  evidence, but still require a fresh read-only re-review of `812a00f..HEAD`.
+  player's start to equal the campaign root. A subsequent fresh re-review found
+  that completion ownership was still existential when the same target appeared
+  in multiple scenes. Current HEAD requires every possible target scene,
+  including knowledge transitions, to be objective-owned, in the exact objective
+  phase, and outside mutually exclusive objectives; non-completing shared setup
+  scenes remain valid. README exposes the real campaign CLI. The fixes have local
+  regression, full-suite, Schema, golden CLI, quality, and safety evidence, but
+  still require a fresh read-only re-review of `812a00f..HEAD` (DEC-0077,
+  DEC-0078).
   The branch does not emit runtime content or modify `src/`, save, Web, Forge,
   packaging, dependencies, or private material.
 - Public integration candidate `coord/public-integration-20260801` is at

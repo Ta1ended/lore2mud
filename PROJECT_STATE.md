@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-08-02（CampaignSpec v1 REVISE 修正已验证；全新复验 pending）_
+_Last updated: 2026-08-02（CampaignSpec v1 第二次 REVISE 修正已验证；全新复验 pending）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -105,6 +105,16 @@ golden CLI、history safety、fsck 和 diff checks 全部通过。独立验收�
 权限跳过）、1361 项全量 unittest 通过（12 项跳过）、pytest 为 1349 passed / 12 skipped；
 Ruff、两条 Pyright、compileall、Draft 2020-12 fixture、original-demo、仓库外 golden CLI、
 history safety、fsck 和 diff checks 通过。该状态仍是“修正待全新复验”，不是 GO（DEC-0077）。
+
+后续 fresh re-review 又复现 1 个 P2：当地点或 actor 同时存在于当前同阶段 scene 与
+更早/更晚 scene 时，旧校验只要求“至少一个”匹配；把互斥分支 scene 加入当前 objective
+后，也可借该分支的 knowledge transition 同时完成两个目标。当前修正要求所有可能触发
+completion 的 scene 均归当前 objective、均处于其精确阶段，且不得属于互斥 objective；
+不触发完成的共享前置 scene 仍允许。plan、self-contained spec 与 typed compile 入口都有
+回归。48 项专项通过（2 项 Windows symlink 权限跳过）、1364 项全量 unittest 通过
+（12 项跳过）、pytest 为 1352 passed / 12 skipped；Ruff、两条 Pyright、compileall、
+original-demo、仓库外 golden CLI、history safety、fsck 与 diff checks 通过。当前仍为
+“第二次修正待全新复验”，不是 GO（DEC-0078）。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。

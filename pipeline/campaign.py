@@ -1043,27 +1043,36 @@ def _validate_objective_completion_scenes(
     objective: CampaignObjective,
     candidate_scene_refs: set[str],
     scene_by_id: dict[str, CampaignScene],
+    excluded_scene_refs: set[str],
     target_label: str,
     issues: list[str],
 ) -> None:
-    owned_candidates = sorted(candidate_scene_refs & set(objective.scene_refs))
-    if not owned_candidates:
+    eligible_scene_refs = {
+        scene_ref
+        for scene_ref in objective.scene_refs
+        if scene_by_id.get(scene_ref) is not None
+        and scene_by_id[scene_ref].phase_ref == objective.phase_ref
+    }
+    if not candidate_scene_refs:
         issues.append(
             f"objective {objective.objective_id} {target_label} must resolve to a "
-            "scene in its scene_refs"
+            "scene in its scene_refs and objective phase"
         )
         return
 
-    same_phase_candidates = [
-        scene_ref
-        for scene_ref in owned_candidates
-        if scene_by_id.get(scene_ref) is not None
-        and scene_by_id[scene_ref].phase_ref == objective.phase_ref
-    ]
-    if not same_phase_candidates:
+    outside_scene_refs = sorted(candidate_scene_refs - eligible_scene_refs)
+    if outside_scene_refs:
         issues.append(
-            f"objective {objective.objective_id} {target_label} must resolve to a "
-            f"scene in objective phase {objective.phase_ref}"
+            f"objective {objective.objective_id} {target_label} must resolve only "
+            "to scenes in its scene_refs and objective phase; outside scenes: "
+            f"{outside_scene_refs}"
+        )
+    excluded_candidates = sorted(candidate_scene_refs & excluded_scene_refs)
+    if excluded_candidates:
+        issues.append(
+            f"objective {objective.objective_id} {target_label} must not resolve "
+            "to scenes owned by a mutually exclusive objective: "
+            f"{excluded_candidates}"
         )
 
 
@@ -1326,6 +1335,12 @@ def _canonicalize_and_validate_campaign(
                     f"objective mutual exclusion must be symmetric: "
                     f"{objective.objective_id} <-> {other_ref}"
                 )
+        excluded_scene_refs = {
+            scene_ref
+            for other_ref in objective.mutually_exclusive_objective_refs
+            if (other := objective_by_id.get(other_ref)) is not None
+            for scene_ref in other.scene_refs
+        }
         completion = objective.completion
         if isinstance(completion, ReachLocationCompletion):
             if completion.location_ref not in location_by_id:
@@ -1342,6 +1357,7 @@ def _canonicalize_and_validate_campaign(
                         if scene.location_ref == completion.location_ref
                     },
                     scene_by_id,
+                    excluded_scene_refs,
                     f"reach_location target {completion.location_ref}",
                     issues,
                 )
@@ -1360,6 +1376,7 @@ def _canonicalize_and_validate_campaign(
                         if completion.actor_ref in scene.participating_actor_refs
                     },
                     scene_by_id,
+                    excluded_scene_refs,
                     f"interact_actor target {completion.actor_ref}",
                     issues,
                 )
@@ -1374,6 +1391,7 @@ def _canonicalize_and_validate_campaign(
                     objective,
                     {completion.scene_ref},
                     scene_by_id,
+                    excluded_scene_refs,
                     f"complete_scene target {completion.scene_ref}",
                     issues,
                 )
@@ -1394,6 +1412,7 @@ def _canonicalize_and_validate_campaign(
                     objective,
                     {transition_scene_ref},
                     scene_by_id,
+                    excluded_scene_refs,
                     f"apply_knowledge target {completion.knowledge_ref}",
                     issues,
                 )

@@ -1,6 +1,6 @@
 # Next Task
 
-_Last updated: 2026-08-02 (CampaignSpec v1 REVISE corrections verified; fresh re-review pending)_
+_Last updated: 2026-08-02 (CampaignSpec v1 second-review correction verified; fresh re-review pending)_
 
 ## Single next action
 
@@ -18,17 +18,19 @@ release, or access any private novel or Demo material.
 - the sole player start equals `start_location_ref`, including the directed
   market-root/crown-player/no-return mutation;
 - objective DAG reachability, symmetric exclusions, and impossible ancestry;
-- every completion kind resolves through an objective-owned scene in the exact
-  objective phase, especially later or unrelated `apply_knowledge` targets;
+- every possible scene for each completion kind is objective-owned, in the exact
+  objective phase, and outside mutually exclusive objectives; include the
+  shared-location earlier scene, shared-actor later scene, excluded-branch
+  knowledge, and allowed non-completion shared-setup regressions;
 - disclosure projection, total-order knowledge tracks, retraction/correction;
 - README CLI parameters and `docs/campaign_spec_format.md` remain synchronized;
 - both wholly original fixture families and all claimed verification evidence.
 
 ## Candidate evidence
 
-- 45 focused campaign tests passed with 2 Windows symlink-permission skips.
-- 1361 full unittest tests passed with 12 skips; full pytest reported
-  1349 passed / 12 skipped.
+- 48 focused campaign tests passed with 2 Windows symlink-permission skips.
+- 1364 full unittest tests passed with 12 skips; full pytest reported
+  1352 passed / 12 skipped.
 - Ruff, two Pyright entry points, compileall, both Draft 2020-12 Schemas and all
   four source instances, original-demo validation, repository-external golden
   CLI bytes, history safety, fsck, and whitespace checks passed.

@@ -21,6 +21,7 @@ from pipeline.campaign import (
     ApplyKnowledgeCompletion,
     CampaignBuildError,
     CampaignValidationError,
+    InteractActorCompletion,
     campaign_spec_to_document,
     compile_campaign_spec,
     main,
@@ -482,6 +483,90 @@ class PlanValidationTests(unittest.TestCase):
             compile_campaign_spec(
                 _model(), replace(plan, objectives=mutated_objectives)
             )
+
+    def test_completion_target_cannot_alias_other_phase_or_branch_scenes(
+        self,
+    ) -> None:
+        cases = (
+            (
+                "location_also_in_earlier_scene",
+                "magic_event",
+                "objective_hear_echo",
+                {
+                    "kind": "reach_location",
+                    "location_ref": "location_spire_base",
+                },
+                None,
+                "scene_arrival",
+            ),
+            (
+                "actor_also_in_later_scene",
+                "magic_event",
+                "objective_hear_echo",
+                {"kind": "interact_actor", "actor_ref": "actor_echo"},
+                None,
+                "scene_retuning",
+            ),
+            (
+                "knowledge_owned_by_exclusive_branch",
+                "urban_investigation",
+                "objective_file_report",
+                {
+                    "kind": "apply_knowledge",
+                    "knowledge_ref": "knowledge_courier_route",
+                },
+                "scene_tail",
+                "mutually exclusive objective",
+            ),
+        )
+        for name, kind, objective_id, completion, added_scene, expected in cases:
+            with self.subTest(name=name):
+                for document, validator in (
+                    (_plan_document(kind), validate_registry_campaign_plan_document),
+                    (_expected_document(kind), validate_campaign_spec_document),
+                ):
+                    objective = _item(
+                        document, "objectives", "objective_id", objective_id
+                    )
+                    if added_scene is not None:
+                        objective["scene_refs"].append(added_scene)
+                    objective["completion"] = completion
+                    with self.assertRaisesRegex(CampaignValidationError, expected):
+                        validator(document)
+
+    def test_compile_rejects_actor_completion_that_aliases_a_later_scene(
+        self,
+    ) -> None:
+        plan = _plan()
+        mutated_objectives = tuple(
+            replace(
+                objective,
+                completion=InteractActorCompletion(
+                    kind="interact_actor",
+                    actor_ref="actor_echo",
+                ),
+            )
+            if objective.objective_id == "objective_hear_echo"
+            else objective
+            for objective in plan.objectives
+        )
+        with self.assertRaisesRegex(CampaignBuildError, "scene_retuning"):
+            compile_campaign_spec(
+                _model(), replace(plan, objectives=mutated_objectives)
+            )
+
+    def test_exclusive_branches_may_share_a_noncompletion_setup_scene(self) -> None:
+        document = _plan_document("urban_investigation")
+        for objective_id in (
+            "objective_file_report",
+            "objective_shadow_courier",
+        ):
+            objective = _item(
+                document, "objectives", "objective_id", objective_id
+            )
+            objective["scene_refs"].append("scene_records")
+
+        validate_registry_campaign_plan_document(document)
 
     def test_correction_requires_retraction_confirmation_and_reachability(self) -> None:
         document = _plan_document("urban_investigation")

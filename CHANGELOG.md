@@ -4,6 +4,13 @@
 
 ### Changed
 
+- Closed a second CampaignSpec v1 completion-isolation gap found by fresh
+  re-review. A location, actor, scene, or knowledge target must now resolve only
+  in current-objective scenes from the objective's exact phase, and cannot fire
+  in a scene owned by a mutually exclusive objective. Exclusive branches may
+  still share a non-completing setup scene. Plan, self-contained spec, and typed
+  compile regressions cover earlier, later, and excluded-branch aliases; another
+  fresh independent review remains pending (DEC-0078).
 - Tightened CampaignSpec v1 cross-object semantics after its first independent
   review returned REVISE. The sole player's non-null starting location must now
   equal the authoritative campaign map root. Every completion kind resolves to

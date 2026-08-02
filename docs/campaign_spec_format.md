@@ -133,13 +133,17 @@ Completion is one strict branch:
 { "kind": "apply_knowledge", "knowledge_ref": "correction_cart_report" }
 ```
 
-Every completion target must resolve through one of the containing objective's
-`scene_refs` in the objective's exact phase. `reach_location` names the location
-of such a scene, `interact_actor` names one of its participants,
-`complete_scene` names the scene directly, and `apply_knowledge` names a
-knowledge beat or correction whose `scene_ref` is that scene. The resolved scene
-still obeys the campaign scene DAG, source phase, and directed travel checks.
-This prevents a later or unrelated scene from completing an earlier objective.
+Every scene in which a completion target can resolve must be one of the
+containing objective's `scene_refs` in the objective's exact phase.
+`reach_location` names the location of such scenes, `interact_actor` names one
+of their participants, `complete_scene` names the scene directly, and
+`apply_knowledge` names a knowledge beat or correction whose `scene_ref` is
+that scene. A completion target also cannot resolve in a scene owned by a
+mutually exclusive objective. Exclusive objectives may still share a setup
+scene when neither completion can fire there. These rules prevent an earlier,
+later, unrelated, or excluded branch scene from completing the objective.
+Resolved scenes still obey the campaign scene DAG, source phase, and directed
+travel checks.
 The tagged target is validated but not executed; it remains an IR boundary for
 a separately authorized future runtime compiler.
 
