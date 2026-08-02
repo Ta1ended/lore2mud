@@ -1072,9 +1072,10 @@ def _load_campaign_definition(
                 f"{location}.dialogue_id 引用了不存在的对话：{dialogue_id}"
             )
         node_values: list[DialogueNodeViewDefinition] = []
-        for node_index, raw_node in enumerate(
-            validator.array(obj.get("nodes"), f"{location}.nodes")
-        ):
+        raw_nodes = validator.array(obj.get("nodes"), f"{location}.nodes")
+        if not raw_nodes:
+            validator.issues.append(f"{location}.nodes 不能为空")
+        for node_index, raw_node in enumerate(raw_nodes):
             node_location = f"{location}.nodes[{node_index}]"
             node_obj = validator.object(raw_node, node_location)
             validator.keys(node_obj, {"node_id", "texts"}, node_location)

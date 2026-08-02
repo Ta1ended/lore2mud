@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 from copy import deepcopy
+import io
 import json
 from pathlib import Path
 import shutil
 import tempfile
 import unittest
+from unittest import mock
 
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
+from lore2mud.cli import main
 from lore2mud.content import ContentValidationError, load_content_pack
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.save import (
@@ -65,6 +68,48 @@ class CampaignSchemaAndLoaderTests(unittest.TestCase):
         self.assertEqual(world.scene_states, {})
         self.assertEqual(world.objective_states, {})
         self.assertEqual(world.knowledge_states, {})
+
+    def test_empty_dialogue_view_nodes_fail_schema_loader_and_cli(self) -> None:
+        schema_documents = {
+            document["$id"]: document
+            for schema_path in (ROOT / "schemas").glob("*.schema.json")
+            for document in [json.loads(schema_path.read_text("utf-8"))]
+            if "$id" in document
+        }
+        registry = Registry().with_resources(
+            (uri, Resource.from_contents(document))
+            for uri, document in schema_documents.items()
+        )
+        validator = Draft202012Validator(
+            schema_documents["https://example.invalid/lore2mud/campaign.schema.json"],
+            registry=registry,
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "urban"
+            shutil.copytree(URBAN, path)
+            campaign_path = path / "campaign.json"
+            document = json.loads(campaign_path.read_text("utf-8"))
+            document["dialogue_views"][0]["nodes"] = []
+            campaign_path.write_text(
+                json.dumps(document, indent=2), encoding="utf-8"
+            )
+
+            schema_errors = list(validator.iter_errors(document))
+            self.assertTrue(
+                any(
+                    list(error.absolute_path) == ["dialogue_views", 0, "nodes"]
+                    and error.validator == "minItems"
+                    for error in schema_errors
+                )
+            )
+            with self.assertRaisesRegex(ContentValidationError, "nodes 不能为空"):
+                load_content_pack(path)
+
+            stderr = io.StringIO()
+            with mock.patch("sys.stderr", stderr):
+                exit_code = main(["validate", "--content", str(path)])
+            self.assertEqual(exit_code, 1)
+            self.assertIn("nodes 不能为空", stderr.getvalue())
 
     def test_campaign_rejects_dependency_cycles_and_asymmetric_exclusion(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
