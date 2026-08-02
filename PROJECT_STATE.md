@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-08-02（GitHub Actions CI 修复已本地验证；独立验收 pending）_
+_Last updated: 2026-08-02（CI 修复已独立 GO 且远端工作流通过；验收记录封板待复验）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -25,6 +25,13 @@ stdout 标记尚未可靠可见，验证器便终止了进程。隔离分支
 `.[test]`、把官方 Actions 更新到 Node 24-based v6，并以 launcher 写入的绝对路径
 ready file 与 HTTP snapshot 双重确认 Web 就绪。该切片只修改公开 CI、测试和 Windows
 打包验证，不修改引擎、Campaign、Schema、原创内容、save 或私有资料（DEC-0085）。
+
+新的干净 GPT-5.6-sol 只读任务已对精确范围 `0aa9302..9c2f4db` 给出 `GO`、无
+P0-P3 findings，并独立重跑完整依赖、测试、Windows 冻结交付、质量、安全和 Git 门禁。
+成功刷新远端后，`codex/ci-repair-20260802` 已以普通非强制方式推送；GitHub
+`quality` run `30765851991` 与 `tests` run `30765852001` 均成功，后者的 Python
+3.11/3.12/3.13 和 `windows-candidate` 四个 jobs 全绿。`main` 与 `origin/main` 仍为
+`0aa9302`，未创建或合并 PR，未 release（DEC-0086）。
 
 项目负责人已授权 Codex 自定下一范围受限切片。Codex 在 `a89fdc6d` 完成 L2W-3 多章
 canon registry 初始实现（DEC-0060）。首次新的 GPT-5.6-sol 只读验收结论为 REVISE：发现
@@ -302,18 +309,26 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- CI repair candidate 已完成实现和控制器侧本地验证；当前只等待新的干净上下文对
-  `0aa9302..HEAD` 做 findings-first 只读独立验收。
+- CI 修复代码已独立验收并发布到远端修复分支。当前只剩本次五文件纯文档
+  acceptance seal 的 focused 只读复验；它记录已验证的 `GO`、push 和远端工作流结果。
 
 ## Blockers
 
-- 实现上下文不能自宣 `GO`。新的 GPT-5.6-sol 干净任务必须复核依赖安装、两个 workflow、
-  readiness 双门、真实 Windows 冷启动和完整质量/安全证据，并给出明确 `GO` 或 `REVISE`。
-- 只有独立 `GO` 和项目负责人另行授权后才能 push。远端 Actions 在本地分支上无法复跑；
-  2026-08-02 的 direct `git ls-remote` 因 connection reset 失败，发布前必须重新查询。
+- acceptance seal 必须由新的干净任务确认只改五个交接文件、准确记录 `9c2f4db` 的
+  独立 GO 与两个远端成功 run，并给出明确 `GO` 或 `REVISE` 后才能更新远端修复分支。
+- 创建 PR、合并或推送 `main` 仍未授权；这些动作必须由项目负责人另行决定。
 
 ## Verification
 
+- GitHub Actions CI repair independent acceptance and branch publication（2026-08-02）：
+  fresh GPT-5.6-sol 只读验收对 `0aa9302..9c2f4db` 给出 `GO`、P0-P3 全空；独立证据
+  重现 1383 unittest（12 skips）、serial/xdist pytest 各 1371 passed / 12 skipped、
+  PyInstaller 6.21.0 Windows suite 14/14 及全部质量、安全和 Git 门禁。远端刷新确认
+  `main=0aa9302` 且修复分支此前不存在；普通 push 后 remote repair branch=`9c2f4db`。
+  GitHub `quality` run `30765851991` 和 `tests` run `30765852001` 均为 success，
+  `tests` 的三个 Python jobs 与 `windows-candidate` 全部成功。主工作树仍只有原有未跟踪
+  `uv.lock`，14,471 bytes，SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`。
 - GitHub Actions CI repair controller verification（2026-08-02，非独立验收）：干净
   `.[test]` 环境的 `pip check` 通过，直接导入 `jsonschema 4.26.0`、
   `referencing 0.37.0` 与 `pytest 8.4.2` 成功。1383 项 unittest 通过（12 个既有平台/
@@ -555,8 +570,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## Risks and unknowns
 
-- 本地门禁不能证明 GitHub runner 已恢复；只有候选独立验收 GO、项目负责人授权 push
-  并观察新的 `tests`/`quality` runs 后，才能宣布远端 CI green。
+- 修复分支上的 GitHub `tests` 与 `quality` 已全绿，但这不等于 `main` 已修复；只有项目
+  负责人授权并完成 PR/merge 或等价的 main 更新后，默认分支才会包含该提交。
 - readiness file 仅在验证器显式设置 `LORE2MUD_WEB_READY_FILE` 时启用；普通双击 launcher
   的浏览器优先行为不变。后续若更改 launcher 启动顺序，必须保留“HTTP 健康 + launcher
   完成自身就绪路径”双重同步。

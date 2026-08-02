@@ -2242,3 +2242,38 @@
   access, or new public scope is authorized.
 - Supersedes: None. It does not retroactively accept DEC-0084's continuity seal
   or alter any accepted Runtime/CampaignSpec contract.
+
+## DEC-0086: CI repair independent GO and branch-only publication
+
+- Date: 2026-08-02
+- Status: Repair accepted and published on its branch; acceptance-record seal pending focused review.
+- Context: A fresh clean GPT-5.6-sol task independently reviewed exact range
+  `0aa93021e533114eb6b742fe518c2d09194c3394..9c2f4db818e2b3bb6f7bc05659c8bb654f73c635`
+  read-only. It found no P0-P3 issue, independently reproduced the dependency,
+  regression-sensitivity, full test, Windows delivery, quality, safety, and Git
+  evidence, and returned explicit `GO`. The project owner authorized a normal
+  push of only `codex/ci-repair-20260802`, not `main`.
+- Decision: After a successful live `git ls-remote` confirmed GitHub `main` at
+  `0aa9302` and confirmed no existing remote repair branch, publish accepted
+  commit `9c2f4db` by normal non-force push with upstream tracking. Do not create
+  or merge a PR, update `main`, or release within this action. Record the remote
+  workflow results in a documentation-only acceptance seal.
+- Evidence: The independent review reported 1383 unittest tests with 12 skips;
+  serial and xdist pytest each at 1371 passed / 12 skipped; pinned PyInstaller
+  6.21.0 Windows packaging at 14/14 with real frozen and zipapp external cold
+  starts; Ruff, Pyright, compileall, original-demo validation, history safety,
+  fsck, and diff checks passed. Push created
+  `origin/codex/ci-repair-20260802=9c2f4db`. GitHub `quality` run `30765851991`
+  completed success. GitHub `tests` run `30765852001` completed success with
+  Python 3.11, 3.12, 3.13, and `windows-candidate` jobs all successful. Local
+  `main` and `origin/main` remain `0aa9302`; the main worktree still contains only
+  the unchanged 14,471-byte untracked `uv.lock` at SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`.
+- Consequences: The repair branch is remotely available and its push workflows
+  are green, but GitHub `main` does not yet contain the fix. This documentation
+  seal must receive fresh focused read-only `GO` before it updates the repair
+  branch. PR creation, merge, main push, release, force-push, private-material
+  access, and new public scope remain separate unauthorized actions.
+- Supersedes: DEC-0085's independent-acceptance-pending and unpublished-branch
+  states only. It does not supersede the CI repair contract or any campaign
+  acceptance boundary.

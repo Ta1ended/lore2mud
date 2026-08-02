@@ -12,7 +12,10 @@
   verifier from terminating a healthy candidate before launcher readiness is
   durably observable. The change adds one cross-platform synchronization
   regression and leaves normal browser-first launcher behavior unchanged
-  (DEC-0085).
+  (DEC-0085). A fresh independent read-only review accepted commit `9c2f4db` with
+  no P0-P3 findings. The repair branch was then pushed normally, and GitHub
+  `quality` run `30765851991` plus `tests` run `30765852001` both succeeded;
+  local and remote-tracking `main` remain `0aa9302` (DEC-0086).
 - New saves now write v9 and strictly preserve actor position/presence/enabled/
   incapacitated state plus optional campaign scene, objective, and player-knowledge
   state without replaying effects. v8 remains read-compatible only for packs with
