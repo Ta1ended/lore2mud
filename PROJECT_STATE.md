@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-08-02（公共整合代码 P2 已关闭；第二轮仅余交接 P2，文档修正待复验）_
+_Last updated: 2026-08-02（公共整合已获 GO 并同步到本地 main；当前连续性交接待复验）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -112,11 +112,11 @@ history safety、fsck 和两层 diff 检查通过。新的 zipapp 与 PyInstalle
 `cfde8f6a87c22b5a6fde2d1a00ab501fdd5e4897d319f72d3f817f403aabf269`。
 
 第二轮全新只读复验确认原 loader/Schema P2 已关闭，且没有新增代码、测试、打包、安全或
-历史 finding；但它因本文件下方现行 `In progress`、`Blockers` 与 `Risks and unknowns`
-仍保留已被 DEC-0080 至 DEC-0082 取代的状态而返回唯一 P2。当前文档封板只同步这些交接
-状态，不修改已验收代码树或控制器证据；新的 focused 只读复验给出 GO 前不移动本地
-`main`，不 push 或 release。本地 `main` 与本地 `origin/main` 仍为 `812a00f`；任何
-fast-forward 前必须重新查询 live remote（DEC-0083）。
+历史 finding；它因本文件下方三个现行小节仍含过期状态而返回唯一交接 P2。文档提交
+`97a1ab314cd0b45f3728d707674f462547164216` 修正该漂移后，新的 focused 只读复验给出
+`GO`、无 P0-P3。`main` 的 reflog 记录其于 2026-08-02 20:42 从 `812a00f` 线性快进到
+`97a1ab3`。当前 live GitHub `main` 与本地 `origin/main` 仍为 `812a00f`，本地未 push、
+未 release（DEC-0083、DEC-0084）。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
@@ -292,19 +292,23 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 公共整合分支已按依赖顺序合并分别获 GO 的 Runtime 与 CampaignSpec 候选；组合代码门禁、
-  原 loader/Schema P2 修正和第二轮技术复核均已完成。当前只剩本次纯交接封板的 focused
-  全新只读复验；本地 `main` 在该复验 GO 前保持不变。
+- 无公共代码实现正在进行。当前工作仅是连续性交接封板：记录已接受的本地 `main`
+  快进、当前远端状态和公共/私人边界，并移除当前树中的绝对外部私人位置文字。
 
 ## Blockers
 
-- 唯一整合门是精确文档封板尚未获得 fresh 只读 GO；此前 Runtime、CampaignSpec 与私人
-  Canon 的独立 GO 均已完成，不应重复列为开放门。
-- 发布门仍需项目负责人明确授权；本轮不查询远端、不 push、不 release。若后续发布，必须先刷新
-  远端并确认祖先关系，禁止 force push。
+- 当前连续性交接提交必须获得 fresh focused 只读 `GO`；该门只复核文档、Git 身份和
+  公共边界，不重新打开已接受的 Runtime/CampaignSpec 技术范围。
+- 发布门仍需项目负责人明确授权。本地 `main` 当前领先 live GitHub `main` 十个提交
+  （本交接提交前）；不 push、不 release，后续若获授权必须再次刷新远端并禁止 force push。
 
 ## Verification
 
+- Runtime/CampaignSpec documentation seal focused GO（2026-08-02）：fresh read-only
+  review 对 `97a1ab314cd0b45f3728d707674f462547164216` 给出 `GO`、P0-P3 全空；报告位于
+  仓库外验收目录。代码、pipeline、Schema、测试、示例、脚本和打包树与权威代码提交
+  `22a05d1` 相同。`main` reflog 记录 20:42 的 fast-forward；当前 live GitHub `main`
+  和 `origin/main` 均为 `812a00f`，未 push、未 release。
 - Local main integration（2026-07-31）：命令
   `git merge --ff-only coord/parallel-sprint-integration` 将 `main` 从 `13be791` 线性快进到
   交接封板 `3dafa23`，
@@ -527,13 +531,19 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - `src/lore2mud/cli.py` - CLI entry point with play/validate subcommands.
 - `src/lore2mud/combat/service.py` - deterministic combat with player_attack/defense.
 - `examples/original_demo/` - public, original playable fixture with dialogue.
-- `D:\MUD game kaifa\小说\processing\` - private external processing output; never commit.
+- External owner-controlled private processing workspace - never commit its
+  location or contents.
 
 ## Risks and unknowns
 
-- Runtime Campaign Foundation and CampaignSpec are independently accepted. The combined
-  candidate still cannot move to local `main` until this documentation-only seal receives
-  fresh GO; campaign remains optional and original_demo stays 0.10.0.
+- Runtime Campaign Foundation, CampaignSpec, and their combined documentation seal are
+  independently accepted and present on local `main`. The current continuity seal is
+  documentation-only and still needs a fresh focused review.
+- Older reachable handoff commits retain a path-only reference to an external private
+  workspace. The controller found no non-trivial private artifact blob, private content,
+  proper-name marker, visual asset, candidate, save, or report in public Git. Rewriting
+  published history or force-pushing is not authorized; the historical metadata residue
+  must be called out explicitly in final acceptance.
 - M3 implements the fixed `monster_defeated`, `reach_room`, and `collect_item`
   quest kinds; any further quest kind requires an explicit contract and vertical slice.
 - The one-target-monster-per-quest constraint will need revisiting if shared-target

@@ -2174,3 +2174,31 @@
 - Supersedes: Only the stale current-state bullets and DEC-0082's expectation
   that the next review would be a full technical re-review. It does not supersede
   the technical evidence or the requirement for independent acceptance.
+
+## DEC-0084: Accepted public campaign integration is synchronized to local main
+
+- Date: 2026-08-02
+- Status: Accepted locally; current continuity seal pending focused read-only review.
+- Context: A fresh focused read-only review inspected documentation correction
+  `97a1ab314cd0b45f3728d707674f462547164216`, reproduced the earlier handoff-only
+  P2 as closed, confirmed that the accepted code tree remains commit `22a05d1`,
+  and returned `GO` with no P0-P3 findings.
+- Decision: Record the resulting linear local-main synchronization and update the
+  current handoff cache. Remove the current absolute location of the external
+  private processing workspace from public tracked files while retaining the
+  generic never-commit boundary. Do not rewrite reachable history.
+- Evidence: The independent report is stored outside the repository at
+  `.codex-test-tmp/acceptance-reports/integration-independent-rereview-97a1ab3.md`.
+  The `main` reflog records a fast-forward from `812a00f` to `97a1ab3` at
+  2026-08-02 20:42 Asia/Shanghai. A current read-only `git ls-remote` resolves
+  GitHub `main` to `812a00f`; local `origin/main` matches it. The working tree is
+  clean except for the preserved 14,471-byte untracked `uv.lock`, SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`.
+- Consequences: Local `main` is ahead of the remote and remains unpublished. The
+  current continuity seal changes handoff documentation only and needs a fresh
+  focused review. Older reachable commits retain path-only private-workspace
+  metadata; controller scans found no non-trivial private artifact blob or private
+  content. Push, release, force-push, history rewrite, private-material access,
+  and a new public slice remain unauthorized.
+- Supersedes: DEC-0083's focused-review-pending and local-main-at-`812a00f` states
+  only. It does not supersede the accepted technical evidence or publish gate.

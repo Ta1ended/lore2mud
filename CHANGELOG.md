@@ -19,18 +19,20 @@
   Schema, golden CLI, Forge, Windows delivery, and repository-safety gates. The
   second clean review confirmed that technical result but returned `REVISE` for
   one handoff-only P2: stale current-state bullets contradicted the completed
-  isolated GO and combined-gate records. Those bullets are now synchronized;
-  a fresh focused documentation re-review remains pending (DEC-0081 through
-  DEC-0083).
+  isolated GO and combined-gate records. The corrected documentation seal
+  `97a1ab3` received fresh focused `GO` with no P0-P3 findings and was
+  fast-forwarded to local `main`. This continuity seal records that move and
+  removes current absolute external-private location references; its focused
+  read-only review remains pending (DEC-0081 through DEC-0084).
 - Closed a second CampaignSpec v1 completion-isolation gap found by fresh
   re-review. A location, actor, scene, or knowledge target must now resolve only
   in current-objective scenes from the objective's exact phase, and cannot fire
   in a scene owned by a mutually exclusive objective. Exclusive branches may
   still share a non-completing setup scene. Plan, self-contained spec, and typed
   compile regressions cover earlier, later, and excluded-branch aliases. The
-  corrected isolated candidate received fresh read-only GO and passed the
-  combined controller matrix; independent integration acceptance remains pending
-  (DEC-0079 through DEC-0081).
+  corrected isolated candidate received fresh read-only GO, passed the combined
+  controller matrix, and is included in the independently accepted local `main`
+  integration (DEC-0079 through DEC-0084).
 - Tightened CampaignSpec v1 cross-object semantics after its first independent
   review returned REVISE. The sole player's non-null starting location must now
   equal the authoritative campaign map root. Every completion kind resolves to

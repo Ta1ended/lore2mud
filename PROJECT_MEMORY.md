@@ -32,23 +32,15 @@ stale.
   final isolated candidate GO with no P0-P3 findings after 48 focused, 1364
   unittest, 1352 pytest, Schema, golden CLI, quality, and safety gates passed
   (DEC-0077 through DEC-0080).
-- `coord/demo-1-58-public-integration` combines the accepted Runtime and
-  CampaignSpec candidates in dependency order. Its first sealed review at
-  `7f1ceff4403fa4670b053c598b6e8ad4c0954d2f` returned `REVISE` for one P2:
-  `dialogue_views[].nodes=[]` was rejected by the published Schema but accepted
-  by the runtime loader and official validation CLI. Code commit
-  `22a05d181bc7fc5a9eda96c39ef6e6f9e2e052bf` closes that exact parity gap and
-  adds a Schema/loader/CLI regression. Controller verification now passes 66
-  focused tests with 2 skips, 1382 unittest tests with 12 skips, and serial plus
-  xdist pytest at 1370 passed / 12 skipped, together with all named quality,
-  Schema, golden, Forge, safety, and repository-external Windows cold-start
-  gates. A second clean review confirmed the technical candidate but returned
-  `REVISE` for one handoff-only P2: stale current-state bullets in
-  `PROJECT_STATE.md` contradicted the completed isolated GO and combined-gate
-  records. Current HEAD synchronizes those bullets without changing the code
-  tree and requires a fresh focused read-only GO before local `main` can move
-  (DEC-0081 through DEC-0083). No private source or derived material belongs in
-  this branch.
+- The Runtime/CampaignSpec public integration is accepted at
+  `97a1ab314cd0b45f3728d707674f462547164216`. Its first review found the
+  loader/Schema parity P2 closed by code commit `22a05d1` but then identified a
+  handoff-only P2. The documentation correction received a fresh focused
+  read-only `GO` with no P0-P3 findings. Local `main` fast-forwarded from
+  `812a00f` to `97a1ab3` on 2026-08-02 at 20:42 Asia/Shanghai; no push or release
+  occurred. The current continuity seal only records that accepted state and
+  removes current absolute external-private location references. Its fresh
+  read-only review remains pending (DEC-0081 through DEC-0084).
 - Public integration candidate `coord/public-integration-20260801` is at
   `dcd9bb0b21eb667061e2694a462f63e252636545`, merging the independently accepted
   public-only GEN-1 candidate `e7cba52fcfdf0c04458fca5fb9b516ebc762f4bc` and
@@ -70,13 +62,12 @@ stale.
   connecting to runtime/save/Web/Forge. It records exact claim use or reasoned
   omission accounting, including valid all-omission plans with an empty required
   `claim_uses` array. The clean re-review accepted `8ddc89c` GO.
-- Repository: `lore2mud`; on 2026-08-02 the shared local `main`, local tracking
-  `origin/main`, and live GitHub `main` were confirmed at
-  `812a00fe4412f4fc7068ac2e188c5c26d0a03157` before integration. After the
-  controller gates, local `main` and local `origin/main` remained there while the
-  integration branch was ahead by six commits and clean. A later live refresh
-  failed after a connection reset, so requery GitHub immediately before any
-  fast-forward or publish action and stop rather than force-pushing if it moved.
+- Repository: `lore2mud`; current local `main` is `97a1ab3`. Local tracking
+  `origin/main` and a live read-only query of GitHub `main` on 2026-08-02 remain
+  `812a00fe4412f4fc7068ac2e188c5c26d0a03157`, so local `main` is ahead by ten
+  commits before this continuity seal. Publishing remains a separate owner gate;
+  refresh the remote again immediately before any authorized push and never
+  force-push.
 - GitHub Actions run `30642616101` passed every Python 3.11/3.12/3.13 job but
   failed `windows-candidate` while its PyInstaller executable printed the Chinese
   validation-success line through redirected `cp1252` output. DEC-0069 records the
@@ -309,8 +300,9 @@ stale.
   M1 已由 GPT-5.6-sol 独立验收 GO（`c329546`）；公共引擎仍在开发中
 - Public code contains only the generic engine, tools, schemas, tests, docs, and
   original demo.
-- The private novel corpus and split chapters are outside the repository under:
-  `D:\MUD game kaifa\小说\processing\`
+- The private novel corpus, split chapters, and derived processing outputs remain
+  in an external owner-controlled workspace whose absolute location is
+  intentionally not recorded in public Git.
 - The preprocessing pipeline is complete and verified; original source
   reconstruction matched in character count and SHA-256.
 - The game engine has versioned local save/load (v5), deterministic quest flow,
