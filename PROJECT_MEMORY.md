@@ -33,9 +33,14 @@ stale.
   unittest, 1352 pytest, Schema, golden CLI, quality, and safety gates passed
   (DEC-0077 through DEC-0080).
 - `coord/demo-1-58-public-integration` combines the accepted Runtime and
-  CampaignSpec candidates in dependency order. The exact integrated HEAD still
-  requires combined verification and a separate clean read-only GO before local
-  `main` can move. No private source or derived material belongs in this branch.
+  CampaignSpec candidates in dependency order. Combined code commit
+  `1a9fcf607806b7f66e04545c1878bdd7ac16047b` passed the controller matrix:
+  65 focused tests with 2 skips, 1381 unittest tests with 12 skips, serial and
+  xdist pytest at 1369 passed / 12 skipped, all quality/Schema/golden/Forge/
+  safety gates, and repository-external zipapp plus PyInstaller cold starts.
+  Current HEAD is the documentation seal for that evidence and still requires a
+  separate clean read-only GO before local `main` can move (DEC-0081). No private
+  source or derived material belongs in this branch.
 - Public integration candidate `coord/public-integration-20260801` is at
   `dcd9bb0b21eb667061e2694a462f63e252636545`, merging the independently accepted
   public-only GEN-1 candidate `e7cba52fcfdf0c04458fca5fb9b516ebc762f4bc` and
@@ -57,12 +62,13 @@ stale.
   connecting to runtime/save/Web/Forge. It records exact claim use or reasoned
   omission accounting, including valid all-omission plans with an empty required
   `claim_uses` array. The clean re-review accepted `8ddc89c` GO.
-- Repository: `lore2mud`; on 2026-08-01 the shared local `main`, local tracking
-  `origin/main`, and live GitHub `main` were all verified at
-  `812a00fe4412f4fc7068ac2e188c5c26d0a03157`, with ahead/behind `0/0`.
-  The campaign branch is isolated and does not modify `main` or any remote.
-  Recheck live ancestry before any later integration or publish action, and
-  stop rather than force-pushing if the remote advances.
+- Repository: `lore2mud`; on 2026-08-02 the shared local `main`, local tracking
+  `origin/main`, and live GitHub `main` were confirmed at
+  `812a00fe4412f4fc7068ac2e188c5c26d0a03157` before integration. After the
+  controller gates, local `main` and local `origin/main` remained there while the
+  integration branch was ahead by six commits and clean. A later live refresh
+  failed after a connection reset, so requery GitHub immediately before any
+  fast-forward or publish action and stop rather than force-pushing if it moved.
 - GitHub Actions run `30642616101` passed every Python 3.11/3.12/3.13 job but
   failed `windows-candidate` while its PyInstaller executable printed the Chinese
   validation-success line through redirected `cp1252` output. DEC-0069 records the

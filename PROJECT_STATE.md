@@ -97,8 +97,20 @@ NarrativeModel 与显式人工计划编译为绑定规范 SHA-256 的自包含 C
 symlink 权限 skip）、1364 项 unittest（12 skip）、1352 项 pytest（12 skip）及 Schema、
 golden CLI、质量和安全门禁通过（DEC-0077 至 DEC-0080）。
 
-`coord/demo-1-58-public-integration` 正按依赖顺序合并上述两个已 GO 的公共候选。组合候选
-仍需全量控制器验证和单独的干净只读 GO；在此之前不移动本地 `main`，不 push 或 release。
+`coord/demo-1-58-public-integration` 已按依赖顺序合并上述两个已 GO 的公共候选。组合代码
+提交为 `1a9fcf607806b7f66e04545c1878bdd7ac16047b`，双亲为 Runtime 整合提交 `91e5258`
+和 CampaignSpec `15f47ca`；Runtime `2615418` 是其祖先。控制器组合门禁通过：65 项专项
+（2 个 Windows symlink 权限 skip）、1381 项 unittest（12 skip）、serial/xdist pytest
+均为 1369 passed / 12 skipped；Ruff、两条 Pyright、compileall、Draft 2020-12 Schema、
+三个公共内容包、仓库外 golden CLI、完整 Forge 生命周期、history safety、fsck 和两层 diff
+检查通过。zipapp 与 PyInstaller 6.21.0 候选均在仓库外完成 Web/console 冷启动，SHA-256
+分别为 `aa7a25ced70b41c92d8e39fa547296b94197c3ab04bd354a5d50d7eb5a42f608` 和
+`68020fc96be68106b577f376c64a2ec34ab66086522ae9a1ed83653b98096431`（DEC-0081）。
+
+这仍不是独立 GO。当前上下文参与了冲突处理、组合验证与交接封板，不能充当全新只读
+reviewer；独立 GO 前不移动本地 `main`，不 push 或 release。控制器结束时本地 `main` 与
+本地 `origin/main` 仍为 `812a00f`、整合工作树干净；末次 GitHub 刷新因连接重置失败，任何
+fast-forward 前必须重新查询 live remote。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。

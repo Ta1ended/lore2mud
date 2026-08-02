@@ -2070,3 +2070,42 @@
   release, force push, or placement of any private material in Git.
 - Supersedes: DEC-0076's runtime acceptance-pending status and DEC-0079's
   CampaignSpec re-review-pending status only.
+
+## DEC-0081: Combined Runtime and CampaignSpec controller verification complete
+
+- Date: 2026-08-02
+- Status: Controller verification complete; fresh independent integration acceptance pending.
+- Context: The accepted Runtime and CampaignSpec candidates were merged in
+  dependency order on `coord/demo-1-58-public-integration`. Combined code commit
+  `1a9fcf607806b7f66e04545c1878bdd7ac16047b` has parents
+  `91e525838d20d783fdf0f0eb7fce37d58131b052` and
+  `15f47ca5dc2781d3cbcdbfcfa2e98807b3db333a`; accepted Runtime commit
+  `261541866533016f6215453b083b1110af212f97` is an ancestor.
+- Decision: Freeze the exact integrated code tree and this documentation-only
+  evidence seal for a separate clean read-only review of `812a00f..HEAD`. Passing
+  controller gates does not let the integrating context self-declare GO.
+- Evidence: Sixty-five focused Runtime/CampaignSpec tests passed with two Windows
+  symlink-permission skips. Full unittest passed 1381 tests with 12 skips; serial
+  and xdist pytest each reported 1369 passed and 12 skipped. Ruff, configured
+  Pyright, explicit CampaignSpec/test Pyright, and compileall passed. Direct Draft
+  2020-12 validation covered both campaign-plan/spec Schemas, four plan/spec
+  instances, the runtime campaign Schema, and two runtime instances. Original
+  demo and both runtime campaign fixtures validated. Repository-external golden
+  CLI outputs matched SHA-256 `71d9b7445d8649cc179bca757cc1931be66fab89dec6d2c9e42ad0de956fabaf`
+  and `e0923fece619a8943eeaa55ce7b6c320154be5d82a68771d2c8f9939a276f9bb`.
+  A repository-external Forge workspace completed init/status/run/check, skipped
+  current stages on resume, and produced a deterministic immutable inspection
+  rerun. Zipapp and pinned PyInstaller 6.21.0 Windows candidates both passed
+  repository-external Web and console cold starts; their artifact SHA-256 values
+  are `aa7a25ced70b41c92d8e39fa547296b94197c3ab04bd354a5d50d7eb5a42f608`
+  and `68020fc96be68106b577f376c64a2ec34ab66086522ae9a1ed83653b98096431`.
+  History safety, `git fsck --full --no-dangling`, range/worktree diff checks,
+  and a clean integration worktree passed. Local `main` and local `origin/main`
+  remained `812a00fe4412f4fc7068ac2e188c5c26d0a03157`; a post-gate live GitHub refresh
+  failed after a connection reset and must be repeated before any fast-forward.
+- Consequences: A fresh context must return findings-first P0-P3 and explicit
+  `GO` or `REVISE` for the exact sealed HEAD. Until GO, local `main` must not move;
+  no push, release, force push, private-material access, or new public scope is
+  authorized. The Windows artifacts and controller reports remain outside Git.
+- Supersedes: DEC-0080's combined-controller-verification-pending state only; it
+  does not supersede the requirement for a separate integration acceptance.

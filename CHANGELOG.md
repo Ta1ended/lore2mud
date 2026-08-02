@@ -9,14 +9,21 @@
   state without replaying effects. v8 remains read-compatible only for packs with
   no campaign; v7 remains read-compatible only for packs with neither narrative
   state nor campaign definitions.
+- Combined the independently accepted Runtime Campaign Foundation and
+  CampaignSpec candidates on the isolated public integration branch. The exact
+  code merge passed 65 focused tests with 2 skips, 1381 unittest tests with 12
+  skips, serial and xdist pytest at 1369 passed / 12 skipped, all named quality,
+  Schema, golden CLI, Forge, Windows delivery, and repository-safety gates.
+  A separate clean read-only integration decision remains pending (DEC-0081).
 - Closed a second CampaignSpec v1 completion-isolation gap found by fresh
   re-review. A location, actor, scene, or knowledge target must now resolve only
   in current-objective scenes from the objective's exact phase, and cannot fire
   in a scene owned by a mutually exclusive objective. Exclusive branches may
   still share a non-completing setup scene. Plan, self-contained spec, and typed
   compile regressions cover earlier, later, and excluded-branch aliases. The
-  corrected isolated candidate received fresh read-only GO; combined integration
-  verification remains pending (DEC-0079, DEC-0080).
+  corrected isolated candidate received fresh read-only GO and passed the
+  combined controller matrix; independent integration acceptance remains pending
+  (DEC-0079 through DEC-0081).
 - Tightened CampaignSpec v1 cross-object semantics after its first independent
   review returned REVISE. The sole player's non-null starting location must now
   equal the authoritative campaign map root. Every completion kind resolves to
