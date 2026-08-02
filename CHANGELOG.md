@@ -16,8 +16,12 @@
   that shape, and one regression proves Schema/loader/CLI parity. The corrected
   candidate passes 66 focused tests with 2 skips, 1382 unittest tests with 12
   skips, serial and xdist pytest at 1370 passed / 12 skipped, all named quality,
-  Schema, golden CLI, Forge, Windows delivery, and repository-safety gates. A
-  fresh clean read-only re-review remains pending (DEC-0081, DEC-0082).
+  Schema, golden CLI, Forge, Windows delivery, and repository-safety gates. The
+  second clean review confirmed that technical result but returned `REVISE` for
+  one handoff-only P2: stale current-state bullets contradicted the completed
+  isolated GO and combined-gate records. Those bullets are now synchronized;
+  a fresh focused documentation re-review remains pending (DEC-0081 through
+  DEC-0083).
 - Closed a second CampaignSpec v1 completion-isolation gap found by fresh
   re-review. A location, actor, scene, or knowledge target must now resolve only
   in current-objective scenes from the objective's exact phase, and cannot fire

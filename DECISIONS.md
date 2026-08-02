@@ -2140,3 +2140,37 @@
   force push, private-material access, or new public scope is authorized.
 - Supersedes: DEC-0081's controller-evidence counts and first-seal-pending state;
   it does not supersede the accepted Runtime or CampaignSpec contracts.
+
+## DEC-0083: Current-state handoff drift is corrected without changing the accepted code tree
+
+- Date: 2026-08-02
+- Status: Documentation correction verified; fresh focused independent re-review pending.
+- Context: The independent re-review of seal
+  `e1e09941a368c04b2e6f08f4b2a53e137307016f` reproduced the original
+  loader/Schema P2 as closed and found no additional code, test, packaging,
+  safety, or history issue. It returned `REVISE` for one P2 in the mandatory
+  resume record: later current sections of `PROJECT_STATE.md` still described
+  the CampaignSpec merge, combined gates, and isolated Runtime/CampaignSpec GO
+  decisions as incomplete, contradicting the accurate top-level record and
+  DEC-0080 through DEC-0082.
+- Decision: Synchronize the current `In progress`, `Blockers`, and
+  `Risks and unknowns` bullets with the accepted isolated candidates and the
+  completed combined technical gates. Update the compact restart files and
+  changelog to record that only a focused review of this documentation seal
+  remains. Do not modify the integrated code, Schema, fixtures, tests, packaging,
+  dependencies, or private boundary.
+- Evidence: The working diff is limited to `PROJECT_STATE.md`,
+  `PROJECT_MEMORY.md`, `NEXT_TASK.md`, `CHANGELOG.md`, and this append-only
+  decision. Searches find none of the three superseded current-state claims.
+  `git diff --check`, `python scripts/check_repo_safety.py --history`, and
+  `git fsck --full --no-dangling` pass. The source, pipeline, Schema, test,
+  example, and packaging trees are byte-unchanged from code commit
+  `22a05d181bc7fc5a9eda96c39ef6e6f9e2e052bf`.
+- Consequences: A fresh clean task must review the exact new documentation seal,
+  verify this P2 is closed, and return findings-first `GO` or `REVISE`. Local
+  `main` remains at `812a00f` until GO and a fresh live-remote ancestry check.
+  No push, release, force push, private-material access, or new public scope is
+  authorized.
+- Supersedes: Only the stale current-state bullets and DEC-0082's expectation
+  that the next review would be a full technical re-review. It does not supersede
+  the technical evidence or the requirement for independent acceptance.

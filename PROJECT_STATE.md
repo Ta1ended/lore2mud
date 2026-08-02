@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-08-02（公共整合首轮验收 P2 已修正；新封板待独立复验）_
+_Last updated: 2026-08-02（公共整合代码 P2 已关闭；第二轮仅余交接 P2，文档修正待复验）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -111,9 +111,12 @@ history safety、fsck 和两层 diff 检查通过。新的 zipapp 与 PyInstalle
 `4e011c22a67a4db774e26353ce7c09b4568fa6a39571254bd793c0c4de163a6e` 和
 `cfde8f6a87c22b5a6fde2d1a00ab501fdd5e4897d319f72d3f817f403aabf269`。
 
-这仍不是独立 GO。当前上下文实施修正、重跑门禁并写交接封板，不能充当全新只读
-reviewer；新 seal 获得 GO 前不移动本地 `main`，不 push 或 release。本地 `main` 与本地
-`origin/main` 仍为 `812a00f`；任何 fast-forward 前必须重新查询 live remote。
+第二轮全新只读复验确认原 loader/Schema P2 已关闭，且没有新增代码、测试、打包、安全或
+历史 finding；但它因本文件下方现行 `In progress`、`Blockers` 与 `Risks and unknowns`
+仍保留已被 DEC-0080 至 DEC-0082 取代的状态而返回唯一 P2。当前文档封板只同步这些交接
+状态，不修改已验收代码树或控制器证据；新的 focused 只读复验给出 GO 前不移动本地
+`main`，不 push 或 release。本地 `main` 与本地 `origin/main` 仍为 `812a00f`；任何
+fast-forward 前必须重新查询 live remote（DEC-0083）。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
@@ -289,14 +292,14 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 公共整合分支 `coord/demo-1-58-public-integration` 已合并 Runtime 候选并正在完成
-  CampaignSpec 合并交接。代码与 Schema 无冲突；公共连续性交接正在统一。
-- 精确整合 HEAD 尚未完成组合门禁与单独干净只读验收，因此本地 `main` 保持不变。
+- 公共整合分支已按依赖顺序合并分别获 GO 的 Runtime 与 CampaignSpec 候选；组合代码门禁、
+  原 loader/Schema P2 修正和第二轮技术复核均已完成。当前只剩本次纯交接封板的 focused
+  全新只读复验；本地 `main` 在该复验 GO 前保持不变。
 
 ## Blockers
 
-- Runtime/CampaignSpec/私人 Canon 三个候选都尚未获得 fresh 只读 GO；独立 GO 前不得整合到
-  `main`。
+- 唯一整合门是精确文档封板尚未获得 fresh 只读 GO；此前 Runtime、CampaignSpec 与私人
+  Canon 的独立 GO 均已完成，不应重复列为开放门。
 - 发布门仍需项目负责人明确授权；本轮不查询远端、不 push、不 release。若后续发布，必须先刷新
   远端并确认祖先关系，禁止 force push。
 
@@ -528,9 +531,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## Risks and unknowns
 
-- Runtime campaign is a new public foundation: conditional projections, atomic effects, and
-  v9 actor/save state are validated only by this slice's tests until a fresh reviewer accepts
-  them; campaign remains optional and original_demo stays 0.10.0 in this commit.
+- Runtime Campaign Foundation and CampaignSpec are independently accepted. The combined
+  candidate still cannot move to local `main` until this documentation-only seal receives
+  fresh GO; campaign remains optional and original_demo stays 0.10.0.
 - M3 implements the fixed `monster_defeated`, `reach_room`, and `collect_item`
   quest kinds; any further quest kind requires an explicit contract and vertical slice.
 - The one-target-monster-per-quest constraint will need revisiting if shared-target

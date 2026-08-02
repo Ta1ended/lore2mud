@@ -42,9 +42,13 @@ stale.
   focused tests with 2 skips, 1382 unittest tests with 12 skips, and serial plus
   xdist pytest at 1370 passed / 12 skipped, together with all named quality,
   Schema, golden, Forge, safety, and repository-external Windows cold-start
-  gates. Current HEAD is the new documentation seal and still requires a fresh
-  clean read-only GO before local `main` can move (DEC-0081, DEC-0082). No
-  private source or derived material belongs in this branch.
+  gates. A second clean review confirmed the technical candidate but returned
+  `REVISE` for one handoff-only P2: stale current-state bullets in
+  `PROJECT_STATE.md` contradicted the completed isolated GO and combined-gate
+  records. Current HEAD synchronizes those bullets without changing the code
+  tree and requires a fresh focused read-only GO before local `main` can move
+  (DEC-0081 through DEC-0083). No private source or derived material belongs in
+  this branch.
 - Public integration candidate `coord/public-integration-20260801` is at
   `dcd9bb0b21eb667061e2694a462f63e252636545`, merging the independently accepted
   public-only GEN-1 candidate `e7cba52fcfdf0c04458fca5fb9b516ebc762f4bc` and
