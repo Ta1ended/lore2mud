@@ -2109,3 +2109,34 @@
   authorized. The Windows artifacts and controller reports remain outside Git.
 - Supersedes: DEC-0080's combined-controller-verification-pending state only; it
   does not supersede the requirement for a separate integration acceptance.
+
+## DEC-0082: Runtime campaign loader and Schema parity correction is controller-verified
+
+- Date: 2026-08-02
+- Status: P2 correction verified; fresh independent re-review pending.
+- Context: The fresh read-only review of seal `7f1ceff` returned `REVISE` for
+  one P2. `schemas/campaign.schema.json` requires every
+  `dialogue_views[].nodes` array to contain at least one item, while the runtime
+  loader and official `lore2mud validate` CLI accepted an empty array.
+- Decision: Code commit `22a05d181bc7fc5a9eda96c39ef6e6f9e2e052bf` adds the
+  same non-empty validation already used by base dialogue definitions and a
+  focused regression that requires Draft 2020-12, `load_content_pack()`, and the
+  real validation CLI all to reject the exact malformed public fixture copy.
+  No Schema, runtime projection, save, Web, CampaignSpec, dependency, or content
+  contract was otherwise changed.
+- Evidence: Sixty-six focused Runtime/CampaignSpec tests passed with two Windows
+  symlink-permission skips. Full unittest passed 1382 tests with 12 skips; serial
+  and xdist pytest each reported 1370 passed and 12 skipped. Ruff, configured and
+  explicit Pyright, compileall, direct Schema validation, three public content
+  validations, both repository-external CampaignSpec goldens, the full external
+  Forge lifecycle, history safety, fsck, and range/worktree diff checks passed.
+  New repository-external zipapp and PyInstaller 6.21.0 candidates passed Web and
+  console cold starts at SHA-256
+  `4e011c22a67a4db774e26353ce7c09b4568fa6a39571254bd793c0c4de163a6e`
+  and `cfde8f6a87c22b5a6fde2d1a00ab501fdd5e4897d319f72d3f817f403aabf269`.
+- Consequences: This controller result is not independent GO. A fresh clean
+  read-only task must reproduce the old P2, review the exact new seal, and return
+  findings-first `GO` or `REVISE` before local `main` moves. No push, release,
+  force push, private-material access, or new public scope is authorized.
+- Supersedes: DEC-0081's controller-evidence counts and first-seal-pending state;
+  it does not supersede the accepted Runtime or CampaignSpec contracts.

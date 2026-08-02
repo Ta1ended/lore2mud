@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-08-02（Runtime 与 CampaignSpec 单项验收 GO；公共整合候选待组合验证）_
+_Last updated: 2026-08-02（公共整合首轮验收 P2 已修正；新封板待独立复验）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -97,20 +97,23 @@ NarrativeModel 与显式人工计划编译为绑定规范 SHA-256 的自包含 C
 symlink 权限 skip）、1364 项 unittest（12 skip）、1352 项 pytest（12 skip）及 Schema、
 golden CLI、质量和安全门禁通过（DEC-0077 至 DEC-0080）。
 
-`coord/demo-1-58-public-integration` 已按依赖顺序合并上述两个已 GO 的公共候选。组合代码
-提交为 `1a9fcf607806b7f66e04545c1878bdd7ac16047b`，双亲为 Runtime 整合提交 `91e5258`
-和 CampaignSpec `15f47ca`；Runtime `2615418` 是其祖先。控制器组合门禁通过：65 项专项
-（2 个 Windows symlink 权限 skip）、1381 项 unittest（12 skip）、serial/xdist pytest
-均为 1369 passed / 12 skipped；Ruff、两条 Pyright、compileall、Draft 2020-12 Schema、
-三个公共内容包、仓库外 golden CLI、完整 Forge 生命周期、history safety、fsck 和两层 diff
-检查通过。zipapp 与 PyInstaller 6.21.0 候选均在仓库外完成 Web/console 冷启动，SHA-256
-分别为 `aa7a25ced70b41c92d8e39fa547296b94197c3ab04bd354a5d50d7eb5a42f608` 和
-`68020fc96be68106b577f376c64a2ec34ab66086522ae9a1ed83653b98096431`（DEC-0081）。
+`coord/demo-1-58-public-integration` 已按依赖顺序合并上述两个已 GO 的公共候选。首轮组合
+seal `7f1ceff` 的全新只读验收返回 `REVISE`，唯一 finding 为 P2：Schema 要求
+`dialogue_views[].nodes` 非空，但 loader 与真实 `validate` CLI 接受空数组。代码提交
+`22a05d181bc7fc5a9eda96c39ef6e6f9e2e052bf` 只关闭该契约差异，并新增同一负例对
+Draft 2020-12、loader 与 CLI 的三重回归（DEC-0082）。
 
-这仍不是独立 GO。当前上下文参与了冲突处理、组合验证与交接封板，不能充当全新只读
-reviewer；独立 GO 前不移动本地 `main`，不 push 或 release。控制器结束时本地 `main` 与
-本地 `origin/main` 仍为 `812a00f`、整合工作树干净；末次 GitHub 刷新因连接重置失败，任何
-fast-forward 前必须重新查询 live remote。
+修正后的控制器门禁通过：66 项专项（2 个 Windows symlink 权限 skip）、1382 项 unittest
+（12 skip）、serial/xdist pytest 均为 1370 passed / 12 skipped；Ruff、两条 Pyright、
+compileall、Draft 2020-12 Schema、三个公共内容包、仓库外 golden CLI、完整 Forge 生命周期、
+history safety、fsck 和两层 diff 检查通过。新的 zipapp 与 PyInstaller 6.21.0 候选均在
+仓库外完成 Web/console 冷启动，SHA-256 分别为
+`4e011c22a67a4db774e26353ce7c09b4568fa6a39571254bd793c0c4de163a6e` 和
+`cfde8f6a87c22b5a6fde2d1a00ab501fdd5e4897d319f72d3f817f403aabf269`。
+
+这仍不是独立 GO。当前上下文实施修正、重跑门禁并写交接封板，不能充当全新只读
+reviewer；新 seal 获得 GO 前不移动本地 `main`，不 push 或 release。本地 `main` 与本地
+`origin/main` 仍为 `812a00f`；任何 fast-forward 前必须重新查询 live remote。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。

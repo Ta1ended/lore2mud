@@ -1,31 +1,34 @@
 # Next Task
 
-_Last updated: 2026-08-02 (combined controller gates passed; fresh integration review pending)_
+_Last updated: 2026-08-02 (first review P2 corrected; fresh re-review pending)_
 
 ## Single next action
 
-Create a separate clean read-only review of the exact
+Create a fresh clean read-only re-review of the exact
 `812a00fe4412f4fc7068ac2e188c5c26d0a03157..HEAD` range on
-`coord/demo-1-58-public-integration`. Report findings first as P0-P3 and finish
-with an explicit `GO` or `REVISE`. The reviewer must verify the merge ancestry,
-Runtime/CampaignSpec interaction, handoff accuracy, and the named evidence; it
-must not edit, commit, merge, fast-forward `main`, push, release, or access any
-private source or Demo material.
+`coord/demo-1-58-public-integration`. Reproduce the prior empty-dialogue-node P2
+against `7f1ceff`, verify that code commit `22a05d1` closes it across Schema,
+loader, and real CLI validation, then audit the complete integrated candidate.
+Report P0-P3 findings first and finish with explicit `GO` or `REVISE`. Do not
+edit, commit, merge, fast-forward `main`, push, release, or access any private
+source or Demo material.
 
-## Candidate evidence
+## Corrected candidate evidence
 
-- Combined code commit `1a9fcf607806b7f66e04545c1878bdd7ac16047b` has merge
+- Combined merge `1a9fcf607806b7f66e04545c1878bdd7ac16047b` retains exact
   parents `91e5258` and accepted CampaignSpec candidate `15f47ca`; accepted
-  Runtime candidate `2615418` is an ancestor.
-- Controller gates passed: 65 focused tests with 2 Windows symlink-permission
-  skips; 1381 unittest tests with 12 skips; serial and xdist pytest each reported
-  1369 passed / 12 skipped; Ruff, two Pyright scopes, and compileall passed.
+  Runtime candidate `2615418` remains an ancestor. Code commit `22a05d1` is the
+  narrow post-review parity correction.
+- Controller gates passed: 66 focused tests with 2 Windows symlink-permission
+  skips; 1382 unittest tests with 12 skips; serial and xdist pytest each reported
+  1370 passed / 12 skipped; Ruff, two Pyright scopes, and compileall passed.
 - Draft 2020-12 Schema/fixture validation, three public content validations,
   repository-external CampaignSpec golden bytes, the full Forge lifecycle,
   history safety, fsck, and both diff checks passed.
 - Repository-external zipapp and PyInstaller 6.21.0 candidates both passed Web
-  and console cold starts. Their SHA-256 values are `aa7a25ced70b41c92d8e39fa547296b94197c3ab04bd354a5d50d7eb5a42f608`
-  and `68020fc96be68106b577f376c64a2ec34ab66086522ae9a1ed83653b98096431`.
+  and console cold starts. Their SHA-256 values are
+  `4e011c22a67a4db774e26353ce7c09b4568fa6a39571254bd793c0c4de163a6e`
+  and `cfde8f6a87c22b5a6fde2d1a00ab501fdd5e4897d319f72d3f817f403aabf269`.
 
 ## Boundaries
 

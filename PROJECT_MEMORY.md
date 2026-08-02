@@ -33,14 +33,18 @@ stale.
   unittest, 1352 pytest, Schema, golden CLI, quality, and safety gates passed
   (DEC-0077 through DEC-0080).
 - `coord/demo-1-58-public-integration` combines the accepted Runtime and
-  CampaignSpec candidates in dependency order. Combined code commit
-  `1a9fcf607806b7f66e04545c1878bdd7ac16047b` passed the controller matrix:
-  65 focused tests with 2 skips, 1381 unittest tests with 12 skips, serial and
-  xdist pytest at 1369 passed / 12 skipped, all quality/Schema/golden/Forge/
-  safety gates, and repository-external zipapp plus PyInstaller cold starts.
-  Current HEAD is the documentation seal for that evidence and still requires a
-  separate clean read-only GO before local `main` can move (DEC-0081). No private
-  source or derived material belongs in this branch.
+  CampaignSpec candidates in dependency order. Its first sealed review at
+  `7f1ceff4403fa4670b053c598b6e8ad4c0954d2f` returned `REVISE` for one P2:
+  `dialogue_views[].nodes=[]` was rejected by the published Schema but accepted
+  by the runtime loader and official validation CLI. Code commit
+  `22a05d181bc7fc5a9eda96c39ef6e6f9e2e052bf` closes that exact parity gap and
+  adds a Schema/loader/CLI regression. Controller verification now passes 66
+  focused tests with 2 skips, 1382 unittest tests with 12 skips, and serial plus
+  xdist pytest at 1370 passed / 12 skipped, together with all named quality,
+  Schema, golden, Forge, safety, and repository-external Windows cold-start
+  gates. Current HEAD is the new documentation seal and still requires a fresh
+  clean read-only GO before local `main` can move (DEC-0081, DEC-0082). No
+  private source or derived material belongs in this branch.
 - Public integration candidate `coord/public-integration-20260801` is at
   `dcd9bb0b21eb667061e2694a462f63e252636545`, merging the independently accepted
   public-only GEN-1 candidate `e7cba52fcfdf0c04458fca5fb9b516ebc762f4bc` and

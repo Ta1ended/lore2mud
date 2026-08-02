@@ -10,11 +10,14 @@
   no campaign; v7 remains read-compatible only for packs with neither narrative
   state nor campaign definitions.
 - Combined the independently accepted Runtime Campaign Foundation and
-  CampaignSpec candidates on the isolated public integration branch. The exact
-  code merge passed 65 focused tests with 2 skips, 1381 unittest tests with 12
-  skips, serial and xdist pytest at 1369 passed / 12 skipped, all named quality,
-  Schema, golden CLI, Forge, Windows delivery, and repository-safety gates.
-  A separate clean read-only integration decision remains pending (DEC-0081).
+  CampaignSpec candidates on the isolated public integration branch. Its first
+  clean review found one P2: `dialogue_views[].nodes=[]` violated the published
+  Schema but passed the loader and official validation CLI. The loader now rejects
+  that shape, and one regression proves Schema/loader/CLI parity. The corrected
+  candidate passes 66 focused tests with 2 skips, 1382 unittest tests with 12
+  skips, serial and xdist pytest at 1370 passed / 12 skipped, all named quality,
+  Schema, golden CLI, Forge, Windows delivery, and repository-safety gates. A
+  fresh clean read-only re-review remains pending (DEC-0081, DEC-0082).
 - Closed a second CampaignSpec v1 completion-isolation gap found by fresh
   re-review. A location, actor, scene, or knowledge target must now resolve only
   in current-objective scenes from the objective's exact phase, and cannot fire
