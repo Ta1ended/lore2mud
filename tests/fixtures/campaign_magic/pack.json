@@ -1,0 +1,14 @@
+{
+  "id": "campaign_magic",
+  "name": "Clockwork Ward",
+  "version": "1.0.0",
+  "start_room_id": "room_clockwork_hall",
+  "player": {
+    "max_hp": 20,
+    "attack": 4,
+    "defense": 1,
+    "inventory_capacity": 4,
+    "coins": 0
+  },
+  "extensions": {}
+}

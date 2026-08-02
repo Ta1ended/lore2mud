@@ -8,32 +8,50 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 import re
 from types import MappingProxyType
-from typing import Literal
+from typing import Any, Literal
 
 from lore2mud.combat.service import CombatRound, resolve_combat_round
 from lore2mud.content.models import (
     AcceptQuestEffect,
+    AdjustNarrativeStateEffect,
+    AdvanceObjectiveEffect,
+    AdvanceSceneEffect,
+    CampaignActionDefinition,
+    CampaignDefinition,
+    CampaignEffect,
     ContentPack,
+    CorrectKnowledgeEffect,
     CollectItemQuestDefinition,
+    ConditionalText,
     DialogueDefinition,
     DialogueEffect,
     DialogueOption,
     GrantExperienceEffect,
     GrantItemEffect,
+    InteractableDefinition,
     MonsterDefeatedQuestDefinition,
+    MoveActorEffect,
     QuestDefinition,
     ReachRoomQuestDefinition,
+    RemoveItemEffect,
+    RetractKnowledgeEffect,
+    RevealKnowledgeEffect,
+    SceneDefinition,
     SetFlagEffect,
+    SetNarrativeStateEffect,
     ShopDefinition,
     ShopListingDefinition,
 )
 from lore2mud.engine.models import (
     Character,
     DialogueState,
+    KnowledgeState,
     Monster,
+    ObjectiveState,
     Player,
     QuestState,
     Room,
+    SceneState,
 )
 from lore2mud.inventory.models import EquippedItems, Inventory, Item, ItemStack
 from lore2mud.narrative.conditions import evaluate_condition
@@ -189,6 +207,39 @@ class DialogueOptionSummary:
 
 
 @dataclass(frozen=True, slots=True)
+class AvailableCampaignAction:
+    """One authoritative action projection with its owning interactable."""
+
+    interactable_id: str
+    action: CampaignActionDefinition
+
+
+@dataclass(frozen=True, slots=True)
+class JournalEntry:
+    id: str
+    category: Literal["story", "objective", "knowledge"]
+    title: str
+    text: str
+    status: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CampaignEffectOutcome:
+    kind: str
+    target_id: str
+    before: Any
+    after: Any
+
+
+@dataclass(frozen=True, slots=True)
+class CampaignActionOutcome:
+    action_id: str
+    label: str
+    result_text: str
+    effect_outcomes: tuple[CampaignEffectOutcome, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class GrantItemEffectOutcome:
     """Typed outcome for one ``grant_item`` dialogue effect."""
 
@@ -336,6 +387,10 @@ class World:
     characters: dict[str, Character] = field(default_factory=dict)
     dialogue_defs: dict[str, DialogueDefinition] = field(default_factory=dict)
     shop_defs: dict[str, ShopDefinition] = field(default_factory=dict)
+    campaign: CampaignDefinition | None = None
+    scene_states: dict[str, SceneState] = field(default_factory=dict)
+    objective_states: dict[str, ObjectiveState] = field(default_factory=dict)
+    knowledge_states: dict[str, KnowledgeState] = field(default_factory=dict)
     active_dialogue: DialogueState | None = None
 
     @property
@@ -437,6 +492,35 @@ class World:
             narrative_state={
                 state_id: definition.initial
                 for state_id, definition in pack.narrative_state_defs.items()
+            },
+            campaign=pack.campaign,
+            scene_states={
+                scene_id: SceneState(
+                    scene_id=scene_id,
+                    status=scene.initial_status,
+                    stage_index=0 if scene.initial_status == "active" else None,
+                )
+                for scene_id, scene in (
+                    pack.campaign.scenes.items() if pack.campaign else ()
+                )
+            },
+            objective_states={
+                objective_id: ObjectiveState(
+                    objective_id=objective_id,
+                    status=objective.initial_status,
+                )
+                for objective_id, objective in (
+                    pack.campaign.objectives.items() if pack.campaign else ()
+                )
+            },
+            knowledge_states={
+                knowledge_id: KnowledgeState(
+                    knowledge_id=knowledge_id,
+                    status=knowledge.initial_status,
+                )
+                for knowledge_id, knowledge in (
+                    pack.campaign.knowledge.items() if pack.campaign else ()
+                )
             },
         )
         # A newly accepted quest can already be satisfied in the starting state.
@@ -559,6 +643,10 @@ class World:
             deepcopy(self.flags),
             deepcopy(self.narrative_state),
             deepcopy(self.equipped),
+            deepcopy(self.characters),
+            deepcopy(self.scene_states),
+            deepcopy(self.objective_states),
+            deepcopy(self.knowledge_states),
             deepcopy(self.active_dialogue),
         )
         try:
@@ -572,6 +660,10 @@ class World:
                 self.flags,
                 self.narrative_state,
                 self.equipped,
+                self.characters,
+                self.scene_states,
+                self.objective_states,
+                self.knowledge_states,
                 self.active_dialogue,
             ) = snapshot
             raise
@@ -629,6 +721,217 @@ class World:
             or evaluate_condition(option.condition, context)
         )
 
+    def _project_text(
+        self,
+        values: tuple[ConditionalText, ...],
+        fallback: str,
+    ) -> str:
+        context = self.condition_context()
+        unconditional = fallback
+        for value in values:
+            if value.condition is None:
+                unconditional = value.text
+            elif evaluate_condition(value.condition, context):
+                return value.text
+        return unconditional
+
+    def location_description(self, location_id: str | None = None) -> str:
+        """Project one location description from authoritative state."""
+        resolved_id = self.player.room_id if location_id is None else location_id
+        room = self.rooms[resolved_id]
+        if self.campaign is None:
+            return room.description
+        view = self.campaign.location_views.get(resolved_id)
+        if view is None:
+            return room.description
+        return self._project_text(view.descriptions, room.description)
+
+    def available_exits(self, location_id: str | None = None) -> dict[str, Any]:
+        """Return only exits whose bounded campaign conditions currently pass."""
+        resolved_id = self.player.room_id if location_id is None else location_id
+        exits = self.rooms[resolved_id].exits
+        if self.campaign is None:
+            return dict(exits)
+        view = self.campaign.location_views.get(resolved_id)
+        if view is None:
+            return dict(exits)
+        context = self.condition_context()
+        return {
+            direction: exit_definition
+            for direction, exit_definition in exits.items()
+            if direction not in view.exit_conditions
+            or evaluate_condition(view.exit_conditions[direction], context)
+        }
+
+    def available_characters(self) -> tuple[Character, ...]:
+        """Project actors that are present, enabled, capable, and visible here."""
+        context = self.condition_context()
+        result: list[Character] = []
+        for character in sorted(self.characters.values(), key=lambda value: value.id):
+            if (
+                character.room_id != self.player.room_id
+                or character.presence != "present"
+                or not character.enabled
+                or character.incapacitated
+            ):
+                continue
+            view = self.campaign.actor_views.get(character.id) if self.campaign else None
+            if view is not None and view.condition is not None:
+                if not evaluate_condition(view.condition, context):
+                    continue
+            result.append(character)
+        return tuple(result)
+
+    def character_description(self, actor_id: str) -> str:
+        character = self.characters[actor_id]
+        view = self.campaign.actor_views.get(actor_id) if self.campaign else None
+        if view is None:
+            return character.description
+        return self._project_text(view.descriptions, character.description)
+
+    def dialogue_node_text(self, dialogue_id: str, node_id: str) -> str:
+        node = self.dialogue_defs[dialogue_id].nodes[node_id]
+        if self.campaign is None:
+            return node.text
+        dialogue_view = self.campaign.dialogue_views.get(dialogue_id)
+        node_view = dialogue_view.nodes.get(node_id) if dialogue_view else None
+        if node_view is None:
+            return node.text
+        return self._project_text(node_view.texts, node.text)
+
+    def available_scenes(self) -> tuple[SceneDefinition, ...]:
+        if self.campaign is None:
+            return ()
+        context = self.condition_context()
+        return tuple(
+            scene
+            for scene_id, scene in sorted(self.campaign.scenes.items())
+            if scene.location_id == self.player.room_id
+            and self.scene_states[scene_id].status == "active"
+            and (
+                scene.condition is None
+                or evaluate_condition(scene.condition, context)
+            )
+        )
+
+    def scene_description(self, scene_id: str) -> str:
+        if self.campaign is None or scene_id not in self.campaign.scenes:
+            raise WorldRuleError(f"场景 {scene_id!r} 不存在。")
+        scene = self.campaign.scenes[scene_id]
+        state = self.scene_states[scene_id]
+        if state.status != "active" or state.stage_index is None:
+            raise WorldRuleError(f"场景 {scene_id!r} 当前不可见。")
+        return self._project_text(scene.stages[state.stage_index].descriptions, "")
+
+    def available_interactables(self) -> tuple[InteractableDefinition, ...]:
+        if self.campaign is None:
+            return ()
+        context = self.condition_context()
+        active_characters = {character.id for character in self.available_characters()}
+        active_scene_stages = {}
+        for scene in self.available_scenes():
+            stage_index = self.scene_states[scene.id].stage_index
+            assert stage_index is not None
+            active_scene_stages[scene.id] = scene.stages[stage_index]
+        result: list[InteractableDefinition] = []
+        for interactable in sorted(
+            self.campaign.interactables.values(), key=lambda value: value.id
+        ):
+            if interactable.condition is not None and not evaluate_condition(
+                interactable.condition, context
+            ):
+                continue
+            if interactable.scene_id is not None:
+                stage = active_scene_stages.get(interactable.scene_id)
+                if stage is None or interactable.id not in stage.interactable_ids:
+                    continue
+            elif interactable.kind == "actor":
+                if interactable.target_id not in active_characters:
+                    continue
+            elif interactable.kind == "location":
+                if interactable.target_id != self.player.room_id:
+                    continue
+            elif interactable.location_id != self.player.room_id:
+                continue
+            if (
+                interactable.kind == "actor"
+                and interactable.target_id not in active_characters
+            ):
+                continue
+            result.append(interactable)
+        return tuple(result)
+
+    def interactable_description(self, interactable_id: str) -> str:
+        if self.campaign is None or interactable_id not in self.campaign.interactables:
+            raise WorldRuleError(f"交互对象 {interactable_id!r} 不存在。")
+        available_ids = {value.id for value in self.available_interactables()}
+        if interactable_id not in available_ids:
+            raise WorldRuleError(f"交互对象 {interactable_id!r} 当前不可用。")
+        interactable = self.campaign.interactables[interactable_id]
+        return self._project_text(interactable.descriptions, "")
+
+    def available_campaign_actions(
+        self, interactable_id: str | None = None
+    ) -> tuple[AvailableCampaignAction, ...]:
+        if self.campaign is None:
+            return ()
+        context = self.condition_context()
+        result: list[AvailableCampaignAction] = []
+        for interactable in self.available_interactables():
+            if interactable_id is not None and interactable.id != interactable_id:
+                continue
+            for action_id in interactable.action_ids:
+                action = self.campaign.actions[action_id]
+                if action.condition is None or evaluate_condition(
+                    action.condition, context
+                ):
+                    result.append(AvailableCampaignAction(interactable.id, action))
+        return tuple(result)
+
+    def available_log_entries(self) -> tuple[JournalEntry, ...]:
+        if self.campaign is None:
+            return ()
+        context = self.condition_context()
+        result: list[JournalEntry] = []
+        for entry in sorted(self.campaign.log_entries.values(), key=lambda value: value.id):
+            if entry.condition is not None and not evaluate_condition(entry.condition, context):
+                continue
+            result.append(
+                JournalEntry(
+                    id=entry.id,
+                    category=entry.category,
+                    title=entry.id,
+                    text=self._project_text(entry.texts, ""),
+                )
+            )
+        for objective_id, definition in sorted(self.campaign.objectives.items()):
+            state = self.objective_states[objective_id]
+            if state.status == "inactive":
+                continue
+            result.append(
+                JournalEntry(
+                    id=objective_id,
+                    category="objective",
+                    title=definition.title,
+                    text=definition.description,
+                    status=state.status,
+                )
+            )
+        for knowledge_id, definition in sorted(self.campaign.knowledge.items()):
+            status = self.knowledge_states[knowledge_id].status
+            if status == "unknown":
+                continue
+            result.append(
+                JournalEntry(
+                    id=knowledge_id,
+                    category="knowledge",
+                    title=definition.title,
+                    text=definition.texts[status],
+                    status=status,
+                )
+            )
+        return tuple(result)
+
     def _require_alive(self) -> None:
         """Gate: reject all modifying actions when the player is dead."""
         if not self.player.is_alive:
@@ -659,7 +962,7 @@ class World:
         """Move and return additive quest results for the command layer."""
         self._require_alive()
         normalized = direction.casefold()
-        exit_def = self.current_room.exits.get(normalized)
+        exit_def = self.available_exits().get(normalized)
         if exit_def is None:
             raise WorldRuleError(f"这里不能向 {direction} 移动。")
         required_item_id = exit_def.required_item_id
@@ -894,11 +1197,7 @@ class World:
 
     def _visible_character_ids(self) -> list[str]:
         """Return character IDs currently placed in the player's room."""
-        return [
-            character.id
-            for character in self.characters.values()
-            if character.room_id == self.player.room_id
-        ]
+        return [character.id for character in self.available_characters()]
 
     def _build_examine_outcome(
         self,
@@ -926,7 +1225,7 @@ class World:
         return ExamineCharacterOutcome(
             character_id=character.id,
             character_name=character.name,
-            description=character.description,
+            description=self.character_description(character.id),
         )
 
     def examine(
@@ -1238,10 +1537,7 @@ class World:
     def start_dialogue(self, character_query: str) -> TalkOutcome:
         """Start dialogue with a character in the current room."""
         self._require_alive()
-        room_char_ids = [
-            c.id for c in self.characters.values()
-            if c.room_id == self.player.room_id
-        ]
+        room_char_ids = [character.id for character in self.available_characters()]
         character_id = self._resolve_id_from_ids(
             character_query, room_char_ids, self.characters, kind="角色"
         )
@@ -1267,7 +1563,7 @@ class World:
                 character_name=character.name,
                 dialogue_id=dialogue.id,
                 node_id=node.id,
-                node_text=node.text,
+                node_text=self.dialogue_node_text(dialogue.id, node.id),
                 options=tuple(
                     DialogueOptionSummary(opt.id, opt.text)
                     for opt in options
@@ -1292,7 +1588,7 @@ class World:
                 character_name=character.name,
                 dialogue_id=dialogue.id,
                 node_id=start_node.id,
-                node_text=start_node.text,
+                node_text=self.dialogue_node_text(dialogue.id, start_node.id),
                 options=tuple(
                     DialogueOptionSummary(opt.id, opt.text)
                     for opt in start_options
@@ -1305,7 +1601,7 @@ class World:
                 character_name=character.name,
                 dialogue_id=dialogue.id,
                 node_id=start_node.id,
-                node_text=start_node.text,
+                node_text=self.dialogue_node_text(dialogue.id, start_node.id),
                 options=(),
                 ended=True,
             )
@@ -1488,7 +1784,7 @@ class World:
                 )
                 return TalkOutcome(
                     node_id=next_node.id,
-                    node_text=next_node.text,
+                    node_text=self.dialogue_node_text(dialogue.id, next_node.id),
                     options=tuple(
                         DialogueOptionSummary(opt.id, opt.text)
                         for opt in next_options
@@ -1500,10 +1796,273 @@ class World:
             self.active_dialogue = None
             return TalkOutcome(
                 node_id=next_node.id,
-                node_text=next_node.text,
+                node_text=self.dialogue_node_text(dialogue.id, next_node.id),
                 options=(),
                 ended=True,
                 **common,
+            )
+
+    def _apply_campaign_effect(
+        self, effect: CampaignEffect
+    ) -> CampaignEffectOutcome:
+        if isinstance(effect, GrantItemEffect):
+            _validate_quantity(effect.quantity)
+            item = self.items.get(effect.item_id)
+            if item is None:
+                raise WorldRuleError(f"物品 {effect.item_id!r} 不存在。")
+            existing = self.player.inventory.find_stack(item.id)
+            before = existing.quantity if existing else 0
+            if effect.quantity > item.stack_limit:
+                raise WorldRuleError(f"超过栈上限 ({item.stack_limit})。")
+            if item.stack_limit == 1:
+                reserved = any(
+                    monster.is_alive
+                    and monster.loot_item is not None
+                    and monster.loot_item.item_id == item.id
+                    for monster in self.monsters.values()
+                )
+                if effect.quantity != 1 or self._is_item_placed_anywhere(item.id) or reserved:
+                    raise WorldRuleError(f"物品 {item.name} 已经存在或被其他来源保留。")
+            elif existing is not None and existing.quantity + effect.quantity > item.stack_limit:
+                raise WorldRuleError(f"超过栈上限 ({item.stack_limit})。")
+            if existing is None and self.player.inventory.stack_count >= self.player.inventory.capacity:
+                raise WorldRuleError("背包已满，无法获得物品。")
+            self.player.inventory.add_stack(item.id, effect.quantity)
+            self._settle_eligible_quests()
+            return CampaignEffectOutcome(
+                effect.kind, item.id, before, before + effect.quantity
+            )
+        if isinstance(effect, RemoveItemEffect):
+            _validate_quantity(effect.quantity)
+            item = self.items.get(effect.item_id)
+            stack = self.player.inventory.find_stack(effect.item_id)
+            if item is None or stack is None or stack.quantity < effect.quantity:
+                raise WorldRuleError(f"背包中的物品 {effect.item_id!r} 数量不足。")
+            if effect.item_id in {self.equipped.hand, self.equipped.body}:
+                raise WorldRuleError(f"物品 {item.name} 已装备，不能移除。")
+            before = stack.quantity
+            self.player.inventory.remove_stack(effect.item_id, effect.quantity)
+            return CampaignEffectOutcome(
+                effect.kind, effect.item_id, before, before - effect.quantity
+            )
+        if isinstance(effect, GrantExperienceEffect):
+            _validate_quantity(effect.amount)
+            before = self.player.experience
+            grant_experience(self.player, effect.amount)
+            return CampaignEffectOutcome(
+                effect.kind, self.player.id, before, self.player.experience
+            )
+        if isinstance(effect, AcceptQuestEffect):
+            before = effect.quest_id in self.quest_states
+            self._preflight_explicit_quest_acceptance(effect.quest_id, set(self.quest_states))
+            self._record_quest_acceptance(effect.quest_id, reject_existing=True)
+            self._settle_eligible_quests()
+            state = self.quest_states[effect.quest_id]
+            return CampaignEffectOutcome(
+                effect.kind,
+                effect.quest_id,
+                before,
+                "completed" if state.completed else "active",
+            )
+        if isinstance(effect, SetFlagEffect):
+            if not _STABLE_ID_PATTERN.fullmatch(effect.flag_id):
+                raise WorldRuleError("flag ID 必须是稳定 ID。")
+            if not isinstance(effect.value, bool):
+                raise WorldRuleError("flag 值必须是布尔值。")
+            before = self.flags.get(effect.flag_id)
+            self.flags[effect.flag_id] = effect.value
+            return CampaignEffectOutcome(
+                effect.kind, effect.flag_id, before, effect.value
+            )
+        if isinstance(effect, SetNarrativeStateEffect):
+            before = self.narrative_state.get(effect.state_id)
+            self.set_narrative_state(effect.state_id, effect.value)
+            return CampaignEffectOutcome(
+                effect.kind, effect.state_id, before, effect.value
+            )
+        if isinstance(effect, AdjustNarrativeStateEffect):
+            before = self.narrative_state.get(effect.state_id)
+            if not isinstance(before, int) or isinstance(before, bool):
+                raise WorldRuleError(
+                    f"叙事状态 {effect.state_id!r} 不是可调整的整数。"
+                )
+            after = before + effect.amount
+            self.set_narrative_state(effect.state_id, after)
+            return CampaignEffectOutcome(
+                effect.kind, effect.state_id, before, after
+            )
+        if isinstance(effect, MoveActorEffect):
+            actor = self.characters.get(effect.actor_id)
+            if actor is None:
+                raise WorldRuleError(f"角色 {effect.actor_id!r} 不存在。")
+            before = {
+                "location_id": actor.room_id,
+                "presence": actor.presence,
+                "enabled": actor.enabled,
+                "incapacitated": actor.incapacitated,
+            }
+            if effect.location_id is not None:
+                if effect.location_id not in self.rooms:
+                    raise WorldRuleError(f"房间 {effect.location_id!r} 不存在。")
+                actor.room_id = effect.location_id
+            if effect.presence is not None:
+                actor.presence = effect.presence
+            if effect.enabled is not None:
+                actor.enabled = effect.enabled
+            if effect.incapacitated is not None:
+                actor.incapacitated = effect.incapacitated
+            if self.active_dialogue is not None:
+                dialogue = self.dialogue_defs[self.active_dialogue.dialogue_id]
+                if dialogue.character_id == actor.id and actor.id not in {
+                    character.id for character in self.available_characters()
+                }:
+                    self.active_dialogue = None
+            after = {
+                "location_id": actor.room_id,
+                "presence": actor.presence,
+                "enabled": actor.enabled,
+                "incapacitated": actor.incapacitated,
+            }
+            return CampaignEffectOutcome(effect.kind, actor.id, before, after)
+        if isinstance(effect, AdvanceSceneEffect):
+            state = self.scene_states.get(effect.scene_id)
+            if state is None or self.campaign is None:
+                raise WorldRuleError(f"场景 {effect.scene_id!r} 不存在。")
+            scene = self.campaign.scenes[effect.scene_id]
+            before = {"status": state.status, "stage_index": state.stage_index}
+            if effect.transition == "activate":
+                if state.status != "inactive":
+                    raise WorldRuleError(f"场景 {effect.scene_id} 不能重复激活。")
+                state.status = "active"
+                state.stage_index = 0
+            elif effect.transition == "advance":
+                if state.status != "active" or state.stage_index is None:
+                    raise WorldRuleError(f"场景 {effect.scene_id} 尚未激活。")
+                if state.stage_index + 1 >= len(scene.stages):
+                    raise WorldRuleError(f"场景 {effect.scene_id} 已在最后阶段。")
+                state.stage_index += 1
+            else:
+                if state.status != "active":
+                    raise WorldRuleError(f"场景 {effect.scene_id} 尚未激活。")
+                state.status = "completed"
+                state.stage_index = None
+            after = {"status": state.status, "stage_index": state.stage_index}
+            return CampaignEffectOutcome(effect.kind, effect.scene_id, before, after)
+        if isinstance(effect, AdvanceObjectiveEffect):
+            state = self.objective_states.get(effect.objective_id)
+            if state is None or self.campaign is None:
+                raise WorldRuleError(f"目标 {effect.objective_id!r} 不存在。")
+            definition = self.campaign.objectives[effect.objective_id]
+            before: Any = state.status
+            if effect.transition == "activate":
+                if state.status != "inactive":
+                    raise WorldRuleError(f"目标 {effect.objective_id} 不能激活。")
+                incomplete = [
+                    dependency_id
+                    for dependency_id in definition.dependency_ids
+                    if self.objective_states[dependency_id].status != "completed"
+                ]
+                if incomplete:
+                    raise WorldRuleError(
+                        f"目标 {effect.objective_id} 的依赖尚未完成：{incomplete}。"
+                    )
+                blocked = [
+                    exclusive_id
+                    for exclusive_id in definition.exclusive_with
+                    if self.objective_states[exclusive_id].status
+                    in {"active", "in_progress", "completed"}
+                ]
+                if blocked:
+                    raise WorldRuleError(
+                        f"目标 {effect.objective_id} 与已选择目标互斥：{blocked}。"
+                    )
+                state.status = "active"
+                for exclusive_id in definition.exclusive_with:
+                    other = self.objective_states[exclusive_id]
+                    if other.status == "inactive":
+                        other.status = "failed"
+            elif effect.transition == "start":
+                if state.status != "active":
+                    raise WorldRuleError(f"目标 {effect.objective_id} 尚未激活。")
+                state.status = "in_progress"
+            elif effect.transition == "complete":
+                if state.status not in {"active", "in_progress"}:
+                    raise WorldRuleError(f"目标 {effect.objective_id} 不能完成。")
+                state.status = "completed"
+            else:
+                if state.status not in {"active", "in_progress"}:
+                    raise WorldRuleError(f"目标 {effect.objective_id} 不能失败。")
+                state.status = "failed"
+            return CampaignEffectOutcome(
+                effect.kind, effect.objective_id, before, state.status
+            )
+        if isinstance(effect, RevealKnowledgeEffect):
+            state = self.knowledge_states.get(effect.knowledge_id)
+            if state is None:
+                raise WorldRuleError(f"知识 {effect.knowledge_id!r} 不存在。")
+            before = state.status
+            rank = {"unknown": 0, "heard": 1, "suspected": 2, "confirmed": 3}
+            if before not in rank or rank[effect.status] < rank[before]:
+                raise WorldRuleError(
+                    f"知识 {effect.knowledge_id} 不能从 {before} 揭示为 {effect.status}。"
+                )
+            state.status = effect.status
+            return CampaignEffectOutcome(
+                effect.kind, effect.knowledge_id, before, state.status
+            )
+        if isinstance(effect, RetractKnowledgeEffect):
+            state = self.knowledge_states.get(effect.knowledge_id)
+            if state is None or state.status not in {"heard", "suspected", "confirmed"}:
+                raise WorldRuleError(f"知识 {effect.knowledge_id} 当前不能撤回。")
+            before = state.status
+            state.status = "retracted"
+            return CampaignEffectOutcome(
+                effect.kind, effect.knowledge_id, before, state.status
+            )
+        if isinstance(effect, CorrectKnowledgeEffect):
+            state = self.knowledge_states.get(effect.knowledge_id)
+            if state is None or state.status not in {
+                "heard",
+                "suspected",
+                "confirmed",
+                "retracted",
+            }:
+                raise WorldRuleError(f"知识 {effect.knowledge_id} 当前不能修正。")
+            before = state.status
+            state.status = "corrected"
+            return CampaignEffectOutcome(
+                effect.kind, effect.knowledge_id, before, state.status
+            )
+        raise WorldRuleError("campaign effect 类型无效。")
+
+    def _preflight_campaign_effects(
+        self, effects: tuple[CampaignEffect, ...]
+    ) -> None:
+        shadow = deepcopy(self)
+        for effect in effects:
+            shadow._apply_campaign_effect(effect)
+
+    def execute_campaign_action(self, action_id: str) -> CampaignActionOutcome:
+        """Execute one currently projected action by stable ID, atomically."""
+        self._require_alive()
+        if self.active_dialogue is not None:
+            raise WorldRuleError("请先结束当前对话。")
+        if not isinstance(action_id, str) or not _STABLE_ID_PATTERN.fullmatch(action_id):
+            raise WorldRuleError("动作 ID 必须是稳定 ID。")
+        available = {
+            projected.action.id: projected.action
+            for projected in self.available_campaign_actions()
+        }
+        action = available.get(action_id)
+        if action is None:
+            raise WorldRuleError(f"动作 {action_id!r} 当前不可用。")
+        self._preflight_campaign_effects(action.effects)
+        with self._atomic_mutation():
+            outcomes = tuple(
+                self._apply_campaign_effect(effect) for effect in action.effects
+            )
+            return CampaignActionOutcome(
+                action.id, action.label, action.result_text, outcomes
             )
 
     def end_dialogue(self) -> DialogueEndOutcome:

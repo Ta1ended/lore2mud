@@ -391,7 +391,7 @@ class DialogueEffectsCommandAndSaveTests(unittest.TestCase):
             service = SaveLoadService(pack, Path(td))
             service.save(world)
             loaded = service.load()
-            self.assertEqual(SAVE_FORMAT_VERSION, 8)
+            self.assertEqual(SAVE_FORMAT_VERSION, 9)
             self.assertEqual(loaded.flags, {})
             self.assertNotIn("quest_collect_ash_mite_gel", loaded.quest_states)
             self.assertEqual(loaded.player.experience, 0)

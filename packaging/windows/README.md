@@ -50,10 +50,12 @@ Set `LORE2MUD_DATA_DIR` to an absolute path before launch to use a portable or
 managed data location. The launcher never writes saves beside the application.
 
 Save directories are isolated by `content_pack_version`. The current public
-demo is `0.10.0` and writes save v8 with typed narrative state. Its saves reject
-older content-pack versions and v7 data because v7 cannot represent that state.
-v7 remains read-compatible only for content packs that declare no narrative
-state. JSON saves directly under the legacy `saves` directory and other
+demo is `0.10.0` and new saves write v9. v9 retains typed narrative state and
+adds strict actor plus optional scene/objective/knowledge runtime state. v8
+remains read-compatible only for packs without campaign; v7 remains readable
+only for packs with neither narrative-state definitions nor campaign runtime
+state. Saves from older content-pack versions remain rejected. JSON saves
+directly under the legacy `saves` directory and other
 `content-*` directories produce warnings and remain untouched. Before replacing
 or removing an old bundle, back up the complete `%LOCALAPPDATA%\lore2mud`
 directory.

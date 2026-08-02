@@ -15,10 +15,13 @@ from lore2mud.content.models import ContentPack
 from lore2mud.engine.models import (
     Character,
     DialogueState,
+    KnowledgeState,
     Monster,
+    ObjectiveState,
     Player,
     QuestState,
     Room,
+    SceneState,
 )
 from lore2mud.engine.world import World
 from lore2mud.inventory.models import EquippedItems, Inventory, Item, ItemStack
@@ -28,7 +31,8 @@ from lore2mud.narrative.models import (
     narrative_value_is_valid,
 )
 
-SAVE_FORMAT_VERSION = 8
+SAVE_FORMAT_VERSION = 9
+PREVIOUS_SAVE_FORMAT_VERSION = 8
 LEGACY_SAVE_FORMAT_VERSION = 7
 DEFAULT_SLOT = "default.json"
 _SLOT_NAME_PATTERN = re.compile(r"[a-z0-9][a-z0-9_-]{0,31}")
@@ -51,6 +55,12 @@ _SAVE_V7_TOP_LEVEL_KEYS = frozenset(
     }
 )
 _SAVE_V8_TOP_LEVEL_KEYS = _SAVE_V7_TOP_LEVEL_KEYS | {"narrative_state"}
+_SAVE_V9_TOP_LEVEL_KEYS = _SAVE_V8_TOP_LEVEL_KEYS | {
+    "actors",
+    "scene_states",
+    "objective_states",
+    "knowledge_states",
+}
 _CONTENT_PACK_KEYS = frozenset({"id", "version"})
 _PLAYER_KEYS = frozenset(
     {
@@ -176,6 +186,76 @@ def _serialize_world(world: World) -> dict:
             "completed": qs.completed,
         }
 
+    actors_data: dict[str, dict] = {}
+    for actor_id, actor in world.characters.items():
+        if actor.room_id not in world.rooms:
+            raise SaveLoadError(f"actors.{actor_id}.location_id 引用了不存在的房间")
+        if actor.presence not in {"present", "absent"}:
+            raise SaveLoadError(f"actors.{actor_id}.presence 无效")
+        if not isinstance(actor.enabled, bool) or not isinstance(actor.incapacitated, bool):
+            raise SaveLoadError(f"actors.{actor_id} 的布尔状态无效")
+        actors_data[actor_id] = {
+            "location_id": actor.room_id,
+            "presence": actor.presence,
+            "enabled": actor.enabled,
+            "incapacitated": actor.incapacitated,
+        }
+
+    scene_states_data: dict[str, dict] = {}
+    objective_states_data: dict[str, dict] = {}
+    knowledge_states_data: dict[str, dict] = {}
+    campaign = world.campaign
+    if campaign is None:
+        if world.scene_states or world.objective_states or world.knowledge_states:
+            raise SaveLoadError("无 campaign 的 World 不能包含 campaign 运行态")
+    else:
+        if set(world.scene_states) != set(campaign.scenes):
+            raise SaveLoadError("scene_states 键集合与 campaign 不匹配")
+        if set(world.objective_states) != set(campaign.objectives):
+            raise SaveLoadError("objective_states 键集合与 campaign 不匹配")
+        if set(world.knowledge_states) != set(campaign.knowledge):
+            raise SaveLoadError("knowledge_states 键集合与 campaign 不匹配")
+        for scene_id, state in world.scene_states.items():
+            if state.status not in {"inactive", "active", "completed"}:
+                raise SaveLoadError(f"scene_states.{scene_id}.status 无效")
+            if state.status == "active":
+                if (
+                    state.stage_index is None
+                    or isinstance(state.stage_index, bool)
+                    or not isinstance(state.stage_index, int)
+                    or not 0 <= state.stage_index < len(campaign.scenes[scene_id].stages)
+                ):
+                    raise SaveLoadError(f"scene_states.{scene_id}.stage_index 无效")
+            elif state.stage_index is not None:
+                raise SaveLoadError(
+                    f"scene_states.{scene_id} 非 active 时 stage_index 必须为 null"
+                )
+            scene_states_data[scene_id] = {
+                "status": state.status,
+                "stage_index": state.stage_index,
+            }
+        for objective_id, state in world.objective_states.items():
+            if state.status not in {
+                "inactive",
+                "active",
+                "in_progress",
+                "completed",
+                "failed",
+            }:
+                raise SaveLoadError(f"objective_states.{objective_id}.status 无效")
+            objective_states_data[objective_id] = {"status": state.status}
+        for knowledge_id, state in world.knowledge_states.items():
+            if state.status not in {
+                "unknown",
+                "heard",
+                "suspected",
+                "confirmed",
+                "retracted",
+                "corrected",
+            }:
+                raise SaveLoadError(f"knowledge_states.{knowledge_id}.status 无效")
+            knowledge_states_data[knowledge_id] = {"status": state.status}
+
     result = {
         "save_format_version": SAVE_FORMAT_VERSION,
         "content_pack": {
@@ -204,6 +284,10 @@ def _serialize_world(world: World) -> dict:
         "quest_states": quest_states_data,
         "flags": flags,
         "narrative_state": narrative_state,
+        "actors": actors_data,
+        "scene_states": scene_states_data,
+        "objective_states": objective_states_data,
+        "knowledge_states": knowledge_states_data,
         "active_dialogue": (
             {
                 "dialogue_id": world.active_dialogue.dialogue_id,
@@ -240,10 +324,19 @@ def _serialize_world(world: World) -> dict:
             raise SaveLoadError(
                 f"对话 {dlg.id!r} 引用的角色 {dlg.character_id!r} 不存在"
             )
-        if char.room_id != world.player.room_id:
+        if char.id not in {value.id for value in world.available_characters()}:
             raise SaveLoadError(
-                f"active_dialogue 角色 {dlg.character_id!r} 在房间 "
-                f"{char.room_id!r}，与玩家房间 {world.player.room_id!r} 不一致"
+                f"active_dialogue 角色 {dlg.character_id!r} 当前不可交互"
+            )
+        if (
+            char.room_id != world.player.room_id
+            or char.presence != "present"
+            or not char.enabled
+            or char.incapacitated
+        ):
+            raise SaveLoadError(
+                f"active_dialogue 角色 {dlg.character_id!r} 的位置或交互状态"
+                "与玩家不一致"
             )
     return result
 
@@ -324,20 +417,33 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
     if (
         isinstance(fmt, bool)
         or not isinstance(fmt, int)
-        or fmt not in {LEGACY_SAVE_FORMAT_VERSION, SAVE_FORMAT_VERSION}
+        or fmt
+        not in {
+            LEGACY_SAVE_FORMAT_VERSION,
+            PREVIOUS_SAVE_FORMAT_VERSION,
+            SAVE_FORMAT_VERSION,
+        }
     ):
         raise SaveLoadError(
             f"存档格式版本不匹配：期望 {SAVE_FORMAT_VERSION}"
-            f"（或兼容的 {LEGACY_SAVE_FORMAT_VERSION}），实际 {fmt}"
+            f"（或兼容的 {LEGACY_SAVE_FORMAT_VERSION}/"
+            f"{PREVIOUS_SAVE_FORMAT_VERSION}），实际 {fmt}"
         )
     if fmt == LEGACY_SAVE_FORMAT_VERSION:
-        if pack.narrative_state_defs:
+        if pack.narrative_state_defs or pack.campaign is not None:
             raise SaveLoadError(
-                "save v7 不包含 narrative_state，不能用于声明了叙事状态的内容包"
+                "save v7 不包含 narrative_state/campaign 运行态，不能用于该内容包"
             )
         _reject_unknown_fields(data, _SAVE_V7_TOP_LEVEL_KEYS, "存档顶层")
-    else:
+    elif fmt == PREVIOUS_SAVE_FORMAT_VERSION:
+        if pack.campaign is not None:
+            raise SaveLoadError(
+                "save v8 不包含 actor/scene/objective/knowledge 运行态，"
+                "不能用于 campaign 内容包"
+            )
         _reject_unknown_fields(data, _SAVE_V8_TOP_LEVEL_KEYS, "存档顶层")
+    else:
+        _reject_unknown_fields(data, _SAVE_V9_TOP_LEVEL_KEYS, "存档顶层")
 
     # --- content_pack identity ---
     cp = data.get("content_pack")
@@ -577,8 +683,8 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         raise SaveLoadError("存档缺少 flags 字段")
     flags = _validate_flags(data["flags"], "flags")
 
-    # --- typed narrative state (required in v8) ---
-    if fmt == SAVE_FORMAT_VERSION:
+    # --- typed narrative state (required in v8+) ---
+    if fmt in {PREVIOUS_SAVE_FORMAT_VERSION, SAVE_FORMAT_VERSION}:
         if "narrative_state" not in data:
             raise SaveLoadError("存档缺少 narrative_state 字段")
         narrative_state = _validate_narrative_state(
@@ -588,6 +694,138 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         )
     else:
         narrative_state = {}
+
+    # --- actor and campaign state (required in v9) ---
+    actor_values: dict[str, tuple[str, str, bool, bool]] = {}
+    scene_states: dict[str, SceneState] = {}
+    objective_states: dict[str, ObjectiveState] = {}
+    knowledge_states: dict[str, KnowledgeState] = {}
+    if fmt == SAVE_FORMAT_VERSION:
+        actors_raw = data.get("actors")
+        if not isinstance(actors_raw, dict):
+            raise SaveLoadError("存档缺少 actors 字段")
+        if set(actors_raw) != set(pack.characters):
+            raise SaveLoadError("actors 键集合与内容包角色不匹配")
+        for actor_id, raw_actor in actors_raw.items():
+            if not isinstance(raw_actor, dict):
+                raise SaveLoadError(f"actors.{actor_id} 必须是对象")
+            _reject_unknown_fields(
+                raw_actor,
+                frozenset({"location_id", "presence", "enabled", "incapacitated"}),
+                f"actors.{actor_id}",
+            )
+            location_id = raw_actor.get("location_id")
+            if not isinstance(location_id, str) or location_id not in pack.rooms:
+                raise SaveLoadError(
+                    f"actors.{actor_id}.location_id 必须引用存在的房间"
+                )
+            presence = raw_actor.get("presence")
+            if presence not in {"present", "absent"}:
+                raise SaveLoadError(
+                    f"actors.{actor_id}.presence 必须是 present 或 absent"
+                )
+            enabled = raw_actor.get("enabled")
+            incapacitated = raw_actor.get("incapacitated")
+            if not isinstance(enabled, bool):
+                raise SaveLoadError(f"actors.{actor_id}.enabled 必须是布尔值")
+            if not isinstance(incapacitated, bool):
+                raise SaveLoadError(
+                    f"actors.{actor_id}.incapacitated 必须是布尔值"
+                )
+            actor_values[actor_id] = (
+                location_id,
+                presence,
+                enabled,
+                incapacitated,
+            )
+
+        campaign = pack.campaign
+        expected_scenes = set(campaign.scenes) if campaign else set()
+        expected_objectives = set(campaign.objectives) if campaign else set()
+        expected_knowledge = set(campaign.knowledge) if campaign else set()
+
+        scene_states_raw = data.get("scene_states")
+        if not isinstance(scene_states_raw, dict):
+            raise SaveLoadError("存档缺少 scene_states 字段")
+        if set(scene_states_raw) != expected_scenes:
+            raise SaveLoadError("scene_states 键集合与 campaign 不匹配")
+        for scene_id, raw_state in scene_states_raw.items():
+            if not isinstance(raw_state, dict):
+                raise SaveLoadError(f"scene_states.{scene_id} 必须是对象")
+            _reject_unknown_fields(
+                raw_state,
+                frozenset({"status", "stage_index"}),
+                f"scene_states.{scene_id}",
+            )
+            status = raw_state.get("status")
+            if status not in {"inactive", "active", "completed"}:
+                raise SaveLoadError(f"scene_states.{scene_id}.status 无效")
+            stage_index = raw_state.get("stage_index")
+            if status == "active":
+                if (
+                    isinstance(stage_index, bool)
+                    or not isinstance(stage_index, int)
+                    or campaign is None
+                    or not 0 <= stage_index < len(campaign.scenes[scene_id].stages)
+                ):
+                    raise SaveLoadError(
+                        f"scene_states.{scene_id}.stage_index 无效"
+                    )
+            elif stage_index is not None:
+                raise SaveLoadError(
+                    f"scene_states.{scene_id} 非 active 时 stage_index 必须为 null"
+                )
+            scene_states[scene_id] = SceneState(scene_id, status, stage_index)
+
+        objective_states_raw = data.get("objective_states")
+        if not isinstance(objective_states_raw, dict):
+            raise SaveLoadError("存档缺少 objective_states 字段")
+        if set(objective_states_raw) != expected_objectives:
+            raise SaveLoadError("objective_states 键集合与 campaign 不匹配")
+        for objective_id, raw_state in objective_states_raw.items():
+            if not isinstance(raw_state, dict):
+                raise SaveLoadError(f"objective_states.{objective_id} 必须是对象")
+            _reject_unknown_fields(
+                raw_state, frozenset({"status"}), f"objective_states.{objective_id}"
+            )
+            status = raw_state.get("status")
+            if status not in {
+                "inactive",
+                "active",
+                "in_progress",
+                "completed",
+                "failed",
+            }:
+                raise SaveLoadError(f"objective_states.{objective_id}.status 无效")
+            objective_states[objective_id] = ObjectiveState(objective_id, status)
+
+        knowledge_states_raw = data.get("knowledge_states")
+        if not isinstance(knowledge_states_raw, dict):
+            raise SaveLoadError("存档缺少 knowledge_states 字段")
+        if set(knowledge_states_raw) != expected_knowledge:
+            raise SaveLoadError("knowledge_states 键集合与 campaign 不匹配")
+        for knowledge_id, raw_state in knowledge_states_raw.items():
+            if not isinstance(raw_state, dict):
+                raise SaveLoadError(f"knowledge_states.{knowledge_id} 必须是对象")
+            _reject_unknown_fields(
+                raw_state, frozenset({"status"}), f"knowledge_states.{knowledge_id}"
+            )
+            status = raw_state.get("status")
+            if status not in {
+                "unknown",
+                "heard",
+                "suspected",
+                "confirmed",
+                "retracted",
+                "corrected",
+            }:
+                raise SaveLoadError(f"knowledge_states.{knowledge_id}.status 无效")
+            knowledge_states[knowledge_id] = KnowledgeState(knowledge_id, status)
+    else:
+        actor_values = {
+            actor_id: (definition.room_id, "present", True, False)
+            for actor_id, definition in pack.characters.items()
+        }
 
     # --- equipped (symmetric hand + body) ---
     equipped_raw = data.get("equipped")
@@ -709,10 +947,17 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
             raise SaveLoadError(
                 f"对话 {dlg_id!r} 引用的角色 {ddef.character_id!r} 不存在"
             )
-        if dlg_char.room_id != player_room_id:
+        actor_location, actor_presence, actor_enabled, actor_incapacitated = (
+            actor_values[ddef.character_id]
+        )
+        if (
+            actor_location != player_room_id
+            or actor_presence != "present"
+            or not actor_enabled
+            or actor_incapacitated
+        ):
             raise SaveLoadError(
-                f"active_dialogue 角色 {ddef.character_id!r} 在房间 "
-                f"{dlg_char.room_id!r}，与玩家房间 {player_room_id!r} 不一致"
+                f"active_dialogue 角色 {ddef.character_id!r} 当前不可交互"
             )
         active_dialogue = DialogueState(
             dialogue_id=dlg_id, current_node_id=dlg_node_id
@@ -739,7 +984,10 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
             id=char_def.id,
             name=char_def.name,
             description=char_def.description,
-            room_id=char_def.room_id,
+            room_id=actor_values[char_id][0],
+            presence=actor_values[char_id][1],
+            enabled=actor_values[char_id][2],
+            incapacitated=actor_values[char_id][3],
         )
         for char_id, char_def in pack.characters.items()
     }
@@ -775,8 +1023,21 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
         characters=characters,
         dialogue_defs=dict(pack.dialogues),
         shop_defs=dict(pack.shops),
+        campaign=pack.campaign,
+        scene_states=scene_states,
+        objective_states=objective_states,
+        knowledge_states=knowledge_states,
         active_dialogue=active_dialogue,
     )
+    if active_dialogue is not None:
+        active_dialogue_def = world.dialogue_defs[active_dialogue.dialogue_id]
+        if active_dialogue_def.character_id not in {
+            character.id for character in world.available_characters()
+        }:
+            raise SaveLoadError(
+                f"active_dialogue 角色 {active_dialogue_def.character_id!r} "
+                "当前不可交互"
+            )
     if active_dialogue is not None and not world.available_dialogue_options(
         active_dialogue.dialogue_id,
         active_dialogue.current_node_id,

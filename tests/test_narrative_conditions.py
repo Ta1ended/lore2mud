@@ -366,7 +366,7 @@ class NarrativeConditionWorldTests(unittest.TestCase):
 
 
 class NarrativeStateSaveTests(unittest.TestCase):
-    def test_v8_round_trip_preserves_strict_typed_state(self) -> None:
+    def test_v9_round_trip_preserves_strict_typed_state(self) -> None:
         pack = load_content_pack(DEMO_PATH)
         world = World.from_content_pack(pack)
         world.set_narrative_state("state_beacon_enabled", False)
@@ -379,8 +379,8 @@ class NarrativeStateSaveTests(unittest.TestCase):
             data = json.loads(service.save_path.read_text("utf-8"))
             loaded = service.load()
 
-        self.assertEqual(SAVE_FORMAT_VERSION, 8)
-        self.assertEqual(data["save_format_version"], 8)
+        self.assertEqual(SAVE_FORMAT_VERSION, 9)
+        self.assertEqual(data["save_format_version"], 9)
         self.assertEqual(data["narrative_state"], world.narrative_state)
         self.assertEqual(loaded.narrative_state, world.narrative_state)
 
@@ -412,6 +412,8 @@ class NarrativeStateSaveTests(unittest.TestCase):
             data = json.loads(service.save_path.read_text("utf-8"))
             data["save_format_version"] = LEGACY_SAVE_FORMAT_VERSION
             data.pop("narrative_state")
+            for key in ("actors", "scene_states", "objective_states", "knowledge_states"):
+                data.pop(key)
             service.save_path.write_text(json.dumps(data), "utf-8")
             with self.assertRaisesRegex(SaveLoadError, "save v7"):
                 service.load()
@@ -429,6 +431,8 @@ class NarrativeStateSaveTests(unittest.TestCase):
             data = json.loads(service.save_path.read_text("utf-8"))
             data["save_format_version"] = LEGACY_SAVE_FORMAT_VERSION
             data.pop("narrative_state")
+            for key in ("actors", "scene_states", "objective_states", "knowledge_states"):
+                data.pop(key)
             service.save_path.write_text(json.dumps(data), "utf-8")
 
             loaded = service.load()

@@ -9,8 +9,12 @@ const ui = {
   coinValue: byId("coin-value"), inventoryCount: byId("inventory-count"),
   equipmentList: byId("equipment-list"), inventoryList: byId("inventory-list"),
   exitList: byId("exit-list"), encounterList: byId("encounter-list"),
+  campaignPanel: byId("campaign-panel"), campaignList: byId("campaign-list"),
   recoveryPanel: byId("recovery-panel"), recoverButton: byId("recover-button"),
   questCount: byId("quest-count"), questList: byId("quest-list"),
+  objectiveCount: byId("objective-count"), objectiveList: byId("objective-list"),
+  knowledgeCount: byId("knowledge-count"), knowledgeList: byId("knowledge-list"),
+  storyCount: byId("story-count"), storyList: byId("story-list"),
   dialoguePanel: byId("dialogue-panel"), dialogueCharacter: byId("dialogue-character"),
   dialogueText: byId("dialogue-text"), dialogueOptions: byId("dialogue-options"),
   shopPanel: byId("shop-panel"), shopTitle: byId("shop-title"), shopList: byId("shop-list"),
@@ -91,6 +95,7 @@ function render() {
   renderEquipment();
   renderInventory();
   renderQuests();
+  renderCampaign();
   renderDialogue();
   renderShop();
   renderEvents();
@@ -212,6 +217,64 @@ function renderQuests() {
     ui.questList.append(row);
   });
   if (!snapshot.quests.length) ui.questList.append(empty("尚未接取任务。"));
+}
+
+function renderCampaign() {
+  const campaign = snapshot.campaign;
+  const visible = campaign.scenes.length || campaign.interactables.length;
+  ui.campaignPanel.hidden = !visible;
+  ui.campaignList.replaceChildren();
+  campaign.scenes.forEach((scene) => ui.campaignList.append(entityRow(
+    scene.name, scene.description, [],
+  )));
+  campaign.interactables.forEach((interactable) => {
+    const actions = interactable.actions.map((action) => {
+      const actionButton = button(
+        action.label,
+        {type: "campaign_action", action_id: action.id},
+        "button primary",
+      );
+      actionButton.disabled = busy || !snapshot.player.alive || Boolean(snapshot.dialogue);
+      return actionButton;
+    });
+    ui.campaignList.append(entityRow(interactable.name, interactable.description, actions));
+  });
+
+  ui.objectiveCount.textContent = campaign.objectives.length;
+  ui.objectiveList.replaceChildren();
+  campaign.objectives.forEach((objective) => {
+    const row = element("article", `quest-row ${objective.status === "completed" ? "completed" : "active"}`);
+    row.append(
+      element("strong", "", objective.title),
+      element("p", "", objective.text),
+      element("span", "item-meta", objective.status),
+    );
+    ui.objectiveList.append(row);
+  });
+  if (!campaign.objectives.length) ui.objectiveList.append(empty("尚无可见目标。"));
+
+  ui.knowledgeCount.textContent = campaign.knowledge.length;
+  ui.knowledgeList.replaceChildren();
+  campaign.knowledge.forEach((knowledge) => {
+    const row = element("article", "quest-row");
+    row.append(
+      element("strong", "", knowledge.title),
+      element("p", "", knowledge.text),
+      element("span", "item-meta", knowledge.status),
+    );
+    ui.knowledgeList.append(row);
+  });
+  if (!campaign.knowledge.length) ui.knowledgeList.append(empty("尚无已知条目。"));
+
+  const stories = campaign.journal.filter((entry) => entry.category === "story");
+  ui.storyCount.textContent = stories.length;
+  ui.storyList.replaceChildren();
+  stories.forEach((entry) => {
+    const row = element("article", "quest-row");
+    row.append(element("strong", "", entry.title), element("p", "", entry.text));
+    ui.storyList.append(row);
+  });
+  if (!stories.length) ui.storyList.append(empty("尚无故事记录。"));
 }
 
 function renderDialogue() {

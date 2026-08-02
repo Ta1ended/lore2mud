@@ -1,0 +1,16 @@
+[
+  {
+    "id": "dialogue_dispatcher",
+    "character_id": "character_dispatcher",
+    "start_node_id": "node_report",
+    "nodes": [
+      {
+        "id": "node_report",
+        "text": "The vendor had access to the platform.",
+        "options": [
+          {"id": "option_leave", "text": "I will verify that.", "next_node_id": null, "effects": []}
+        ]
+      }
+    ]
+  }
+]

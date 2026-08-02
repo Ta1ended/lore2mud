@@ -1,0 +1,146 @@
+{
+  "format_version": 1,
+  "location_views": [
+    {
+      "location_id": "room_clockwork_hall",
+      "descriptions": [
+        {
+          "text": "Blue fire runs through the brass ward.",
+          "condition": {"kind": "state_equals", "state_id": "state_ward_open", "value": true}
+        },
+        {"text": "A brass ward sleeps beneath the floor."}
+      ],
+      "exits": [
+        {
+          "direction": "east",
+          "condition": {"kind": "state_equals", "state_id": "state_ward_open", "value": true}
+        }
+      ]
+    }
+  ],
+  "actor_views": [
+    {
+      "actor_id": "character_clockmaker",
+      "descriptions": [
+        {
+          "text": "The keeper shields their eyes from the awakened light.",
+          "condition": {"kind": "state_equals", "state_id": "state_ward_open", "value": true}
+        },
+        {"text": "The keeper watches the dormant ward."}
+      ]
+    }
+  ],
+  "dialogue_views": [],
+  "scenes": [
+    {
+      "id": "scene_awaken_ward",
+      "name": "Awaken the Ward",
+      "location_id": "room_clockwork_hall",
+      "initial_status": "active",
+      "stages": [
+        {
+          "id": "stage_align_gears",
+          "descriptions": [{"text": "Three brass rings wait out of alignment."}],
+          "interactable_ids": ["interactable_ward_dial"]
+        },
+        {
+          "id": "stage_cross_threshold",
+          "descriptions": [{"text": "The opened ward forms a doorway of blue fire."}],
+          "interactable_ids": ["interactable_blue_threshold"]
+        }
+      ]
+    }
+  ],
+  "interactables": [
+    {
+      "id": "interactable_ward_dial",
+      "name": "Ward Dial",
+      "kind": "ritual",
+      "scene_id": "scene_awaken_ward",
+      "action_ids": ["action_unstable_charge", "action_open_ward"],
+      "descriptions": [{"text": "Runes mark two safe positions and one cracked stop."}]
+    },
+    {
+      "id": "interactable_blue_threshold",
+      "name": "Blue Threshold",
+      "kind": "inner",
+      "scene_id": "scene_awaken_ward",
+      "action_ids": ["action_finish_ward"],
+      "descriptions": [{"text": "A memory of moonlit rain waits beyond the fire."}]
+    }
+  ],
+  "actions": [
+    {
+      "id": "action_unstable_charge",
+      "label": "Force the cracked stop",
+      "result_text": "The broken stop refuses the charge.",
+      "effects": [
+        {"kind": "grant_item", "item_id": "item_ward_spark", "quantity": 1},
+        {"kind": "adjust_narrative_state", "state_id": "state_ward_power", "amount": 5}
+      ],
+      "condition": {"kind": "state_equals", "state_id": "state_ward_open", "value": false}
+    },
+    {
+      "id": "action_open_ward",
+      "label": "Align the safe marks",
+      "result_text": "The ward opens without breaking the hall.",
+      "effects": [
+        {"kind": "set_narrative_state", "state_id": "state_ward_open", "value": true},
+        {"kind": "set_narrative_state", "state_id": "state_ward_mode", "value": "open"},
+        {"kind": "adjust_narrative_state", "state_id": "state_ward_power", "amount": 1},
+        {"kind": "grant_item", "item_id": "item_moon_key", "quantity": 1},
+        {"kind": "move_actor", "actor_id": "character_clockmaker", "presence": "absent"},
+        {"kind": "advance_scene", "scene_id": "scene_awaken_ward", "transition": "advance"},
+        {"kind": "advance_objective", "objective_id": "objective_awaken_ward", "transition": "start"},
+        {"kind": "advance_objective", "objective_id": "objective_awaken_ward", "transition": "complete"},
+        {"kind": "reveal_knowledge", "knowledge_id": "knowledge_ward_nature", "status": "confirmed"}
+      ],
+      "condition": {"kind": "state_equals", "state_id": "state_ward_open", "value": false}
+    },
+    {
+      "id": "action_finish_ward",
+      "label": "Cross the threshold",
+      "result_text": "The blue doorway settles into a stable arch.",
+      "effects": [
+        {"kind": "advance_scene", "scene_id": "scene_awaken_ward", "transition": "complete"}
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "id": "objective_awaken_ward",
+      "title": "Awaken the ward",
+      "description": "Align the safe marks without shattering the mechanism.",
+      "initial_status": "active",
+      "dependency_ids": [],
+      "exclusive_with": []
+    }
+  ],
+  "knowledge": [
+    {
+      "id": "knowledge_ward_nature",
+      "title": "Nature of the ward",
+      "initial_status": "unknown",
+      "texts": {
+        "heard": "The keeper calls the mechanism a ward.",
+        "suspected": "The brass rings may hold a real enchantment.",
+        "confirmed": "The brass mechanism carries a stable magical field.",
+        "retracted": "The earlier explanation of the ward has been withdrawn.",
+        "corrected": "The ward is a machine that shapes an external magical field."
+      }
+    }
+  ],
+  "log_entries": [
+    {
+      "id": "log_ward_open",
+      "category": "story",
+      "texts": [
+        {
+          "text": "The eastern route is now held open by blue fire.",
+          "condition": {"kind": "state_equals", "state_id": "state_ward_open", "value": true}
+        },
+        {"text": "The eastern route remains sealed."}
+      ]
+    }
+  ]
+}

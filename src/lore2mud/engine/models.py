@@ -3,7 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from lore2mud.content.models import ExitDefinition, ItemStackDefinition
+from lore2mud.content.models import (
+    ExitDefinition,
+    ItemStackDefinition,
+    KnowledgeStatus,
+    ObjectiveStatus,
+    SceneStatus,
+)
 from lore2mud.inventory.models import Inventory, ItemStack
 
 
@@ -86,6 +92,28 @@ class Character:
     name: str
     description: str
     room_id: str
+    presence: str = "present"
+    enabled: bool = True
+    incapacitated: bool = False
+
+
+@dataclass(slots=True)
+class SceneState:
+    scene_id: str
+    status: SceneStatus
+    stage_index: int | None = None
+
+
+@dataclass(slots=True)
+class ObjectiveState:
+    objective_id: str
+    status: ObjectiveStatus
+
+
+@dataclass(slots=True)
+class KnowledgeState:
+    knowledge_id: str
+    status: KnowledgeStatus
 
 
 @dataclass(slots=True)

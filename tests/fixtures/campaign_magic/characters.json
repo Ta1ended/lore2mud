@@ -1,0 +1,8 @@
+[
+  {
+    "id": "character_clockmaker",
+    "name": "Clockmaker",
+    "description": "The keeper watches the dormant ward.",
+    "room_id": "room_clockwork_hall"
+  }
+]

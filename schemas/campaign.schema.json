@@ -1,0 +1,387 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/lore2mud/campaign.schema.json",
+  "title": "lore2mud runtime campaign foundation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "location_views",
+    "actor_views",
+    "dialogue_views",
+    "scenes",
+    "interactables",
+    "actions",
+    "objectives",
+    "knowledge",
+    "log_entries"
+  ],
+  "properties": {
+    "format_version": {"const": 1},
+    "location_views": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["location_id", "descriptions", "exits"],
+        "properties": {
+          "location_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+          "descriptions": {
+            "type": "array",
+            "items": {"$ref": "#/$defs/conditional_text"}
+          },
+          "exits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["direction", "condition"],
+              "properties": {
+                "direction": {"type": "string", "minLength": 1},
+                "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "actor_views": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["actor_id", "descriptions"],
+        "properties": {
+          "actor_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+          "descriptions": {
+            "type": "array",
+            "items": {"$ref": "#/$defs/conditional_text"}
+          },
+          "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"}
+        }
+      }
+    },
+    "dialogue_views": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["dialogue_id", "nodes"],
+        "properties": {
+          "dialogue_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+          "nodes": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["node_id", "texts"],
+              "properties": {
+                "node_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+                "texts": {
+                  "type": "array",
+                  "minItems": 1,
+                  "items": {"$ref": "#/$defs/conditional_text"}
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "scenes": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/scene"}
+    },
+    "interactables": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/interactable"}
+    },
+    "actions": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/action"}
+    },
+    "objectives": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/objective"}
+    },
+    "knowledge": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/knowledge"}
+    },
+    "log_entries": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/log_entry"}
+    }
+  },
+  "$defs": {
+    "conditional_text": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": {"type": "string", "minLength": 1},
+        "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"}
+      }
+    },
+    "scene": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "location_id", "initial_status", "stages"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "name": {"type": "string", "minLength": 1},
+        "location_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "initial_status": {"enum": ["inactive", "active"]},
+        "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"},
+        "stages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "descriptions", "interactable_ids"],
+            "properties": {
+              "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+              "descriptions": {
+                "type": "array",
+                "minItems": 1,
+                "items": {"$ref": "#/$defs/conditional_text"}
+              },
+              "interactable_ids": {
+                "type": "array",
+                "uniqueItems": true,
+                "items": {"$ref": "common.schema.json#/$defs/stable_id"}
+              }
+            }
+          }
+        }
+      }
+    },
+    "interactable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "name", "kind", "action_ids", "descriptions"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "name": {"type": "string", "minLength": 1},
+        "kind": {"enum": ["actor", "location", "object", "ritual", "inner"]},
+        "target_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "location_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "scene_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "action_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "common.schema.json#/$defs/stable_id"}
+        },
+        "descriptions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/conditional_text"}
+        },
+        "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"}
+      }
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "label", "result_text", "effects"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "label": {"type": "string", "minLength": 1},
+        "result_text": {"type": "string", "minLength": 1},
+        "effects": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/campaign_effect"}
+        },
+        "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"}
+      }
+    },
+    "objective": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "description", "initial_status", "dependency_ids", "exclusive_with"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "title": {"type": "string", "minLength": 1},
+        "description": {"type": "string", "minLength": 1},
+        "initial_status": {"enum": ["inactive", "active"]},
+        "dependency_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "common.schema.json#/$defs/stable_id"}
+        },
+        "exclusive_with": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "common.schema.json#/$defs/stable_id"}
+        }
+      }
+    },
+    "knowledge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "title", "initial_status", "texts"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "title": {"type": "string", "minLength": 1},
+        "initial_status": {
+          "enum": ["unknown", "heard", "suspected", "confirmed", "retracted", "corrected"]
+        },
+        "texts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["heard", "suspected", "confirmed", "retracted", "corrected"],
+          "properties": {
+            "heard": {"type": "string", "minLength": 1},
+            "suspected": {"type": "string", "minLength": 1},
+            "confirmed": {"type": "string", "minLength": 1},
+            "retracted": {"type": "string", "minLength": 1},
+            "corrected": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "log_entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "category", "texts"],
+      "properties": {
+        "id": {"$ref": "common.schema.json#/$defs/stable_id"},
+        "category": {"enum": ["story", "objective", "knowledge"]},
+        "texts": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/conditional_text"}
+        },
+        "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"}
+      }
+    },
+    "campaign_effect": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "item_id", "quantity"],
+          "properties": {
+            "kind": {"const": "grant_item"},
+            "item_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "quantity": {"$ref": "common.schema.json#/$defs/positive_integer"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "amount"],
+          "properties": {
+            "kind": {"const": "grant_experience"},
+            "amount": {"$ref": "common.schema.json#/$defs/positive_integer"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "quest_id"],
+          "properties": {
+            "kind": {"const": "accept_quest"},
+            "quest_id": {"$ref": "common.schema.json#/$defs/stable_id"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "flag_id", "value"],
+          "properties": {
+            "kind": {"const": "set_flag"},
+            "flag_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "value": {"type": "boolean"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "state_id", "value"],
+          "properties": {
+            "kind": {"const": "set_narrative_state"},
+            "state_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "value": {"type": ["boolean", "integer", "string"]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "state_id", "amount"],
+          "properties": {
+            "kind": {"const": "adjust_narrative_state"},
+            "state_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "amount": {"type": "integer", "not": {"const": 0}}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "item_id", "quantity"],
+          "properties": {
+            "kind": {"const": "remove_item"},
+            "item_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "quantity": {"$ref": "common.schema.json#/$defs/positive_integer"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "actor_id"],
+          "minProperties": 3,
+          "properties": {
+            "kind": {"const": "move_actor"},
+            "actor_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "location_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "presence": {"enum": ["present", "absent"]},
+            "enabled": {"type": "boolean"},
+            "incapacitated": {"type": "boolean"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "scene_id", "transition"],
+          "properties": {
+            "kind": {"const": "advance_scene"},
+            "scene_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "transition": {"enum": ["activate", "advance", "complete"]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "objective_id", "transition"],
+          "properties": {
+            "kind": {"const": "advance_objective"},
+            "objective_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "transition": {"enum": ["activate", "start", "complete", "fail"]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "knowledge_id", "status"],
+          "properties": {
+            "kind": {"const": "reveal_knowledge"},
+            "knowledge_id": {"$ref": "common.schema.json#/$defs/stable_id"},
+            "status": {"enum": ["heard", "suspected", "confirmed"]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "knowledge_id"],
+          "properties": {
+            "kind": {"enum": ["retract_knowledge", "correct_knowledge"]},
+            "knowledge_id": {"$ref": "common.schema.json#/$defs/stable_id"}
+          }
+        }
+      ]
+    }
+  }
+}

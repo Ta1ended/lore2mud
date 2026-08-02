@@ -686,7 +686,7 @@ class BodySaveRoundTripTests(unittest.TestCase):
         """v3 saves (no body key) must be rejected."""
         self.service.save(self.world)
         txt = self.service.save_path.read_text("utf-8")
-        txt = txt.replace('"save_format_version": 8', '"save_format_version": 4')
+        txt = txt.replace('"save_format_version": 9', '"save_format_version": 4')
         self.service.save_path.write_text(txt, "utf-8")
         with self.assertRaises(SaveLoadError) as ctx:
             self.service.load()
@@ -985,7 +985,7 @@ class SaveV4IllegalMatrixTests(unittest.TestCase):
     def test_v3_save_rejected(self) -> None:
         self.service.save(self.world)
         txt = self.service.save_path.read_text("utf-8")
-        txt = txt.replace('"save_format_version": 8', '"save_format_version": 4')
+        txt = txt.replace('"save_format_version": 9', '"save_format_version": 4')
         self.service.save_path.write_text(txt, "utf-8")
         with self.assertRaises(SaveLoadError) as ctx:
             self.service.load()

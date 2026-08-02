@@ -1,0 +1,18 @@
+[
+  {
+    "id": "room_clockwork_hall",
+    "name": "Clockwork Hall",
+    "description": "A brass ward sleeps beneath the floor.",
+    "exits": {"east": "room_moon_courtyard"},
+    "item_stacks": [],
+    "monster_ids": []
+  },
+  {
+    "id": "room_moon_courtyard",
+    "name": "Moon Courtyard",
+    "description": "Silver rain rests on the stones.",
+    "exits": {"west": "room_clockwork_hall"},
+    "item_stacks": [],
+    "monster_ids": []
+  }
+]

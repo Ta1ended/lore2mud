@@ -290,7 +290,7 @@ class LootTests(unittest.TestCase):
         self.assertEqual(gel_stack.quantity, 1)
 
 
-class SaveV8Tests(unittest.TestCase):
+class SaveV9Tests(unittest.TestCase):
     """Save format v8 with stacks, coins, flags, and narrative state."""
 
     def setUp(self) -> None:
@@ -298,7 +298,7 @@ class SaveV8Tests(unittest.TestCase):
         self.tmpdir = tempfile.mkdtemp()
         self.service = SaveLoadService(self.pack, Path(self.tmpdir))
 
-    def test_save_v8_round_trip(self) -> None:
+    def test_save_v9_round_trip(self) -> None:
         world = World.from_content_pack(self.pack)
         world.take("item_linglu_pill", 2)
         self.service.save(world)
@@ -311,10 +311,10 @@ class SaveV8Tests(unittest.TestCase):
         self.assertIsNotNone(gel)
         self.assertEqual(gel.quantity, 1)
 
-    def test_save_format_version_is_8(self) -> None:
-        self.assertEqual(SAVE_FORMAT_VERSION, 8)
+    def test_save_format_version_is_9(self) -> None:
+        self.assertEqual(SAVE_FORMAT_VERSION, 9)
 
-    def test_save_v8_rejects_v6(self) -> None:
+    def test_save_v9_rejects_v6(self) -> None:
         """A v6 save must be rejected."""
         import json
         v6_data = {

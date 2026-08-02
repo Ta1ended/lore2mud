@@ -1,0 +1,13 @@
+[
+  {
+    "id": "item_moon_key",
+    "name": "Moon Key",
+    "description": "A small key cut from blue glass."
+  },
+  {
+    "id": "item_ward_spark",
+    "name": "Ward Spark",
+    "description": "A reusable fleck of charge from the cracked stop.",
+    "stack_limit": 5
+  }
+]
