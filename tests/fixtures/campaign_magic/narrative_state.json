@@ -1,0 +1,8 @@
+{
+  "format_version": 1,
+  "states": [
+    {"id": "state_ward_open", "kind": "bool", "initial": false},
+    {"id": "state_ward_power", "kind": "int", "initial": 0, "minimum": 0, "maximum": 2},
+    {"id": "state_ward_mode", "kind": "enum", "initial": "sealed", "values": ["sealed", "open"]}
+  ]
+}

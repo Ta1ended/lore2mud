@@ -14,6 +14,7 @@ from lore2mud.engine.commands import CommandProcessor
 from lore2mud.inventory.models import ItemStack
 from lore2mud.engine.models import Character, DialogueState
 from lore2mud.engine.save import (
+    PREVIOUS_SAVE_FORMAT_VERSION,
     SAVE_FORMAT_VERSION,
     SaveLoadError,
     SaveLoadService,
@@ -802,7 +803,7 @@ class SaveLoadDialogueTests(unittest.TestCase):
             pack = load_content_pack(pack_path)
             # Build a manual JSON save pointing to terminal node n2
             save_data = {
-                "save_format_version": SAVE_FORMAT_VERSION,
+                "save_format_version": PREVIOUS_SAVE_FORMAT_VERSION,
                 "content_pack": {"id": pack.id, "version": pack.version},
                 "player": {
                     "id": "player_local", "name": "test",
@@ -959,7 +960,7 @@ class SaveTimeValidationTests(unittest.TestCase):
         )
         with self.assertRaises(SaveLoadError) as ctx:
             svc.save(w)
-        self.assertIn("不一致", str(ctx.exception))
+        self.assertIn("active_dialogue", str(ctx.exception))
 
     def test_save_failure_preserves_original_file(self) -> None:
         """Failed save does not overwrite the existing save file."""

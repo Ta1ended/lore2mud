@@ -178,6 +178,27 @@ COMMAND_SPECS = (
         "只读；别名 inv、i。", True, "_command_inventory", ("inv", "i"),
     ),
     CommandSpec(
+        "actions", "actions", "查看当前场景动作", "无。",
+        "只读显示 World 当前投影出的 campaign 动作。", True, "_campaign_actions",
+    ),
+    CommandSpec(
+        "act", "act <动作ID>", "执行当前场景动作",
+        "一个当前可用动作的稳定 ID。",
+        "动作必须出现在 World 的当前投影中；完整效果列表原子执行。", False, "_act",
+    ),
+    CommandSpec(
+        "objectives", "objectives", "查看分阶段目标", "无。",
+        "只读显示已激活、进行、完成或失败的 campaign 目标。", True, "_objectives",
+    ),
+    CommandSpec(
+        "knowledge", "knowledge", "查看玩家知识", "无。",
+        "只读显示玩家已获知的内容，不显示 unknown 条目。", True, "_knowledge",
+    ),
+    CommandSpec(
+        "journal", "journal", "查看叙事日志", "无。",
+        "只读显示当前条件允许的故事、目标与知识日志。", True, "_journal",
+    ),
+    CommandSpec(
         "quests", "quests", "查看已接取任务", "无。",
         "只读显示当前任务状态。", True, "_command_quests",
     ),
@@ -331,11 +352,12 @@ class CommandProcessor:
 
     def _look(self) -> str:
         room = self.world.current_room
-        lines = [f"{room.name} [{room.id}]", room.description]
+        lines = [f"{room.name} [{room.id}]", self.world.location_description()]
+        available_exits = self.world.available_exits()
         exits = "、".join(
             self._render_exit(direction)
-            for direction in sorted(room.exits)
-        ) if room.exits else "无"
+            for direction in sorted(available_exits)
+        ) if available_exits else "无"
         lines.append(f"出口：{exits}")
 
         if room.item_stacks:
@@ -353,10 +375,7 @@ class CommandProcessor:
             )
             lines.append(f"怪物：{monsters}")
 
-        room_characters = [
-            c for c in self.world.characters.values()
-            if c.room_id == self.world.player.room_id
-        ]
+        room_characters = self.world.available_characters()
         if room_characters:
             chars = "、".join(
                 f"{c.name} ({c.id})" for c in room_characters
@@ -367,6 +386,21 @@ class CommandProcessor:
         if shop is not None:
             lines.append(f"商店：{shop.name} ({shop.id})")
 
+        scenes = self.world.available_scenes()
+        if scenes:
+            lines.append(
+                "场景：" + "、".join(f"{scene.name} ({scene.id})" for scene in scenes)
+            )
+        interactables = self.world.available_interactables()
+        if interactables:
+            lines.append(
+                "交互："
+                + "、".join(
+                    f"{interactable.name} ({interactable.id})"
+                    for interactable in interactables
+                )
+            )
+
         hints = self._active_quest_hints()
         if hints:
             lines.append(hints)
@@ -375,7 +409,7 @@ class CommandProcessor:
 
     def _render_exit(self, direction: str) -> str:
         """Render one exit's read-only gate status for ``look``."""
-        exit_def = self.world.current_room.exits[direction]
+        exit_def = self.world.available_exits()[direction]
         required_item_id = exit_def.required_item_id
         if required_item_id is None:
             return direction
@@ -554,6 +588,76 @@ class CommandProcessor:
         if arguments:
             return CommandResult("用法：inventory")
         return CommandResult(self._inventory())
+
+    def _campaign_actions(self, arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：actions")
+        actions = self.world.available_campaign_actions()
+        if not actions:
+            return CommandResult("当前没有可用的场景动作。")
+        campaign = self.world.campaign
+        assert campaign is not None
+        lines: list[str] = []
+        for projected in actions:
+            interactable = campaign.interactables[projected.interactable_id]
+            lines.append(
+                f"- {projected.action.label} ({projected.action.id})"
+                f" @ {interactable.name} ({interactable.id})"
+            )
+        return CommandResult("\n".join(lines))
+
+    def _act(self, arguments: list[str]) -> CommandResult:
+        if len(arguments) != 1 or not arguments[0].strip():
+            return CommandResult("用法：act <动作ID>")
+        outcome = self.world.execute_campaign_action(arguments[0])
+        return CommandResult(outcome.result_text)
+
+    def _objectives(self, arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：objectives")
+        entries = [
+            entry
+            for entry in self.world.available_log_entries()
+            if entry.category == "objective"
+        ]
+        if not entries:
+            return CommandResult("尚无可见目标。")
+        return CommandResult(
+            "\n".join(
+                f"[{entry.status}] {entry.title}\n  {entry.text}" for entry in entries
+            )
+        )
+
+    def _knowledge(self, arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：knowledge")
+        entries = [
+            entry
+            for entry in self.world.available_log_entries()
+            if entry.category == "knowledge"
+        ]
+        if not entries:
+            return CommandResult("尚无已知条目。")
+        return CommandResult(
+            "\n".join(
+                f"[{entry.status}] {entry.title}\n  {entry.text}" for entry in entries
+            )
+        )
+
+    def _journal(self, arguments: list[str]) -> CommandResult:
+        if arguments:
+            return CommandResult("用法：journal")
+        entries = self.world.available_log_entries()
+        if not entries:
+            return CommandResult("叙事日志为空。")
+        return CommandResult(
+            "\n".join(
+                f"[{entry.category}] {entry.title}"
+                + (f" ({entry.status})" if entry.status else "")
+                + f"\n  {entry.text}"
+                for entry in entries
+            )
+        )
 
     def _quests(self) -> str:
         if not self.world.quest_states:

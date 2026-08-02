@@ -38,13 +38,18 @@ _ACTION_FIELDS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
     "save": (frozenset(), frozenset({"slot"})),
     "load": (frozenset(), frozenset({"slot"})),
     "recover": (frozenset(), frozenset()),
+    "campaign_action": (frozenset({"action_id"}), frozenset()),
     "command": (frozenset({"command"}), frozenset()),
 }
 _READ_ONLY_COMMANDS = frozenset({
     "help",
     "i",
     "inventory",
+    "actions",
+    "journal",
+    "knowledge",
     "look",
+    "objectives",
     "quests",
     "status",
 })
@@ -182,6 +187,9 @@ class PlayerSession:
                 self._text(action, "target"), self._quantity(action)
             ),
             "recover": self._world.recover,
+            "campaign_action": lambda: self._world.execute_campaign_action(
+                self._text(action, "action_id")
+            ),
         }
 
         if action_type == "save":
@@ -261,6 +269,7 @@ class PlayerSession:
             "buy": lambda: f"购买 {outcome.item_name}。",  # type: ignore[attr-defined]
             "sell": lambda: f"出售 {outcome.item_name}。",  # type: ignore[attr-defined]
             "recover": lambda: f"在 {outcome.room_name} 恢复。",  # type: ignore[attr-defined]
+            "campaign_action": lambda: outcome.result_text,  # type: ignore[attr-defined]
         }
         return labels[action_type]()
 
@@ -273,7 +282,7 @@ class PlayerSession:
         held_ids = player.inventory.all_item_ids
 
         exits = []
-        for direction, exit_def in sorted(room.exits.items()):
+        for direction, exit_def in sorted(world.available_exits().items()):
             requirement = exit_def.required_item_id
             exits.append(
                 {
@@ -305,10 +314,9 @@ class PlayerSession:
             {
                 "id": character.id,
                 "name": character.name,
-                "description": character.description,
+                "description": world.character_description(character.id),
             }
-            for character in sorted(world.characters.values(), key=lambda value: value.id)
-            if character.room_id == room.id
+            for character in world.available_characters()
         ]
 
         return {
@@ -337,7 +345,7 @@ class PlayerSession:
             "room": {
                 "id": room.id,
                 "name": room.name,
-                "description": room.description,
+                "description": world.location_description(),
                 "exits": exits,
                 "items": room_items,
                 "monsters": monsters,
@@ -349,6 +357,7 @@ class PlayerSession:
                 "body": self._equipped_item(world.equipped.body),
             },
             "quests": self._quest_snapshots(),
+            "campaign": self._campaign_snapshot(),
             "dialogue": self._dialogue_snapshot(),
             "shop": self._shop_snapshot(),
             "flags": [
@@ -435,6 +444,65 @@ class PlayerSession:
             )
         return quests
 
+    def _campaign_snapshot(self) -> dict[str, Any]:
+        world = self._world
+        scenes = []
+        for scene in world.available_scenes():
+            state = world.scene_states[scene.id]
+            assert state.stage_index is not None
+            scenes.append(
+                {
+                    "id": scene.id,
+                    "name": scene.name,
+                    "status": state.status,
+                    "stage_id": scene.stages[state.stage_index].id,
+                    "description": world.scene_description(scene.id),
+                }
+            )
+        interactables = []
+        action_rows: list[dict[str, Any]] = []
+        actions_by_interactable: dict[str, list[Any]] = {}
+        for projected in world.available_campaign_actions():
+            actions_by_interactable.setdefault(projected.interactable_id, []).append(
+                projected.action
+            )
+        for interactable in world.available_interactables():
+            actions = actions_by_interactable.get(interactable.id, [])
+            action_snapshots = [
+                {"id": action.id, "label": action.label}
+                for action in actions
+            ]
+            interactables.append(
+                {
+                    "id": interactable.id,
+                    "name": interactable.name,
+                    "kind": interactable.kind,
+                    "description": world.interactable_description(interactable.id),
+                    "actions": action_snapshots,
+                }
+            )
+            action_rows.extend(
+                {
+                    "id": action["id"],
+                    "label": action["label"],
+                    "interactable_id": interactable.id,
+                }
+                for action in action_snapshots
+            )
+        journal = [asdict(entry) for entry in world.available_log_entries()]
+        return {
+            "scenes": scenes,
+            "interactables": interactables,
+            "actions": action_rows,
+            "objectives": [
+                entry for entry in journal if entry["category"] == "objective"
+            ],
+            "knowledge": [
+                entry for entry in journal if entry["category"] == "knowledge"
+            ],
+            "journal": journal,
+        }
+
     def _dialogue_snapshot(self) -> dict[str, Any] | None:
         active = self._world.active_dialogue
         if active is None:
@@ -448,7 +516,7 @@ class PlayerSession:
             "character_id": character.id,
             "character_name": character.name,
             "node_id": node.id,
-            "text": node.text,
+            "text": self._world.dialogue_node_text(dialogue.id, node.id),
             "options": [
                 {"index": index, "id": option.id, "text": option.text}
                 for index, option in enumerate(options, 1)

@@ -1,0 +1,7 @@
+{
+  "format_version": 1,
+  "states": [
+    {"id": "state_camera_checked", "kind": "bool", "initial": false},
+    {"id": "state_case_phase", "kind": "enum", "initial": "rumor", "values": ["rumor", "verified"]}
+  ]
+}

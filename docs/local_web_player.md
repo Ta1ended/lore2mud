@@ -27,17 +27,20 @@ browser control
 
 The browser never derives game state from Chinese response text. Structured actions
 cover movement, taking and dropping items, item use, equipment, combat, dialogue,
-shops, recovery, and save/load. The command form is a read-only fallback that
+campaign actions, shops, recovery, and save/load. The command form is a read-only fallback that
 delegates to the existing `CommandProcessor`; its text is displayed only in the
 journey log. It accepts only the no-argument `look`, `inventory` / `i`, `quests`,
-`status`, and `help` commands. Mutating actions and save/load use the structured
+`actions`, `objectives`, `knowledge`, `journal`, `status`, and `help` commands.
+Mutating actions and save/load use the structured
 controls so their success or failure never depends on parsing rendered Chinese text.
 
 ## API
 
-`GET /api/snapshot` returns the current pack, player, room and exits, visible room
-entities, inventory, equipment, accepted quests, active dialogue, current shop, and
-flags.
+`GET /api/snapshot` returns the current pack, player, room and authoritative exits,
+visible room entities, inventory, equipment, accepted quests, active dialogue,
+current shop, flags, and a `campaign` object. That object contains active scenes,
+visible interactables, currently executable stable actions, non-inactive objectives,
+non-unknown player knowledge, and the merged journal.
 
 `POST /api/action` accepts an `application/json` object. Representative actions:
 
@@ -48,6 +51,7 @@ flags.
 {"type":"attack","target":"monster_ash_mite"}
 {"type":"talk","target":"character_elder_chen"}
 {"type":"choose_dialogue","index":1}
+{"type":"campaign_action","action_id":"action_align_safe_marks"}
 {"type":"save","slot":"trail"}
 {"type":"load","slot":"trail"}
 {"type":"command","command":"look"}
@@ -83,7 +87,14 @@ error event, and an authoritative unchanged snapshot. Malformed HTTP requests re
   World and serializes actions with a reentrant lock. A successful load replaces
   both the session World and its command processor. This is a loopback single-player
   boundary, not a multi-user session model.
+- A `campaign_action` payload carries only a stable action ID. `PlayerSession` cannot
+  execute it through the text-command fallback; `World.execute_campaign_action()`
+  recomputes current scene/interactable/condition availability before every mutation.
+  Hidden action IDs and stale UI buttons therefore return HTTP 422 with an unchanged
+  authoritative snapshot.
 
 The UI uses a responsive three-column game layout on desktop and a single ordered
 flow on mobile. Its route canvas is drawn only from structured room/exit snapshot
-data, including locked-exit state.
+data, including locked-exit state. Active scene actions render in the main play
+column; objectives, player knowledge, and persistent story entries remain in the
+journal rail and join the same mobile flow without relying on rendered event text.

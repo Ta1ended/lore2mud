@@ -186,6 +186,215 @@ DialogueEffect: TypeAlias = (
 
 
 @dataclass(frozen=True, slots=True)
+class SetNarrativeStateEffect:
+    state_id: str
+    value: bool | int | str
+    kind: Literal["set_narrative_state"] = field(
+        init=False, default="set_narrative_state"
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class AdjustNarrativeStateEffect:
+    state_id: str
+    amount: int
+    kind: Literal["adjust_narrative_state"] = field(
+        init=False, default="adjust_narrative_state"
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class RemoveItemEffect:
+    item_id: str
+    quantity: int
+    kind: Literal["remove_item"] = field(init=False, default="remove_item")
+
+
+@dataclass(frozen=True, slots=True)
+class MoveActorEffect:
+    actor_id: str
+    location_id: str | None = None
+    presence: Literal["present", "absent"] | None = None
+    enabled: bool | None = None
+    incapacitated: bool | None = None
+    kind: Literal["move_actor"] = field(init=False, default="move_actor")
+
+
+@dataclass(frozen=True, slots=True)
+class AdvanceSceneEffect:
+    scene_id: str
+    transition: Literal["activate", "advance", "complete"]
+    kind: Literal["advance_scene"] = field(init=False, default="advance_scene")
+
+
+@dataclass(frozen=True, slots=True)
+class AdvanceObjectiveEffect:
+    objective_id: str
+    transition: Literal["activate", "start", "complete", "fail"]
+    kind: Literal["advance_objective"] = field(
+        init=False, default="advance_objective"
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class RevealKnowledgeEffect:
+    knowledge_id: str
+    status: Literal["heard", "suspected", "confirmed"]
+    kind: Literal["reveal_knowledge"] = field(
+        init=False, default="reveal_knowledge"
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class RetractKnowledgeEffect:
+    knowledge_id: str
+    kind: Literal["retract_knowledge"] = field(
+        init=False, default="retract_knowledge"
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class CorrectKnowledgeEffect:
+    knowledge_id: str
+    kind: Literal["correct_knowledge"] = field(
+        init=False, default="correct_knowledge"
+    )
+
+
+CampaignEffect: TypeAlias = (
+    DialogueEffect
+    | SetNarrativeStateEffect
+    | AdjustNarrativeStateEffect
+    | RemoveItemEffect
+    | MoveActorEffect
+    | AdvanceSceneEffect
+    | AdvanceObjectiveEffect
+    | RevealKnowledgeEffect
+    | RetractKnowledgeEffect
+    | CorrectKnowledgeEffect
+)
+
+
+@dataclass(frozen=True, slots=True)
+class ConditionalText:
+    text: str
+    condition: NarrativeCondition | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class LocationViewDefinition:
+    location_id: str
+    descriptions: tuple[ConditionalText, ...] = ()
+    exit_conditions: dict[str, NarrativeCondition] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
+class ActorViewDefinition:
+    actor_id: str
+    descriptions: tuple[ConditionalText, ...] = ()
+    condition: NarrativeCondition | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DialogueNodeViewDefinition:
+    node_id: str
+    texts: tuple[ConditionalText, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class DialogueViewDefinition:
+    dialogue_id: str
+    nodes: dict[str, DialogueNodeViewDefinition]
+
+
+SceneStatus: TypeAlias = Literal["inactive", "active", "completed"]
+ObjectiveStatus: TypeAlias = Literal[
+    "inactive", "active", "in_progress", "completed", "failed"
+]
+KnowledgeStatus: TypeAlias = Literal[
+    "unknown", "heard", "suspected", "confirmed", "retracted", "corrected"
+]
+
+
+@dataclass(frozen=True, slots=True)
+class SceneStageDefinition:
+    id: str
+    descriptions: tuple[ConditionalText, ...]
+    interactable_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class SceneDefinition:
+    id: str
+    name: str
+    location_id: str
+    stages: tuple[SceneStageDefinition, ...]
+    initial_status: Literal["inactive", "active"] = "inactive"
+    condition: NarrativeCondition | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class InteractableDefinition:
+    id: str
+    name: str
+    kind: Literal["actor", "location", "object", "ritual", "inner"]
+    action_ids: tuple[str, ...]
+    descriptions: tuple[ConditionalText, ...]
+    target_id: str | None = None
+    location_id: str | None = None
+    scene_id: str | None = None
+    condition: NarrativeCondition | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CampaignActionDefinition:
+    id: str
+    label: str
+    result_text: str
+    effects: tuple[CampaignEffect, ...]
+    condition: NarrativeCondition | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class ObjectiveDefinition:
+    id: str
+    title: str
+    description: str
+    initial_status: Literal["inactive", "active"] = "inactive"
+    dependency_ids: tuple[str, ...] = ()
+    exclusive_with: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class KnowledgeDefinition:
+    id: str
+    title: str
+    texts: dict[str, str]
+    initial_status: KnowledgeStatus = "unknown"
+
+
+@dataclass(frozen=True, slots=True)
+class LogEntryDefinition:
+    id: str
+    category: Literal["story", "objective", "knowledge"]
+    texts: tuple[ConditionalText, ...]
+    condition: NarrativeCondition | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class CampaignDefinition:
+    location_views: dict[str, LocationViewDefinition] = field(default_factory=dict)
+    actor_views: dict[str, ActorViewDefinition] = field(default_factory=dict)
+    dialogue_views: dict[str, DialogueViewDefinition] = field(default_factory=dict)
+    scenes: dict[str, SceneDefinition] = field(default_factory=dict)
+    interactables: dict[str, InteractableDefinition] = field(default_factory=dict)
+    actions: dict[str, CampaignActionDefinition] = field(default_factory=dict)
+    objectives: dict[str, ObjectiveDefinition] = field(default_factory=dict)
+    knowledge: dict[str, KnowledgeDefinition] = field(default_factory=dict)
+    log_entries: dict[str, LogEntryDefinition] = field(default_factory=dict)
+
+
+@dataclass(frozen=True, slots=True)
 class DialogueOption:
     id: str
     text: str
@@ -256,4 +465,5 @@ class ContentPack:
     narrative_state_defs: dict[str, NarrativeStateDefinition] = field(
         default_factory=dict
     )
+    campaign: CampaignDefinition | None = None
     extensions: dict[str, Any] = field(default_factory=dict)

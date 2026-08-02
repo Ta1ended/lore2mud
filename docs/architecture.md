@@ -43,7 +43,7 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
   `required_quantity`；分支目标字段互斥，收集数量必须在 1 和物品 `stack_limit` 之间；
 - `pack.json`、`rooms.json`、`items.json`、`monsters.json`、`characters.json`、
   `quests.json`、`dialogues.json` 和 `shops.json` 八个必需内容文件，以及可选的
-  `narrative_state.json`；
+  `narrative_state.json` 和 `campaign.json`；
 - 同一实体的重复放置；
 - 怪物 `room_id` 与房间 `monster_ids` 一致性；
 - 对话节点/选项的交叉引用与唯一性；
@@ -63,6 +63,10 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
 `quest_status`、`all`、`any` 和 `not`。加载器在引用解析后检查状态类型、物品/房间/任务
 引用、最大深度与节点数；求值器只读取由 `World.condition_context()` 生成的只读快照。
 不会使用 `eval`、任意脚本或外部模型。
+
+可选 `campaign.json` v1 在同一条件 AST 上增加动态地点、出口、角色和对话文本投影，
+以及场景、交互对象、动作、目标、玩家知识和日志定义。它不包含可执行脚本；加载器严格检查
+稳定 ID、场景/阶段所有权、动作唯一所有者、目标依赖 DAG、对称互斥和所有效果引用。
 
 ## 状态生命周期
 
@@ -88,6 +92,31 @@ take item_spark_lantern [数量]
 
 可预见的输入、容量和引用失败都发生在修改之前；动作后触发的任务结算若失败，则由
 `World` 的局部事务回滚，避免半完成状态。
+
+### Campaign 运行时
+
+`World` 从不可变 `CampaignDefinition` 初始化四类可变状态：角色的位置/出现/启用/失能状态、
+`SceneState`、`ObjectiveState` 和 `KnowledgeState`。动态描述、出口、角色、活动场景、交互对象、
+动作和日志均由 World 读取同一个条件快照后投影；CLI 与 Web 只消费这些公开方法。
+
+```text
+campaign.json + narrative_state.json
+  -> 严格加载与跨文件引用校验
+  -> World.available_* 权威投影
+  -> 玩家提交稳定 action_id
+  -> 重新验证当前投影
+  -> deepcopy(World) 完整效果预检
+  -> 扩展事务内按序提交或整体回滚
+```
+
+交互对象统一表示 actor、location、object、ritual 和 inner 上下文；场景阶段决定场景型对象的
+可用集合。对话不被转换成无类型 action：它继续使用既有 `DialogueState`、有序选项和强类型
+effects，但角色可见性、动态节点文本与可用选项同样由 World 投影，因此客户端没有第二套规则。
+
+目标状态为 `inactive|active|in_progress|completed|failed`。激活会检查已完成依赖和对称互斥，
+并锁定尚未选择的互斥目标。知识状态为
+`unknown|heard|suspected|confirmed|retracted|corrected`；玩家日志只包含非 unknown 的当前文本，
+不会暴露客观 canon 定义。
 
 ### 任务系统
 
@@ -210,25 +239,28 @@ bye。结束选项（`next_node_id=null`）则立即结束对话。
 
 ### 存档
 
-`active_dialogue`、`quest_states`、顶层 `flags` 和 `narrative_state` 是 save v8 的必填字段；
-`player` 还必须保存非负整数 `coins`。save v8 使用 `inventory_stacks` 和每个房间的
+`active_dialogue`、`quest_states`、顶层 `flags` 和 `narrative_state` 继续是必填字段；
+`player` 还必须保存非负整数 `coins`。新存档统一写 save v9，并使用 `inventory_stacks` 和每个房间的
 `item_stacks` 数组保存 `{item_id, quantity}`，而 `flags` 是稳定 ID 到真正 bool 的映射；
 `narrative_state` 的键集合必须与内容包声明完全一致，且每个值都满足对应的 bool、int 范围或
-enum 定义。每个任务状态仍只有 `completed`。
+enum 定义。每个任务状态仍只有 `completed`。v9 还要求所有内容角色的精确运行态，以及与当前
+campaign 定义同键的 scene/objective/knowledge 状态；无 campaign 时这三组映射必须为空。
 
-v7 只在内容包没有 `narrative_state.json` 时可读，读取后会写回 v8；声明叙事状态的内容包
-拒绝 v7，以免默默补造状态。v6 按格式版本明确拒绝，不做隐式迁移；original_demo 内容包为
-0.10.0，其他内容包版本创建的存档会由内容包版本检查拒绝。
+v8 只对没有 campaign 的内容包保持只读兼容；v7 只在内容包同时没有
+`narrative_state.json` 和 campaign 时可读。读取兼容存档后再次保存会写 v9。带 campaign 的
+内容包拒绝 v8/v7，以免默默补造角色、场景、目标或知识状态。v6 按格式版本明确拒绝，不做
+隐式迁移；original_demo 内容包为 0.10.0，其他内容包版本创建的存档会由内容包版本检查拒绝。
 
-加载时只校验并恢复已保存的 `quest_states`、`coins`、`flags` 和其他运行时状态；不执行对话
-effects，不调用任务接取、条件检查、奖励发放或商店交易。商店定义从当前 ContentPack 重建，
-不会序列化库存。其余严格验证包括：
+加载时只校验并恢复已保存的 `quest_states`、`coins`、`flags`、角色和 campaign 状态；不执行
+对话或 campaign effects，不调用任务接取、条件检查、奖励发放、阶段推进、知识揭示或商店交易。
+商店和 campaign 定义从当前 ContentPack 重建，不会序列化可执行定义。其余严格验证包括：
 - 顶层、`content_pack`、`player`、每个房间和每个怪物对象的键集合必须精确匹配；
 - `inventory_stacks` 与 `item_stacks` 中的物品 ID、正整数数量、栈上限、重复栈、
   容量和装备数量必须与当前内容定义一致；
-- 对话 ID 和节点 ID 必须存在
-- 指向的节点不能是终端节点
-- 角色的 `room_id` 必须与玩家房间一致
+- 对话 ID 和节点 ID 必须存在，指向的节点不能是终端节点，且对话角色必须仍可交互；
+- actor 键集合必须与内容角色完全一致；房间、presence、enabled 和 incapacitated 必须满足
+  精确类型和值域；
+- scene 的状态与 stage index、objective/knowledge 的状态必须与当前 campaign 定义一致。
 
 任何不一致都以 `SaveLoadError` 拒绝，不静默清除。
 
@@ -236,7 +268,7 @@ effects，不调用任务接取、条件检查、奖励发放或商店交易。�
 由 `save <槽位>` / `load <槽位>` 传入，并只映射到保存目录内的 `<槽位>.json`：名称必须是
 1–32 位小写 ASCII 字母、数字、`-` 或 `_`，以字母或数字开头，且拒绝路径片段、扩展名和
 Windows 保留设备名。路径验证发生在序列化、读取或替换世界之前；槽位只选择文件，不改变
-save v8 的 JSON 契约。
+save v9 的 JSON 契约。
 
 `SaveLoadService.save()` 在服务边界把文件系统 `OSError` 转换为带原始异常链的
 `SaveLoadError`，因此 `CommandProcessor` 能将写入失败渲染为正常的“存档失败”文本，

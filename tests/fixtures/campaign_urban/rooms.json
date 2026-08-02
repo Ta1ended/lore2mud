@@ -1,0 +1,18 @@
+[
+  {
+    "id": "room_transit_office",
+    "name": "Transit Office",
+    "description": "A wall of monitors overlooks the empty platform.",
+    "exits": {"south": "room_night_platform"},
+    "item_stacks": [],
+    "monster_ids": []
+  },
+  {
+    "id": "room_night_platform",
+    "name": "Night Platform",
+    "description": "Rain stripes the rails beyond the canopy.",
+    "exits": {"north": "room_transit_office"},
+    "item_stacks": [],
+    "monster_ids": []
+  }
+]

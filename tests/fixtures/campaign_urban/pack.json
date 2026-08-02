@@ -1,0 +1,14 @@
+{
+  "id": "campaign_urban",
+  "name": "Last Train Inquiry",
+  "version": "1.0.0",
+  "start_room_id": "room_transit_office",
+  "player": {
+    "max_hp": 20,
+    "attack": 3,
+    "defense": 1,
+    "inventory_capacity": 4,
+    "coins": 0
+  },
+  "extensions": {}
+}

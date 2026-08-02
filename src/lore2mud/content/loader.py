@@ -9,26 +9,49 @@ from typing import Any
 
 from lore2mud.content.models import (
     AcceptQuestEffect,
+    ActorViewDefinition,
+    AdjustNarrativeStateEffect,
+    AdvanceObjectiveEffect,
+    AdvanceSceneEffect,
+    CampaignActionDefinition,
+    CampaignDefinition,
+    CampaignEffect,
     CanonReference,
     CharacterDefinition,
+    ConditionalText,
     ContentMetadata,
     ContentPack,
+    CorrectKnowledgeEffect,
     DialogueDefinition,
     DialogueEffect,
+    DialogueNodeViewDefinition,
     DialogueNode,
     DialogueOption,
+    DialogueViewDefinition,
     ExitDefinition,
     CollectItemQuestDefinition,
     GrantExperienceEffect,
     GrantItemEffect,
+    InteractableDefinition,
     ItemDefinition,
     ItemStackDefinition,
+    KnowledgeDefinition,
+    LocationViewDefinition,
+    LogEntryDefinition,
     MonsterDefeatedQuestDefinition,
     MonsterDefinition,
+    MoveActorEffect,
+    ObjectiveDefinition,
     PlayerDefaults,
     QuestDefinition,
     ReachRoomQuestDefinition,
+    RemoveItemEffect,
+    RetractKnowledgeEffect,
+    RevealKnowledgeEffect,
     RoomDefinition,
+    SceneDefinition,
+    SceneStageDefinition,
+    SetNarrativeStateEffect,
     SetFlagEffect,
     ShopDefinition,
     ShopListingDefinition,
@@ -63,6 +86,8 @@ ENTITY_FILES = (
 )
 NARRATIVE_STATE_FILE = "narrative_state.json"
 NARRATIVE_STATE_FORMAT_VERSION = 1
+CAMPAIGN_FILE = "campaign.json"
+CAMPAIGN_FORMAT_VERSION = 1
 MAX_CONDITION_DEPTH = 16
 MAX_CONDITION_NODES = 256
 
@@ -250,6 +275,22 @@ def _unique_map(
             )
         elif definition.id:
             result[definition.id] = definition
+    return result
+
+
+def _unique_attribute_map(
+    definitions: list[Any],
+    attribute: str,
+    filename: str,
+    validator: _Validator,
+) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for definition in definitions:
+        entity_id = getattr(definition, attribute)
+        if entity_id in result:
+            validator.issues.append(f"{filename} 包含重复 ID：{entity_id}")
+        elif entity_id:
+            result[entity_id] = definition
     return result
 
 
@@ -576,6 +617,902 @@ def _parse_narrative_condition(
         "at_location、quest_status、all、any 或 not"
     )
     return AllCondition(())
+
+
+def _campaign_condition(
+    raw: object,
+    location: str,
+    validator: _Validator,
+    *,
+    state_defs: dict[str, NarrativeStateDefinition],
+    rooms: dict[str, RoomDefinition],
+    items: dict[str, ItemDefinition],
+    quests: dict[str, QuestDefinition],
+) -> NarrativeCondition:
+    return _parse_narrative_condition(
+        raw,
+        location,
+        validator,
+        state_defs=state_defs,
+        rooms=rooms,
+        items=items,
+        quests=quests,
+        depth=1,
+        node_count=[0],
+    )
+
+
+def _conditional_texts(
+    raw: object,
+    location: str,
+    validator: _Validator,
+    *,
+    state_defs: dict[str, NarrativeStateDefinition],
+    rooms: dict[str, RoomDefinition],
+    items: dict[str, ItemDefinition],
+    quests: dict[str, QuestDefinition],
+    required: bool,
+) -> tuple[ConditionalText, ...]:
+    values = validator.array(raw, location)
+    if required and not values:
+        validator.issues.append(f"{location} 至少需要一个文本投影")
+    result: list[ConditionalText] = []
+    unconditional = 0
+    for index, raw_value in enumerate(values):
+        entry_location = f"{location}[{index}]"
+        obj = validator.object(raw_value, entry_location)
+        validator.keys(obj, {"text", "condition"}, entry_location)
+        condition = None
+        if "condition" in obj:
+            condition = _campaign_condition(
+                obj["condition"],
+                f"{entry_location}.condition",
+                validator,
+                state_defs=state_defs,
+                rooms=rooms,
+                items=items,
+                quests=quests,
+            )
+        else:
+            unconditional += 1
+        result.append(
+            ConditionalText(
+                text=validator.text(obj, "text", entry_location),
+                condition=condition,
+            )
+        )
+    if result and unconditional != 1:
+        validator.issues.append(f"{location} 必须恰有一个无条件回退文本")
+    return tuple(result)
+
+
+def _optional_campaign_condition(
+    obj: dict[str, Any],
+    location: str,
+    validator: _Validator,
+    *,
+    state_defs: dict[str, NarrativeStateDefinition],
+    rooms: dict[str, RoomDefinition],
+    items: dict[str, ItemDefinition],
+    quests: dict[str, QuestDefinition],
+) -> NarrativeCondition | None:
+    if "condition" not in obj:
+        return None
+    return _campaign_condition(
+        obj["condition"],
+        f"{location}.condition",
+        validator,
+        state_defs=state_defs,
+        rooms=rooms,
+        items=items,
+        quests=quests,
+    )
+
+
+def _parse_campaign_effect(
+    raw: object,
+    location: str,
+    validator: _Validator,
+    *,
+    state_defs: dict[str, NarrativeStateDefinition],
+    rooms: dict[str, RoomDefinition],
+    items: dict[str, ItemDefinition],
+    characters: dict[str, CharacterDefinition],
+    quests: dict[str, QuestDefinition],
+    scenes: dict[str, SceneDefinition],
+    objectives: dict[str, ObjectiveDefinition],
+    knowledge: dict[str, KnowledgeDefinition],
+) -> CampaignEffect:
+    obj = validator.object(raw, location)
+    kind = obj.get("kind")
+    if kind == "grant_item":
+        validator.keys(obj, {"kind", "item_id", "quantity"}, location)
+        item_id = validator.stable_id(
+            validator.text(obj, "item_id", location), f"{location}.item_id"
+        )
+        quantity = validator.integer(obj, "quantity", location, minimum=1, default=1)
+        item = items.get(item_id)
+        if item is None:
+            validator.issues.append(
+                f"{location}.item_id 引用了不存在的物品：{item_id}"
+            )
+        elif quantity > item.stack_limit:
+            validator.issues.append(
+                f"{location}.quantity {quantity} 超过物品 {item_id} 的栈上限 "
+                f"({item.stack_limit})"
+            )
+        return GrantItemEffect(item_id, quantity)
+    if kind == "grant_experience":
+        validator.keys(obj, {"kind", "amount"}, location)
+        return GrantExperienceEffect(
+            validator.integer(obj, "amount", location, minimum=1, default=1)
+        )
+    if kind == "accept_quest":
+        validator.keys(obj, {"kind", "quest_id"}, location)
+        quest_id = validator.stable_id(
+            validator.text(obj, "quest_id", location), f"{location}.quest_id"
+        )
+        if quest_id not in quests:
+            validator.issues.append(
+                f"{location}.quest_id 引用了不存在的任务：{quest_id}"
+            )
+        return AcceptQuestEffect(quest_id)
+    if kind == "set_flag":
+        validator.keys(obj, {"kind", "flag_id", "value"}, location)
+        flag_id = validator.stable_id(
+            validator.text(obj, "flag_id", location), f"{location}.flag_id"
+        )
+        raw_value = obj.get("value")
+        if not isinstance(raw_value, bool):
+            validator.issues.append(f"{location}.value 必须是布尔值")
+            raw_value = False
+        return SetFlagEffect(flag_id, raw_value)
+    if kind == "set_narrative_state":
+        validator.keys(obj, {"kind", "state_id", "value"}, location)
+        state_id = validator.stable_id(
+            validator.text(obj, "state_id", location), f"{location}.state_id"
+        )
+        value = _condition_value(obj.get("value"), f"{location}.value", validator)
+        definition = state_defs.get(state_id)
+        if definition is None:
+            validator.issues.append(
+                f"{location}.state_id 引用了不存在的叙事状态：{state_id}"
+            )
+        elif not narrative_value_is_valid(definition, value):
+            validator.issues.append(
+                f"{location}.value 不符合状态 {state_id} 的类型或值域"
+            )
+        return SetNarrativeStateEffect(state_id, value)
+    if kind == "adjust_narrative_state":
+        validator.keys(obj, {"kind", "state_id", "amount"}, location)
+        state_id = validator.stable_id(
+            validator.text(obj, "state_id", location), f"{location}.state_id"
+        )
+        amount = _signed_integer(obj.get("amount"), f"{location}.amount", validator)
+        if amount == 0:
+            validator.issues.append(f"{location}.amount 不能为 0")
+        if not isinstance(state_defs.get(state_id), IntStateDefinition):
+            validator.issues.append(
+                f"{location}.state_id 必须引用 int 叙事状态：{state_id}"
+            )
+        return AdjustNarrativeStateEffect(state_id, 0 if amount is None else amount)
+    if kind == "remove_item":
+        validator.keys(obj, {"kind", "item_id", "quantity"}, location)
+        item_id = validator.stable_id(
+            validator.text(obj, "item_id", location), f"{location}.item_id"
+        )
+        quantity = validator.integer(obj, "quantity", location, minimum=1, default=1)
+        if item_id not in items:
+            validator.issues.append(
+                f"{location}.item_id 引用了不存在的物品：{item_id}"
+            )
+        return RemoveItemEffect(item_id, quantity)
+    if kind == "move_actor":
+        allowed = {"kind", "actor_id", "location_id", "presence", "enabled", "incapacitated"}
+        validator.keys(obj, allowed, location)
+        actor_id = validator.stable_id(
+            validator.text(obj, "actor_id", location), f"{location}.actor_id"
+        )
+        if actor_id not in characters:
+            validator.issues.append(
+                f"{location}.actor_id 引用了不存在的角色：{actor_id}"
+            )
+        location_id = None
+        if "location_id" in obj:
+            location_id = validator.stable_id(
+                validator.text(obj, "location_id", location),
+                f"{location}.location_id",
+            )
+            if location_id not in rooms:
+                validator.issues.append(
+                    f"{location}.location_id 引用了不存在的房间：{location_id}"
+                )
+        presence = obj.get("presence")
+        if presence is not None and presence not in {"present", "absent"}:
+            validator.issues.append(f"{location}.presence 必须是 present 或 absent")
+            presence = None
+        optional_bools: dict[str, bool | None] = {}
+        for key in ("enabled", "incapacitated"):
+            raw_bool = obj.get(key)
+            if key in obj and not isinstance(raw_bool, bool):
+                validator.issues.append(f"{location}.{key} 必须是布尔值")
+                raw_bool = None
+            optional_bools[key] = raw_bool
+        if not any(key in obj for key in allowed - {"kind", "actor_id"}):
+            validator.issues.append(f"{location} 至少需要一个 actor 状态变更字段")
+        return MoveActorEffect(
+            actor_id,
+            location_id,
+            presence,
+            optional_bools["enabled"],
+            optional_bools["incapacitated"],
+        )
+    if kind == "advance_scene":
+        validator.keys(obj, {"kind", "scene_id", "transition"}, location)
+        scene_id = validator.stable_id(
+            validator.text(obj, "scene_id", location), f"{location}.scene_id"
+        )
+        if scene_id not in scenes:
+            validator.issues.append(
+                f"{location}.scene_id 引用了不存在的场景：{scene_id}"
+            )
+        transition = obj.get("transition")
+        if transition not in {"activate", "advance", "complete"}:
+            validator.issues.append(
+                f"{location}.transition 必须是 activate、advance 或 complete"
+            )
+            transition = "activate"
+        return AdvanceSceneEffect(scene_id, transition)
+    if kind == "advance_objective":
+        validator.keys(obj, {"kind", "objective_id", "transition"}, location)
+        objective_id = validator.stable_id(
+            validator.text(obj, "objective_id", location),
+            f"{location}.objective_id",
+        )
+        if objective_id not in objectives:
+            validator.issues.append(
+                f"{location}.objective_id 引用了不存在的目标：{objective_id}"
+            )
+        transition = obj.get("transition")
+        if transition not in {"activate", "start", "complete", "fail"}:
+            validator.issues.append(
+                f"{location}.transition 必须是 activate、start、complete 或 fail"
+            )
+            transition = "activate"
+        return AdvanceObjectiveEffect(objective_id, transition)
+    if kind == "reveal_knowledge":
+        validator.keys(obj, {"kind", "knowledge_id", "status"}, location)
+        knowledge_id = validator.stable_id(
+            validator.text(obj, "knowledge_id", location),
+            f"{location}.knowledge_id",
+        )
+        if knowledge_id not in knowledge:
+            validator.issues.append(
+                f"{location}.knowledge_id 引用了不存在的知识：{knowledge_id}"
+            )
+        status = obj.get("status")
+        if status not in {"heard", "suspected", "confirmed"}:
+            validator.issues.append(
+                f"{location}.status 必须是 heard、suspected 或 confirmed"
+            )
+            status = "heard"
+        return RevealKnowledgeEffect(knowledge_id, status)
+    if kind in {"retract_knowledge", "correct_knowledge"}:
+        validator.keys(obj, {"kind", "knowledge_id"}, location)
+        knowledge_id = validator.stable_id(
+            validator.text(obj, "knowledge_id", location),
+            f"{location}.knowledge_id",
+        )
+        if knowledge_id not in knowledge:
+            validator.issues.append(
+                f"{location}.knowledge_id 引用了不存在的知识：{knowledge_id}"
+            )
+        if kind == "retract_knowledge":
+            return RetractKnowledgeEffect(knowledge_id)
+        return CorrectKnowledgeEffect(knowledge_id)
+    validator.keys(obj, {"kind"}, location)
+    validator.issues.append(f"{location}.kind 不是支持的 campaign effect")
+    return SetFlagEffect("invalid_effect", False)
+
+
+def _load_campaign_definition(
+    root: Path,
+    validator: _Validator,
+    *,
+    state_defs: dict[str, NarrativeStateDefinition],
+    rooms: dict[str, RoomDefinition],
+    items: dict[str, ItemDefinition],
+    characters: dict[str, CharacterDefinition],
+    quests: dict[str, QuestDefinition],
+    dialogues: dict[str, DialogueDefinition],
+) -> CampaignDefinition | None:
+    path = root / CAMPAIGN_FILE
+    if not path.exists():
+        return None
+    try:
+        raw = _read_json(path)
+    except ContentValidationError as exc:
+        validator.issues.extend(exc.issues)
+        return None
+    document = validator.object(raw, CAMPAIGN_FILE)
+    section_names = {
+        "location_views",
+        "actor_views",
+        "dialogue_views",
+        "scenes",
+        "interactables",
+        "actions",
+        "objectives",
+        "knowledge",
+        "log_entries",
+    }
+    validator.keys(document, {"format_version"} | section_names, CAMPAIGN_FILE)
+    version = document.get("format_version")
+    if (
+        not isinstance(version, int)
+        or isinstance(version, bool)
+        or version != CAMPAIGN_FORMAT_VERSION
+    ):
+        validator.issues.append(
+            f"{CAMPAIGN_FILE}.format_version 必须是 {CAMPAIGN_FORMAT_VERSION}"
+        )
+    for name in sorted(section_names):
+        if name not in document:
+            validator.issues.append(f"{CAMPAIGN_FILE}.{name} 是必填字段")
+
+    condition_args = {
+        "state_defs": state_defs,
+        "rooms": rooms,
+        "items": items,
+        "quests": quests,
+    }
+
+    location_view_values: list[LocationViewDefinition] = []
+    for index, raw_view in enumerate(
+        validator.array(document.get("location_views"), f"{CAMPAIGN_FILE}.location_views")
+    ):
+        location = f"{CAMPAIGN_FILE}.location_views[{index}]"
+        obj = validator.object(raw_view, location)
+        validator.keys(obj, {"location_id", "descriptions", "exits"}, location)
+
+        if "descriptions" not in obj:
+            validator.issues.append(f"{location}.descriptions 是必填字段")
+        if "exits" not in obj:
+            validator.issues.append(f"{location}.exits 是必填字段")
+        location_id = validator.stable_id(
+            validator.text(obj, "location_id", location), f"{location}.location_id"
+        )
+        if location_id not in rooms:
+            validator.issues.append(
+                f"{location}.location_id 引用了不存在的房间：{location_id}"
+            )
+        descriptions = _conditional_texts(
+            obj.get("descriptions", []),
+            f"{location}.descriptions",
+            validator,
+            required=False,
+            **condition_args,
+        )
+        exit_conditions: dict[str, NarrativeCondition] = {}
+        for exit_index, raw_exit in enumerate(
+            validator.array(obj.get("exits", []), f"{location}.exits")
+        ):
+            exit_location = f"{location}.exits[{exit_index}]"
+            exit_obj = validator.object(raw_exit, exit_location)
+            validator.keys(exit_obj, {"direction", "condition"}, exit_location)
+            direction = validator.text(exit_obj, "direction", exit_location).casefold()
+            if location_id in rooms and direction not in rooms[location_id].exits:
+                validator.issues.append(
+                    f"{exit_location}.direction 引用了不存在的出口：{direction}"
+                )
+            if direction in exit_conditions:
+                validator.issues.append(
+                    f"{location}.exits 包含重复方向：{direction}"
+                )
+            exit_conditions[direction] = _campaign_condition(
+                exit_obj.get("condition"),
+                f"{exit_location}.condition",
+                validator,
+                **condition_args,
+            )
+        location_view_values.append(
+            LocationViewDefinition(location_id, descriptions, exit_conditions)
+        )
+    location_views = _unique_attribute_map(
+        location_view_values, "location_id", CAMPAIGN_FILE, validator
+    )
+
+    actor_view_values: list[ActorViewDefinition] = []
+    for index, raw_view in enumerate(
+        validator.array(document.get("actor_views"), f"{CAMPAIGN_FILE}.actor_views")
+    ):
+        location = f"{CAMPAIGN_FILE}.actor_views[{index}]"
+        obj = validator.object(raw_view, location)
+        validator.keys(obj, {"actor_id", "descriptions", "condition"}, location)
+
+        if "descriptions" not in obj:
+            validator.issues.append(f"{location}.descriptions 是必填字段")
+        actor_id = validator.stable_id(
+            validator.text(obj, "actor_id", location), f"{location}.actor_id"
+        )
+        if actor_id not in characters:
+            validator.issues.append(
+                f"{location}.actor_id 引用了不存在的角色：{actor_id}"
+            )
+        actor_view_values.append(
+            ActorViewDefinition(
+                actor_id,
+                _conditional_texts(
+                    obj.get("descriptions", []),
+                    f"{location}.descriptions",
+                    validator,
+                    required=False,
+                    **condition_args,
+                ),
+                _optional_campaign_condition(obj, location, validator, **condition_args),
+            )
+        )
+    actor_views = _unique_attribute_map(
+        actor_view_values, "actor_id", CAMPAIGN_FILE, validator
+    )
+
+    dialogue_view_values: list[DialogueViewDefinition] = []
+    for index, raw_view in enumerate(
+        validator.array(document.get("dialogue_views"), f"{CAMPAIGN_FILE}.dialogue_views")
+    ):
+        location = f"{CAMPAIGN_FILE}.dialogue_views[{index}]"
+        obj = validator.object(raw_view, location)
+        validator.keys(obj, {"dialogue_id", "nodes"}, location)
+        dialogue_id = validator.stable_id(
+            validator.text(obj, "dialogue_id", location), f"{location}.dialogue_id"
+        )
+        dialogue = dialogues.get(dialogue_id)
+        if dialogue is None:
+            validator.issues.append(
+                f"{location}.dialogue_id 引用了不存在的对话：{dialogue_id}"
+            )
+        node_values: list[DialogueNodeViewDefinition] = []
+        for node_index, raw_node in enumerate(
+            validator.array(obj.get("nodes"), f"{location}.nodes")
+        ):
+            node_location = f"{location}.nodes[{node_index}]"
+            node_obj = validator.object(raw_node, node_location)
+            validator.keys(node_obj, {"node_id", "texts"}, node_location)
+            node_id = validator.stable_id(
+                validator.text(node_obj, "node_id", node_location),
+                f"{node_location}.node_id",
+            )
+            if dialogue is not None and node_id not in dialogue.nodes:
+                validator.issues.append(
+                    f"{node_location}.node_id 引用了不存在的节点：{node_id}"
+                )
+            node_values.append(
+                DialogueNodeViewDefinition(
+                    node_id,
+                    _conditional_texts(
+                        node_obj.get("texts"),
+                        f"{node_location}.texts",
+                        validator,
+                        required=True,
+                        **condition_args,
+                    ),
+                )
+            )
+        dialogue_view_values.append(
+            DialogueViewDefinition(
+                dialogue_id,
+                _unique_attribute_map(
+                    node_values, "node_id", CAMPAIGN_FILE, validator
+                ),
+            )
+        )
+    dialogue_views = _unique_attribute_map(
+        dialogue_view_values, "dialogue_id", CAMPAIGN_FILE, validator
+    )
+
+    objective_values: list[ObjectiveDefinition] = []
+    for index, raw_objective in enumerate(
+        validator.array(document.get("objectives"), f"{CAMPAIGN_FILE}.objectives")
+    ):
+        location = f"{CAMPAIGN_FILE}.objectives[{index}]"
+        obj = validator.object(raw_objective, location)
+        validator.keys(
+            obj,
+            {"id", "title", "description", "initial_status", "dependency_ids", "exclusive_with"},
+            location,
+        )
+
+        if "initial_status" not in obj:
+            validator.issues.append(f"{location}.initial_status 是必填字段")
+        if "dependency_ids" not in obj:
+            validator.issues.append(f"{location}.dependency_ids 是必填字段")
+        if "exclusive_with" not in obj:
+            validator.issues.append(f"{location}.exclusive_with 是必填字段")
+        objective_id = validator.stable_id(
+            validator.text(obj, "id", location), f"{location}.id"
+        )
+        initial_status = obj.get("initial_status", "inactive")
+        if initial_status not in {"inactive", "active"}:
+            validator.issues.append(
+                f"{location}.initial_status 必须是 inactive 或 active"
+            )
+            initial_status = "inactive"
+        dependencies = validator.string_list(
+            obj.get("dependency_ids", []), f"{location}.dependency_ids"
+        )
+        exclusive = validator.string_list(
+            obj.get("exclusive_with", []), f"{location}.exclusive_with"
+        )
+        for value_index, value in enumerate(dependencies):
+            validator.stable_id(value, f"{location}.dependency_ids[{value_index}]")
+        for value_index, value in enumerate(exclusive):
+            validator.stable_id(value, f"{location}.exclusive_with[{value_index}]")
+        if objective_id in set(dependencies) | set(exclusive):
+            validator.issues.append(f"{location} 不能引用自身")
+        if initial_status == "active" and dependencies:
+            validator.issues.append(
+                f"{location} 初始 active 目标不能声明依赖"
+            )
+        objective_values.append(
+            ObjectiveDefinition(
+                objective_id,
+                validator.text(obj, "title", location),
+                validator.text(obj, "description", location),
+                initial_status,
+                dependencies,
+                exclusive,
+            )
+        )
+    objectives = _unique_map(objective_values, CAMPAIGN_FILE, validator)
+
+    knowledge_values: list[KnowledgeDefinition] = []
+    knowledge_statuses = {"unknown", "heard", "suspected", "confirmed", "retracted", "corrected"}
+    visible_knowledge_statuses = knowledge_statuses - {"unknown"}
+    for index, raw_knowledge in enumerate(
+        validator.array(document.get("knowledge"), f"{CAMPAIGN_FILE}.knowledge")
+    ):
+        location = f"{CAMPAIGN_FILE}.knowledge[{index}]"
+        obj = validator.object(raw_knowledge, location)
+        validator.keys(obj, {"id", "title", "initial_status", "texts"}, location)
+
+        if "initial_status" not in obj:
+            validator.issues.append(f"{location}.initial_status 是必填字段")
+        knowledge_id = validator.stable_id(
+            validator.text(obj, "id", location), f"{location}.id"
+        )
+        initial_status = obj.get("initial_status", "unknown")
+        if initial_status not in knowledge_statuses:
+            validator.issues.append(f"{location}.initial_status 不是支持的知识状态")
+            initial_status = "unknown"
+        raw_texts = validator.object(obj.get("texts"), f"{location}.texts")
+        validator.keys(raw_texts, visible_knowledge_statuses, f"{location}.texts")
+        texts: dict[str, str] = {}
+        for status in sorted(visible_knowledge_statuses):
+            texts[status] = validator.text(raw_texts, status, f"{location}.texts")
+        knowledge_values.append(
+            KnowledgeDefinition(
+                knowledge_id,
+                validator.text(obj, "title", location),
+                texts,
+                initial_status,
+            )
+        )
+    knowledge = _unique_map(knowledge_values, CAMPAIGN_FILE, validator)
+
+    scene_values: list[SceneDefinition] = []
+    for index, raw_scene in enumerate(
+        validator.array(document.get("scenes"), f"{CAMPAIGN_FILE}.scenes")
+    ):
+        location = f"{CAMPAIGN_FILE}.scenes[{index}]"
+        obj = validator.object(raw_scene, location)
+        validator.keys(
+            obj, {"id", "name", "location_id", "initial_status", "condition", "stages"}, location
+        )
+
+        if "initial_status" not in obj:
+            validator.issues.append(f"{location}.initial_status 是必填字段")
+        scene_id = validator.stable_id(
+            validator.text(obj, "id", location), f"{location}.id"
+        )
+        location_id = validator.stable_id(
+            validator.text(obj, "location_id", location), f"{location}.location_id"
+        )
+        if location_id not in rooms:
+            validator.issues.append(
+                f"{location}.location_id 引用了不存在的房间：{location_id}"
+            )
+        initial_status = obj.get("initial_status", "inactive")
+        if initial_status not in {"inactive", "active"}:
+            validator.issues.append(
+                f"{location}.initial_status 必须是 inactive 或 active"
+            )
+            initial_status = "inactive"
+        stage_values: list[SceneStageDefinition] = []
+        for stage_index, raw_stage in enumerate(
+            validator.array(obj.get("stages"), f"{location}.stages")
+        ):
+            stage_location = f"{location}.stages[{stage_index}]"
+            stage_obj = validator.object(raw_stage, stage_location)
+            validator.keys(
+                stage_obj, {"id", "descriptions", "interactable_ids"}, stage_location
+            )
+            stage_id = validator.stable_id(
+                validator.text(stage_obj, "id", stage_location), f"{stage_location}.id"
+            )
+            stage_values.append(
+                SceneStageDefinition(
+                    stage_id,
+                    _conditional_texts(
+                        stage_obj.get("descriptions"),
+                        f"{stage_location}.descriptions",
+                        validator,
+                        required=True,
+                        **condition_args,
+                    ),
+                    validator.string_list(
+                        stage_obj.get("interactable_ids"),
+                        f"{stage_location}.interactable_ids",
+                    ),
+                )
+            )
+        if not stage_values:
+            validator.issues.append(f"{location}.stages 至少需要一个阶段")
+        stage_map = _unique_map(stage_values, CAMPAIGN_FILE, validator)
+        scene_values.append(
+            SceneDefinition(
+                scene_id,
+                validator.text(obj, "name", location),
+                location_id,
+                tuple(stage_map.values()),
+                initial_status,
+                _optional_campaign_condition(obj, location, validator, **condition_args),
+            )
+        )
+    scenes = _unique_map(scene_values, CAMPAIGN_FILE, validator)
+
+    interactable_values: list[InteractableDefinition] = []
+    for index, raw_interactable in enumerate(
+        validator.array(document.get("interactables"), f"{CAMPAIGN_FILE}.interactables")
+    ):
+        location = f"{CAMPAIGN_FILE}.interactables[{index}]"
+        obj = validator.object(raw_interactable, location)
+        validator.keys(
+            obj,
+            {"id", "name", "kind", "target_id", "location_id", "scene_id", "action_ids", "descriptions", "condition"},
+            location,
+        )
+        interactable_id = validator.stable_id(
+            validator.text(obj, "id", location), f"{location}.id"
+        )
+        kind = obj.get("kind")
+        if kind not in {"actor", "location", "object", "ritual", "inner"}:
+            validator.issues.append(f"{location}.kind 不是支持的 interactable 类型")
+            kind = "object"
+        target_id = None
+        if "target_id" in obj:
+            target_id = validator.stable_id(
+                validator.text(obj, "target_id", location), f"{location}.target_id"
+            )
+        location_id = None
+        if "location_id" in obj:
+            location_id = validator.stable_id(
+                validator.text(obj, "location_id", location), f"{location}.location_id"
+            )
+            if location_id not in rooms:
+                validator.issues.append(
+                    f"{location}.location_id 引用了不存在的房间：{location_id}"
+                )
+        scene_id = None
+        if "scene_id" in obj:
+            scene_id = validator.stable_id(
+                validator.text(obj, "scene_id", location), f"{location}.scene_id"
+            )
+            if scene_id not in scenes:
+                validator.issues.append(
+                    f"{location}.scene_id 引用了不存在的场景：{scene_id}"
+                )
+        if location_id is not None and scene_id is not None:
+            validator.issues.append(
+                f"{location} 不能同时指定 location_id 和 scene_id"
+            )
+        if kind == "actor":
+            if target_id not in characters:
+                validator.issues.append(
+                    f"{location}.target_id 必须引用存在的角色"
+                )
+        elif kind == "location":
+            if target_id not in rooms:
+                validator.issues.append(
+                    f"{location}.target_id 必须引用存在的房间"
+                )
+        elif kind == "object" and target_id is not None and target_id not in items:
+            validator.issues.append(
+                f"{location}.target_id 必须引用存在的物品或省略"
+            )
+        if kind in {"object", "ritual", "inner"} and location_id is None and scene_id is None:
+            validator.issues.append(
+                f"{location} 必须指定 location_id 或 scene_id"
+            )
+        action_ids = validator.string_list(
+            obj.get("action_ids"), f"{location}.action_ids"
+        )
+        if not action_ids:
+            validator.issues.append(f"{location}.action_ids 至少需要一个动作")
+        interactable_values.append(
+            InteractableDefinition(
+                interactable_id,
+                validator.text(obj, "name", location),
+                kind,
+                action_ids,
+                _conditional_texts(
+                    obj.get("descriptions"),
+                    f"{location}.descriptions",
+                    validator,
+                    required=True,
+                    **condition_args,
+                ),
+                target_id,
+                location_id,
+                scene_id,
+                _optional_campaign_condition(obj, location, validator, **condition_args),
+            )
+        )
+    interactables = _unique_map(interactable_values, CAMPAIGN_FILE, validator)
+
+    action_values: list[CampaignActionDefinition] = []
+    for index, raw_action in enumerate(
+        validator.array(document.get("actions"), f"{CAMPAIGN_FILE}.actions")
+    ):
+        location = f"{CAMPAIGN_FILE}.actions[{index}]"
+        obj = validator.object(raw_action, location)
+        validator.keys(obj, {"id", "label", "result_text", "effects", "condition"}, location)
+        action_id = validator.stable_id(
+            validator.text(obj, "id", location), f"{location}.id"
+        )
+        raw_effects = validator.array(obj.get("effects"), f"{location}.effects")
+        effects = tuple(
+            _parse_campaign_effect(
+                raw_effect,
+                f"{location}.effects[{effect_index}]",
+                validator,
+                state_defs=state_defs,
+                rooms=rooms,
+                items=items,
+                characters=characters,
+                quests=quests,
+                scenes=scenes,
+                objectives=objectives,
+                knowledge=knowledge,
+            )
+            for effect_index, raw_effect in enumerate(raw_effects)
+        )
+        action_values.append(
+            CampaignActionDefinition(
+                action_id,
+                validator.text(obj, "label", location),
+                validator.text(obj, "result_text", location),
+                effects,
+                _optional_campaign_condition(obj, location, validator, **condition_args),
+            )
+        )
+    actions = _unique_map(action_values, CAMPAIGN_FILE, validator)
+
+    log_values: list[LogEntryDefinition] = []
+    for index, raw_log in enumerate(
+        validator.array(document.get("log_entries"), f"{CAMPAIGN_FILE}.log_entries")
+    ):
+        location = f"{CAMPAIGN_FILE}.log_entries[{index}]"
+        obj = validator.object(raw_log, location)
+        validator.keys(obj, {"id", "category", "texts", "condition"}, location)
+        log_id = validator.stable_id(
+            validator.text(obj, "id", location), f"{location}.id"
+        )
+        category = obj.get("category")
+        if category not in {"story", "objective", "knowledge"}:
+            validator.issues.append(
+                f"{location}.category 必须是 story、objective 或 knowledge"
+            )
+            category = "story"
+        log_values.append(
+            LogEntryDefinition(
+                log_id,
+                category,
+                _conditional_texts(
+                    obj.get("texts"),
+                    f"{location}.texts",
+                    validator,
+                    required=True,
+                    **condition_args,
+                ),
+                _optional_campaign_condition(obj, location, validator, **condition_args),
+            )
+        )
+    log_entries = _unique_map(log_values, CAMPAIGN_FILE, validator)
+
+    for objective in objectives.values():
+        for dependency_id in objective.dependency_ids:
+            if dependency_id not in objectives:
+                validator.issues.append(
+                    f"目标 {objective.id} 引用了不存在的依赖：{dependency_id}"
+                )
+        for exclusive_id in objective.exclusive_with:
+            other = objectives.get(exclusive_id)
+            if other is None:
+                validator.issues.append(
+                    f"目标 {objective.id} 引用了不存在的互斥目标：{exclusive_id}"
+                )
+            elif objective.id not in other.exclusive_with:
+                validator.issues.append(
+                    f"目标互斥必须对称声明：{objective.id} <-> {exclusive_id}"
+                )
+            elif objective.initial_status == other.initial_status == "active":
+                validator.issues.append(
+                    f"互斥目标不能同时初始 active：{objective.id}、{exclusive_id}"
+                )
+
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit_objective(objective_id: str) -> None:
+        if objective_id in visiting:
+            validator.issues.append(f"目标依赖图包含环：{objective_id}")
+            return
+        if objective_id in visited or objective_id not in objectives:
+            return
+        visiting.add(objective_id)
+        for dependency_id in objectives[objective_id].dependency_ids:
+            visit_objective(dependency_id)
+        visiting.remove(objective_id)
+        visited.add(objective_id)
+
+    for objective_id in sorted(objectives):
+        visit_objective(objective_id)
+
+    scene_interactable_ids: set[str] = set()
+    for scene in scenes.values():
+        for stage in scene.stages:
+            for interactable_id in stage.interactable_ids:
+                interactable = interactables.get(interactable_id)
+                if interactable is None:
+                    validator.issues.append(
+                        f"场景 {scene.id} 阶段 {stage.id} 引用了不存在的 interactable："
+                        f"{interactable_id}"
+                    )
+                elif interactable.scene_id != scene.id:
+                    validator.issues.append(
+                        f"interactable {interactable_id} 的 scene_id 与场景 {scene.id} 不一致"
+                    )
+                scene_interactable_ids.add(interactable_id)
+    action_owners: dict[str, list[str]] = {}
+    for interactable in interactables.values():
+        if interactable.scene_id is not None and interactable.id not in scene_interactable_ids:
+            validator.issues.append(
+                f"场景 interactable {interactable.id} 未被任何阶段引用"
+            )
+        for action_id in interactable.action_ids:
+            action_owners.setdefault(action_id, []).append(interactable.id)
+            if action_id not in actions:
+                validator.issues.append(
+                    f"interactable {interactable.id} 引用了不存在的动作：{action_id}"
+                )
+    for action_id in sorted(actions):
+        owners = action_owners.get(action_id, [])
+        if len(owners) != 1:
+            validator.issues.append(
+                f"动作 {action_id} 必须恰属于一个 interactable，实际：{owners}"
+            )
+
+    return CampaignDefinition(
+        location_views=location_views,
+        actor_views=actor_views,
+        dialogue_views=dialogue_views,
+        scenes=scenes,
+        interactables=interactables,
+        actions=actions,
+        objectives=objectives,
+        knowledge=knowledge,
+        log_entries=log_entries,
+    )
 
 
 def load_content_pack(path: str | Path) -> ContentPack:
@@ -1404,6 +2341,17 @@ def load_content_pack(path: str | Path) -> ContentPack:
 
     shops = _unique_map(shop_defs_list, "shops.json", validator)
 
+    campaign = _load_campaign_definition(
+        root,
+        validator,
+        state_defs=narrative_state_defs,
+        rooms=rooms,
+        items=items,
+        characters=characters,
+        quests=quests,
+        dialogues=dialogues,
+    )
+
     if start_room_id and start_room_id not in rooms:
         validator.issues.append(
             f"pack.json.start_room_id 引用了不存在的房间：{start_room_id}"
@@ -1580,6 +2528,17 @@ def load_content_pack(path: str | Path) -> ContentPack:
                                 f"{effect.quest_id}"
                             )
 
+    if campaign is not None:
+        for action in campaign.actions.values():
+            for effect in action.effects:
+                if not isinstance(effect, GrantItemEffect):
+                    continue
+                if effect.item_id not in items:
+                    continue
+                item_sources.setdefault(effect.item_id, []).append(
+                    f"campaign 动作 {action.id}"
+                )
+
     # Non-stackable (stack_limit==1) cross-source conflict detection.
     for item_id, sources in item_sources.items():
         if len(sources) > 1 and items[item_id].stack_limit == 1:
@@ -1655,6 +2614,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
         dialogues=dialogues,
         shops=shops,
         narrative_state_defs=narrative_state_defs,
+        campaign=campaign,
         extensions=extensions,
     )
 

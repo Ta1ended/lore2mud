@@ -41,6 +41,34 @@
 - Supersedes: The empty-`claim_uses` restriction implied by the initial DEC-0072
   implementation only; DEC-0072's explicit complete-accounting rationale remains.
 
+## DEC-0076: Public runtime campaign foundation v1
+
+- Date: 2026-08-02
+- Status: Implementation complete in an isolated worktree; fresh independent read-only review pending.
+- Context: The 1-58 chapter playable prototype needs a reusable runtime layer that can carry
+  multi-location campaigns, staged scenes, objectives, player-scoped knowledge, and atomic
+  actions without turning dialogue into an untyped action soup or adding client-side rules.
+- Decision: Add optional strict `campaign.json` v1 over the existing bounded declarative
+  condition AST. World remains the single authority for dynamic projections (locations,
+  exits, actors, dialogue text/options, scenes, interactables, actions, objectives,
+  knowledge, journal) and for ordered atomic effects with full preflight and rollback.
+  New saves write v9 and strictly preserve actor position/presence/enabled/incapacitated
+  plus campaign scene/objective/knowledge state without replaying effects; v8 remains
+  read-compatible only for packs without campaign, v7 only for packs with neither
+  narrative state nor campaign. Two fictional cross-genre fixtures cover a magical staged
+  event and an urban investigation with knowledge correction; no novel-specific names or
+  content enter the public repository.
+- Evidence: 382 focused/regression tests; 1333 full unittest and 1323 pytest pass with
+  10 platform/symlink skips; compileall and diff checks pass. Ruff, Pyright, content
+  validation for original_demo and both campaign fixtures, Draft 2020-12 schema checks,
+  history safety, fsck, and desktop/390/320 browser interaction plus save/load now pass;
+  a fresh read-only reviewer is still required before GO.
+- Consequences: Campaign definitions remain optional and original_demo stays a 0.10.0
+  pack in this slice; new saves are v9. This does not authorize campaign compilation from
+  private canon, Forge v2, runtime LLM, scripting, or integration to `main`; it does not
+  authorize reading chapters 59+ or publishing private material.
+- Supersedes: None.
+
 ## DEC-0002: Canon facts remain outside game rules
 
 - Date: 2026-07-27

@@ -92,11 +92,18 @@ quit
 - `use <ID或名称> [数量]`：使用背包内的消耗品（数量可选，默认 1）。
 - typed stacks：不可变内容 `ItemStackDefinition` 与运行时 `ItemStack` 统一房间、背包、
   战利品和对话奖励；容量按栈位计算，`stack_limit` 限制每栈数量。
-- 当前原创内容包为 0.10.0；本地存档为 v8，使用 `inventory_stacks`、`item_stacks`、
-  `player.coins`、顶层 `flags` 与严格类型化的 `narrative_state`。没有叙事状态定义的内容包
-  可以只读加载 v7 存档；v6 和为其他内容包版本创建的存档会被明确拒绝。
+- 当前原创内容包为 0.10.0；新存档统一写 v9，除既有 `inventory_stacks`、`item_stacks`、
+  `player.coins`、顶层 `flags` 与严格类型化的 `narrative_state` 外，还严格保存角色位置/状态和
+  可选 campaign 的场景、目标与知识状态。v8 只对没有 campaign 的内容包保持只读兼容；v7
+  只对同时没有叙事状态定义和 campaign 的内容包保持只读兼容。v6 和为其他内容包版本创建的
+  存档会被明确拒绝。
 - 可选 `narrative_state.json` 声明 bool、范围受限 int 和 enum 状态。对话选项可使用无脚本、
   有深度/节点上限的条件树检查状态、背包、位置和任务；World 是 CLI 与 Web 可用选项的唯一权威。
+- 可选严格 `campaign.json` v1 在同一受限条件系统上声明动态地点/角色/对话文本、条件出口、
+  多阶段场景、actor/location/object/ritual/inner 交互对象、原子动作、分阶段目标、玩家知识和
+  日志。`World` 同时是 CLI 与 Web 的唯一投影和执行权威，隐藏动作不能通过稳定 ID、裸数字或
+  Web payload 绕过。对话继续使用既有强类型状态机；campaign 只投影角色可见性、节点文本和
+  可用选项，不引入脚本或第二套客户端规则。
 - `original_demo` 现在是一段可完成的原创冒险：早期 NPC 提供路线和任务反馈，断轨岔口允许选择
   可选补给战，棱镜哨卫掉落的唯一核心解锁信标心室，最终任务与 `flag_beacon_restored` 明确记录结局。
 - `equip <ID或名称>`：装备 hand 或 body 槽物品。
@@ -108,6 +115,9 @@ quit
 - `talk <ID或名称>`：与角色对话，显示台词和编号选项。
 - `<数字>`：选择对话选项（对话中可用）。
 - `bye`：结束当前对话（对话中可用）。
+- `actions` / `act <动作ID>`：查看并执行 `World` 当前投影出的 campaign 场景动作。
+- `objectives` / `knowledge` / `journal`：分别查看可见的分阶段目标、玩家知识和统一叙事日志；
+  `unknown` 知识不会泄露给玩家。
 - `help [command]`：无参数列出所有真实路由；指定命令或别名时显示语法、参数、上下文限制
   和死亡限制。帮助、路由和死亡允许信息来自同一个命令注册表。
 - 对话选项必须声明有序 `effects`；首批强类型效果是 `grant_item`、`grant_experience`、

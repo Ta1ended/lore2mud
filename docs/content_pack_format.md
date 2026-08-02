@@ -14,11 +14,13 @@ content_pack/
 ├─ quests.json
 ├─ dialogues.json
 ├─ shops.json
-└─ narrative_state.json  # 可选
+├─ narrative_state.json  # 可选
+└─ campaign.json         # 可选
 ```
 
 前八个文件必须存在；没有角色、任务、对话或商店时使用空数组。`narrative_state.json`
-是可选的：缺失时内容包没有类型化叙事状态，且对话条件不能引用状态。所有文本为 UTF-8 JSON。
+和 `campaign.json` 是可选的：缺失前者时内容包没有类型化叙事状态，缺失后者时保持既有
+房间/任务/对话运行方式。所有文本为 UTF-8 JSON。
 稳定 ID 必须匹配：
 
 ```text
@@ -71,8 +73,87 @@ content_pack/
 - `int.initial`、可选 `minimum` 和可选 `maximum` 都是 bool 以外的整数；同时给出范围时
   `minimum <= maximum`，`initial` 必须在范围内。
 - `enum.values` 是至少一个、不重复的稳定 ID 字符串；`initial` 必须属于该集合。
-- 运行时 `World` 以这些定义初始化 `narrative_state`。save v8 精确保存该映射；没有此文件的
-  内容包可只读加载旧 v7 存档，但带定义的内容包拒绝 v7。
+- 运行时 `World` 以这些定义初始化 `narrative_state`。新存档统一写 v9 并精确保存该映射；
+  没有 campaign 的内容包可只读加载 v8。只有同时没有本文件和 campaign 的内容包才可只读
+  加载 v7。
+
+## `campaign.json`
+
+该可选文件的格式版本固定为 1。它描述题材中立的运行时 campaign，而不是小说事实或任意
+脚本；完整结构由 `schemas/campaign.schema.json` 约束。顶层必须精确包含：
+
+```json
+{
+  "format_version": 1,
+  "location_views": [],
+  "actor_views": [],
+  "dialogue_views": [],
+  "scenes": [],
+  "interactables": [],
+  "actions": [],
+  "objectives": [],
+  "knowledge": [],
+  "log_entries": []
+}
+```
+
+### 动态投影
+
+- `location_views` 可为已有房间声明条件描述和条件出口。条件出口必须引用该房间真实存在的
+  方向；`World.available_exits()` 同时控制显示与移动，客户端不能直接提交隐藏方向。
+- `actor_views` 可为已有角色声明条件描述和可见条件。角色位置、`present/absent`、`enabled`
+  与 `incapacitated` 是运行时状态，Web、CLI、查看和对话都读取 World 的当前投影。
+- `dialogue_views` 只替换已有对话节点的显示文本；选项、跳转和强类型 effects 仍来自
+  `dialogues.json`，可用选项仍以 `World.available_dialogue_options()` 为唯一权威。
+- 每个文本投影是 `{ "text": "...", "condition": {...} }`；一个非空投影列表必须恰有一个
+  省略 `condition` 的回退文本。按文件顺序采用第一个满足条件的文本，否则采用该回退。
+- 所有条件复用对话条件的受限 AST、深度/节点上限和引用校验，不支持 `eval`、Python、插件
+  或客户端自定义表达式。
+
+### 场景、交互对象与动作
+
+`scenes` 声明稳定 ID、显示名、房间、初始 `inactive|active` 状态和至少一个有序阶段。活动
+场景只有一个 `stage_index`；阶段列出当前可用的 `interactable_ids`。场景可激活、推进或完成，
+完成后不再投影交互对象。
+
+`interactables` 使用统一形状表示 `actor`、`location`、`object`、`ritual` 或 `inner`：
+
+- `actor` / `location` 使用 `target_id` 引用已有角色或房间；
+- `object` 可选引用已有物品，也可仅作为场景对象；
+- `object`、`ritual` 和 `inner` 必须以 `location_id` 或 `scene_id` 确定唯一上下文；
+- `scene_id` 与阶段引用必须一致；条件、actor 状态、当前位置和活动阶段共同决定可见性；
+- 每个 `action_id` 必须存在，且一个动作必须恰属于一个交互对象。
+
+`actions` 声明稳定 ID、按钮/命令标签、成功文本、可选条件和有序 `effects`。`World` 先在
+完整 World 副本上预检全部效果，再在扩展事务中执行；任何后续异常都会回滚房间、怪物、玩家、
+背包、装备、任务、flags、叙事状态、角色、场景、目标、知识和活动对话。支持的效果为：
+
+- 既有 `grant_item`、`grant_experience`、`accept_quest`、`set_flag`；
+- `set_narrative_state`、`adjust_narrative_state`；
+- `remove_item`；
+- `move_actor`，可原子修改位置、`presence`、`enabled` 和 `incapacitated` 中至少一项；
+- `advance_scene` 的 `activate|advance|complete`；
+- `advance_objective` 的 `activate|start|complete|fail`；
+- `reveal_knowledge` 到 `heard|suspected|confirmed`，以及 `retract_knowledge`、
+  `correct_knowledge`。
+
+动作只按稳定 ID 执行，但稳定 ID 本身不构成授权。`World.execute_campaign_action()` 会再次从
+当前交互对象、场景阶段和条件投影动作；隐藏动作通过 CLI、旧索引或 Web JSON 直接提交都会失败，
+且不改变状态。活动对话期间不执行 campaign 动作。
+
+### 目标、知识与日志
+
+- `objectives` 初始为 `inactive` 或 `active`，运行时状态为 `inactive`、`active`、
+  `in_progress`、`completed` 或 `failed`。激活前所有依赖必须完成；依赖图必须无环。
+  `exclusive_with` 必须对称，激活一端会把尚未选择的另一端锁定为 `failed`。
+- `knowledge` 初始可为 `unknown`、`heard`、`suspected`、`confirmed`、`retracted` 或
+  `corrected`，并为每个可见状态提供玩家文本。`unknown` 永不进入玩家日志；揭示只可向前，
+  撤回和修正必须从允许的既有状态发生。
+- `log_entries` 是条件故事/目标/知识文本。`World.available_log_entries()` 还合并当前可见目标
+  与知识，Web 和 CLI 不从客观 canon 或隐藏定义自行推导日志。
+
+带 campaign 的内容包必须使用 save v9；v8 缺少角色、场景、目标和知识运行态，因此明确拒绝。
+读取存档只恢复已验证状态，不重放 action effects，不推进阶段，也不再次揭示知识。
 
 ## 房间
 

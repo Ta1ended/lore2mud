@@ -4,6 +4,11 @@
 
 ### Changed
 
+- New saves now write v9 and strictly preserve actor position/presence/enabled/
+  incapacitated state plus optional campaign scene, objective, and player-knowledge
+  state without replaying effects. v8 remains read-compatible only for packs with
+  no campaign; v7 remains read-compatible only for packs with neither narrative
+  state nor campaign definitions.
 - Added generic, typed narrative state and bounded declarative dialogue
   conditions to the original public demo. Content packs may define bool, int,
   and enum state in optional `narrative_state.json`; `World` remains the sole
@@ -35,6 +40,13 @@
 
 ### Added
 
+- Added the public runtime campaign foundation through optional strict
+  `campaign.json` v1. World-authoritative projections cover conditional locations,
+  exits, actors, dialogue text, scenes, interactables, actions, objectives,
+  knowledge, and journal entries. Ordered effects are fully preflighted and atomic;
+  CLI and Web expose structured actions while rejecting hidden stable IDs. Two
+  fictional cross-genre fixtures exercise a magical staged event and an urban
+  investigation with knowledge correction.
 - Added deterministic `NarrativeModel v1` compilation from a validated
   CanonRegistry plus an explicit human NarrativePlan. The public pipeline
   validates exact claim use/omission accounting, scoped source snapshots,

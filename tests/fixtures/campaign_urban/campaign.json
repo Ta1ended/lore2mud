@@ -1,0 +1,129 @@
+{
+  "format_version": 1,
+  "location_views": [],
+  "actor_views": [],
+  "dialogue_views": [
+    {
+      "dialogue_id": "dialogue_dispatcher",
+      "nodes": [
+        {
+          "node_id": "node_report",
+          "texts": [
+            {
+              "text": "The timestamp proves the vendor had already left.",
+              "condition": {"kind": "state_equals", "state_id": "state_camera_checked", "value": true}
+            },
+            {"text": "The vendor had access to the platform."}
+          ]
+        }
+      ]
+    }
+  ],
+  "scenes": [],
+  "interactables": [
+    {
+      "id": "interactable_camera_console",
+      "name": "Camera Console",
+      "kind": "object",
+      "location_id": "room_transit_office",
+      "action_ids": ["action_check_timestamp"],
+      "descriptions": [{"text": "The final platform recording is queued."}]
+    },
+    {
+      "id": "interactable_case_board",
+      "name": "Case Board",
+      "kind": "object",
+      "location_id": "room_transit_office",
+      "action_ids": ["action_accuse_vendor", "action_correct_vendor_record"],
+      "descriptions": [{"text": "Two incompatible conclusions remain pinned to the board."}],
+      "condition": {"kind": "state_equals", "state_id": "state_camera_checked", "value": true}
+    }
+  ],
+  "actions": [
+    {
+      "id": "action_check_timestamp",
+      "label": "Check the timestamp",
+      "result_text": "The recording places the vendor outside the station.",
+      "effects": [
+        {"kind": "set_narrative_state", "state_id": "state_camera_checked", "value": true},
+        {"kind": "set_narrative_state", "state_id": "state_case_phase", "value": "verified"},
+        {"kind": "advance_objective", "objective_id": "objective_check_camera", "transition": "start"},
+        {"kind": "advance_objective", "objective_id": "objective_check_camera", "transition": "complete"},
+        {"kind": "reveal_knowledge", "knowledge_id": "knowledge_vendor_access", "status": "suspected"}
+      ],
+      "condition": {"kind": "state_equals", "state_id": "state_camera_checked", "value": false}
+    },
+    {
+      "id": "action_accuse_vendor",
+      "label": "Keep the accusation",
+      "result_text": "The accusation is entered despite the timestamp.",
+      "effects": [
+        {"kind": "advance_objective", "objective_id": "objective_accuse_vendor", "transition": "activate"},
+        {"kind": "reveal_knowledge", "knowledge_id": "knowledge_vendor_access", "status": "confirmed"}
+      ]
+    },
+    {
+      "id": "action_correct_vendor_record",
+      "label": "Correct the record",
+      "result_text": "The vendor is removed from the suspect list.",
+      "effects": [
+        {"kind": "advance_objective", "objective_id": "objective_clear_vendor", "transition": "activate"},
+        {"kind": "retract_knowledge", "knowledge_id": "knowledge_vendor_access"},
+        {"kind": "correct_knowledge", "knowledge_id": "knowledge_vendor_access"}
+      ]
+    }
+  ],
+  "objectives": [
+    {
+      "id": "objective_check_camera",
+      "title": "Check the platform camera",
+      "description": "Verify the time of the final departure.",
+      "initial_status": "active",
+      "dependency_ids": [],
+      "exclusive_with": []
+    },
+    {
+      "id": "objective_accuse_vendor",
+      "title": "Accuse the vendor",
+      "description": "Keep the original suspect theory.",
+      "initial_status": "inactive",
+      "dependency_ids": ["objective_check_camera"],
+      "exclusive_with": ["objective_clear_vendor"]
+    },
+    {
+      "id": "objective_clear_vendor",
+      "title": "Clear the vendor",
+      "description": "Correct the suspect record using the timestamp.",
+      "initial_status": "inactive",
+      "dependency_ids": ["objective_check_camera"],
+      "exclusive_with": ["objective_accuse_vendor"]
+    }
+  ],
+  "knowledge": [
+    {
+      "id": "knowledge_vendor_access",
+      "title": "Vendor access",
+      "initial_status": "heard",
+      "texts": {
+        "heard": "The dispatcher says the vendor could reach the platform.",
+        "suspected": "The vendor was suspected because of platform access.",
+        "confirmed": "The vendor is treated as present during the incident.",
+        "retracted": "The claim that the vendor was present has been withdrawn.",
+        "corrected": "The timestamp shows the vendor left before the incident."
+      }
+    }
+  ],
+  "log_entries": [
+    {
+      "id": "log_camera_result",
+      "category": "story",
+      "texts": [
+        {
+          "text": "The camera timestamp is verified.",
+          "condition": {"kind": "state_equals", "state_id": "state_camera_checked", "value": true}
+        },
+        {"text": "The final camera timestamp has not been checked."}
+      ]
+    }
+  ]
+}

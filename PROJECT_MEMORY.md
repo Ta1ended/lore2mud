@@ -18,6 +18,22 @@ stale.
 
 ## Current checkpoint
 
+- Active slice (2026-08-02): Runtime Campaign Foundation implementation candidate is
+  committed on branch `workstream/runtime-campaign-foundation-v1` in
+  `D:\MUD game kaifa\.codex-worktrees\runtime-campaign-foundation-v1`, based on `812a00f`
+  (see `git rev-parse HEAD` for the exact candidate hash).
+  It adds optional strict `campaign.json` v1, World-authoritative conditional projections and
+  atomic ordered effects, save v9 with strict actor/campaign state, CLI/Web structured actions,
+  and two original cross-genre fixtures. Local evidence: 382 focused/regression tests, 1333 full
+  unittest, 1323 pytest (10 skips each), compileall, and diff checks. Ruff, Pyright, content
+  validation, Draft 2020-12 schema checks, history safety, fsck, and desktop/390/320 browser
+  interaction plus save/load checks pass; a fresh read-only reviewer is still required before
+  integration.
+- CampaignSpec v1 branch candidate `15f47ca` closed its second-round P2 (every completion-
+  matching scene must be in the objective, exact phase, and not in an exclusive objective)
+  and awaits a fresh reviewer. Private 1-58 chapter canon corrected artifacts (446 members,
+  223 entities, 58 sources, 1021 claims) also await fresh review before final reports and
+  NarrativePlan.
 - Public integration candidate `coord/public-integration-20260801` is at
   `dcd9bb0b21eb667061e2694a462f63e252636545`, merging the independently accepted
   public-only GEN-1 candidate `e7cba52fcfdf0c04458fca5fb9b516ebc762f4bc` and
@@ -85,11 +101,13 @@ stale.
   line direct remote query timed out. Recheck Git live after every handoff commit
   and before any later publishing decision. M8 GO does not authorize M9, other
   feature work, or private novel fact-layer access.
-- Current integrated public-engine contract: content pack 0.9.0; save v7; typed
-  `ItemStackDefinition`/`ItemStack`; quantity-aware `take`/`drop`/`use`;
-  required ordered dialogue effects; World-owned flags; nonnegative coins; and
-  frozen fixed-price, unlimited shop catalogs without serialized stock. v6 and
-  old 0.7.0 content saves are rejected without migration.
+- Current integrated public-engine contract: content pack 0.10.0; new saves write v9. Saves
+  include typed `ItemStackDefinition`/`ItemStack`, quantity-aware `take`/`drop`/`use`,
+  required ordered dialogue effects, World-owned flags, nonnegative coins, frozen fixed-price
+  unlimited shop catalogs without serialized stock, typed `narrative_state`, strict actor
+  state, and optional campaign scene/objective/knowledge state. v8 reads only packs without
+  campaign; v7 reads only packs without narrative state or campaign; v6 and old 0.7.0 content
+  saves are rejected without migration.
 - M3 was implemented by Codex and independently accepted GO by GPT-5.6-sol on
   2026-07-29 after the focused re-review of `dca629b` and its handoff correction
   `5527faa`. `QuestDefinition` is a frozen three-branch union:

@@ -1,0 +1,8 @@
+[
+  {
+    "id": "character_dispatcher",
+    "name": "Dispatcher",
+    "description": "The night dispatcher keeps one hand near the radio.",
+    "room_id": "room_transit_office"
+  }
+]

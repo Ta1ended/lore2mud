@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-08-01（GEN-1 与 NarrativeModel v1 已分别独立 GO；最终整合已 GO）_
+_Last updated: 2026-08-02（Runtime Campaign Foundation 实施完成，等待独立验收与整合）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -106,7 +106,8 @@ M8 技术审计基线为 `f486e12`，审计记录为 `6510e2d`，Git 快照 P2 �
 验收时本地 `HEAD=origin/main=6502a72`、工作树干净、ahead/behind 为 0/0；GitHub Desktop push
 已反映到本地跟踪分支，命令行远端直查超时。该里程碑结论不授权 M9、新功能、发布或私有小说事实层。
 
-当前整合契约为 content pack 0.9.0、save v7、强类型有序 `DialogueEffect`、World-owned
+截至 M7.2 的历史整合契约（已由 0.10.0/save v8 取代）为 content pack 0.9.0、save v7、
+强类型有序 `DialogueEffect`、World-owned
 `flags`、非负 `coins` 和冻结的固定无限商店目录。`World` 预检并原子执行 effects/买入；
 `accept_quest` 显式重复会整体失败；`load` 只恢复状态，绝不重放效果、自动接取、检查、奖励
 或交易。`shop`/`buy`/`sell` 不引入可变库存。M7.2 未改变 Schema、引擎、命令或 save v7；
@@ -255,13 +256,21 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 没有代码实施或独立验收仍在运行。已验收候选已进入本地 `main`；唯一下一动作是等待
-  项目负责人明确授权 push，详见 `NEXT_TASK.md`。
+- Runtime Campaign Foundation 已在隔离 worktree
+  `D:\MUD game kaifa\.codex-worktrees\runtime-campaign-foundation-v1`
+  （分支 `workstream/runtime-campaign-foundation-v1`，基线 `812a00f`）实施完成：
+  可选严格 `campaign.json` v1、World 权威投影与原子效果、save v9、CLI/Web 结构化动作、
+  两个原创跨题材夹具。实现候选已提交（见 `git rev-parse HEAD`）；剩余验证门与 fresh 只读
+  GO/REVISE 完成后才能整合。
+- CampaignSpec v1 分支候选 `15f47ca` 已关闭第二轮 P2，等待 fresh review；
+  私人 1-58 章 Canon 修正产物同样等待 fresh review。
 
 ## Blockers
 
-- 技术验收无 blocker。发布门仍需项目负责人明确授权；授权前不得继续修改 `main` 或 push。
-- 发布前必须刷新远端状态并确认 GitHub `main` 仍为 `13be791`，否则停止并审查新差异。
+- Runtime/CampaignSpec/私人 Canon 三个候选都尚未获得 fresh 只读 GO；独立 GO 前不得整合到
+  `main`。
+- 发布门仍需项目负责人明确授权；本轮不查询远端、不 push、不 release。若后续发布，必须先刷新
+  远端并确认祖先关系，禁止 force push。
 
 ## Verification
 
@@ -422,6 +431,11 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   `git diff --check` 均通过；真实 CLI（倒下 → 移动拒绝 → 死亡存档 → recover → 20/20 →
   可继续游戏）通过；Git main、ahead 2 / behind 0、工作树干净、未 push。
   GPT-5.6-sol 独立验收结论 GO。
+- Runtime Campaign Foundation local verification（2026-08-02，实施侧，非独立验收）：
+  382 项聚焦/回归、1333 项 full unittest（10 skip）、1323 项 full pytest（10 skip）通过；
+  compileall 与 `git diff --check` 通过；Ruff、Pyright、original_demo 与两个 campaign fixture
+  内容校验、Draft 2020-12 Schema、history safety、fsck 均通过；桌面/390/320 浏览器交互与
+  save/load 检查完成。fresh reviewer 待派发。
 
 ## Key paths
 
@@ -455,9 +469,14 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 - `docs/registry_inspection_format.md` - L2W-5 plan/report and source-subset contract.
 - `src/lore2mud/engine/world.py` - authoritative state for quests, effects, flags,
   coins, fixed shops, inventory, equipment, and dialogue.
-- `src/lore2mud/engine/save.py` - strict v7 save/load service with coins and flags.
+- `src/lore2mud/engine/save.py` - strict v9 save/load service with coins, flags, typed narrative
+  state, actor state, and optional campaign scene/objective/knowledge state.
+- `schemas/campaign.schema.json` - optional strict campaign v1 structural contract.
+- `tests/test_runtime_campaign_foundation.py` and `tests/fixtures/campaign_magic/` /
+  `tests/fixtures/campaign_urban/` - runtime campaign projection, atomicity, save/load,
+  CLI/Web hidden-action rejection, and cross-genre fixture coverage.
 - `src/lore2mud/engine/commands.py` - command rendering for effects, shops, status,
-  dialogue, and the death gate.
+  dialogue, campaign actions/objectives/knowledge/journal, and the death gate.
 - `tests/test_recover.py` - defeat recovery, death gate invariance, and save/load round-trip.
 - `tests/test_item_stacks.py` - typed-stack contracts, quantities, preflight, and save v7 coverage.
 - `tests/test_dialogue_effects.py` - M4 union, atomicity, flags, outcomes, and v7 coverage.
@@ -478,6 +497,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## Risks and unknowns
 
+- Runtime campaign is a new public foundation: conditional projections, atomic effects, and
+  v9 actor/save state are validated only by this slice's tests until a fresh reviewer accepts
+  them; campaign remains optional and original_demo stays 0.10.0 in this commit.
 - M3 implements the fixed `monster_defeated`, `reach_room`, and `collect_item`
   quest kinds; any further quest kind requires an explicit contract and vertical slice.
 - The one-target-monster-per-quest constraint will need revisiting if shared-target
