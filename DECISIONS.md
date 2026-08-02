@@ -1940,3 +1940,133 @@
   push only after confirming ancestry. This acceptance does not authorize a
   release, force push, private-material access, or any subsequent lane.
 - Supersedes: DEC-0074's final-integration-pending state only.
+
+## DEC-0077: CampaignSpec v1 deterministic campaign IR - independent acceptance pending
+
+- Date: 2026-08-02
+- Status: Local implementation and verification complete; fresh independent acceptance pending.
+- Context: The accepted NarrativeModel v1 remains a standalone narrative artifact.
+  A downstream private Demo requires a public-safe, genre-neutral boundary that can
+  represent a multi-location, multi-actor, multi-scene, multi-objective campaign
+  before runtime content, saves, Web, and Forge are expanded.
+- Decision: Add `RegistryCampaignPlan v1` and `CampaignSpec v1` as a pure
+  deterministic compiler in `pipeline.campaign`. A plan must bind the exact
+  canonical NarrativeModel SHA-256 and account for every model entity,
+  perspective, proposition, and beat as an exact use or one reasoned omission.
+  Campaign bindings validate a reachable directed location graph, source-ordered
+  scene DAG with physically traversable locations, objective DAGs whose mutual
+  exclusions cannot make prerequisite closure impossible, exact disclosure
+  projection, totally ordered knowledge tracks, and explicit adaptation-only
+  correction records. The spec embeds the validated NarrativeModel snapshot and
+  is written as canonical UTF-8 JSON through the existing atomic alias-resistant
+  pattern. Both public fixtures are wholly original and cover different genres.
+- Evidence: On baseline `812a00fe4412f4fc7068ac2e188c5c26d0a03157`,
+  41 focused campaign tests passed with 2 Windows symlink-permission skips;
+  1357 full unittest tests passed with 12 skips; full pytest reported
+  1345 passed / 12 skipped. Ruff, both Pyright checks, compileall, Draft 2020-12
+  meta-validation and all four plan/spec fixture instances, original-demo
+  validation, repository-external golden CLI bytes, history safety, fsck, and
+  whitespace checks passed.
+- Consequences: This is not an independent GO. A fresh GPT-5.6-sol/max read-only
+  task must inspect `812a00f..HEAD` and return GO/REVISE before integration.
+  The slice does not generate runtime content, modify `src/`, save, Web, Forge,
+  packaging or dependencies, access private material, change shared `main`, or
+  authorize push/release.
+- Supersedes: The stale post-DEC-0075 pause boundary in current handoff files only;
+  it does not supersede NarrativeModel, GEN-1, or their acceptance decisions.
+
+## DEC-0078: CampaignSpec v1 independent-review corrections - re-review pending
+
+- Date: 2026-08-02
+- Status: Local REVISE corrections verified; fresh independent acceptance pending.
+- Context: A fresh GPT-5.6-sol/max read-only review of
+  `812a00fe4412f4fc7068ac2e188c5c26d0a03157..8f3e53452ccf12ce6e6b262f64f85fcd0011d76b`
+  returned REVISE. It found two P2 semantic gaps: an `apply_knowledge` completion
+  needed only an existing knowledge/correction ID and could therefore complete an
+  objective from an unrelated or later scene; and `start_location_ref` could differ
+  from the sole player's starting location, so root reachability did not prove the
+  player's first required scene was reachable. It also found a P3 README omission
+  for the campaign compiler CLI and format link.
+- Decision: The sole player's `starting_location_ref` is required to be non-null
+  and exactly equal to authoritative `start_location_ref`. Completion resolution is
+  uniform across all four kinds: the target location must host, the actor must
+  participate in, the scene must be, or the knowledge transition must occur in a
+  scene listed by the containing objective and in that objective's exact phase.
+  Existing scene DAG, source-order, and directed-travel checks remain authoritative.
+  Both plan and spec share this semantic validator and Schema definitions; the
+  README exposes the exact `python -m pipeline.campaign` arguments and links the
+  format guide. No runtime, save, Web, Forge, packaging, dependency, or private
+  material scope is added.
+- Evidence: Public mutation regressions cover later and earlier phase knowledge,
+  unrelated same-graph locations and actors, an earlier completion scene, and a
+  market-root/crown-player/no-return route whose first scene remains at the base.
+  Plan, self-contained spec, and typed compile entry points reject the relevant
+  mutations. Local verification passed 45 focused campaign tests with 2 Windows
+  symlink-permission skips, 1361 unittest tests with 12 skips, and 1349 pytest tests
+  with 12 skips. Ruff, both Pyright entry points, compileall, Draft 2020-12 Schema
+  meta-validation and fixtures, original-demo validation from the candidate source
+  path, repository-external golden CLI bytes, history safety, fsck, and whitespace
+  checks passed.
+- Consequences: This correction is not a GO. A new GPT-5.6-sol/max read-only task
+  must review `812a00f..HEAD` findings-first and return explicit GO/REVISE before
+  any integration. It does not authorize modifying shared `main`, push, release,
+  private-material access, or the next public runtime slice.
+- Supersedes: DEC-0077's claim that first independent acceptance was merely pending;
+  it does not supersede the CampaignSpec v1 contract or any prior accepted slice.
+
+## DEC-0079: CampaignSpec completion targets are isolated across every possible scene
+
+- Date: 2026-08-02
+- Status: Local second-review correction verified; fresh independent acceptance pending.
+- Context: A fresh read-only re-review of the DEC-0078 candidate reproduced one
+  remaining P2. Completion validation accepted a target when at least one matching
+  scene was objective-owned and in-phase, even if the same location or actor also
+  appeared in an earlier or later scene. Adding an excluded branch scene to the
+  current objective also allowed that branch's knowledge transition to complete
+  both mutually exclusive objectives.
+- Decision: Validation now computes every scene in which the typed completion can
+  resolve. All such scenes must belong to the containing objective and match its
+  exact phase. None may be owned by a mutually exclusive objective. Mutual
+  exclusion does not globally prohibit shared setup scenes; a shared scene remains
+  valid when neither branch completion can fire there. Plan validation,
+  self-contained CampaignSpec validation, and typed compilation use the same rule.
+- Evidence: Regressions reproduce the shared-location earlier scene, shared-actor
+  later scene, and excluded-branch knowledge transition, plus the allowed shared
+  non-completion setup scene. Forty-eight focused campaign tests passed with two
+  Windows symlink-privilege skips; 1364 full unittest tests passed with 12 skips;
+  pytest reported 1352 passed and 12 skipped. Ruff, default and pipeline/test
+  Pyright checks, compileall, original-demo validation, repository-external golden
+  CLI coverage, history safety, fsck, and whitespace checks passed.
+- Consequences: This correction is not a GO. A new GPT-5.6-sol/max read-only task
+  must review `812a00f..HEAD` and return explicit GO or REVISE before integration.
+  Shared `main`, remotes, private material, runtime, save, Web, Forge, packaging,
+  and dependencies remain outside this correction.
+- Supersedes: DEC-0078's completion-resolution rule and re-review-pending evidence
+  only; it does not supersede the CampaignSpec v1 contract or earlier decisions.
+
+## DEC-0080: Runtime and CampaignSpec individual gates accepted for public integration
+
+- Date: 2026-08-02
+- Status: Both isolated slices accepted GO; combined integration verification pending.
+- Context: A new read-only continuation context reviewed the exact public candidates
+  before performing any integration or implementation edits. Runtime Campaign
+  Foundation v1 was reviewed at
+  `261541866533016f6215453b083b1110af212f97`; CampaignSpec v1 was reviewed at
+  `15f47ca5dc2781d3cbcdbfcfa2e98807b3db333a` after both correction rounds.
+- Decision: Accept both isolated candidates GO with no P0-P3 findings and combine
+  them, in dependency order, on `coord/demo-1-58-public-integration`. Shared
+  `main` remains unchanged until the exact combined candidate passes its full
+  controller gates and a separate clean read-only integration decision.
+- Evidence: Runtime passed 17 focused tests, 1333 full unittest tests with 10
+  skips, and 1323 pytest tests with 10 skips. CampaignSpec passed 48 focused
+  tests with 2 Windows symlink-permission skips, 1364 full unittest tests with
+  12 skips, and 1352 pytest tests with 12 skips. Both candidates passed Ruff,
+  Pyright, compileall, original-demo validation, history safety, fsck, and diff
+  checks; Runtime also passed both cross-genre content validations, while
+  CampaignSpec passed its Draft 2020-12 Schema, golden-byte, and external CLI
+  coverage.
+- Consequences: Individual GO authorizes only the isolated public integration
+  candidate. It does not authorize a fast-forward of local `main`, push,
+  release, force push, or placement of any private material in Git.
+- Supersedes: DEC-0076's runtime acceptance-pending status and DEC-0079's
+  CampaignSpec re-review-pending status only.

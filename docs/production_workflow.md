@@ -42,6 +42,11 @@ Codex 按顺序阅读：
 - 完成报告以一个自包含的 `text` fenced code block 结束，包含基线、唯一任务、
   文件范围、风险、验证结果和下一动作。
 
+公共 campaign IR 切片遵循额外的 artifact 边界：人工计划必须记录规范
+NarrativeModel JSON 字节的 SHA-256，编译前重新核对；输出的 CampaignSpec 内嵌完整 source
+快照并完成引用、核算、DAG、知识状态与原子写入验证。该步骤不等于生成或部署运行时内容包，
+后续 runtime/save/Web/CLI/Forge materialization 必须另行授权和独立验收。
+
 ## 可复制任务模板
 
 ```text

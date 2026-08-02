@@ -1,0 +1,218 @@
+{
+  "format_version": 1,
+  "model_id": "resonance_event_model",
+  "source_registry": {
+    "registry_id": "resonance_event_registry",
+    "registry_version": 1,
+    "sources": [
+      {
+        "promotion_id": "promo_resonance_record",
+        "chapter_id": "chapter_000001",
+        "chapter_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "extracted_by": "original-fixture-extractor/v1",
+        "review_id": "review_resonance_record",
+        "reviewed_by": "public-fixture-reviewer"
+      }
+    ]
+  },
+  "scope": {
+    "entity_refs": [
+      "entity_field_mender",
+      "entity_resonance_warden",
+      "entity_storm_echo",
+      "entity_weather_spire"
+    ],
+    "claim_uses": [
+      {
+        "promotion_id": "promo_resonance_record",
+        "source_entity_id": "source_echo",
+        "source_claim_id": "claim_intent"
+      },
+      {
+        "promotion_id": "promo_resonance_record",
+        "source_entity_id": "source_mender",
+        "source_claim_id": "claim_role"
+      },
+      {
+        "promotion_id": "promo_resonance_record",
+        "source_entity_id": "source_spire",
+        "source_claim_id": "claim_condition"
+      },
+      {
+        "promotion_id": "promo_resonance_record",
+        "source_entity_id": "source_warden",
+        "source_claim_id": "claim_key"
+      }
+    ],
+    "claim_omissions": []
+  },
+  "perspectives": [
+    {
+      "perspective_id": "perspective_echo",
+      "entity_ref": "entity_storm_echo",
+      "summary": "The echo responds to changing resonance around the spire."
+    },
+    {
+      "perspective_id": "perspective_mender",
+      "entity_ref": "entity_field_mender",
+      "summary": "The field mender approaches instability as a repair problem."
+    },
+    {
+      "perspective_id": "perspective_spire",
+      "entity_ref": "entity_weather_spire",
+      "summary": "The spire's changing tone makes the event observable."
+    },
+    {
+      "perspective_id": "perspective_warden",
+      "entity_ref": "entity_resonance_warden",
+      "summary": "The warden protects the tuning key and the public square."
+    }
+  ],
+  "propositions": [
+    {
+      "proposition_id": "prop_echo_seeks_ground",
+      "statement": "The storm echo is seeking a stable path to ground.",
+      "status": "canon_supported",
+      "claim_refs": [
+        {
+          "promotion_id": "promo_resonance_record",
+          "source_entity_id": "source_echo",
+          "source_claim_id": "claim_intent"
+        }
+      ],
+      "rationale": "Preserve the reviewed intent as the basis for a nonviolent encounter."
+    },
+    {
+      "proposition_id": "prop_mender_can_retune",
+      "statement": "The field mender can retune the spire during the event.",
+      "status": "adaptation_only",
+      "claim_refs": [],
+      "rationale": "This is an explicit player-facing action rather than a source claim."
+    },
+    {
+      "proposition_id": "prop_mender_role",
+      "statement": "A field mender is assigned to inspect the weather spire.",
+      "status": "canon_supported",
+      "claim_refs": [
+        {
+          "promotion_id": "promo_resonance_record",
+          "source_entity_id": "source_mender",
+          "source_claim_id": "claim_role"
+        }
+      ],
+      "rationale": "Use the reviewed duty as the player's source-facing role."
+    },
+    {
+      "proposition_id": "prop_spire_unstable",
+      "statement": "The weather spire is resonating beyond its stable range.",
+      "status": "canon_supported",
+      "claim_refs": [
+        {
+          "promotion_id": "promo_resonance_record",
+          "source_entity_id": "source_spire",
+          "source_claim_id": "claim_condition"
+        }
+      ],
+      "rationale": "Use the reviewed condition as the event's opening fact."
+    },
+    {
+      "proposition_id": "prop_warden_holds_key",
+      "statement": "The resonance warden holds the spire's tuning key.",
+      "status": "canon_supported",
+      "claim_refs": [
+        {
+          "promotion_id": "promo_resonance_record",
+          "source_entity_id": "source_warden",
+          "source_claim_id": "claim_key"
+        }
+      ],
+      "rationale": "Preserve the reviewed custody fact without inventing ownership."
+    }
+  ],
+  "phases": [
+    {
+      "phase_id": "phase_opening",
+      "sequence": 1,
+      "summary": "Observe the unstable spire in the public square."
+    },
+    {
+      "phase_id": "phase_encounter",
+      "sequence": 2,
+      "summary": "Understand the echo and obtain access to the tuning key."
+    },
+    {
+      "phase_id": "phase_resolution",
+      "sequence": 3,
+      "summary": "Retune the spire and give the echo a safe route."
+    }
+  ],
+  "beats": [
+    {
+      "beat_id": "beat_arrival",
+      "phase_ref": "phase_opening",
+      "predecessor_refs": [],
+      "perspective_refs": [
+        "perspective_mender",
+        "perspective_spire"
+      ],
+      "proposition_refs": [
+        "prop_mender_role",
+        "prop_spire_unstable"
+      ],
+      "disclosures": [
+        {
+          "perspective_ref": "perspective_mender",
+          "proposition_ref": "prop_mender_role",
+          "state": "confirmed"
+        },
+        {
+          "perspective_ref": "perspective_spire",
+          "proposition_ref": "prop_spire_unstable",
+          "state": "confirmed"
+        }
+      ],
+      "summary": "The assigned mender reaches a visibly unstable spire."
+    },
+    {
+      "beat_id": "beat_parley",
+      "phase_ref": "phase_encounter",
+      "predecessor_refs": ["beat_arrival"],
+      "perspective_refs": [
+        "perspective_echo",
+        "perspective_warden"
+      ],
+      "proposition_refs": [
+        "prop_echo_seeks_ground",
+        "prop_warden_holds_key"
+      ],
+      "disclosures": [
+        {
+          "perspective_ref": "perspective_echo",
+          "proposition_ref": "prop_echo_seeks_ground",
+          "state": "suspected"
+        },
+        {
+          "perspective_ref": "perspective_warden",
+          "proposition_ref": "prop_warden_holds_key",
+          "state": "confirmed"
+        }
+      ],
+      "summary": "The echo's goal becomes plausible while the warden confirms access."
+    },
+    {
+      "beat_id": "beat_retuning",
+      "phase_ref": "phase_resolution",
+      "predecessor_refs": ["beat_parley"],
+      "perspective_refs": ["perspective_mender"],
+      "proposition_refs": ["prop_mender_can_retune"],
+      "disclosures": [
+        {
+          "perspective_ref": "perspective_mender",
+          "proposition_ref": "prop_mender_can_retune",
+          "state": "confirmed"
+        }
+      ],
+      "summary": "The mender commits to a safe retuning procedure."
+    }
+  ]
+}

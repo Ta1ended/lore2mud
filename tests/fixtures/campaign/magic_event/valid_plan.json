@@ -1,0 +1,264 @@
+{
+  "format_version": 1,
+  "campaign_id": "resonance_event_campaign",
+  "source_narrative_model": {
+    "format_version": 1,
+    "model_id": "resonance_event_model",
+    "narrative_model_sha256": "73e6da6a66565b76ec197a52245e97bcab0d14a916536b7c95d33adc3528cee7"
+  },
+  "adaptation_rationale": "Turn the public resonance event into a compact campaign about observation, negotiation, and repair.",
+  "scope": {
+    "entity_uses": [
+      "entity_field_mender",
+      "entity_resonance_warden",
+      "entity_storm_echo",
+      "entity_weather_spire"
+    ],
+    "entity_omissions": [],
+    "perspective_uses": [
+      "perspective_echo",
+      "perspective_mender",
+      "perspective_spire",
+      "perspective_warden"
+    ],
+    "perspective_omissions": [],
+    "proposition_uses": [
+      "prop_echo_seeks_ground",
+      "prop_mender_can_retune",
+      "prop_mender_role",
+      "prop_spire_unstable",
+      "prop_warden_holds_key"
+    ],
+    "proposition_omissions": [],
+    "beat_uses": [
+      "beat_arrival",
+      "beat_parley",
+      "beat_retuning"
+    ],
+    "beat_omissions": []
+  },
+  "start_location_ref": "location_market_steps",
+  "locations": [
+    {
+      "location_id": "location_market_steps",
+      "name": "Market Steps",
+      "description": "Broad stone steps face the humming weather spire.",
+      "source_entity_refs": [],
+      "source_proposition_refs": [],
+      "adaptation_notes": "An original public staging location provides a readable campaign start.",
+      "exits": [
+        {
+          "direction": "up",
+          "name": "Spire approach",
+          "target_location_ref": "location_spire_base"
+        }
+      ]
+    },
+    {
+      "location_id": "location_spire_base",
+      "name": "Spire Base",
+      "description": "Copper braces carry a restless tone through the paving stones.",
+      "source_entity_refs": ["entity_weather_spire"],
+      "source_proposition_refs": ["prop_spire_unstable"],
+      "adaptation_notes": "The source spire becomes a navigable location without adding runtime rules.",
+      "exits": [
+        {
+          "direction": "down",
+          "name": "Market steps",
+          "target_location_ref": "location_market_steps"
+        },
+        {
+          "direction": "up",
+          "name": "Maintenance stair",
+          "target_location_ref": "location_spire_crown"
+        }
+      ]
+    },
+    {
+      "location_id": "location_spire_crown",
+      "name": "Spire Crown",
+      "description": "Tuning vanes surround a clear channel open to the sky.",
+      "source_entity_refs": [],
+      "source_proposition_refs": ["prop_mender_can_retune"],
+      "adaptation_notes": "The crown is an original objective site for the explicit repair choice.",
+      "exits": [
+        {
+          "direction": "down",
+          "name": "Maintenance stair",
+          "target_location_ref": "location_spire_base"
+        }
+      ]
+    }
+  ],
+  "actors": [
+    {
+      "actor_id": "actor_echo",
+      "kind": "adversary",
+      "name": "Storm Echo",
+      "description": "A pressure-bright echo circles the spire without striking the square.",
+      "source_entity_ref": "entity_storm_echo",
+      "starting_location_ref": "location_spire_crown",
+      "source_proposition_refs": ["prop_echo_seeks_ground"],
+      "adaptation_notes": "Adversary means campaign opposition here, not a mandatory combat target."
+    },
+    {
+      "actor_id": "actor_mender",
+      "kind": "player",
+      "name": "Field Mender",
+      "description": "A civic repairer trained to listen before changing resonant structures.",
+      "source_entity_ref": "entity_field_mender",
+      "starting_location_ref": "location_market_steps",
+      "source_proposition_refs": ["prop_mender_role"],
+      "adaptation_notes": "The reviewed assignment becomes the sole player role."
+    },
+    {
+      "actor_id": "actor_warden",
+      "kind": "character",
+      "name": "Resonance Warden",
+      "description": "The square's warden keeps the tuning key in a padded case.",
+      "source_entity_ref": "entity_resonance_warden",
+      "starting_location_ref": "location_spire_base",
+      "source_proposition_refs": ["prop_warden_holds_key"],
+      "adaptation_notes": "The warden carries a source-backed access fact into conversation."
+    }
+  ],
+  "scenes": [
+    {
+      "scene_id": "scene_arrival",
+      "kind": "exploration",
+      "phase_ref": "phase_opening",
+      "location_ref": "location_spire_base",
+      "participating_actor_refs": ["actor_mender"],
+      "narrative_beat_refs": ["beat_arrival"],
+      "predecessor_scene_refs": [],
+      "source_proposition_refs": [
+        "prop_mender_role",
+        "prop_spire_unstable"
+      ],
+      "adaptation_notes": "Observation establishes the source-backed condition before any response."
+    },
+    {
+      "scene_id": "scene_parley",
+      "kind": "conversation",
+      "phase_ref": "phase_encounter",
+      "location_ref": "location_spire_base",
+      "participating_actor_refs": [
+        "actor_echo",
+        "actor_mender",
+        "actor_warden"
+      ],
+      "narrative_beat_refs": ["beat_parley"],
+      "predecessor_scene_refs": ["scene_arrival"],
+      "source_proposition_refs": [
+        "prop_echo_seeks_ground",
+        "prop_warden_holds_key"
+      ],
+      "adaptation_notes": "The encounter preserves uncertainty about the echo while confirming access."
+    },
+    {
+      "scene_id": "scene_retuning",
+      "kind": "ritual",
+      "phase_ref": "phase_resolution",
+      "location_ref": "location_spire_crown",
+      "participating_actor_refs": [
+        "actor_echo",
+        "actor_mender"
+      ],
+      "narrative_beat_refs": ["beat_retuning"],
+      "predecessor_scene_refs": ["scene_parley"],
+      "source_proposition_refs": ["prop_mender_can_retune"],
+      "adaptation_notes": "Ritual denotes a structured fictional repair scene, not a runtime mechanic."
+    }
+  ],
+  "objectives": [
+    {
+      "objective_id": "objective_hear_echo",
+      "title": "Read the Resonance",
+      "description": "Observe the spire and determine what the circling echo may need.",
+      "phase_ref": "phase_encounter",
+      "scene_refs": [
+        "scene_arrival",
+        "scene_parley"
+      ],
+      "predecessor_objective_refs": [],
+      "mutually_exclusive_objective_refs": [],
+      "source_proposition_refs": [
+        "prop_echo_seeks_ground",
+        "prop_spire_unstable"
+      ],
+      "completion": {
+        "kind": "apply_knowledge",
+        "knowledge_ref": "knowledge_echo_intent"
+      },
+      "adaptation_notes": "Completion points to a typed knowledge projection for later runtime work."
+    },
+    {
+      "objective_id": "objective_retune_spire",
+      "title": "Retune the Spire",
+      "description": "Use the crown's vanes to open a stable route for the echo.",
+      "phase_ref": "phase_resolution",
+      "scene_refs": ["scene_retuning"],
+      "predecessor_objective_refs": ["objective_hear_echo"],
+      "mutually_exclusive_objective_refs": [],
+      "source_proposition_refs": ["prop_mender_can_retune"],
+      "completion": {
+        "kind": "complete_scene",
+        "scene_ref": "scene_retuning"
+      },
+      "adaptation_notes": "The objective records campaign order without compiling game rules."
+    }
+  ],
+  "knowledge_beats": [
+    {
+      "knowledge_id": "knowledge_mender_role",
+      "scene_ref": "scene_arrival",
+      "actor_ref": "actor_mender",
+      "source_beat_ref": "beat_arrival",
+      "perspective_ref": "perspective_mender",
+      "proposition_ref": "prop_mender_role",
+      "state": "confirmed",
+      "adaptation_notes": "Exact projection of the source assignment disclosure."
+    },
+    {
+      "knowledge_id": "knowledge_spire_unstable",
+      "scene_ref": "scene_arrival",
+      "actor_ref": "actor_mender",
+      "source_beat_ref": "beat_arrival",
+      "perspective_ref": "perspective_spire",
+      "proposition_ref": "prop_spire_unstable",
+      "state": "confirmed",
+      "adaptation_notes": "Exact projection of the observable spire condition."
+    },
+    {
+      "knowledge_id": "knowledge_echo_intent",
+      "scene_ref": "scene_parley",
+      "actor_ref": "actor_mender",
+      "source_beat_ref": "beat_parley",
+      "perspective_ref": "perspective_echo",
+      "proposition_ref": "prop_echo_seeks_ground",
+      "state": "suspected",
+      "adaptation_notes": "The campaign preserves suspicion rather than silently confirming intent."
+    },
+    {
+      "knowledge_id": "knowledge_warden_key",
+      "scene_ref": "scene_parley",
+      "actor_ref": "actor_mender",
+      "source_beat_ref": "beat_parley",
+      "perspective_ref": "perspective_warden",
+      "proposition_ref": "prop_warden_holds_key",
+      "state": "confirmed",
+      "adaptation_notes": "Exact projection of the warden's access disclosure."
+    },
+    {
+      "knowledge_id": "knowledge_retuning_possible",
+      "scene_ref": "scene_retuning",
+      "actor_ref": "actor_mender",
+      "source_beat_ref": "beat_retuning",
+      "perspective_ref": "perspective_mender",
+      "proposition_ref": "prop_mender_can_retune",
+      "state": "confirmed",
+      "adaptation_notes": "Exact projection of the explicit adaptation-only action."
+    }
+  ],
+  "knowledge_corrections": []
+}

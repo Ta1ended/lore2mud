@@ -1,0 +1,235 @@
+{
+  "format_version": 1,
+  "model_id": "depot_investigation_model",
+  "source_registry": {
+    "registry_id": "depot_investigation_registry",
+    "registry_version": 1,
+    "sources": [
+      {
+        "promotion_id": "promo_depot_log",
+        "chapter_id": "chapter_000001",
+        "chapter_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "extracted_by": "original-fixture-extractor/v1",
+        "review_id": "review_depot_log",
+        "reviewed_by": "public-fixture-reviewer"
+      }
+    ]
+  },
+  "scope": {
+    "entity_refs": [
+      "entity_courier",
+      "entity_depot_records",
+      "entity_investigator",
+      "entity_shift_witness"
+    ],
+    "claim_uses": [
+      {
+        "promotion_id": "promo_depot_log",
+        "source_entity_id": "source_courier",
+        "source_claim_id": "claim_route"
+      },
+      {
+        "promotion_id": "promo_depot_log",
+        "source_entity_id": "source_depot",
+        "source_claim_id": "claim_alarm"
+      },
+      {
+        "promotion_id": "promo_depot_log",
+        "source_entity_id": "source_depot",
+        "source_claim_id": "claim_cart_locked"
+      },
+      {
+        "promotion_id": "promo_depot_log",
+        "source_entity_id": "source_investigator",
+        "source_claim_id": "claim_role"
+      },
+      {
+        "promotion_id": "promo_depot_log",
+        "source_entity_id": "source_witness",
+        "source_claim_id": "claim_cart_departed"
+      }
+    ],
+    "claim_omissions": []
+  },
+  "perspectives": [
+    {
+      "perspective_id": "perspective_courier",
+      "entity_ref": "entity_courier",
+      "summary": "The courier's route becomes visible only after the records check."
+    },
+    {
+      "perspective_id": "perspective_investigator",
+      "entity_ref": "entity_investigator",
+      "summary": "The investigator maintains a timeline without treating rumors as facts."
+    },
+    {
+      "perspective_id": "perspective_records",
+      "entity_ref": "entity_depot_records",
+      "summary": "Access logs and key seals provide a mechanical account of the depot."
+    },
+    {
+      "perspective_id": "perspective_witness",
+      "entity_ref": "entity_shift_witness",
+      "summary": "A tired witness revises an early conclusion when shown the records."
+    }
+  ],
+  "propositions": [
+    {
+      "proposition_id": "prop_alarm_preceded_departure",
+      "statement": "The loading alarm sounded before anyone left the depot.",
+      "status": "canon_supported",
+      "claim_refs": [
+        {
+          "promotion_id": "promo_depot_log",
+          "source_entity_id": "source_depot",
+          "source_claim_id": "claim_alarm"
+        }
+      ],
+      "rationale": "Use the reviewed alarm log as a timeline anchor."
+    },
+    {
+      "proposition_id": "prop_cart_left_east",
+      "statement": "The witness initially says the maintenance cart left by the east tunnel.",
+      "status": "canon_supported",
+      "claim_refs": [
+        {
+          "promotion_id": "promo_depot_log",
+          "source_entity_id": "source_witness",
+          "source_claim_id": "claim_cart_departed"
+        }
+      ],
+      "rationale": "Preserve the reviewed report as a report, including its later retraction."
+    },
+    {
+      "proposition_id": "prop_cart_remained_locked",
+      "statement": "The maintenance cart remained locked in its bay.",
+      "status": "canon_supported",
+      "claim_refs": [
+        {
+          "promotion_id": "promo_depot_log",
+          "source_entity_id": "source_depot",
+          "source_claim_id": "claim_cart_locked"
+        }
+      ],
+      "rationale": "Use the reviewed key seal as the correction's later proposition."
+    },
+    {
+      "proposition_id": "prop_courier_used_west_ramp",
+      "statement": "A bicycle courier used the west service ramp after the alarm.",
+      "status": "canon_supported",
+      "claim_refs": [
+        {
+          "promotion_id": "promo_depot_log",
+          "source_entity_id": "source_courier",
+          "source_claim_id": "claim_route"
+        }
+      ],
+      "rationale": "Keep the reviewed route separate from the corrected cart belief."
+    },
+    {
+      "proposition_id": "prop_investigator_assigned",
+      "statement": "A municipal investigator is assigned to reconstruct the depot timeline.",
+      "status": "canon_supported",
+      "claim_refs": [
+        {
+          "promotion_id": "promo_depot_log",
+          "source_entity_id": "source_investigator",
+          "source_claim_id": "claim_role"
+        }
+      ],
+      "rationale": "Use the reviewed assignment as the player-facing role."
+    }
+  ],
+  "phases": [
+    {
+      "phase_id": "phase_intake",
+      "sequence": 1,
+      "summary": "Receive the witness account and establish the investigator's remit."
+    },
+    {
+      "phase_id": "phase_verification",
+      "sequence": 2,
+      "summary": "Compare the account with the depot's independent records."
+    },
+    {
+      "phase_id": "phase_decision",
+      "sequence": 3,
+      "summary": "Choose how to act on the corrected timeline."
+    }
+  ],
+  "beats": [
+    {
+      "beat_id": "beat_rumor",
+      "phase_ref": "phase_intake",
+      "predecessor_refs": [],
+      "perspective_refs": [
+        "perspective_investigator",
+        "perspective_witness"
+      ],
+      "proposition_refs": [
+        "prop_cart_left_east",
+        "prop_investigator_assigned"
+      ],
+      "disclosures": [
+        {
+          "perspective_ref": "perspective_investigator",
+          "proposition_ref": "prop_investigator_assigned",
+          "state": "confirmed"
+        },
+        {
+          "perspective_ref": "perspective_witness",
+          "proposition_ref": "prop_cart_left_east",
+          "state": "heard"
+        }
+      ],
+      "summary": "The investigator records a witness report without confirming it."
+    },
+    {
+      "beat_id": "beat_records",
+      "phase_ref": "phase_verification",
+      "predecessor_refs": ["beat_rumor"],
+      "perspective_refs": [
+        "perspective_records",
+        "perspective_witness"
+      ],
+      "proposition_refs": [
+        "prop_alarm_preceded_departure",
+        "prop_cart_left_east",
+        "prop_cart_remained_locked"
+      ],
+      "disclosures": [
+        {
+          "perspective_ref": "perspective_records",
+          "proposition_ref": "prop_alarm_preceded_departure",
+          "state": "confirmed"
+        },
+        {
+          "perspective_ref": "perspective_records",
+          "proposition_ref": "prop_cart_remained_locked",
+          "state": "confirmed"
+        },
+        {
+          "perspective_ref": "perspective_witness",
+          "proposition_ref": "prop_cart_left_east",
+          "state": "retracted"
+        }
+      ],
+      "summary": "The records confirm the locked cart and the witness retracts the east-tunnel claim."
+    },
+    {
+      "beat_id": "beat_resolution",
+      "phase_ref": "phase_decision",
+      "predecessor_refs": ["beat_records"],
+      "perspective_refs": ["perspective_courier"],
+      "proposition_refs": ["prop_courier_used_west_ramp"],
+      "disclosures": [
+        {
+          "perspective_ref": "perspective_courier",
+          "proposition_ref": "prop_courier_used_west_ramp",
+          "state": "confirmed"
+        }
+      ],
+      "summary": "The corrected timeline points to the courier's west-ramp route."
+    }
+  ]
+}

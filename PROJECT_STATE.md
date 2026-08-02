@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-08-02（Runtime Campaign Foundation 实施完成，等待独立验收与整合）_
+_Last updated: 2026-08-02（Runtime 与 CampaignSpec 单项验收 GO；公共整合候选待组合验证）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -81,6 +81,24 @@ unittest（9 项平台或权限跳过）、1307 项 pytest（9 项同类跳过�
 compileall、original_demo 校验、仓库外 CLI 黄金字节、历史安全扫描、fsck 和两层 diff
 检查全部通过。该交接封板已按本轮授权 fast-forward 到本地 `main`；不自动 push、release，
 也不开始后续 lane 或访问任何私有素材。
+
+在项目负责人新的下游授权下，Runtime Campaign Foundation v1 已在隔离分支完成：可选
+严格 `campaign.json` v1、World 权威投影与原子效果、save v9、CLI/Web 结构化动作和两个
+原创跨题材 fixture 均已实现。全新只读复验对 `2615418` 给出 GO、无 P0-P3 findings；
+17 项专项、1333 项 unittest（10 skip）、1323 项 pytest（10 skip）及全部命名质量/安全
+门禁通过（DEC-0076、DEC-0080）。
+
+CampaignSpec v1 在 `workstream/campaign-spec-v1` 上从 `812a00f` 实施。它把验证后的
+NarrativeModel 与显式人工计划编译为绑定规范 SHA-256 的自包含 CampaignSpec v1，并验证
+完整 source accounting、有向地点/场景可达性、目标 DAG/互斥祖先、知识轨迹、规范字节和
+原子别名保护。两轮 REVISE 先后关闭唯一 player 起点/地图根不一致、跨阶段知识完成、以及
+同一目标在更早、更晚或互斥场景中别名触发的缺口；共享但不触发完成的前置场景仍允许。
+最终候选 `15f47ca` 的全新只读复验给出 GO、无 P0-P3 findings；48 项专项（2 个 Windows
+symlink 权限 skip）、1364 项 unittest（12 skip）、1352 项 pytest（12 skip）及 Schema、
+golden CLI、质量和安全门禁通过（DEC-0077 至 DEC-0080）。
+
+`coord/demo-1-58-public-integration` 正按依赖顺序合并上述两个已 GO 的公共候选。组合候选
+仍需全量控制器验证和单独的干净只读 GO；在此之前不移动本地 `main`，不 push 或 release。
 
 M1 死亡/失败处理和 M2 typed stacks 均保留其历史 GPT-5.6-sol 独立验收 GO；M3 三类任务
 也已于 2026-07-29 独立验收 GO（DEC-0026）。这些历史验收不延伸为本切片的验收结论。
@@ -256,14 +274,9 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- Runtime Campaign Foundation 已在隔离 worktree
-  `D:\MUD game kaifa\.codex-worktrees\runtime-campaign-foundation-v1`
-  （分支 `workstream/runtime-campaign-foundation-v1`，基线 `812a00f`）实施完成：
-  可选严格 `campaign.json` v1、World 权威投影与原子效果、save v9、CLI/Web 结构化动作、
-  两个原创跨题材夹具。实现候选已提交（见 `git rev-parse HEAD`）；剩余验证门与 fresh 只读
-  GO/REVISE 完成后才能整合。
-- CampaignSpec v1 分支候选 `15f47ca` 已关闭第二轮 P2，等待 fresh review；
-  私人 1-58 章 Canon 修正产物同样等待 fresh review。
+- 公共整合分支 `coord/demo-1-58-public-integration` 已合并 Runtime 候选并正在完成
+  CampaignSpec 合并交接。代码与 Schema 无冲突；公共连续性交接正在统一。
+- 精确整合 HEAD 尚未完成组合门禁与单独干净只读验收，因此本地 `main` 保持不变。
 
 ## Blockers
 
@@ -431,11 +444,14 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   `git diff --check` 均通过；真实 CLI（倒下 → 移动拒绝 → 死亡存档 → recover → 20/20 →
   可继续游戏）通过；Git main、ahead 2 / behind 0、工作树干净、未 push。
   GPT-5.6-sol 独立验收结论 GO。
-- Runtime Campaign Foundation local verification（2026-08-02，实施侧，非独立验收）：
-  382 项聚焦/回归、1333 项 full unittest（10 skip）、1323 项 full pytest（10 skip）通过；
-  compileall 与 `git diff --check` 通过；Ruff、Pyright、original_demo 与两个 campaign fixture
-  内容校验、Draft 2020-12 Schema、history safety、fsck 均通过；桌面/390/320 浏览器交互与
-  save/load 检查完成。fresh reviewer 待派发。
+- Runtime Campaign Foundation fresh review（2026-08-02，`2615418`）：GO、无 P0-P3；
+  17 项专项、1333 项 unittest（10 skip）、1323 项 pytest（10 skip），以及 Ruff、Pyright、
+  compileall、original_demo/两个 campaign fixture 校验、Schema、history safety、fsck、diff、
+  CLI/Web 隐藏动作和 save/load 检查通过。
+- CampaignSpec v1 fresh review（2026-08-02，`15f47ca`）：GO、无 P0-P3；48 项专项（2 个
+  Windows symlink 权限 skip）、1364 项 unittest（12 skip）、1352 项 pytest（12 skip），
+  以及 Ruff、Pyright、compileall、Draft 2020-12 Schema、golden CLI、history safety、fsck
+  与 diff checks 通过。
 
 ## Key paths
 

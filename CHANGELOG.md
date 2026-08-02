@@ -9,6 +9,22 @@
   state without replaying effects. v8 remains read-compatible only for packs with
   no campaign; v7 remains read-compatible only for packs with neither narrative
   state nor campaign definitions.
+- Closed a second CampaignSpec v1 completion-isolation gap found by fresh
+  re-review. A location, actor, scene, or knowledge target must now resolve only
+  in current-objective scenes from the objective's exact phase, and cannot fire
+  in a scene owned by a mutually exclusive objective. Exclusive branches may
+  still share a non-completing setup scene. Plan, self-contained spec, and typed
+  compile regressions cover earlier, later, and excluded-branch aliases. The
+  corrected isolated candidate received fresh read-only GO; combined integration
+  verification remains pending (DEC-0079, DEC-0080).
+- Tightened CampaignSpec v1 cross-object semantics after its first independent
+  review returned REVISE. The sole player's non-null starting location must now
+  equal the authoritative campaign map root. Every completion kind resolves to
+  an objective-owned scene in the exact objective phase, preventing later or
+  unrelated knowledge, locations, actors, or scenes from completing an earlier
+  objective. Schema descriptions and the format guide state the shared plan/spec
+  rule, and README now lists the real `python -m pipeline.campaign` CLI
+  (DEC-0078).
 - Added generic, typed narrative state and bounded declarative dialogue
   conditions to the original public demo. Content packs may define bool, int,
   and enum state in optional `narrative_state.json`; `World` remains the sole
@@ -47,6 +63,21 @@
   CLI and Web expose structured actions while rejecting hidden stable IDs. Two
   fictional cross-genre fixtures exercise a magical staged event and an urban
   investigation with knowledge correction.
+- Added public `RegistryCampaignPlan v1` and `CampaignSpec v1` contracts for a
+  deterministic, genre-neutral campaign IR. The compiler binds an explicit
+  human plan to the exact canonical NarrativeModel SHA-256, closes use/omission
+  accounting for entities, perspectives, propositions, and beats, validates
+  directed location and scene traversal, objective DAG/exclusion consistency,
+  ordered knowledge transitions and explicit corrections, and emits a
+  self-contained canonical artifact through an atomic alias-protected CLI.
+  Two wholly original fixture families cover a magic-like civic event and an
+  urban investigation knowledge correction. After two correction rounds, the
+  isolated candidate passed 48 focused tests with 2 Windows symlink-permission
+  skips, 1364 full unittest tests with 12 skips, and 1352 full pytest tests with
+  12 skips, plus Draft 2020-12 Schema/fixture validation, Ruff, Pyright,
+  compileall, original-demo validation, repository-external golden CLI bytes,
+  history safety, fsck, and whitespace checks. A fresh read-only review accepted
+  it GO with no P0-P3 findings (DEC-0077 through DEC-0080).
 - Added deterministic `NarrativeModel v1` compilation from a validated
   CanonRegistry plus an explicit human NarrativePlan. The public pipeline
   validates exact claim use/omission accounting, scoped source snapshots,
