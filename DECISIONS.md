@@ -2202,3 +2202,43 @@
   and a new public slice remain unauthorized.
 - Supersedes: DEC-0083's focused-review-pending and local-main-at-`812a00f` states
   only. It does not supersede the accepted technical evidence or publish gate.
+
+## DEC-0085: GitHub Actions dependency and Windows readiness repair
+
+- Date: 2026-08-02
+- Status: Implemented and controller-verified locally; fresh independent acceptance pending.
+- Context: After baseline `0aa93021e533114eb6b742fe518c2d09194c3394`, the
+  public `tests` and `quality` workflows exposed undeclared direct test imports:
+  `tests/test_campaign.py` and `tests/test_runtime_campaign_foundation.py` import
+  `jsonschema` and `referencing`, but the `test` extra omitted them, and the
+  unittest workflow installed only the base package. The Windows candidate could
+  also become HTTP-healthy before the redirected PowerShell launcher readiness
+  marker was reliably observable, so verification could terminate the process
+  before proving the launcher completed its own startup path. Node runtime
+  deprecation warnings were not test failures, but the active Action majors also
+  needed to move to the published Node 24-based v6 releases.
+- Decision: Declare `jsonschema>=4.23,<5` and `referencing>=0.35,<1` in the
+  `test` extra; make the unittest workflow install `.[test]`; use
+  `actions/checkout@v6` and `actions/setup-python@v6`; launch Windows Web smoke
+  explicitly with `--smoke-web`; and require both an authoritative HTTP snapshot
+  and an exact UTF-8 readiness URL written to the absolute path supplied through
+  `LORE2MUD_WEB_READY_FILE`. The environment variable is verifier opt-in, so
+  ordinary browser-first launcher behavior remains unchanged.
+- Evidence: A newly created environment installed `.[test]`, passed `pip check`,
+  and imported `jsonschema 4.26.0`, `referencing 0.37.0`, and `pytest 8.4.2`.
+  Full unittest passed 1383 tests with 12 existing platform/privilege skips;
+  serial and xdist pytest each reported 1371 passed and 12 skipped. The pinned
+  PyInstaller 6.21.0 environment passed all 14 Windows packaging tests, including
+  real repository-external frozen and zipapp Web/console cold starts. Ruff,
+  configured Pyright, compileall, original-demo validation, history safety,
+  `git fsck --full --no-dangling`, and `git diff --check` passed. Local `main`,
+  local `origin/main`, and the branch baseline were `0aa9302`; a direct remote
+  refresh was reset by the network. The main worktree's pre-existing `uv.lock`
+  remained byte-identical and untracked.
+- Consequences: This is public generic CI and packaging-verifier work only. It
+  changes no engine, Campaign, Schema, save, original content, or private data.
+  The implementation context cannot declare `GO`; a fresh clean read-only review
+  of `0aa9302..HEAD` is required. No push, release, force-push, private-material
+  access, or new public scope is authorized.
+- Supersedes: None. It does not retroactively accept DEC-0084's continuity seal
+  or alter any accepted Runtime/CampaignSpec contract.

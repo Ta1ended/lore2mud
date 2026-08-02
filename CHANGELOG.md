@@ -4,6 +4,15 @@
 
 ### Changed
 
+- Repaired the public GitHub Actions test contract. Direct schema-test imports
+  (`jsonschema` and `referencing`) now belong to the `test` extra, the unittest
+  workflow installs that extra, and both workflows use the Node 24-based v6
+  checkout/setup-python actions. Windows candidate verification now combines
+  HTTP health with an opt-in launcher-written readiness file, preventing the
+  verifier from terminating a healthy candidate before launcher readiness is
+  durably observable. The change adds one cross-platform synchronization
+  regression and leaves normal browser-first launcher behavior unchanged
+  (DEC-0085).
 - New saves now write v9 and strictly preserve actor position/presence/enabled/
   incapacitated state plus optional campaign scene, objective, and player-knowledge
   state without replaying effects. v8 remains read-compatible only for packs with

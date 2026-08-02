@@ -257,6 +257,21 @@ try {
     $url = "http://127.0.0.1:$port/"
     Wait-ForWebHealth $webProcess ($url + 'api/snapshot') $contentVersion 30
     Write-Output "[OK] Web player ready: $url"
+    if ($env:LORE2MUD_WEB_READY_FILE) {
+        if (-not [IO.Path]::IsPathRooted($env:LORE2MUD_WEB_READY_FILE)) {
+            throw 'LORE2MUD_WEB_READY_FILE must be an absolute path.'
+        }
+        $readyFile = [IO.Path]::GetFullPath($env:LORE2MUD_WEB_READY_FILE)
+        $readyDirectory = Split-Path -Parent $readyFile
+        if (-not (Test-Path -LiteralPath $readyDirectory -PathType Container)) {
+            throw 'LORE2MUD_WEB_READY_FILE parent directory does not exist.'
+        }
+        [IO.File]::WriteAllText(
+            $readyFile,
+            ($url + [Environment]::NewLine),
+            $utf8NoBom
+        )
+    }
 
     $suppressBrowser = $mode -eq '--smoke-web' -or $env:LORE2MUD_NO_BROWSER -eq '1'
     if (-not $suppressBrowser) {

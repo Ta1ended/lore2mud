@@ -5,6 +5,8 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import subprocess
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -25,6 +27,52 @@ def _load(name: str, path: Path):
 
 BUILD = _load("windows_build_candidate", ROOT / "packaging/windows/build_candidate.py")
 VERIFY = _load("windows_verify_candidate", ROOT / "packaging/windows/verify_candidate.py")
+
+
+class WindowsVerifierSynchronizationTests(unittest.TestCase):
+    def test_web_readiness_waits_for_ready_file_after_http_health(self) -> None:
+        with tempfile.TemporaryDirectory() as temp:
+            ready_file = Path(temp) / "web-ready.txt"
+            ready_url = "http://127.0.0.1:43210/"
+            process = subprocess.Popen(
+                [
+                    sys.executable,
+                    "-c",
+                    (
+                        "from pathlib import Path\n"
+                        "import sys\n"
+                        "import time\n"
+                        "time.sleep(0.2)\n"
+                        "Path(sys.argv[1]).write_text(sys.argv[2], encoding='utf-8')\n"
+                        "time.sleep(5)\n"
+                    ),
+                    str(ready_file),
+                    ready_url,
+                ],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
+            try:
+                with mock.patch.object(
+                    VERIFY,
+                    "_http_request",
+                    return_value=(200, b"{}", "application/json"),
+                ):
+                    snapshot = VERIFY._wait_for_web_ready(
+                        process,
+                        port=43210,
+                        timeout=2,
+                        ready_file=ready_file,
+                        ready_url=ready_url,
+                    )
+                self.assertEqual(snapshot, {})
+                self.assertEqual(ready_file.read_text(encoding="utf-8"), ready_url)
+            finally:
+                if process.poll() is None:
+                    process.terminate()
+                stdout, stderr = process.communicate(timeout=5)
+            self.assertEqual(stdout, b"")
+            self.assertEqual(stderr, b"")
 
 
 class WindowsPackagingTests(unittest.TestCase):

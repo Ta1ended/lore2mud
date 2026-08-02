@@ -26,8 +26,10 @@ dependencies = []
 
 [project.optional-dependencies]
 test = [
+  "jsonschema>=4.23,<5",
   "pytest>=8.3,<9",
   "pytest-xdist>=3.6,<4",
+  "referencing>=0.35,<1",
 ]
 quality = [
   "pyright>=1.1.400,<2",

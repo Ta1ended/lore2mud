@@ -25,6 +25,7 @@ VERSION_PATTERN = re.compile(r"^[0-9A-Za-z][0-9A-Za-z._-]*$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 SOURCE_COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}(?:-dirty)?$")
 RUNTIMES = frozenset({"pyinstaller", "zipapp"})
+WEB_READY_FILE_ENV = "LORE2MUD_WEB_READY_FILE"
 METADATA_FIELDS = frozenset({
     "bundled_python_version",
     "content_pack_version",
@@ -402,6 +403,47 @@ def _terminate_process_tree(process: subprocess.Popen[bytes]) -> tuple[str, str]
     return _process_output(process)
 
 
+def _wait_for_web_ready(
+    process: subprocess.Popen[bytes],
+    *,
+    port: int,
+    timeout: int,
+    ready_file: Path,
+    ready_url: str,
+) -> dict[str, object]:
+    deadline = time.monotonic() + timeout
+    snapshot: dict[str, object] | None = None
+    while time.monotonic() < deadline:
+        if process.poll() is not None:
+            stdout, stderr = _process_output(process)
+            raise VerificationError(
+                "Web launcher exited before readiness "
+                f"({process.returncode})\n{stdout}\n{stderr}"
+            )
+        if snapshot is None:
+            try:
+                status, raw_snapshot, content_type = _http_request(
+                    port, "GET", "/api/snapshot"
+                )
+                if status == 200 and "application/json" in content_type:
+                    value = json.loads(raw_snapshot)
+                    if isinstance(value, dict):
+                        snapshot = value
+            except (OSError, HTTPException, json.JSONDecodeError):
+                pass
+        try:
+            readiness_reported = ready_file.read_text(encoding="utf-8").strip() == ready_url
+        except (OSError, UnicodeError):
+            readiness_reported = False
+        if snapshot is not None and readiness_reported:
+            return snapshot
+        time.sleep(0.1)
+
+    if snapshot is None:
+        raise VerificationError("Web candidate did not become healthy")
+    raise VerificationError("launcher did not report expected Web readiness")
+
+
 def _restricted_windows_path() -> str:
     windows = Path(os.environ.get("SystemRoot", r"C:\Windows"))
     return os.pathsep.join((
@@ -520,8 +562,11 @@ def cold_start(artifact: Path, *, timeout: int = 45) -> subprocess.CompletedProc
 
         port = _free_loopback_port()
         env["LORE2MUD_WEB_PORT"] = str(port)
+        ready_file = root / "web-ready.txt"
+        ready_url = f"http://127.0.0.1:{port}/"
+        env[WEB_READY_FILE_ENV] = str(ready_file)
         web_process = subprocess.Popen(
-            ["cmd.exe", "/d", "/c", str(launcher)],
+            ["cmd.exe", "/d", "/c", str(launcher), "--smoke-web"],
             cwd=root,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -530,29 +575,13 @@ def cold_start(artifact: Path, *, timeout: int = 45) -> subprocess.CompletedProc
         web_stdout = ""
         web_stderr = ""
         try:
-            deadline = time.monotonic() + timeout
-            snapshot: dict[str, object] | None = None
-            while time.monotonic() < deadline:
-                if web_process.poll() is not None:
-                    web_stdout, web_stderr = _process_output(web_process)
-                    raise VerificationError(
-                        "Web launcher exited before health check "
-                        f"({web_process.returncode})\n{web_stdout}\n{web_stderr}"
-                    )
-                try:
-                    status, raw_snapshot, content_type = _http_request(
-                        port, "GET", "/api/snapshot"
-                    )
-                    if status == 200 and "application/json" in content_type:
-                        value = json.loads(raw_snapshot)
-                        if isinstance(value, dict):
-                            snapshot = value
-                            break
-                except (OSError, HTTPException, json.JSONDecodeError):
-                    pass
-                time.sleep(0.1)
-            if snapshot is None:
-                raise VerificationError("Web candidate did not become healthy")
+            snapshot = _wait_for_web_ready(
+                web_process,
+                port=port,
+                timeout=timeout,
+                ready_file=ready_file,
+                ready_url=ready_url,
+            )
             if (
                 _nested_value(snapshot, "pack", "id") != "original_demo"
                 or _nested_value(snapshot, "pack", "version") != content_version
@@ -598,10 +627,14 @@ def cold_start(artifact: Path, *, timeout: int = 45) -> subprocess.CompletedProc
 
         if web_process.poll() is None:
             raise VerificationError("Web candidate process tree did not stop")
-        if "[OK] Web player ready:" not in web_stdout:
+        try:
+            reported_ready_url = ready_file.read_text(encoding="utf-8").strip()
+        except (OSError, UnicodeError) as exc:
             raise VerificationError(
-                f"launcher did not report Web readiness\n{web_stdout}\n{web_stderr}"
-            )
+                f"launcher readiness file is unavailable\n{web_stdout}\n{web_stderr}"
+            ) from exc
+        if reported_ready_url != ready_url:
+            raise VerificationError("launcher readiness file contains an unexpected URL")
         if (bundle / "saves").exists():
             raise VerificationError("cold start wrote saves inside the bundle")
         versioned_saves = data / "saves" / f"content-{content_version}"

@@ -1,6 +1,6 @@
 # Project State
 
-_Last updated: 2026-08-02（公共整合已获 GO 并同步到本地 main；当前连续性交接待复验）_
+_Last updated: 2026-08-02（GitHub Actions CI 修复已本地验证；独立验收 pending）_
 
 ## Objective
 提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
@@ -15,6 +15,16 @@ _Last updated: 2026-08-02（公共整合已获 GO 并同步到本地 main；当�
 干净上下文。Hermes 不再承担新任务，其既有提交与决定归属保持为历史事实。默认仍为
 单纵向切片；项目负责人明确授权时可采用隔离 worktree/分支的并行责任域和单一中控整合
 （DEC-0067）。冲刺期间 `main` 只读，集成 GO 不等于自动 push。
+
+在已同步的公共基线 `0aa93021e533114eb6b742fe518c2d09194c3394` 上，GitHub
+`tests` 与 `quality` 工作流暴露了一个共同依赖缺口：测试直接导入 `jsonschema` 与
+`referencing`，但 `test` extra 未声明它们，且 unittest 工作流只安装基础包。`tests`
+工作流的 Windows candidate 还存在独立的就绪竞态：HTTP 已健康时，launcher 的重定向
+stdout 标记尚未可靠可见，验证器便终止了进程。隔离分支
+`codex/ci-repair-20260802` 现已声明完整测试依赖、让 unittest workflow 安装
+`.[test]`、把官方 Actions 更新到 Node 24-based v6，并以 launcher 写入的绝对路径
+ready file 与 HTTP snapshot 双重确认 Web 就绪。该切片只修改公开 CI、测试和 Windows
+打包验证，不修改引擎、Campaign、Schema、原创内容、save 或私有资料（DEC-0085）。
 
 项目负责人已授权 Codex 自定下一范围受限切片。Codex 在 `a89fdc6d` 完成 L2W-3 多章
 canon registry 初始实现（DEC-0060）。首次新的 GPT-5.6-sol 只读验收结论为 REVISE：发现
@@ -292,18 +302,27 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 无公共代码实现正在进行。当前工作仅是连续性交接封板：记录已接受的本地 `main`
-  快进、当前远端状态和公共/私人边界，并移除当前树中的绝对外部私人位置文字。
+- CI repair candidate 已完成实现和控制器侧本地验证；当前只等待新的干净上下文对
+  `0aa9302..HEAD` 做 findings-first 只读独立验收。
 
 ## Blockers
 
-- 当前连续性交接提交必须获得 fresh focused 只读 `GO`；该门只复核文档、Git 身份和
-  公共边界，不重新打开已接受的 Runtime/CampaignSpec 技术范围。
-- 发布门仍需项目负责人明确授权。本地 `main` 当前领先 live GitHub `main` 十个提交
-  （本交接提交前）；不 push、不 release，后续若获授权必须再次刷新远端并禁止 force push。
+- 实现上下文不能自宣 `GO`。新的 GPT-5.6-sol 干净任务必须复核依赖安装、两个 workflow、
+  readiness 双门、真实 Windows 冷启动和完整质量/安全证据，并给出明确 `GO` 或 `REVISE`。
+- 只有独立 `GO` 和项目负责人另行授权后才能 push。远端 Actions 在本地分支上无法复跑；
+  2026-08-02 的 direct `git ls-remote` 因 connection reset 失败，发布前必须重新查询。
 
 ## Verification
 
+- GitHub Actions CI repair controller verification（2026-08-02，非独立验收）：干净
+  `.[test]` 环境的 `pip check` 通过，直接导入 `jsonschema 4.26.0`、
+  `referencing 0.37.0` 与 `pytest 8.4.2` 成功。1383 项 unittest 通过（12 个既有平台/
+  权限 skip）；serial 与 xdist pytest 均为 `1371 passed / 12 skipped`。固定
+  PyInstaller 6.21.0 环境的完整 Windows packaging suite 为 14/14，通过真实冻结与
+  zipapp 的仓库外 Web/console 冷启动和进程清理。Ruff、configured Pyright、compileall、
+  original_demo validation、history safety、`git fsck --full --no-dangling` 和
+  `git diff --check` 全部通过。主仓库既有 `uv.lock` 保持 14,471 bytes、SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`。
 - Runtime/CampaignSpec documentation seal focused GO（2026-08-02）：fresh read-only
   review 对 `97a1ab314cd0b45f3728d707674f462547164216` 给出 `GO`、P0-P3 全空；报告位于
   仓库外验收目录。代码、pipeline、Schema、测试、示例、脚本和打包树与权威代码提交
@@ -536,9 +555,16 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## Risks and unknowns
 
-- Runtime Campaign Foundation, CampaignSpec, and their combined documentation seal are
-  independently accepted and present on local `main`. The current continuity seal is
-  documentation-only and still needs a fresh focused review.
+- 本地门禁不能证明 GitHub runner 已恢复；只有候选独立验收 GO、项目负责人授权 push
+  并观察新的 `tests`/`quality` runs 后，才能宣布远端 CI green。
+- readiness file 仅在验证器显式设置 `LORE2MUD_WEB_READY_FILE` 时启用；普通双击 launcher
+  的浏览器优先行为不变。后续若更改 launcher 启动顺序，必须保留“HTTP 健康 + launcher
+  完成自身就绪路径”双重同步。
+- 基线 `0aa9302` 原本记录的 continuity seal focused review 未被本修复追溯性接受；新的
+  独立审查应同时检查当前交接文件一致性，但不得把 CI 修复 GO 扩张为 campaign 新验收。
+- Runtime Campaign Foundation and CampaignSpec remain independently accepted and
+  present on baseline local `main`; this CI repair does not reopen or extend those
+  contracts.
 - Older reachable handoff commits retain a path-only reference to an external private
   workspace. The controller found no non-trivial private artifact blob, private content,
   proper-name marker, visual asset, candidate, save, or report in public Git. Rewriting

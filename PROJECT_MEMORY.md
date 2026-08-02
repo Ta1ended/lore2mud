@@ -18,6 +18,19 @@ stale.
 
 ## Current checkpoint
 
+- GitHub Actions CI repair is locally verified on isolated branch
+  `codex/ci-repair-20260802` from baseline
+  `0aa93021e533114eb6b742fe518c2d09194c3394`. The `test` extra now declares
+  direct test imports `jsonschema` and `referencing`, the unittest workflow
+  installs `.[test]`, and both workflows use the published Node 24-based
+  `actions/checkout@v6` and `actions/setup-python@v6`. Windows candidate
+  verification now requires both a healthy HTTP snapshot and an exact
+  launcher-written readiness file before exercising or stopping the Web
+  process, closing the redirected-stdout readiness race. Clean `.[test]`
+  installation, 1383 unittest tests, serial and xdist pytest at 1371 passed,
+  the complete 14-test PyInstaller 6.21.0 Windows packaging suite, and all named
+  quality/safety gates pass. Fresh independent read-only acceptance remains
+  pending; no push or release occurred (DEC-0085).
 - Runtime Campaign Foundation candidate
   `261541866533016f6215453b083b1110af212f97` adds optional strict
   `campaign.json` v1, World-authoritative projections and atomic effects, save
@@ -38,9 +51,10 @@ stale.
   handoff-only P2. The documentation correction received a fresh focused
   read-only `GO` with no P0-P3 findings. Local `main` fast-forwarded from
   `812a00f` to `97a1ab3` on 2026-08-02 at 20:42 Asia/Shanghai; no push or release
-  occurred. The current continuity seal only records that accepted state and
-  removes current absolute external-private location references. Its fresh
-  read-only review remains pending (DEC-0081 through DEC-0084).
+  occurred at that checkpoint. The later documentation-only continuity record is
+  baseline `0aa9302`; this CI repair does not change the accepted campaign code
+  or retroactively declare that continuity record independently accepted
+  (DEC-0081 through DEC-0085).
 - Public integration candidate `coord/public-integration-20260801` is at
   `dcd9bb0b21eb667061e2694a462f63e252636545`, merging the independently accepted
   public-only GEN-1 candidate `e7cba52fcfdf0c04458fca5fb9b516ebc762f4bc` and
@@ -62,12 +76,11 @@ stale.
   connecting to runtime/save/Web/Forge. It records exact claim use or reasoned
   omission accounting, including valid all-omission plans with an empty required
   `claim_uses` array. The clean re-review accepted `8ddc89c` GO.
-- Repository: `lore2mud`; current local `main` is `97a1ab3`. Local tracking
-  `origin/main` and a live read-only query of GitHub `main` on 2026-08-02 remain
-  `812a00fe4412f4fc7068ac2e188c5c26d0a03157`, so local `main` is ahead by ten
-  commits before this continuity seal. Publishing remains a separate owner gate;
-  refresh the remote again immediately before any authorized push and never
-  force-push.
+- Repository: `lore2mud`; local `main`, local tracking `origin/main`, and the CI
+  repair baseline are `0aa93021e533114eb6b742fe518c2d09194c3394`. A fresh
+  direct `git ls-remote` on 2026-08-02 was reset by the network, so refresh the
+  live remote immediately before any authorized push and stop if ancestry has
+  changed. The repair branch remains local and unpublished.
 - GitHub Actions run `30642616101` passed every Python 3.11/3.12/3.13 job but
   failed `windows-candidate` while its PyInstaller executable printed the Chinese
   validation-success line through redirected `cp1252` output. DEC-0069 records the
