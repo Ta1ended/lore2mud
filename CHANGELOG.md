@@ -4,6 +4,14 @@
 
 ### Changed
 
+- Sealed V2-0 acceptance in the five compact handoff/decision documents: exact target
+  `d13dd0590f47f6477b476cfbdab2715b8f4aba7a` received independent TECH GO with no
+  P0-P3 findings after the ContentPack P3 was reproduced and closed; GitHub Actions
+  runs `30822377956` and `30822378186` succeeded; and the user/product owner gave
+  explicit PRODUCT PASS on 2026-08-03. The seal routes only the not-yet-started V2-1
+  transport-neutral `GameSession` boundary around existing `World`, keeps all target
+  APIs marked unimplemented, and does not claim its own focused review, controller
+  publication, or post-seal live-main Actions (DEC-0088).
 - Established the documentation-only Lore2MUD V2 Product & Architecture Reset:
   `PRODUCT.md`, `CODE_MAP.md`, and `docs/v2/` now define the Agent-callable product,
   prototype/traced/sealed modes, PLAT-1, Authoring and deterministic Runtime planes,
@@ -11,7 +19,7 @@
   TECH/PRODUCT/SECURITY development gates. `README.md`, `AGENTS.md`, the production
   workflow, and compact handoffs now distinguish shipped V1 behavior from V2 targets,
   identify `CampaignSpec` as authoring IR rather than runtime input, and route the
-  candidate to fresh independent TECH review plus user PRODUCT PASS (DEC-0087).
+  resulting candidate through the acceptance later recorded by DEC-0088 (DEC-0087).
 - Recorded completion of Gate 0 recovery and publication: the repaired public
   baseline received independent GO, its branch and post-main test/quality matrices
   were green, and local `main`, `origin/main`, and live GitHub `main` now resolve to

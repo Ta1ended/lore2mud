@@ -4,43 +4,50 @@ _Last updated: 2026-08-03_
 
 ## Single Next Action
 
-Complete the two V2-0 gates for the exact V2 Product & Architecture Reset commit:
-fresh independent read-only TECH review, then explicit user PRODUCT PASS.
+**V2-1: design and implement a transport-neutral GameSession contract that wraps the
+existing World without splitting gameplay systems.**
 
-The TECH reviewer must resolve the full branch-tip SHA, confirm its parent is
-`1a5a8857579ebf840de4e39e414b52592baea6ba` and its subject is
-`docs: establish v2 product and architecture reset`, and review that exact commit.
-The implementation context cannot declare GO.
+This task is routed but not started. A fresh task must first verify live `main`
+contains the exact independently accepted V2-0 seal recorded by DEC-0088, then state
+the concrete changed-path boundary, data flow, risks, non-goals, and gate plan before
+editing. If live `main` does not contain that seal, stop and report instead of working
+from a stale baseline.
 
 ## Scope
 
-- Expected change set: exactly the 13 Markdown files named in the V2-0 reset task.
-- Verify that source, pipeline, schemas, examples, tests, workflows, packaging,
-  dependencies, content/save versions, and private material are byte-unchanged.
-- Review product identity, roles, modes, PLAT-1, metrics/non-goals, V1/V2 distinction,
-  code-map accuracy, Authoring/Runtime planes, contract names, capability safety,
-  approved V2-0..V2-5 roadmap, model floor, separated passes, and Git gates.
-- Prove `CampaignSpec` is consistently described as authoring IR, not runtime input.
-- Confirm the primary untracked `uv.lock` boundary is recorded exactly and no
-  `uv.lock` exists in the candidate worktree or commit.
+- Introduce the smallest typed, transport-neutral session/application boundary around
+  the existing authoritative `World`.
+- Define deterministic intent, result, event, and player-safe view values only as
+  needed by that boundary; invalid intents must reject before durable mutation.
+- Route CLI and Web turn behavior through the shared session layer while preserving
+  their transport-specific parsing and rendering.
+- Preserve V1 public content, save v9 plus supported v7/v8 reads, runtime campaign
+  behavior, deterministic outcomes, and existing client-visible behavior.
+- Add focused contract, failure-invariance, CLI, Web, content, and save regressions,
+  then run the repository's required full TECH and safety matrix.
 
-## Required Decision
+## Non-Goals
 
-1. Independent TECH review reports findings first with P0-P3 and ends with exactly
-   one `GO` or `REVISE`. It is read-only: no edits, ref movement, push, release,
-   private access, or new scope.
-2. After TECH GO, the user gives PRODUCT PASS or requested revisions for the product
-   boundaries, vocabulary, roadmap, PLAT-1, and development model.
+- Do not implement `CapabilityDescriptor`, capability modularization, or capability
+  state migration.
+- Do not add a Python SDK, structured SDK surface, MCP adapter, dynamic plugin system,
+  generated code, or new dependency/framework.
+- Do not create a new Demo or access, adapt, inspect, or publish private material.
+- Do not perform a wholesale `World` decomposition, rewrite gameplay systems, change
+  content/save versions, begin V2-2, push, move `main`, release, or publish.
 
-## Exit
+## Acceptance And Gates
 
-After both passes, the root controller may create a documentation-only seal that
-records the gates and routes `NEXT_TASK.md` to the first authorized V2-1 Public
-Runtime Boundary slice. Until then, do not implement V2-1, push, move `main`, release,
-or access private material.
-
-## If Blocked
-
-If the exact `gpt-5.6-sol` reviewer at reasoning `xhigh` or higher is unavailable,
-stop and report; do not downgrade. If PRODUCT PASS is withheld, record the owner's
-requested changes and keep V2-1 blocked.
+- CLI and Web share one application/session layer; neither gains new gameplay rules,
+  and `World` remains the authoritative compatibility implementation.
+- The same content, state, clock/seed inputs, and intent sequence produce equivalent
+  results, events, views, and saved state across transports.
+- Existing public content and supported saves do not regress; failed intents leave
+  authoritative state unchanged.
+- Every implementation, architecture, and acceptance task/subagent must explicitly
+  use `gpt-5.6-sol` with reasoning `xhigh` or higher. Stop if unavailable; never
+  silently downgrade.
+- Implementation cannot self-approve. Obtain a fresh findings-first independent TECH
+  decision for the exact commit/range, then keep PRODUCT and SECURITY decisions
+  separate and owner-controlled. Commit, push, `main` movement, and release remain
+  separate controller gates.

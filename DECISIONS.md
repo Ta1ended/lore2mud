@@ -2306,3 +2306,41 @@
 - Supersedes: Current product framing, startup order, roadmap, and stale active-task
   claims in the prior snapshots. It does not rewrite historical decisions, remove V1
   capabilities, authorize private work, or change code/data/save/package contracts.
+
+## DEC-0088: Accept V2-0 direction and route the V2-1 runtime boundary
+
+- Date: 2026-08-03
+- Status: V2-0 TECH and PRODUCT gates complete; exact seal review/publication remains
+  a separate live controller boundary.
+- Context: The first independent TECH review of the V2 Product & Architecture Reset
+  found one P3: the documentation overstated `ContentPack` immutability. Repair commit
+  `d13dd0590f47f6477b476cfbdab2715b8f4aba7a` corrected the code map and durable
+  snapshot to say that the frozen dataclass prevents field reassignment while its
+  collection mappings remain mutable.
+- Decision: Accept the V2-0 product and architecture direction after independent TECH
+  GO and the user/product owner's explicit PRODUCT PASS. Route exactly one
+  not-yet-started next task: V2-1, to design and implement a transport-neutral
+  `GameSession` contract that wraps the existing `World` without splitting gameplay
+  systems. V2 contract names remain accepted direction, not shipped APIs. Every
+  implementation, architecture, and acceptance task/subagent must explicitly use
+  `gpt-5.6-sol` with reasoning `xhigh` or higher, stop if unavailable, and never
+  silently downgrade or self-approve.
+- Evidence: The independent re-review resolved exact target `d13dd05`, reproduced the
+  prior ContentPack P3, verified the correction, reported P0-P3 all none, and returned
+  `GO` on 2026-08-03. Repair-branch GitHub Actions tests run `30822377956` and quality
+  run `30822378186` completed successfully on 2026-08-03. The user/product owner then
+  replied `PRODUCT PASS` on 2026-08-03. The seal changes only `PROJECT_STATE.md`,
+  `PROJECT_MEMORY.md`, `NEXT_TASK.md`, `DECISIONS.md`, and `CHANGELOG.md`; focused
+  local verification compares all other tracked paths byte-for-byte with `d13dd05`
+  and checks stale claims, paths/links, privacy, model floor, history safety, fsck,
+  diff cleanliness, and `uv.lock` absence.
+- Consequences: V2-0 is complete and V2-1 is routed but not started. A fresh task must
+  verify live `main` contains the exact accepted seal before implementation. This
+  decision does not claim independent review or publication of the seal or post-seal
+  live-main Actions; the controller verifies those states operationally. V2-1
+  excludes Capability work, SDK, MCP, plugins, a new Demo,
+  private-material access, and wholesale `World` decomposition. Public/private,
+  rights, V1 compatibility, and the intentionally untracked primary-checkout
+  `uv.lock` boundaries remain unchanged.
+- Supersedes: DEC-0087's TECH/PRODUCT-pending status only. It does not supersede the
+  accepted V2 direction, prior historical evidence, or any Git/publication gate.

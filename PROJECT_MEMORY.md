@@ -23,14 +23,17 @@ over this cache.
 
 ## Current Repository State
 
-- Public `main` and `origin/main` are at
-  `1a5a8857579ebf840de4e39e414b52592baea6ba`.
-- Gate 0 is independently accepted GO and branch/post-main tests and quality gates are
-  green (DEC-0086).
-- The V2-0 docs-only candidate needs fresh independent TECH review and user PRODUCT
-  PASS. It cannot self-declare either.
-- After both gates, a docs-only controller seal may route the first V2-1 slice. Do not
-  begin V2-1 before that seal and explicit authorization.
+- Gate 0 commit `1a5a8857579ebf840de4e39e414b52592baea6ba` is the accepted public
+  V2 reset baseline (DEC-0086). Verify live refs operationally; do not infer them from
+  this snapshot.
+- V2-0 target `d13dd0590f47f6477b476cfbdab2715b8f4aba7a` received independent
+  TECH GO with no P0-P3 findings after the ContentPack P3 was closed. GitHub Actions
+  runs `30822377956` and `30822378186` succeeded, and the product owner explicitly
+  gave PRODUCT PASS on 2026-08-03 (DEC-0088).
+- V2-0 direction is complete. This seal does not self-approve or record post-seal
+  publication/Actions; exact seal review and live refs are controller-verified
+  operational state. V2-1 is routed but not started, and a fresh task must verify
+  live `main` before any implementation.
 - Primary-checkout `uv.lock` is intentionally untracked: 14,471 bytes, SHA-256
   `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`.
   Do not create it in isolated worktrees or include it in a commit.
@@ -50,6 +53,8 @@ over this cache.
 
 ## V2 Direction
 
+- V2-0 accepted these contracts as direction; they are not implemented runtime or
+  authoring APIs unless current code and acceptance evidence explicitly say so.
 - Authoring Plane: source and decisions -> `GameBlueprint v1` -> `GameProject v1` ->
   validation/simulation/trace/rights gates -> `GamePackage v2`.
 - Runtime Plane: package + `GameIntent` -> `GameSession` -> `GameEvent` values +
