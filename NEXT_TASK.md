@@ -7,11 +7,16 @@ _Last updated: 2026-08-03_
 **V2-1: design and implement a transport-neutral GameSession contract that wraps the
 existing World without splitting gameplay systems.**
 
-This task is routed but not started. A fresh task must first verify live `main`
-contains the exact independently accepted V2-0 seal recorded by DEC-0088, then state
-the concrete changed-path boundary, data flow, risks, non-goals, and gate plan before
-editing. If live `main` does not contain that seal, stop and report instead of working
-from a stale baseline.
+This task is routed but not started. Before editing, a fresh V2-1 task must inspect
+live `main` and use actual Git history to locate and resolve the full SHA of the V2-0
+seal commit (expected subject: `docs: seal v2 product and architecture reset`). It
+must then verify from live controller/remote evidence that this exact seal SHA received
+a fresh independent seal GO and that post-main Actions are green. DEC-0088 records the
+earlier V2-0 TECH and PRODUCT gates; it does not by itself prove seal review or
+publication. If any exact evidence is absent or live `main` differs from the verified
+seal state, stop and report instead of working from a stale baseline. After those
+checks, state the concrete changed-path boundary, data flow, risks, non-goals, and gate
+plan before editing.
 
 ## Scope
 
