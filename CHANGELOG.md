@@ -4,11 +4,13 @@
 
 ### Changed
 
-- Made the two human-facing handoffs bilingual with Chinese first and English second:
-  `PROJECT_STATE.md` now reflects the verified published V2-0 seal and green live-main
-  state, while `NEXT_TASK.md` preserves exactly one routed V2-1 action with mirrored
-  scope and gates. `AGENTS.md` now requires both language versions to remain
-  semantically synchronized (DEC-0089).
+- Made the public `README.md` and the two human-facing handoffs bilingual with Chinese
+  first and English second. The README now mirrors the product boundary, current V1,
+  V2 targets, quick start, repository map, public/private boundary, authoring tools,
+  and development gates. `PROJECT_STATE.md` uses a publication-stable accepted
+  baseline and `NEXT_TASK.md` preserves exactly one routed V2-1 action with mirrored
+  scope and gates. `AGENTS.md` now requires all three language pairs to remain
+  semantically synchronized (DEC-0089, DEC-0090).
 - Sealed V2-0 acceptance in the five compact handoff/decision documents: exact target
   `d13dd0590f47f6477b476cfbdab2715b8f4aba7a` received independent TECH GO with no
   P0-P3 findings after the ContentPack P3 was reproduced and closed; GitHub Actions

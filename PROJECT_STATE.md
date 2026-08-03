@@ -11,8 +11,9 @@ _最后更新 / Last updated: 2026-08-03_
 
 ### 当前状态
 
-- 本地 `main`、本地 `origin/main` 与 GitHub 在线 `main` 已同步到
-  `077b8eb568f193b0b3ccab47410bec35dc4c2a9c`。
+- V2-0 已接受并发布的基线是
+  `077b8eb568f193b0b3ccab47410bec35dc4c2a9c`。开始任何新任务前都必须核对实时 Git，
+  并确认在线 `main` 等于该基线，或是只包含后来已独立验收并发布的提交。
 - V2 合同名称仍只是已接受的方向，尚未实现为已发布 API。
 
 ### 已完成
@@ -42,6 +43,7 @@ _最后更新 / Last updated: 2026-08-03_
 
 ### 关键路径
 
+- `README.md`：中英双语的公开项目入口、产品边界与快速开始。
 - `AGENTS.md`：任务、模型、门禁、架构与安全规则。
 - `PRODUCT.md`、`CODE_MAP.md`：产品方向与当前 V1 数据流。
 - `docs/v2/architecture.md`、`docs/v2/roadmap.md`：目标合同与已批准顺序。
@@ -64,8 +66,10 @@ compatibility and strict public/private and rights boundaries.
 
 ### Current Status
 
-- Local `main`, local `origin/main`, and live GitHub `main` are synchronized at
-  `077b8eb568f193b0b3ccab47410bec35dc4c2a9c`.
+- The accepted and published V2-0 baseline is
+  `077b8eb568f193b0b3ccab47410bec35dc4c2a9c`. Before any new task, verify live Git
+  and confirm live `main` is that baseline or contains only later independently
+  accepted and published commits.
 - V2 contract names remain accepted direction and are not implemented shipped APIs.
 
 ### Completed
@@ -103,6 +107,7 @@ compatibility and strict public/private and rights boundaries.
 
 ### Key Paths
 
+- `README.md`: bilingual public project entry, product boundary, and quick start.
 - `AGENTS.md`: task, model, gate, architecture, and safety rules.
 - `PRODUCT.md`, `CODE_MAP.md`: product direction and current V1 data flows.
 - `docs/v2/architecture.md`, `docs/v2/roadmap.md`: target contracts and approved order.

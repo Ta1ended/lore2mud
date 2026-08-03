@@ -105,8 +105,10 @@ verification. Implement only after the product owner has authorized the slice.
 
 ## Handoff
 
-- `PROJECT_STATE.md` and `NEXT_TASK.md` are human-facing bilingual handoffs: Chinese
-  first, English second. Every update must keep both versions semantically synchronized.
+- `README.md`, `PROJECT_STATE.md`, and `NEXT_TASK.md` are human-facing bilingual
+  documents: Chinese first, English second. Every update must keep both versions
+  semantically synchronized.
+- `README.md`: public project entry, product boundary, and quick start.
 - `PROJECT_STATE.md`: compact current snapshot.
 - `NEXT_TASK.md`: exactly one actionable next gate or task.
 - `PROJECT_MEMORY.md`: compact durable contracts and boundaries.

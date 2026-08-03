@@ -2372,3 +2372,30 @@
   live-main runs; the bilingual next-task handoff routes only the not-yet-started V2-1
   `GameSession` boundary with matching scope, non-goals, and gates.
 - Supersedes: None.
+
+## DEC-0090: Make the public README bilingual
+
+- Date: 2026-08-03
+- Status: Accepted.
+- Context: The V2-0 reset replaced the earlier Chinese README with a concise English
+  project entry. The product owner identified that the GitHub landing page had become
+  English-only and explicitly authorized continuing with a bilingual correction.
+- Decision: Maintain `README.md` as a mirrored bilingual public entry, with Chinese
+  first and English second. Keep product identity, current-versus-target status,
+  commands, links, repository flow, public/private boundaries, and development gates
+  semantically synchronized in both sections.
+- Rationale: The repository landing page serves both the product owner and developer
+  Agents. Chinese-first presentation restores direct owner readability, while the
+  English section preserves a broadly usable technical entry.
+- Scope: Translate and synchronize the existing concise V2 README. Keep `PRODUCT.md`,
+  `CODE_MAP.md`, `docs/v2/`, historical records, code, tests, examples, and private
+  material outside this translation requirement unless separately authorized.
+- Consequences: Future README changes must update both language sections together.
+  README commands and links remain executable repository contracts and must be checked
+  during documentation acceptance. This decision authorizes no runtime work, V2-1,
+  private access, release, force-push, or history rewrite.
+- Evidence: The bilingual candidate preserves the same public entry structure in both
+  languages and retains the current commands, relative links, V1/V2 boundary, rights
+  boundary, repository flows, and verification matrix.
+- Supersedes: DEC-0089 only where it previously left `README.md` outside the default
+  bilingual set; the bilingual handoff policy remains unchanged.
