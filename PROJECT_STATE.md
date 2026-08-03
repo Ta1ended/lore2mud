@@ -1,86 +1,118 @@
-# Project State
+# 项目状态 / Project State
 
-_Last updated: 2026-08-03_
+_最后更新 / Last updated: 2026-08-03_
 
-## Objective
+## 中文
+
+### 目标
+
+交付一个可由 Agent 调用的小说转文字游戏引擎：创作平面生成经过验证、可追溯的包，
+确定性运行时平面负责执行，同时保持 V1 兼容性以及严格的公开/私有和权利边界。
+
+### 当前状态
+
+- 本地 `main`、本地 `origin/main` 与 GitHub 在线 `main` 已同步到
+  `077b8eb568f193b0b3ccab47410bec35dc4c2a9c`。
+- V2 合同名称仍只是已接受的方向，尚未实现为已发布 API。
+
+### 已完成
+- V2-0 已完成：修复目标 `d13dd0590f47f6477b476cfbdab2715b8f4aba7a`
+  获得独立 TECH GO，产品所有者明确给出 PRODUCT PASS；最终封印目标
+  `077b8eb568f193b0b3ccab47410bec35dc4c2a9c` 又获得全新独立 GO，P0-P3 均无发现。
+
+### 进行中
+- 当前没有任何 V2 实现在进行；V2-1 已路由但尚未开始。
+
+### 阻塞项
+- V2-1 范围当前没有已知产品或架构阻塞；新任务仍须核对实时引用与已接受基线。
+
+### 验证
+- 最终封印分支的 quality `30829532319` 和 tests `30829532606` 成功；在线
+  `main` 的 quality `30829717919` 和 tests `30829718590` 也于 2026-08-03 成功。
+
+### 保持的边界
+
+- 保持现有公开内容、权威 `World` 行为、save v9 写入以及受支持的 v7/v8 读取兼容性。
+- 私有源文本、设定、改编内容、图像和报告不得进入公开 Git；没有新的私有访问授权。
+- 所有实现、架构和验收任务或子 Agent 必须明确使用 `gpt-5.6-sol`，reasoning 为
+  `xhigh` 或更高；不可静默降级，也不可自我批准。
+- 主检出目录中有意未跟踪的 `uv.lock` 边界保持不变：14,471 字节，SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`。
+  主检出目录可保留这份未跟踪副本，但绝不能提交；隔离工作树不得创建或复制它。
+
+### 关键路径
+
+- `AGENTS.md`：任务、模型、门禁、架构与安全规则。
+- `PRODUCT.md`、`CODE_MAP.md`：产品方向与当前 V1 数据流。
+- `docs/v2/architecture.md`、`docs/v2/roadmap.md`：目标合同与已批准顺序。
+- `NEXT_TASK.md`：唯一已路由的下一任务。
+
+### 风险与未知项
+
+- `World`、加载、存档、命令、Web 和战役模块仍然较大且耦合，边界必须渐进引入。
+- `CampaignSpec v1` 仍是创作 IR，没有运行时物化器，也不是运行时输入。
+- MCP、动态插件、生成代码及不受限的主机/网络访问均未获授权；SDK 和结构化 CLI
+  仍应先于任何 MCP 适配器。
+
+## English
+
+### Objective
 
 Deliver an Agent-callable novel-to-text-game engine whose Authoring Plane produces
 validated, traceable packages for a deterministic Runtime Plane, while preserving V1
 compatibility and strict public/private and rights boundaries.
 
-## Current Status
+### Current Status
 
-Gate 0 commit `1a5a8857579ebf840de4e39e414b52592baea6ba` is the accepted public
-V2 reset baseline (DEC-0086); live refs must still be verified operationally by each
-new task. V2-0 target `d13dd0590f47f6477b476cfbdab2715b8f4aba7a` received
-independent TECH GO and the user/product owner's explicit PRODUCT PASS on 2026-08-03.
-This isolated branch records that acceptance in a documentation-only seal. The seal
-does not self-approve or record its own controller publication or post-seal Actions;
-those live states require operational verification. V2-1 is the single routed next
-task and has not started.
+- Local `main`, local `origin/main`, and live GitHub `main` are synchronized at
+  `077b8eb568f193b0b3ccab47410bec35dc4c2a9c`.
+- V2 contract names remain accepted direction and are not implemented shipped APIs.
 
-## Completed
+### Completed
+- V2-0 is complete: repair target `d13dd0590f47f6477b476cfbdab2715b8f4aba7a`
+  received independent TECH GO and the product owner's explicit PRODUCT PASS; final
+  seal target `077b8eb568f193b0b3ccab47410bec35dc4c2a9c` then received a fresh
+  independent GO with no P0-P3 findings.
 
-- Gate 0 public runtime/content baseline is accepted and present on `main` (DEC-0086).
-- V1 provides strict public content loading, authoritative `World` gameplay, CLI and
-  local Web clients, save v9, runtime campaign support, deterministic authoring
-  compilers, Forge, packaging, and repository safety checks.
-- V2-0 product and architecture direction, roles, milestone order, PLAT-1, and safety
-  posture are accepted through separate TECH and PRODUCT gates (DEC-0087, DEC-0088).
-- `CODE_MAP.md` records the real V1 data flows, central modules, current gaps, and
-  where V2 changes belong.
+### In Progress
+- No V2 implementation is in progress; V2-1 is routed but not started.
 
-## In Progress
+### Blockers
+- No product or architecture blocker is known for V2-1; a fresh task must still check
+  live refs and the accepted baseline.
 
-- No V2 implementation is in progress. Focused review and publication of the exact
-  documentation seal are separate controller actions verified from live evidence.
+### Verification
+- Final-seal branch quality run `30829532319` and tests run `30829532606` succeeded;
+  live-`main` quality run `30829717919` and tests run `30829718590` also succeeded on
+  2026-08-03.
 
-## Blockers
+### Preserved Boundaries
 
-- A fresh V2-1 task must verify live `main` contains the exact accepted seal before
-  it starts. This seal does not itself authorize edits, ref movement, push, or release.
-- No product or architecture blocker is currently known for the routed V2-1 scope.
+- Preserve existing public content, authoritative `World` behavior, save v9 writes,
+  and supported v7/v8 read compatibility.
+- Private source text, canon, adaptations, images, and reports stay out of public Git;
+  no new private access is authorized.
+- Every implementation, architecture, and acceptance task or subagent must explicitly
+  use `gpt-5.6-sol` with reasoning `xhigh` or higher; never silently downgrade or
+  self-approve.
+- The intentionally untracked primary-checkout `uv.lock` boundary remains unchanged:
+  14,471 bytes, SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`.
+  The primary checkout may retain that untracked copy, but it must never be committed;
+  isolated worktrees must not create or copy it.
 
-## Verification
+### Key Paths
 
-- Gate 0 independent acceptance - GO (2026-08-03; DEC-0086).
-- Gate 0 branch and post-main unittest/pytest, Ruff, Pyright, compileall, public
-  content, safety, fsck, and diff gates - green (2026-08-03; DEC-0086).
-- V2-0 local matrix - 1,390 unittest tests passed with 12 conditional skips;
-  pytest reported 1,378 passed and 12 skipped (2026-08-03).
-- V2-0 local quality and boundary gates - Ruff, Pyright, compileall, original-demo
-  validation, history safety, fsck, staged/working diff checks, relative-link check,
-  exact 13-path audit, protected-tree byte audit, stale-claim/privacy/model-floor
-  searches, and `uv.lock` absence all passed (2026-08-03).
-- V2-0 independent TECH re-review of exact target `d13dd05` - GO with no P0-P3
-  findings after reproducing and closing the prior ContentPack P3 (2026-08-03).
-- Repair-branch GitHub Actions tests run `30822377956` and quality run `30822378186`
-  completed successfully (2026-08-03).
-- V2-0 user/product owner PRODUCT PASS - explicit pass (2026-08-03).
-- This seal's focused local documentation verification is recorded in DEC-0088; it
-  does not substitute for a fresh focused independent review of the exact seal.
+- `AGENTS.md`: task, model, gate, architecture, and safety rules.
+- `PRODUCT.md`, `CODE_MAP.md`: product direction and current V1 data flows.
+- `docs/v2/architecture.md`, `docs/v2/roadmap.md`: target contracts and approved order.
+- `NEXT_TASK.md`: the single routed next task.
 
-## Key Paths
+### Risks And Unknowns
 
-- `AGENTS.md` - mandatory task, model, gate, architecture, and safety rules.
-- `PRODUCT.md` - product users, modes, contracts, PLAT-1, metrics, and non-goals.
-- `CODE_MAP.md` - current symbols, data flows, risks, and future ownership.
-- `docs/v2/architecture.md` - target Authoring/Runtime Plane contracts.
-- `docs/v2/development_model.md` - Codex roles and separated passes/gates.
-- `docs/v2/roadmap.md` - approved V2-0 through V2-5 sequence.
-- `NEXT_TASK.md` - the single routed next task.
-
-## Risks And Unknowns
-
-- V2 contract names are direction only until code, compatibility tests, and independent
-  acceptance implement them.
-- `World`, loader, save, command, Web, and campaign modules are large and coupled;
-  V2 must introduce boundaries incrementally rather than rewrite them wholesale.
-- `CampaignSpec v1` has no runtime materializer and is not a runtime input.
+- `World`, loader, save, command, Web, and campaign modules remain large and coupled;
+  boundaries must be introduced incrementally.
+- `CampaignSpec v1` remains authoring IR with no runtime materializer and is not a
+  runtime input.
 - MCP, dynamic plugins, generated code, and unrestricted host/network access are not
-  authorized. SDK and structured CLI precede any MCP adapter.
-- Private source, canon, adaptations, images, and reports remain outside public Git;
-  no V2 milestone changes that boundary without explicit owner authorization.
-- The primary checkout retains an intentionally untracked `uv.lock` of 14,471 bytes,
-  SHA-256 `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`.
-  It is absent from this isolated worktree and must not be created or committed here.
+  authorized; SDK and structured CLI still precede any MCP adapter.

@@ -105,11 +105,15 @@ verification. Implement only after the product owner has authorized the slice.
 
 ## Handoff
 
+- `PROJECT_STATE.md` and `NEXT_TASK.md` are human-facing bilingual handoffs: Chinese
+  first, English second. Every update must keep both versions semantically synchronized.
 - `PROJECT_STATE.md`: compact current snapshot.
 - `NEXT_TASK.md`: exactly one actionable next gate or task.
 - `PROJECT_MEMORY.md`: compact durable contracts and boundaries.
 - `DECISIONS.md`: append-only rationale; supersede by adding a new decision.
 - `CHANGELOG.md`: factual implemented changes only.
+- Other historical and technical documents remain single-language unless the product
+  owner specifically requests bilingual content.
 
 Reports are self-contained: baseline, exact commit/range, task, paths, risks, commands,
 results, Git status, residual unknowns, and next gate. A local verification report must

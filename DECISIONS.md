@@ -2344,3 +2344,31 @@
   `uv.lock` boundaries remain unchanged.
 - Supersedes: DEC-0087's TECH/PRODUCT-pending status only. It does not supersede the
   accepted V2 direction, prior historical evidence, or any Git/publication gate.
+
+## DEC-0089: Keep human-facing project handoffs bilingual
+
+- Date: 2026-08-03
+- Status: Accepted.
+- Context: The product owner needs to understand current project status and the one
+  routed next task without depending on English-only operational handoffs. Full
+  duplication of long historical or technical records would add maintenance noise
+  without improving the main human review path.
+- Decision: Maintain `PROJECT_STATE.md` and `NEXT_TASK.md` as mirrored bilingual
+  human-facing documents, with Chinese first and English second. Every update must keep
+  status, task scope, non-goals, gates, identifiers, dates, and boundaries semantically
+  synchronized. Keep other historical and technical documents single-language unless
+  the product owner specifically requests otherwise.
+- Rationale: Two compact synchronized handoffs make occasional owner review practical
+  while preserving one authoritative project state and one actionable next task.
+- Scope: This policy applies to ongoing maintenance of `PROJECT_STATE.md` and
+  `NEXT_TASK.md`; `AGENTS.md` carries the durable maintenance rule. This decision does
+  not require translating earlier decisions, changelog history, product architecture,
+  code maps, roadmaps, code, tests, workflows, or private material.
+- Consequences: Documentation changes affecting either handoff must update and verify
+  both language sections together. Technical acceptance still depends on live Git,
+  code, tests, artifacts, and fresh independent review rather than translation alone.
+- Evidence: The bilingual snapshot records synchronized live refs at
+  `077b8eb568f193b0b3ccab47410bec35dc4c2a9c`, completed V2-0 gates and green branch/
+  live-main runs; the bilingual next-task handoff routes only the not-yet-started V2-1
+  `GameSession` boundary with matching scope, non-goals, and gates.
+- Supersedes: None.
