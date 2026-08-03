@@ -152,8 +152,9 @@ git diff --check
 ## English
 
 Lore2MUD is an **Agent-callable novel-to-text-game engine**. A developer Agent is
-the direct tool user; the product owner/creator supplies decisions and rights
-authorization; the player is the final user. Lore2MUD is not itself an Agent.
+the direct tool user; the product owner/creator supplies product decisions, creative
+direction, and rights authorization; the player is the final user. Lore2MUD is not
+itself an Agent.
 
 The repository is public and contains generic engine/tooling code plus original
 examples only. It does not include third-party novels, proprietary characters,
@@ -182,7 +183,7 @@ exposes play through a text CLI and local Web client. Current capabilities inclu
   loot, fixed shops, coins, deterministic combat and defeat recovery;
 - typed quests, dialogue and atomic effects, narrative state/conditions, and optional
   runtime `campaign.json` scenes, actions, objectives, knowledge, and journal entries;
-- save v9 with constrained named slots and guarded v7/v8 read compatibility;
+- save v9 writes with constrained named slots and guarded v7/v8 read compatibility;
 - content validation, public original examples, deterministic authoring compilers,
   repository safety checks, Windows packaging, and a local Web player.
 
