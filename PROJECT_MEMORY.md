@@ -37,7 +37,8 @@ over this cache.
 
 ## V1 Runtime Contract
 
-- `load_content_pack()` validates JSON and returns immutable `ContentPack`.
+- `load_content_pack()` validates JSON and returns a shallow-frozen `ContentPack`:
+  dataclass fields cannot be reassigned, but its collection mappings remain mutable.
 - `World.from_content_pack()` creates the authoritative mutable runtime.
 - `CommandProcessor` parses/renders CLI commands but delegates rules to `World`.
 - `SaveLoadService` owns strict save v9 I/O and supported v7/v8 read gates.

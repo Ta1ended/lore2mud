@@ -18,10 +18,11 @@ content directory
 ```
 
 `load_content_pack()` reads the multi-file JSON pack, performs schema-like type and
-cross-reference validation, and returns an immutable `ContentPack`. `World` copies
-those definitions into mutable rooms, actors, inventory, narrative state, quests,
-and optional runtime `campaign.json` state. `CommandProcessor` owns text command
-routing and rendering but delegates rule decisions to `World`.
+cross-reference validation, and returns a shallow-frozen `ContentPack`: dataclass
+fields cannot be reassigned, but its collection mappings remain mutable. `World`
+copies those definitions into mutable rooms, actors, inventory, narrative state,
+quests, and optional runtime `campaign.json` state. `CommandProcessor` owns text
+command routing and rendering but delegates rule decisions to `World`.
 
 `SaveLoadService` in `src/lore2mud/engine/save.py` serializes and validates the
 current `World`, writes save v9 atomically, and reconstructs a replacement `World`
