@@ -13,9 +13,11 @@ import socket
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import zipfile
 from pathlib import Path, PurePosixPath
+from typing import BinaryIO
 
 ROOT = Path(__file__).resolve().parents[2]
 BUNDLE_FORMAT = 2
@@ -43,6 +45,8 @@ WEB_ASSETS = {
     "/static/styles.css": ("styles.css", "text/css"),
     "/static/app.js": ("app.js", "text/javascript"),
 }
+WEB_READY_MARKER = "[OK] Web player ready:"
+WEB_READY_MARKER_BYTES = WEB_READY_MARKER.encode("ascii")
 PACKAGE_SUFFIXES = frozenset({
     ".py", ".html", ".css", ".js", ".svg",
     ".png", ".jpg", ".jpeg", ".webp", ".woff2",
@@ -379,27 +383,110 @@ def _nested_value(value: object, *keys: str) -> object:
     return current
 
 
-def _process_output(process: subprocess.Popen[bytes]) -> tuple[str, str]:
+class _ProcessOutputCapture:
+    def __init__(self, process: subprocess.Popen[bytes]) -> None:
+        if process.stdout is None or process.stderr is None:
+            raise ValueError("process output capture requires stdout and stderr pipes")
+        self._stdout_chunks: list[bytes] = []
+        self._stderr_chunks: list[bytes] = []
+        self._lock = threading.Lock()
+        self._ready = threading.Event()
+        self._threads = (
+            threading.Thread(
+                target=self._read_stream,
+                args=(process.stdout, self._stdout_chunks, WEB_READY_MARKER_BYTES),
+                daemon=True,
+                name="lore2mud-candidate-stdout",
+            ),
+            threading.Thread(
+                target=self._read_stream,
+                args=(process.stderr, self._stderr_chunks, None),
+                daemon=True,
+                name="lore2mud-candidate-stderr",
+            ),
+        )
+        for thread in self._threads:
+            thread.start()
+
+    def _read_stream(
+        self,
+        stream: BinaryIO,
+        chunks: list[bytes],
+        readiness_marker: bytes | None,
+    ) -> None:
+        try:
+            for line in iter(stream.readline, b""):
+                with self._lock:
+                    chunks.append(line)
+                if readiness_marker is not None and readiness_marker in line:
+                    self._ready.set()
+        except OSError:
+            pass
+        finally:
+            stream.close()
+
+    def is_ready(self) -> bool:
+        return self._ready.is_set()
+
+    def wait_for_readiness(self, timeout: float) -> bool:
+        return self._ready.wait(timeout)
+
+    def join(self, *, timeout: float = 5) -> None:
+        deadline = time.monotonic() + timeout
+        for thread in self._threads:
+            thread.join(max(0.0, deadline - time.monotonic()))
+        if any(thread.is_alive() for thread in self._threads):
+            raise VerificationError("launcher output readers did not stop")
+
+    def text(self) -> tuple[str, str]:
+        with self._lock:
+            stdout = b"".join(self._stdout_chunks)
+            stderr = b"".join(self._stderr_chunks)
+        return (
+            stdout.decode("utf-8", errors="replace"),
+            stderr.decode("utf-8", errors="replace"),
+        )
+
+
+def _terminate_process_tree(process: subprocess.Popen[bytes]) -> None:
+    if process.poll() is None:
+        try:
+            subprocess.run(
+                ["taskkill.exe", "/PID", str(process.pid), "/T", "/F"],
+                capture_output=True,
+                check=False,
+                timeout=10,
+            )
+        except (OSError, subprocess.TimeoutExpired):
+            process.kill()
     try:
-        stdout, stderr = process.communicate(timeout=5)
+        process.wait(timeout=5)
     except subprocess.TimeoutExpired:
         process.kill()
-        stdout, stderr = process.communicate(timeout=5)
-    return (
-        stdout.decode("utf-8", errors="replace"),
-        stderr.decode("utf-8", errors="replace"),
-    )
+        process.wait(timeout=5)
 
 
-def _terminate_process_tree(process: subprocess.Popen[bytes]) -> tuple[str, str]:
-    if process.poll() is None:
-        subprocess.run(
-            ["taskkill.exe", "/PID", str(process.pid), "/T", "/F"],
-            capture_output=True,
-            check=False,
-            timeout=10,
-        )
-    return _process_output(process)
+def _wait_for_launcher_readiness(
+    process: subprocess.Popen[bytes],
+    capture: _ProcessOutputCapture,
+    *,
+    deadline: float,
+) -> None:
+    while not capture.is_ready():
+        if process.poll() is not None:
+            capture.join()
+            stdout, stderr = capture.text()
+            raise VerificationError(
+                "Web launcher exited before readiness "
+                f"({process.returncode})\n{stdout}\n{stderr}"
+            )
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            stdout, stderr = capture.text()
+            raise VerificationError(
+                f"launcher did not report Web readiness\n{stdout}\n{stderr}"
+            )
+        capture.wait_for_readiness(min(0.1, remaining))
 
 
 def _restricted_windows_path() -> str:
@@ -527,14 +614,21 @@ def cold_start(artifact: Path, *, timeout: int = 45) -> subprocess.CompletedProc
             stderr=subprocess.PIPE,
             env=env,
         )
+        web_capture = _ProcessOutputCapture(web_process)
         web_stdout = ""
         web_stderr = ""
         try:
             deadline = time.monotonic() + timeout
+            _wait_for_launcher_readiness(
+                web_process,
+                web_capture,
+                deadline=deadline,
+            )
             snapshot: dict[str, object] | None = None
             while time.monotonic() < deadline:
                 if web_process.poll() is not None:
-                    web_stdout, web_stderr = _process_output(web_process)
+                    web_capture.join()
+                    web_stdout, web_stderr = web_capture.text()
                     raise VerificationError(
                         "Web launcher exited before health check "
                         f"({web_process.returncode})\n{web_stdout}\n{web_stderr}"
@@ -591,14 +685,13 @@ def cold_start(artifact: Path, *, timeout: int = 45) -> subprocess.CompletedProc
             ):
                 raise VerificationError("packaged Web action round trip failed")
         finally:
-            if web_process.poll() is None:
-                web_stdout, web_stderr = _terminate_process_tree(web_process)
-            elif not web_stdout and not web_stderr:
-                web_stdout, web_stderr = _process_output(web_process)
+            _terminate_process_tree(web_process)
+            web_capture.join()
+            web_stdout, web_stderr = web_capture.text()
 
         if web_process.poll() is None:
             raise VerificationError("Web candidate process tree did not stop")
-        if "[OK] Web player ready:" not in web_stdout:
+        if WEB_READY_MARKER not in web_stdout:
             raise VerificationError(
                 f"launcher did not report Web readiness\n{web_stdout}\n{web_stderr}"
             )

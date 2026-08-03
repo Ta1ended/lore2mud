@@ -5,7 +5,10 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import subprocess
+import sys
 import tempfile
+import time
 import unittest
 import zipfile
 from pathlib import Path
@@ -221,9 +224,110 @@ class WindowsPackagingTests(unittest.TestCase):
         with self.assertRaisesRegex(VERIFY.VerificationError, "case-colliding"):
             VERIFY.verify_contents(unsafe)
 
+    def test_readiness_wait_reports_early_exit_output(self) -> None:
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import sys; "
+                    "print('early stdout', flush=True); "
+                    "print('early stderr', file=sys.stderr, flush=True); "
+                    "raise SystemExit(7)"
+                ),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        capture = VERIFY._ProcessOutputCapture(process)
+        try:
+            with self.assertRaises(VERIFY.VerificationError) as caught:
+                VERIFY._wait_for_launcher_readiness(
+                    process,
+                    capture,
+                    deadline=time.monotonic() + 5,
+                )
+        finally:
+            VERIFY._terminate_process_tree(process)
+            capture.join()
+
+        message = str(caught.exception)
+        self.assertIn("Web launcher exited before readiness (7)", message)
+        self.assertIn("early stdout", message)
+        self.assertIn("early stderr", message)
+
+    def test_readiness_wait_times_out_with_diagnostics_and_cleanup(self) -> None:
+        process = subprocess.Popen(
+            [
+                sys.executable,
+                "-c",
+                (
+                    "import sys, time; "
+                    "print('waiting stdout', flush=True); "
+                    "print('waiting stderr', file=sys.stderr, flush=True); "
+                    "time.sleep(30)"
+                ),
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        capture = VERIFY._ProcessOutputCapture(process)
+        try:
+            with self.assertRaises(VERIFY.VerificationError) as caught:
+                VERIFY._wait_for_launcher_readiness(
+                    process,
+                    capture,
+                    deadline=time.monotonic() + 2,
+                )
+        finally:
+            VERIFY._terminate_process_tree(process)
+            capture.join()
+
+        message = str(caught.exception)
+        self.assertIn("launcher did not report Web readiness", message)
+        self.assertIn("waiting stdout", message)
+        self.assertIn("waiting stderr", message)
+        self.assertIsNotNone(process.returncode)
+
     @unittest.skipUnless(os.name == "nt", "Windows launcher smoke")
     def test_repository_external_cold_start(self) -> None:
         completed = VERIFY.cold_start(self.artifact)
+        self.assertEqual(completed.returncode, 0)
+
+    @unittest.skipUnless(os.name == "nt", "Windows launcher smoke")
+    def test_cold_start_waits_for_launcher_readiness_line(self) -> None:
+        source_launcher = BUILD.ASSETS / "launcher.ps1"
+        delayed_launcher = self.root / "delayed-launcher.ps1"
+        readiness_line = b'    Write-Output "[OK] Web player ready: $url"'
+        launcher_bytes = source_launcher.read_bytes()
+        self.assertEqual(launcher_bytes.count(readiness_line), 1)
+        delayed_launcher.write_bytes(
+            launcher_bytes.replace(
+                readiness_line,
+                b"    Start-Sleep -Seconds 5\n" + readiness_line,
+            )
+        )
+
+        copy2 = BUILD.shutil.copy2
+
+        def copy_with_delayed_launcher(source, destination, *args, **kwargs):
+            source_path = Path(source)
+            if source_path == source_launcher:
+                source_path = delayed_launcher
+            return copy2(source_path, destination, *args, **kwargs)
+
+        with mock.patch.object(
+            BUILD.shutil,
+            "copy2",
+            side_effect=copy_with_delayed_launcher,
+        ):
+            artifact = BUILD.build(
+                self.root / "delayed-readiness",
+                allow_dirty=True,
+                runtime="zipapp",
+            )
+
+        completed = VERIFY.cold_start(artifact)
         self.assertEqual(completed.returncode, 0)
 
     @unittest.skipUnless(
