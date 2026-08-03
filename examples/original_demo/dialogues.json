@@ -10,7 +10,8 @@
         "options": [
           {"id": "opt_who", "text": "你是谁？", "next_node_id": "node_introduce", "effects": []},
           {"id": "opt_area", "text": "这片荒地是什么地方？", "next_node_id": "node_area", "effects": []},
-          {"id": "opt_bye", "text": "告辞。", "next_node_id": null, "effects": []}
+          {"id": "opt_bye", "text": "告辞。", "next_node_id": null, "effects": []},
+          {"id": "opt_warning", "text": "这附近有什么需要留意的吗？", "next_node_id": "node_observatory", "effects": []}
         ]
       },
       {

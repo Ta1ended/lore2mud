@@ -18,6 +18,16 @@ stale.
 
 ## Current checkpoint
 
+- The project owner's only active product goal is public-engine and
+  `examples/original_demo` playability; private content-pack development is stopped
+  and remains outside this repository and this task. From baseline
+  `0aa93021e533114eb6b742fe518c2d09194c3394`, the current working candidate fixes
+  three public playtest findings: `item_beacon_core` is protected by a strict,
+  default-compatible `droppable=false` content rule; monster quest text no longer
+  claims that movement is blocked; and Glassgrass Path plus a direct Elder Chen
+  question expose the optional `item_chen_token` route. Content pack 0.10.0 and
+  save v9 are unchanged. Local verification is complete; independent acceptance is
+  pending (DEC-0085).
 - Runtime Campaign Foundation candidate
   `261541866533016f6215453b083b1110af212f97` adds optional strict
   `campaign.json` v1, World-authoritative projections and atomic effects, save
@@ -62,12 +72,10 @@ stale.
   connecting to runtime/save/Web/Forge. It records exact claim use or reasoned
   omission accounting, including valid all-omission plans with an empty required
   `claim_uses` array. The clean re-review accepted `8ddc89c` GO.
-- Repository: `lore2mud`; current local `main` is `97a1ab3`. Local tracking
-  `origin/main` and a live read-only query of GitHub `main` on 2026-08-02 remain
-  `812a00fe4412f4fc7068ac2e188c5c26d0a03157`, so local `main` is ahead by ten
-  commits before this continuity seal. Publishing remains a separate owner gate;
-  refresh the remote again immediately before any authorized push and never
-  force-push.
+- Repository: `lore2mud`; this slice began with local `main` and local tracking
+  `origin/main` both at `0aa93021e533114eb6b742fe518c2d09194c3394`
+  (`0/0` ahead/behind). No live remote query, push, or release was performed. The
+  pre-existing untracked `uv.lock` remains outside the candidate commit.
 - GitHub Actions run `30642616101` passed every Python 3.11/3.12/3.13 job but
   failed `windows-candidate` while its PyInstaller executable printed the Chinese
   validation-success line through redirected `cp1252` output. DEC-0069 records the
@@ -108,8 +116,10 @@ stale.
   line direct remote query timed out. Recheck Git live after every handoff commit
   and before any later publishing decision. M8 GO does not authorize M9, other
   feature work, or private novel fact-layer access.
-- Current integrated public-engine contract: content pack 0.10.0; new saves write v9. Saves
-  include typed `ItemStackDefinition`/`ItemStack`, quantity-aware `take`/`drop`/`use`,
+- Current integrated public-engine contract: content pack 0.10.0; new saves write v9. Items
+  have strict optional `droppable` content metadata defaulting to `true`; protected items
+  are rejected by `World.drop()` before mutation. Saves include typed
+  `ItemStackDefinition`/`ItemStack`, quantity-aware `take`/`drop`/`use`,
   required ordered dialogue effects, World-owned flags, nonnegative coins, frozen fixed-price
   unlimited shop catalogs without serialized stock, typed `narrative_state`, strict actor
   state, and optional campaign scene/objective/knowledge state. v8 reads only packs without
@@ -312,6 +322,16 @@ stale.
 
 ## Verified current facts
 
+- Public original-demo experience repair local verification (2026-08-03): 141 focused
+  content/drop/adventure/dialogue/locked-exit tests passed; full unittest ran 1390
+  tests with 12 conditional skips; full pytest ran 1378 passed with 12 conditional
+  skips. Compileall, original-demo validation, Ruff, Pyright, Draft 2020-12 validation
+  of 36 public instances, history safety, fsck, and diff checks passed. A real CLI
+  README run completed all eight quests, restored the beacon, and wrote a v9 ending
+  save. Separate CLI saves prove a rejected core drop leaves the core held and absent
+  from the platform floor before the player leaves, returns, enters the heart, and
+  restores the beacon; the direct `4 -> 2` Elder Chen route grants the optional token
+  and permits the gated west return. Independent acceptance is still pending.
 - Codex locally verified M7.2 before independent acceptance: content pack 0.8.0
   expands the demo to eight rooms, four monsters, and seven quests, with four new
   rooms, two new monsters, and two unique-target `monster_defeated` quests. Eight

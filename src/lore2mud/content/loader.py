@@ -1713,6 +1713,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 "attack_bonus",
                 "defense_bonus",
                 "stack_limit",
+                "droppable",
                 "canon_ref",
                 "adaptation_notes",
             },
@@ -1794,6 +1795,10 @@ def load_content_pack(path: str | Path) -> ContentPack:
             validator.issues.append(
                 f"{location}: 可装备物品的 stack_limit 必须为 1"
             )
+        droppable = obj.get("droppable", True)
+        if not isinstance(droppable, bool):
+            validator.issues.append(f"{location}.droppable 必须是布尔值")
+            droppable = True
         item_defs.append(
             ItemDefinition(
                 id=entity_id,
@@ -1804,6 +1809,7 @@ def load_content_pack(path: str | Path) -> ContentPack:
                 attack_bonus=attack_bonus,
                 defense_bonus=defense_bonus,
                 stack_limit=stack_limit,
+                droppable=droppable,
                 metadata=_metadata(obj, location, validator),
             )
         )

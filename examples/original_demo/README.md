@@ -17,8 +17,7 @@ status
 quests
 go east
 talk character_elder_chen
-1
-1
+4
 2
 shop
 buy item_linglu_pill 2
@@ -78,14 +77,15 @@ quit
 
 ## 对话
 
-琉草小径上有一位老陈（character_elder_chen），可以与他对话：
+琉草小径的房间描述会提示一位愿意交谈的老人；老陈（character_elder_chen）可以与玩家对话：
 
 - `talk character_elder_chen` 开始对话
 - 输入数字选择对话选项
 - `bye` 或选择「告辞」选项结束对话
 - 移动房间会自动结束对话
 
-老陈会介绍微光边站的历史，并暗示观测站里有灰壳兽。观测站节点的奖励选项按固定顺序执行：
+开场直接询问「这附近有什么需要留意的吗？」即可听到观测站警告；原有的「你是谁？」→
+「你知道观测站那边的情况吗？」路线仍然有效。观测站节点的奖励选项按固定顺序执行：
 写入 `flag_chen_warned_ash_mite=true`、接取 `quest_collect_ash_mite_gel`、获得 3 点经验、
 获得 `item_chen_token`。重复选择会因任务已经接取而整体拒绝，不重复发放经验、物品或标记。
 
@@ -119,6 +119,7 @@ enum 叙事状态仍分别为 `true`、至少 `1` 和 `standby`，同时要求�
 ## 可确认结局
 
 棱镜哨卫是冒险高潮。它掉落的 `item_beacon_core` 是余辉信标台东侧出口的唯一门禁物品；
+该物品声明 `droppable=false`，尝试 `drop item_beacon_core` 会在状态不变的情况下被拒绝。
 未持有时移动会失败且 World 状态保持不变。进入信标心室会完成 `quest_restore_beacon`，与
 `character_beacon_echo` 对话并选择点亮信标后，World 写入 `flag_beacon_restored=true`。
 `quests`、`status` 和 save/load 可以分别确认最终任务、结局 flag 和完整终局状态。

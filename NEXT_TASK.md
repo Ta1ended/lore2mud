@@ -1,40 +1,54 @@
 # Next Task
 
-_Last updated: 2026-08-02 (accepted public integration synchronized to local main; continuity seal pending review)_
+_Last updated: 2026-08-03 (public original_demo experience repair locally verified; independent acceptance pending)_
 
 ## Single next action
 
-Create a fresh clean focused read-only re-review of the exact
-`97a1ab314cd0b45f3728d707674f462547164216..HEAD` documentation-only range on
-local `main`. Verify that the diff is limited to `PROJECT_MEMORY.md`,
-`PROJECT_STATE.md`, `NEXT_TASK.md`, `DECISIONS.md`, and `CHANGELOG.md`; that the
-implementation, Schema, tests, examples, scripts, packaging, and dependency trees
-remain byte-identical to accepted code commit `22a05d1`; and that current tracked
-files no longer disclose an absolute external-private workspace location.
+Create a fresh clean GPT-5.6-sol read-only acceptance of the exact local
+`0aa93021e533114eb6b742fe518c2d09194c3394..HEAD` range after the implementation
+commit is created. Review findings first with P0-P3 severities and finish with exactly
+one `GO` or `REVISE`. Do not edit, commit, move refs, push, release, or access any
+private source, canon, adaptation, content pack, image, save, or report material.
 
-Reproduce the prior focused `GO` for `97a1ab3` from the durable repository-external
-report, inspect the current Git/reflog/remote evidence, run history safety, fsck,
-and diff checks, then report P0-P3 findings first and finish with explicit `GO` or
-`REVISE`. Do not edit, commit, merge, move refs, push, release, force-push, or
-access any private source or Demo material.
+Verify the expected 20-file public scope: item content/runtime/loader/save plumbing,
+`schemas/item.schema.json`, the content-pack format guide, six `original_demo` files,
+three focused test modules, and the five mandatory handoff files. Confirm the
+pre-existing untracked `uv.lock` is unchanged and excluded from the commit.
 
-## Current evidence
+## Required reproduction
 
-- Fresh focused review accepted `97a1ab3` with no P0-P3 findings.
-- Local `main` fast-forwarded from `812a00f` to `97a1ab3` at
-  2026-08-02 20:42 Asia/Shanghai.
-- Local `origin/main` and a live GitHub query currently remain `812a00f`; local
-  `main` is ten commits ahead before this continuity seal. No push or release occurred.
-- The pre-existing untracked `uv.lock` remains 14,471 bytes with SHA-256
-  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`.
-- Older reachable commits contain path-only external-private metadata. Current
-  tracked files remove that location, and controller fingerprinting found no
-  non-trivial private artifact blob or private content in public Git. History
-  rewrite and force-push are outside authorization.
+1. Prove `droppable` defaults to `true`, rejects non-boolean values in both Draft
+   2020-12 and `load_content_pack()`, and survives World creation plus save/load
+   reconstruction without changing save v9 or content-pack 0.10.0.
+2. Reach the beacon platform, defeat the sentinel, take `item_beacon_core`, attempt
+   `drop item_beacon_core`, and prove the command is rejected with all placement
+   state unchanged. Then go west/east, enter the heart, select the restore option,
+   and confirm `quest_restore_beacon` plus `flag_beacon_restored=true`.
+3. Inspect every `monster_defeated` quest description in `original_demo` and confirm
+   none claims that a monster blocks movement. Separately prove movement remains free;
+   do not add or infer a monster-gated-exit mechanic.
+4. From a fresh game, use `look`, start Elder Chen's dialogue, choose the direct
+   `4 -> 2` route, receive `item_chen_token`, and use the optional gated west exit.
+   Also confirm the historical `1 -> 1 -> 2` reward route and opening option 3
+   farewell remain compatible.
+5. Run focused and full tests, compileall, original-demo validation, Draft 2020-12
+   validation, Ruff, Pyright, history safety, fsck, and diff checks. Re-run the
+   README walkthrough through beacon restoration and an ending save.
+
+## Current local evidence
+
+- 141 focused unittest tests passed.
+- Full unittest: 1390 tests, 12 conditional skips.
+- Full pytest: 1378 passed, 12 conditional skips.
+- Draft 2020-12: 36 public original-demo instances passed.
+- Compileall, `lore2mud validate`, Ruff, Pyright, history safety, fsck, and diff
+  checks passed.
+- README, protected-core, and direct-token real CLI flows passed using repository-
+  external save directories.
+- Independent acceptance remains pending; implementation context does not declare GO.
 
 ## Boundaries
 
-- Do not push, release, force-push, or begin another public slice.
-- Do not add private source, canon, adaptation, content, save, image, candidate,
-  or report material to the public repository.
-- Preserve the user's untracked `uv.lock` exactly.
+- Public engine and `examples/original_demo` only; private content development is stopped.
+- No monster-blocking system, combat expansion, campaign/narrative expansion, save-format
+  bump, content-pack version bump, dependency change, push, release, or force-push.

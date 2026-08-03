@@ -451,6 +451,7 @@ class World:
                 attack_bonus=item.attack_bonus,
                 defense_bonus=item.defense_bonus,
                 stack_limit=item.stack_limit,
+                droppable=item.droppable,
             )
             for item in pack.items.values()
         }
@@ -1042,6 +1043,8 @@ class World:
             )
 
         item = self.items[item_id]
+        if not item.droppable:
+            raise WorldRuleError(f"{item.name} 是关键物品，不能丢弃。")
         if self.equipped.hand == item_id or self.equipped.body == item_id:
             raise WorldRuleError(f"{item.name} 正在装备中，请先卸下。")
 

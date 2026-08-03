@@ -1,12 +1,11 @@
 # Project State
 
-_Last updated: 2026-08-02（公共整合已获 GO 并同步到本地 main；当前连续性交接待复验）_
+_Last updated: 2026-08-03（公开 original_demo 三项体验修复已完成本地验证；独立验收 pending）_
 
 ## Objective
-提供可公开托管的 Python 文字 MUD 引擎与小说资料处理基底，让私人小说原文和
-改编内容始终与通用代码、原创示例分离。中期目标是在该引擎成熟后、保持私有素材
-不进入公开仓库的前提下，制作仅供项目负责人游玩的个人 MUD 试玩版；当前阶段只扩展
-通用引擎和原创示例。
+提供可公开托管的 Python 文字 MUD 引擎、通用资料处理基底和完全原创的公开示例，
+让私人小说原文及派生内容始终与公开仓库隔离。项目负责人已停止私人内容包开发；
+当前唯一产品目标是打磨公开引擎与 `examples/original_demo` 的可玩性。
 
 ## Current status
 
@@ -171,6 +170,15 @@ HP 为 0 且均已从房间移除。GPT-5.6-sol 的独立验收随后核对 22 �
 审计、compileall、内容校验、安全扫描、diff、真实 CLI/save 与死亡恢复均通过，无 findings。M7
 当前为 8/8 房间、4/4 怪物、7 条任务，已独立验收 GO；唯一下一动作见 `NEXT_TASK.md`。
 
+2026-08-03，项目负责人从基线
+`0aa93021e533114eb6b742fe518c2d09194c3394` 授权公开 `original_demo` 三项体验修复。
+当前候选新增严格可选且默认 `true` 的 `ItemDefinition.droppable`；loader、Schema、运行时
+`Item`、新建 World 与存档重建保持同一默认。`item_beacon_core` 声明
+`droppable=false`，`World.drop()` 在任何状态变化前拒绝丢弃；内容包保持 0.10.0，save
+保持 v9。四条怪物任务文案不再暗示怪物封锁出口；琉草小径描述提示可交谈老人，老陈开场
+新增第 4 项直达观测站警告，原 1/2/3 序号和 `1 -> 1 -> 2` 奖励路线保持兼容。
+实现与本地验证已完成，独立验收 pending（DEC-0085）。
+
 ## Historical current-status snapshot (2026-07-28, pre-M2; not current)
 
 > 下列快照保留当时的 save v5、0.2.7、旧 Git 与旧执行流程事实；当前状态以上文
@@ -292,18 +300,24 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
 
 ## In progress
 
-- 无公共代码实现正在进行。当前工作仅是连续性交接封板：记录已接受的本地 `main`
-  快进、当前远端状态和公共/私人边界，并移除当前树中的绝对外部私人位置文字。
+- 公开 `original_demo` 三项体验修复已完成实现、本地验证和交接；没有剩余实现工作。
+  当前唯一进行中门禁是对 `0aa9302..HEAD` 的 fresh clean 只读独立验收。
 
 ## Blockers
 
-- 当前连续性交接提交必须获得 fresh focused 只读 `GO`；该门只复核文档、Git 身份和
-  公共边界，不重新打开已接受的 Runtime/CampaignSpec 技术范围。
-- 发布门仍需项目负责人明确授权。本地 `main` 当前领先 live GitHub `main` 十个提交
-  （本交接提交前）；不 push、不 release，后续若获授权必须再次刷新远端并禁止 force push。
+- 当前候选必须由新的 GPT-5.6-sol 任务或干净上下文对真实本地提交进行只读验收，
+  逐项复现核心 drop 防护、任务文案一致性、铜牌发现路径和完整终局，并给出 GO/REVISE。
+- 发布门仍需项目负责人明确授权；本切片不 push、不 release、不查询或访问私有内容。
 
 ## Verification
 
+- Original-demo experience repair local verification（2026-08-03，独立验收 pending）：
+  141 项 focused unittest 通过；全量 unittest 为 1390 项、12 skip；全量 pytest 为
+  1378 passed、12 skipped。compileall、`lore2mud validate`、Ruff、Pyright、36 个
+  Draft 2020-12 公共实例、history safety、fsck 与 diff check 均通过。真实 README CLI
+  完成八条任务、进入信标心室、点亮信标并写入 v9 存档；专项 CLI 的 `after_drop` 存档确认
+  核心 drop 被拒绝后仍在背包且不在平台地面，随后可 west/east 返回、进入心室并点亮；
+  新开局 `look -> talk -> 4 -> 2` 获得旧铜牌并可 west 返回余烬渡台。
 - Runtime/CampaignSpec documentation seal focused GO（2026-08-02）：fresh read-only
   review 对 `97a1ab314cd0b45f3728d707674f462547164216` 给出 `GO`、P0-P3 全空；报告位于
   仓库外验收目录。代码、pipeline、Schema、测试、示例、脚本和打包树与权威代码提交
@@ -559,9 +573,8 @@ GPT-5.6-sol 验收。2026-07-28 的只读公共核心 readiness audit 以
   quests) without a new engine contract and is independently accepted together with
   M7. M8 is also independently accepted, completing the M1–M8 public-engine scope;
   do not infer authorization to expand scope or enter the private fact layer.
-- `drop` can deliberately leave a gate item in the current room and therefore block
-  a gated exit until the player takes it again; this is explicit player intent.
-  Equipped items are intentionally rejected instead of silently changing combat stats.
+- 普通可丢弃门禁物品仍可由玩家放到当前房间并重新拾取；`droppable=false` 的关键物品
+  会在状态变化前被拒绝。`item_beacon_core` 已采用该保护，装备中物品仍因战斗属性边界被拒绝。
 - Private corpus summaries, canon facts and game adaptation content have not been
   generated or reviewed.
 - The provider's privacy claim about model visibility is not independently verified;

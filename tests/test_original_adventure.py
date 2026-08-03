@@ -5,7 +5,10 @@ import unittest
 from pathlib import Path
 
 from lore2mud.content.loader import load_content_pack
-from lore2mud.content.models import ReachRoomQuestDefinition
+from lore2mud.content.models import (
+    MonsterDefeatedQuestDefinition,
+    ReachRoomQuestDefinition,
+)
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.save import SaveLoadError, SaveLoadService
 from lore2mud.engine.world import World, WorldRuleError
@@ -41,6 +44,39 @@ class OriginalAdventureDefinitionTests(unittest.TestCase):
         effects = dialogue.nodes[dialogue.start_node_id].options[0].effects
         self.assertEqual(len(effects), 1)
         self.assertEqual(effects[0].flag_id, "flag_beacon_restored")
+
+    def test_monster_quest_text_matches_free_movement_rules(self) -> None:
+        expected = {
+            "quest_clear_ash_mite": "静默观测站里盘踞着一只灰壳兽，守在破裂的仪器旁。击败它，安全检查遗留设备。",
+            "quest_clear_spark_hound": "火花巡兽在碎讯支线上游荡，持续威胁探索者。击败它。",
+            "quest_clear_mist_crawler": "雾核潜行者潜伏在雾凝机井深处。击败它，取得那里的补给。",
+            "quest_clear_prism_sentinel": "棱镜哨卫守在余辉信标台上。击败它，夺回信标核心。",
+        }
+        for quest_id, description in expected.items():
+            with self.subTest(quest_id=quest_id):
+                quest = self.pack.quests[quest_id]
+                self.assertIsInstance(quest, MonsterDefeatedQuestDefinition)
+                self.assertEqual(quest.description, description)
+                for misleading in ("挡住", "阻断", "阻挡"):
+                    self.assertNotIn(misleading, quest.description)
+
+    def test_optional_token_has_room_hint_and_direct_dialogue_route(self) -> None:
+        path = self.pack.rooms["room_glassgrass_path"]
+        self.assertIn("歇脚的老人", path.description)
+        self.assertIn("愿意聊聊", path.description)
+
+        dialogue = self.pack.dialogues["dialogue_elder_chen"]
+        warning = dialogue.nodes[dialogue.start_node_id].options[3]
+        self.assertEqual(warning.id, "opt_warning")
+        self.assertEqual(warning.next_node_id, "node_observatory")
+
+    def test_beacon_core_is_a_non_droppable_key_with_an_explicit_room_hint(self) -> None:
+        core = self.pack.items["item_beacon_core"]
+        platform = self.pack.rooms["room_afterglow_beacon_platform"]
+        self.assertFalse(core.droppable)
+        self.assertIn("唯一钥匙", core.description)
+        self.assertIn("唯一钥匙", platform.description)
+        self.assertIn("必须随身带走", platform.description)
 
 
 class OriginalAdventureScenarioTests(unittest.TestCase):
@@ -110,6 +146,51 @@ class OriginalAdventureScenarioTests(unittest.TestCase):
         self.assertGreater(self.world.player.hp, hp_before_use)
         self.assertIsNone(self.world.player.inventory.find_stack("item_condensed_mist"))
         self.assertTrue(self.world.quest_states["quest_clear_mist_crawler"].completed)
+
+    def test_direct_chen_conversation_route_grants_the_optional_token(self) -> None:
+        self.world.move("east")
+        commands = CommandProcessor(self.world)
+        looked = commands.execute("look")
+        self.assertIn("歇脚的老人", looked.text)
+        self.assertFalse(self.world.player.inventory.has_item("item_chen_token"))
+
+        greeting = commands.execute("talk character_elder_chen")
+        self.assertIn("这附近有什么需要留意的吗？", greeting.text)
+        warning = commands.execute("4")
+        self.assertIn("灰壳兽", warning.text)
+        reward = commands.execute("2")
+
+        self.assertIn("你获得了 旧铜牌。", reward.text)
+        self.assertTrue(self.world.player.inventory.has_item("item_chen_token"))
+        self.assertEqual(self.world.move("west").id, "room_ember_wharf")
+
+    def test_beacon_core_drop_attempt_cannot_soft_lock_the_finale(self) -> None:
+        self._equip_starting_gear(self.world)
+        self._reach_platform(self.world)
+        self._defeat(self.world, "monster_prism_sentinel")
+        self.world.take("item_beacon_core")
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = SaveLoadService(self.pack, Path(temp_dir))
+            service.save(self.world, "core_held")
+            self.world = service.load("core_held")
+
+        self.assertFalse(self.world.items["item_beacon_core"].droppable)
+        commands = CommandProcessor(self.world)
+
+        blocked = commands.execute("drop item_beacon_core")
+
+        self.assertIn("关键物品", blocked.text)
+        self.assertIn("不能丢弃", blocked.text)
+        self.assertTrue(self.world.player.inventory.has_item("item_beacon_core"))
+        self.assertIsNone(self.world.current_room.find_stack("item_beacon_core"))
+        self.assertIn("折光档案室", commands.execute("go west").text)
+        self.assertIn("余辉信标台", commands.execute("go east").text)
+        self.assertIn("信标心室", commands.execute("go east").text)
+        commands.execute("talk character_beacon_echo")
+        ending = commands.execute("1")
+        self.assertIn("flag_beacon_restored", ending.text)
+        self.assertTrue(self.world.flags["flag_beacon_restored"])
 
     def test_complete_adventure_and_final_state_round_trip(self) -> None:
         commands = CommandProcessor(self.world)

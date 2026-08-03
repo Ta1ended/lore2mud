@@ -2202,3 +2202,38 @@
   and a new public slice remain unauthorized.
 - Supersedes: DEC-0083's focused-review-pending and local-main-at-`812a00f` states
   only. It does not supersede the accepted technical evidence or publish gate.
+
+## DEC-0085: Content-defined drop protection closes the public beacon-key risk
+
+- Date: 2026-08-03
+- Status: Implementation and local verification complete; fresh independent read-only
+  acceptance pending.
+- Context: A public playtest reported that dropping `item_beacon_core` at the beacon
+  platform could strand progression. The current `0aa9302` baseline could in fact
+  return west/east, retake the core, and finish, but that recovery depended on route
+  discovery and DEC-0015 allowed every unequipped item to be dropped. The same playtest
+  also found three monster-task descriptions inconsistent with free movement and the
+  optional Elder Chen token route too deeply hidden. Private content-pack development
+  is stopped; this decision is limited to the public engine and `original_demo`.
+- Decision: Add strict optional `droppable` boolean metadata to item Schema, loader,
+  immutable content definitions, runtime items, World construction, and save/load
+  reconstruction. Omission defaults to `true`; `World.drop()` rejects a false value
+  before any state mutation. Mark only `item_beacon_core` false and give the platform
+  an explicit key warning. Rewrite the four public monster-quest descriptions to match
+  existing free movement, add a natural Glassgrass Path conversation hint, and append
+  a direct Elder Chen warning question while preserving opening option indices 1-3 and
+  the original reward route. Keep content pack 0.10.0 and save v9 unchanged.
+- Evidence: 141 focused tests, 1390 full unittest tests with 12 skips, and 1378 full
+  pytest passes with 12 skips. Compileall, original-demo validation, Ruff, Pyright,
+  Draft 2020-12 validation of 36 public instances, history safety, fsck, and diff
+  checks pass. Repository-external CLI saves prove the README ending, the rejected
+  core drop with unchanged placement followed by beacon restoration, and the direct
+  optional-token route plus west return.
+- Consequences: Existing content packs retain prior drop behavior without edits.
+  Protected items cannot be intentionally placed on the floor, but no monster-gated
+  movement, combat system, campaign/narrative feature, save migration, dependency, or
+  private-content access is introduced. A new clean GPT-5.6-sol task must still return
+  GO or REVISE before this slice is accepted or published.
+- Supersedes: DEC-0015's statement that every gate item may be deliberately dropped,
+  only for items whose content explicitly sets `droppable=false`; all other DEC-0015
+  behavior remains unchanged.

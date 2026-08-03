@@ -1009,6 +1009,7 @@ def _validate_and_build_world(data: dict, pack: ContentPack) -> World:
                 attack_bonus=item_def.attack_bonus,
                 defense_bonus=item_def.defense_bonus,
                 stack_limit=item_def.stack_limit,
+                droppable=item_def.droppable,
             )
             for item_id, item_def in pack.items.items()
         },

@@ -61,6 +61,7 @@ class ItemDefinition:
     attack_bonus: int = 0
     defense_bonus: int = 0
     stack_limit: int = 1
+    droppable: bool = True
     metadata: ContentMetadata = field(default_factory=ContentMetadata)
 
 

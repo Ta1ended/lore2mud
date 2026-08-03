@@ -58,8 +58,9 @@
   {
     "id": "item_beacon_core",
     "name": "信标核心",
-    "description": "棱镜哨卫胸腔里的暖光核心，仍在有节奏地发出微弱脉冲。",
+    "description": "棱镜哨卫胸腔里的暖光核心，仍在有节奏地发出微弱脉冲；它是进入信标心室的唯一钥匙。",
     "stack_limit": 1,
+    "droppable": false,
     "adaptation_notes": "本仓库原创演示终局门禁物品。"
   }
 ]

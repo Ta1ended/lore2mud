@@ -37,6 +37,8 @@ class ContentLoaderTests(unittest.TestCase):
         self.assertIn("quest_restore_beacon", pack.quests)
         self.assertIn("room_beacon_heart", pack.rooms)
         self.assertIn("item_beacon_core", pack.items)
+        self.assertFalse(pack.items["item_beacon_core"].droppable)
+        self.assertTrue(pack.items["item_spark_lantern"].droppable)
         self.assertEqual(pack.start_room_id, "room_ember_wharf")
 
     def test_dangling_room_exit_is_rejected(self) -> None:
@@ -105,6 +107,33 @@ class ContentLoaderTests(unittest.TestCase):
             with self.assertRaises(ContentValidationError) as caught:
                 load_content_pack(pack_path)
             self.assertIn("未知字段", str(caught.exception))
+
+    def test_droppable_must_be_boolean(self) -> None:
+        for value in (None, 0, "false", []):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as temp_dir:
+                pack_path = Path(temp_dir) / "broken_pack"
+                shutil.copytree(DEMO_PATH, pack_path)
+                items_path = pack_path / "items.json"
+                items = json.loads(items_path.read_text(encoding="utf-8"))
+                items[-1]["droppable"] = value
+                items_path.write_text(
+                    json.dumps(items, ensure_ascii=False, indent=2),
+                    encoding="utf-8",
+                )
+
+                with self.assertRaises(ContentValidationError) as caught:
+                    load_content_pack(pack_path)
+                self.assertIn("droppable 必须是布尔值", str(caught.exception))
+
+    def test_item_schema_declares_droppable_boolean_default_true(self) -> None:
+        schema = json.loads(
+            (PROJECT_ROOT / "schemas" / "item.schema.json").read_text(
+                encoding="utf-8"
+            )
+        )
+        droppable = schema["properties"]["droppable"]
+        self.assertEqual(droppable["type"], "boolean")
+        self.assertIs(droppable["default"], True)
 
     def test_schema_documents_are_valid_json(self) -> None:
         schema_dir = PROJECT_ROOT / "schemas"

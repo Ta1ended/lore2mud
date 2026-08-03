@@ -2,7 +2,7 @@
   {
     "id": "quest_clear_ash_mite",
     "name": "清除灰壳兽",
-    "description": "静默观测站里盘踞着一只灰壳兽，它挡住了通往仪器的路。击败它。",
+    "description": "静默观测站里盘踞着一只灰壳兽，守在破裂的仪器旁。击败它，安全检查遗留设备。",
     "kind": "monster_defeated",
     "trigger_room_id": "room_ember_wharf",
     "target_monster_id": "monster_ash_mite",
@@ -44,7 +44,7 @@
   {
     "id": "quest_clear_spark_hound",
     "name": "清除火花巡兽",
-    "description": "碎讯支线上的火花巡兽阻断了前方的通路。击败它。",
+    "description": "火花巡兽在碎讯支线上游荡，持续威胁探索者。击败它。",
     "kind": "monster_defeated",
     "trigger_room_id": "room_silent_observatory",
     "target_monster_id": "monster_spark_hound",
@@ -54,7 +54,7 @@
   {
     "id": "quest_clear_mist_crawler",
     "name": "清除雾核潜行者",
-    "description": "雾凝机井里的雾核潜行者扰乱了岔口的路线。击败它。",
+    "description": "雾核潜行者潜伏在雾凝机井深处。击败它，取得那里的补给。",
     "kind": "monster_defeated",
     "trigger_room_id": "room_broken_rail_junction",
     "target_monster_id": "monster_mist_crawler",
@@ -64,7 +64,7 @@
   {
     "id": "quest_clear_prism_sentinel",
     "name": "清除棱镜哨卫",
-    "description": "余辉信标台上的棱镜哨卫仍在阻断东侧平台。击败它。",
+    "description": "棱镜哨卫守在余辉信标台上。击败它，夺回信标核心。",
     "kind": "monster_defeated",
     "trigger_room_id": "room_broken_rail_junction",
     "target_monster_id": "monster_prism_sentinel",

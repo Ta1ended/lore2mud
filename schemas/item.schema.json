@@ -42,6 +42,11 @@
       "minimum": 1,
       "description": "Maximum quantity per stack. Default 1. Equipment items must be 1."
     },
+    "droppable": {
+      "type": "boolean",
+      "default": true,
+      "description": "Whether the player may drop this item. Default true."
+    },
     "canon_ref": {
       "$ref": "common.schema.json#/$defs/canon_ref"
     },

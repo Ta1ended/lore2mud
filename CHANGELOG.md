@@ -4,6 +4,14 @@
 
 ### Changed
 
+- Hardened the public `original_demo` finale and discovery flow without changing
+  content-pack 0.10.0 or save v9. Items now accept a strict optional `droppable`
+  boolean that defaults to `true`; `World.drop()` rejects protected items before
+  mutation, and `item_beacon_core` opts out of dropping. The beacon platform now
+  identifies the core as the heart-room key, all four monster-quest descriptions
+  match the existing free-movement rules, and Glassgrass Path plus a new direct
+  Elder Chen question make the optional `item_chen_token` route discoverable while
+  preserving the original dialogue indices and reward path (DEC-0085).
 - New saves now write v9 and strictly preserve actor position/presence/enabled/
   incapacitated state plus optional campaign scene, objective, and player-knowledge
   state without replaying effects. v8 remains read-compatible only for packs with

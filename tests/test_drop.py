@@ -123,6 +123,17 @@ class DropWorldTests(unittest.TestCase):
 
         self.assertEqual(_runtime_snapshot(self.world), before)
 
+    def test_non_droppable_item_is_rejected_without_mutation(self) -> None:
+        lantern = self.world.items["item_spark_lantern"]
+        self.world.items[lantern.id] = replace(lantern, droppable=False)
+        self.world.take(lantern.id)
+        before = _runtime_snapshot(self.world)
+
+        with self.assertRaisesRegex(WorldRuleError, "关键物品.*不能丢弃"):
+            self.world.drop(lantern.id)
+
+        self.assertEqual(_runtime_snapshot(self.world), before)
+
 
 class DropCommandTests(unittest.TestCase):
     def setUp(self) -> None:
