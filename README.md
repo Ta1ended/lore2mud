@@ -1,20 +1,52 @@
 # lore2mud
 
-`lore2mud` 是一个面向本地单人文字 MUD 的现代 Python 项目基底。它把
-通用游戏引擎、小说资料处理工具、原作事实和具体游戏数值分成不同层。Codex 全程使用
-GPT-5.6-sol 完成方案、实现、测试、交接和本地提交；需要独立验收时，由新的 Codex 任务
-或干净上下文只读复核真实提交。Hermes 仅保留历史贡献归属，不再承担新任务。
+Lore2MUD is an **Agent-callable novel-to-text-game engine**. A developer Agent is
+the direct tool user; the product owner/creator supplies decisions and rights
+authorization; the player is the final user. Lore2MUD is not itself an Agent.
 
-当前版本提供一个完全原创的八房间演示世界，包含移动、拾取、背包、确定性
-战斗、装备、消耗品、任务和对话系统。运行时只使用 Python 标准库。
+The repository is public and contains generic engine/tooling code plus original
+examples only. It does not include third-party novels, proprietary characters,
+private adaptations, images, audio, or owner-controlled derived artifacts. The MIT
+license covers repository-owned material, not imported or generated content.
 
-> 本仓库不附带任何第三方小说、角色、世界观、图片、音频或改编内容。
-> MIT 许可证仅覆盖仓库中的自有代码与原创演示内容。用户自行导入的材料及
-> 其生成内容不属于本项目的授权范围，使用者应自行确认相应权利。
+## Product And Architecture
 
-## 快速开始
+- [Product definition](PRODUCT.md) - users, modes, inputs/outputs, PLAT-1, metrics,
+  non-goals, and rights boundary.
+- [Current code map](CODE_MAP.md) - real V1 symbols, flows, module sizes, risks, and
+  ownership for future changes.
+- [V2 target architecture](docs/v2/architecture.md) - Authoring Plane, deterministic
+  Runtime Plane, contracts, compatibility, and capability safety.
+- [V2 development model](docs/v2/development_model.md) - product authority, Codex
+  roles, model floor, TECH/PRODUCT/SECURITY passes, and Git gates.
+- [V2 roadmap](docs/v2/roadmap.md) - V2-0 through V2-5 and PLAT-1.
 
-需要 Python 3.11 或更高版本。
+## What Exists Today: V1
+
+The current public runtime is a local single-player Python text MUD. It loads strict
+multi-file JSON content into `ContentPack`, constructs an authoritative `World`, and
+exposes play through a text CLI and local Web client. Current capabilities include:
+
+- rooms, exits and item gates; typed item stacks, inventory, equipment, consumables,
+  loot, fixed shops, coins, deterministic combat and defeat recovery;
+- typed quests, dialogue and atomic effects, narrative state/conditions, and optional
+  runtime `campaign.json` scenes, actions, objectives, knowledge, and journal entries;
+- save v9 with constrained named slots and guarded v7/v8 read compatibility;
+- content validation, public original examples, deterministic authoring compilers,
+  repository safety checks, Windows packaging, and a local Web player.
+
+`World`, `CommandProcessor`, and Web `PlayerSession` are current V1 types.
+`GameBlueprint`, `GameProject`, `GamePackage v2`, `CapabilityDescriptor`,
+`GameSession`, `GameIntent`, `GameEvent`, `GameView`, and `TurnResult` are V2 targets
+and are not implemented by the V2-0 documentation reset.
+
+The pipeline `CampaignSpec v1` is a deterministic authoring IR. It is **not** a
+runtime input and is not interchangeable with a content pack's runtime
+`campaign.json`.
+
+## Quick Start
+
+Python 3.11 or newer is required.
 
 ```powershell
 python -m venv .venv
@@ -22,315 +54,104 @@ python -m venv .venv
 python -m pip install -e .
 ```
 
-### 启动游戏
-
-旧版命令（仍受支持）：
+Play the original public demo:
 
 ```powershell
-lore2mud --content examples/original_demo
-python -m lore2mud --content examples/original_demo
-```
-
-显式 `play` 子命令（推荐）：
-
-```powershell
-lore2mud play --content examples/original_demo
 python -m lore2mud play --content examples/original_demo
 ```
 
-### 校验内容包
-
-不启动游戏，只检查内容包结构和引用：
+The legacy form remains supported:
 
 ```powershell
-lore2mud validate --content examples/original_demo
+python -m lore2mud --content examples/original_demo
+```
+
+Validate without starting a game:
+
+```powershell
 python -m lore2mud validate --content examples/original_demo
 ```
 
-成功输出 `[OK] 内容包校验通过` 并退出 0；校验失败输出所有问题并退出 1。
+Run the local Web player:
 
-进入游戏后可执行：
-
-```text
-look
-examine
-examine item item_spark_lantern
-inspect item_spark_lantern
-take item_spark_lantern
-take item_linglu_pill 2
-inventory
-save lantern_run
-use item_linglu_pill
-equip item_crystal_blade
-unequip hand
-quests
-go east
-go east
-attack monster_ash_mite
-attack monster_ash_mite
-quests
-status
-load lantern_run
-help
-help examine
-quit
+```powershell
+python -m lore2mud web --content examples/original_demo
 ```
 
-## 当前能力
+Use `help` in the CLI for the live command registry. The original demo walkthrough
+and content notes are in [examples/original_demo/README.md](examples/original_demo/README.md).
 
-- `look`：查看当前房间、出口、物品、怪物和角色；门禁出口会显示所需物品的名称、稳定 ID 与当前是否持有，普通出口保持只显示方向。
-- `examine` / `examine room|here`：只读查看当前房间摘要；`examine <ID或名称>` 可在当前
-  房间物品、背包物品、当前房间怪物和角色之间解析目标。跨类型同名或重复稳定 ID 时，使用
-  `examine item|monster|character <ID或名称>` 显式限定；同一类型内重名时使用稳定 ID。
-  其他房间及尚未取得的奖励不可见。
-- `inspect <ID或名称>`：保留兼容的物品专用查看，只解析当前房间或背包物品，并保持原有
-  `InspectItemOutcome` 与输出格式。
-- `go <方向>`：沿内容包声明的出口移动；门禁出口要求背包持有指定物品，不消耗该物品。
-- `take <ID或名称> [数量]`：拾取房间内物品（数量可选，默认 1）。
-- `drop <ID或名称> [数量]`：将背包中未装备的物品放入当前房间（数量可选，默认 1）。
-- `inventory`：查看背包。
-- `use <ID或名称> [数量]`：使用背包内的消耗品（数量可选，默认 1）。
-- typed stacks：不可变内容 `ItemStackDefinition` 与运行时 `ItemStack` 统一房间、背包、
-  战利品和对话奖励；容量按栈位计算，`stack_limit` 限制每栈数量。
-- 当前原创内容包为 0.10.0；新存档统一写 v9，除既有 `inventory_stacks`、`item_stacks`、
-  `player.coins`、顶层 `flags` 与严格类型化的 `narrative_state` 外，还严格保存角色位置/状态和
-  可选 campaign 的场景、目标与知识状态。v8 只对没有 campaign 的内容包保持只读兼容；v7
-  只对同时没有叙事状态定义和 campaign 的内容包保持只读兼容。v6 和为其他内容包版本创建的
-  存档会被明确拒绝。
-- 可选 `narrative_state.json` 声明 bool、范围受限 int 和 enum 状态。对话选项可使用无脚本、
-  有深度/节点上限的条件树检查状态、背包、位置和任务；World 是 CLI 与 Web 可用选项的唯一权威。
-- 可选严格 `campaign.json` v1 在同一受限条件系统上声明动态地点/角色/对话文本、条件出口、
-  多阶段场景、actor/location/object/ritual/inner 交互对象、原子动作、分阶段目标、玩家知识和
-  日志。`World` 同时是 CLI 与 Web 的唯一投影和执行权威，隐藏动作不能通过稳定 ID、裸数字或
-  Web payload 绕过。对话继续使用既有强类型状态机；campaign 只投影角色可见性、节点文本和
-  可用选项，不引入脚本或第二套客户端规则。
-- `original_demo` 现在是一段可完成的原创冒险：早期 NPC 提供路线和任务反馈，断轨岔口允许选择
-  可选补给战，棱镜哨卫掉落的唯一核心解锁信标心室，最终任务与 `flag_beacon_restored` 明确记录结局。
-- `equip <ID或名称>`：装备 hand 或 body 槽物品。
-- `unequip [hand|body]`：卸下指定槽位；省略时默认为 hand。
-- `save [槽位]` / `load [槽位]`：保存或读取默认 `default` 槽位，或使用一个安全的命名槽位。
-  槽位名为 1–32 位小写字母、数字、`-` 或 `_`，必须以小写字母或数字开头，且不接受路径、
-  扩展名或 Windows 保留设备名。
-- `attack <ID或名称>`：进行一个确定性战斗回合。
-- `talk <ID或名称>`：与角色对话，显示台词和编号选项。
-- `<数字>`：选择对话选项（对话中可用）。
-- `bye`：结束当前对话（对话中可用）。
-- `actions` / `act <动作ID>`：查看并执行 `World` 当前投影出的 campaign 场景动作。
-- `objectives` / `knowledge` / `journal`：分别查看可见的分阶段目标、玩家知识和统一叙事日志；
-  `unknown` 知识不会泄露给玩家。
-- `help [command]`：无参数列出所有真实路由；指定命令或别名时显示语法、参数、上下文限制
-  和死亡限制。帮助、路由和死亡允许信息来自同一个命令注册表。
-- 对话选项必须声明有序 `effects`；首批强类型效果是 `grant_item`、`grant_experience`、
-  `accept_quest` 与 `set_flag`。World 预检整组效果后原子执行，并按效果顺序渲染结果。
-- `shop`：只读查看当前房间的固定无限目录；`buy <ID或名称> [数量]` 与
-  `sell <ID或名称> [数量]` 按内容包的固定价格交易，不维护可变库存。
-- `status`：查看生命、等级、经验、攻击、防御、金币和按稳定 ID 排序的 flags。
-- `quests`：查看已接取任务及进度。任务定义是 `monster_defeated`、`reach_room`、
-  `collect_item` 三分支强类型契约；收集任务以背包数量达到 `required_quantity` 为条件。
-- JSON 内容包结构、类型、稳定 ID 与跨文件引用校验。
-- `validate` 子命令：不启动游戏即可校验内容包，报告所有问题。
-- 原创确定性任务闭环：自动接取、三类条件推进、按任务 ID 稳定结算、一次性经验奖励和
-  存档持久化；移动 API 保持兼容，CLI 通过加性结果显示任务完成。
-- 保守的中文小说拆章与 manifest 生成工具。
-- Git 候选与可达历史安全检查，阻止私有资料、电子书、常见凭据、数据库、索引、
-  存档、日志和异常大文件进入仓库。
-
-## 项目结构
+## Repository Layout
 
 ```text
-lore2mud/
-├─ src/lore2mud/
-│  ├─ engine/          # 命令编排、世界状态、玩家、房间
-│  ├─ combat/          # 确定性战斗规则
-│  ├─ progression/     # 经验与升级
-│  ├─ inventory/       # 物品与背包
-│  ├─ narrative/       # 受限叙事状态与条件求值
-│  └─ content/         # JSON 内容包模型、加载与引用校验
-├─ pipeline/           # 本地小说拆章与 manifest 工具
-├─ schemas/            # 内容格式的 JSON Schema 文档
-├─ examples/
-│  └─ original_demo/   # 完全原创的可玩演示内容
-├─ scripts/            # 仓库安全检查
-├─ tests/              # 单元测试与场景测试
-├─ docs/               # 架构、管线、格式和 Agent 工作流
-└─ .github/            # CI、Issue 与 PR 基础配置
+src/lore2mud/          V1 runtime, content loading, CLI, and Web
+pipeline/              deterministic authoring and Forge tools
+schemas/               public JSON Schema contracts
+examples/              original public content
+tests/                 unit, scenario, CLI, Web, and packaging evidence
+docs/                  V1 formats/workflows and V2 architecture documents
+scripts/               repository safety and delivery helpers
 ```
 
-核心数据流：
+The current runtime flow is:
 
 ```text
-玩家指令
-  → CommandProcessor
-  → World 权威状态
-  → combat / progression / inventory 领域规则
-  → 结果文本
-
-JSON 内容包
-  → Schema/类型校验
-  → 跨文件引用校验
-  → 不可变定义
-  → 可变运行时世界
+JSON content -> load_content_pack() -> ContentPack -> World
+player command/action -> CommandProcessor or PlayerSession -> World -> result/view
+World <-> SaveLoadService -> versioned local save
 ```
 
-更完整的设计见 [架构说明](docs/architecture.md)。
+The target V2 flow is:
 
-## 公开内容与私有内容边界
+```text
+Authoring Plane: source + decisions -> Blueprint -> Project -> Package
+Runtime Plane: Package + Intent -> Session -> Events + View -> TurnResult
+```
 
-建议把公共仓库与私人小说资料严格分开：
+See [CODE_MAP.md](CODE_MAP.md) before changing shared runtime or authoring modules.
 
-| 可以公开提交 | 必须留在本地 |
+## Public And Private Boundary
+
+| Public repository | Owner-controlled external workspace |
 |---|---|
-| 通用引擎与工具 | 小说原文与电子书 |
-| JSON Schema | 拆分后的章节 |
-| 原创演示内容 | 章节摘要与事实提取 |
-| 不含专有名称的测试 | 使用原作名称的改编内容包 |
-| Agent 工作规范 | 本地索引、数据库、模型和存档 |
+| Generic engine, SDK/tooling, schemas and tests | Novel text and split chapters |
+| Original examples and public-safe fixtures | Private summaries, canon and traces |
+| Product/architecture/format documentation | Proprietary adaptations and assets |
+| Generic provenance and rights contracts | Indexes, databases, saves, logs and reports |
 
-推荐的本地目录会被 `.gitignore` 忽略：
+Private source directories are read-only inputs. Model output, imported packages,
+assets, and player input are untrusted. Validate them before use, preserve provenance,
+and never infer that a repository license grants rights to external material.
 
-```text
-novel/
-├─ raw/          # 只读原文
-├─ chapters/     # 拆章结果
-├─ summaries/    # 分层摘要
-├─ extractions/  # 逐章实体候选
-└─ canon/        # 经审核的原作事实
+## Authoring Tools
 
-private_content/ # 私人游戏改编内容
-```
+The current pipeline provides conservative novel splitting and deterministic,
+validated compilers for fact candidates/reviews, canon drafts/registries,
+registry inspection/adaptation, `NarrativeModel v1`, and `CampaignSpec v1`. Their
+format contracts live under `docs/` and `schemas/`.
 
-游戏内容中的 `canon_ref` 只是指向私有事实层的可选引用：
+Forge currently orchestrates only inspection and registry-adaptation stages. It is a
+useful V1 workbench, not yet the V2 Authoring Plane or package builder.
 
-```json
-{
-  "id": "item_example",
-  "name": "显示名称",
-  "description": "游戏内描述",
-  "canon_ref": {
-    "entity_id": "canon_item_example",
-    "source_chapters": ["chapter_000123"]
-  },
-  "adaptation_notes": "伤害和稀有度属于游戏改编，不是原作事实。"
-}
-```
+## Development
 
-引擎不需要读取小说原文；没有 `canon_ref` 的原创内容包同样可以运行。
+Start with [AGENTS.md](AGENTS.md), then read `PRODUCT.md`, `PROJECT_STATE.md`,
+`NEXT_TASK.md`, and only the code/docs relevant to the active task. The exact workflow
+is in [docs/production_workflow.md](docs/production_workflow.md).
 
-## 本地小说处理入口
-
-默认拆章器针对“第一章 标题”或“第一章”这类保守格式：
+Core verification includes:
 
 ```powershell
-python pipeline/split_novel.py `
-  D:\PrivateNovel\book.txt `
-  novel\chapters
-```
-
-它不会修改源文件，并会生成 `manifest.json`。不同小说的标题格式差异很大，
-首次运行后必须检查章节数、异常标题和前后边界。详细流程见
-[小说资料管线](docs/novel_pipeline.md)。
-
-审核后的单章 canon 草稿可通过显式 RegistryPlan 组装为多章 CanonRegistry；该步骤
-保留每条 claim 的复合来源，不自动识别同名实体或裁决冲突。格式见
-[Canon Registry Format v1](docs/canon_registry_format.md)。
-
-经过验证的 CanonRegistry 可通过显式 RegistryAdaptationPlan 编译为一个公开安全的
-单房间 micro content pack；游戏文本和数值只来自人工计划，registry claims 仅用于
-来源追溯。该流程不裁决冲突或读取私有资料：
-
-```powershell
-python -m pipeline.registry_adaptation `
-  --canon-registry tests/fixtures/registry_adaptation/canon_registry.json `
-  --adaptation-plan tests/fixtures/registry_adaptation/valid_plan.json `
-  --output-dir C:\Temp\registry_micro_demo
-```
-
-格式与完整验证规则见
-[Registry Adaptation Format v1](docs/registry_adaptation_format.md)。
-
-需要在编写改编计划前缩小审阅范围时，可按精确 registry entity ID 生成只读报告；
-工具保留完整成员、candidate 与复合 claim 来源，不做名称搜索或冲突裁决：
-
-```powershell
-python -m pipeline.registry_inspection `
-  --canon-registry tests/fixtures/canon_registry/expected_registry.json `
-  --inspection-plan tests/fixtures/registry_inspection/valid_plan.json `
-  --output C:\Temp\mira_inspection.json
-```
-
-格式见 [Registry Inspection Format v1](docs/registry_inspection_format.md)。
-
-经过验证的 CanonRegistry 还可以与人工 NarrativePlan 编译为通用、确定性的
-NarrativeModel。它保留精确 claim provenance 记账、显式观点/命题、阶段和 DAG beats，
-但不会生成 canon、裁决冲突或接入游戏运行时：
-
-```powershell
-python -m pipeline.narrative_model `
-  --canon-registry tests/fixtures/canon_registry/expected_registry.json `
-  --narrative-plan tests/fixtures/narrative_model/valid_plan.json `
-  --output C:\Temp\fixture_narrative_model.json
-```
-
-格式与边界见 [Narrative Model Format v1](docs/narrative_model_format.md)。
-
-经过验证的 NarrativeModel 可与显式 RegistryCampaignPlan 编译为确定性的
-CampaignSpec。该步骤保留完整来源记账，并验证有向地点、场景、目标和知识修正，
-但不生成 runtime content pack：
-
-```powershell
-python -m pipeline.campaign `
-  --narrative-model tests/fixtures/campaign/magic_event/narrative_model.json `
-  --campaign-plan tests/fixtures/campaign/magic_event/valid_plan.json `
-  --output C:\Temp\resonance_campaign_spec.json
-```
-
-真实参数、Schema 和语义边界见
-[Campaign Spec Format v1](docs/campaign_spec_format.md)。
-
-## 生产工作流
-
-Codex 全程使用 GPT-5.6-sol 完成方案、实现、测试、交接和本地提交；项目负责人
-批准切片范围和 push，不再在不同 Agent 之间人工转交 prompt：
-
-1. Codex 先阅读 `AGENTS.md`、交接文件、相关代码和测试，并报告数据流、范围、
-   风险和验证方案。
-2. 项目负责人明确授权后，Codex 只实现当前纵向切片。
-3. Codex 运行完整测试、`python scripts/check_repo_safety.py --history` 和对应 CLI
-   冒烟，再同步格式文档与交接文件并创建本地提交。
-4. 需要独立验收时，由新的 Codex 任务或干净上下文使用 GPT-5.6-sol 只读核对真实
-   提交并给出 GO/REVISE。
-5. 本地提交不会自动 push；发布前重新核实 HEAD、`origin/main` 和 ahead/behind，
-   并取得项目负责人明确授权。
-
-可直接复制的任务模板与检查点见
-[生产工作流](docs/production_workflow.md)。
-
-## 开发与验证
-
-```powershell
-python -m pip install -e .
 python -m unittest discover -s tests -v
+python -m pytest -q
+python -m ruff check .
+python -m pyright
+python -m compileall -q src pipeline scripts tests
+python -m lore2mud validate --content examples/original_demo
 python scripts/check_repo_safety.py --history
+git fsck --full --no-dangling
+git diff --check
 ```
 
-任何内容格式变更都应同时更新：
-
-- `src/lore2mud/content/`
-- `schemas/`
-- `examples/original_demo/`
-- `tests/`
-- `docs/content_pack_format.md`
-
-## 路线图
-
-1. 存档与读取：加入版本化存档格式和原子写入。 ✅
-2. 物品使用与装备：继续保持确定性规则和场景测试。
-3. 内容包命令：提供独立的 `validate` 子命令和更清晰的错误定位。 ✅
-4. 小说事实层：定义候选提取、别名归并和冲突审核格式。
-5. 任务系统：先实现一个原创的确定性任务闭环。 ✅
-6. 可选检索：在核心流程稳定后，再接入本地全文或语义检索。
-
-## 许可证
-
-项目中的自有代码和原创演示内容使用 [MIT License](LICENSE)。许可证不扩展到
-用户自行导入的小说、第三方资料、私人内容包或其衍生内容。
+Local commits do not authorize push, `main` movement, or release. Implementation
+cannot self-declare independent acceptance.

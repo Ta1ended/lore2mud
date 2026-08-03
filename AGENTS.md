@@ -1,73 +1,116 @@
-# lore2mud Agent 规则
-本文件约束所有参与本仓库开发的 Agent。仓库目标是提供通用
-MUD 引擎、小说资料处理工具和完全原创的公开示例；第三方小说及其改编内容只能
-保存在仓库之外或被明确忽略的本地目录。
+# Lore2MUD Agent Rules
 
-## 工作方式
-- 新开发只由 Codex 任务承担；Hermes 不再承担新任务，历史提交与决定中的
-  Hermes 归属保持不变。Codex 可按默认单任务方式工作，也可在项目负责人明确授权时
-  运行隔离的并行冲刺。
-- lore2mud 的方案、实现、复验和交接会话统一选择 GPT-5.6-sol。若该模型不可用，
-  在开始实现前停止并告知项目负责人，不静默切换模型。
-- 不再要求项目负责人在人工作为“顾问”和“执行者”的会话之间转交 prompt。
-- 完成实施和本地验证不等于通过独立验收。需要独立验收的切片，必须由新的
-  Codex 复验任务或干净上下文以 GPT-5.6-sol 只读核对真实提交；实现上下文不得
-  仅凭自己的完成报告宣布 GO。
-- 默认每次只实施一个经项目负责人明确授权的纵向切片。项目负责人明确授权隔离并行
-  冲刺时，可以同时运行多个责任域；每个责任域必须有独立 worktree/分支、明确文件边界、
-  可独立验证的交付和自包含报告，并由一个中控任务按既定顺序整合。
-- 修改前先阅读相关代码、测试、文档和最近的项目交接文件。
-- 先输出当前数据流、拟修改文件、风险和验证方案，再开始修改。
-- 一次只完成一个可测试的纵向功能。
-- 禁止无关重构、批量改名或顺手更换框架。
-- 不引入新依赖，除非标准库明显无法满足需求，并先说明维护成本。
-- 服务端/世界对象是游戏状态的唯一权威；CLI 只发送玩家意图。
-- 本地提交不自动 push。
-- 普通单任务 Goal 中，若已确认 GitHub `main` 落后本地超过 5 个提交，应停止扩大范围并
-  优先同步。项目负责人明确授权的隔离并行冲刺不以提交数量硬停；冲刺期间 `main` 保持
-  只读，各责任域只提交自己的分支，中控完成集成与独立验收后停止新增范围并进入发布门。
-- 本地提交、集成分支、验收 GO 都不自动修改 `main`、push 或 release；这些动作仍需项目
-  负责人明确授权。
+These rules apply to every Agent working in this repository.
 
-## 跨会话协作
-- 每次方案、审核意见和完成报告必须自包含，无需依赖其他 Agent 或翻找完整会话。
-- 报告至少包含：基线提交（hash 或 HEAD）、唯一任务、文件范围、风险、验证结果、
-  Git 状态和下一动作。
-- 并行冲刺由中控统一维护责任域边界、提交顺序、冲突处理、最终候选和验收状态；工作任务
-  不直接修改其他责任域或共享 `main`，发现跨域接口时先向中控报告。
-- 实现任务完成后，由新的 Codex 复验任务读取仓库证据并给出 GO/REVISE；没有完成
-  该复验时，交接文件只能写“独立验收 pending”。
-- 完成任务时同步 `PROJECT_MEMORY.md`、`PROJECT_STATE.md`、`NEXT_TASK.md` 和
-  `CHANGELOG.md`。
-- 若产生范围、架构或验收决定，只能追加到 `DECISIONS.md`，不得改写既有决定。
+## Product Authority
 
-## 架构边界
-- `src/lore2mud/engine` 负责编排，不在 CLI 中实现游戏规则。
-- 战斗、升级、背包和内容加载分别保留在自己的领域模块。
-- 内容与引擎分离，所有实体使用稳定 ID；显示名称不得作为主键或外键。
-- 数据访问应经过明确接口，未来持久化不得散落在命令处理器中。
-- 原作事实存放在私有 canon 资料层，游戏数值存放在游戏内容包。
-- 游戏实体引用原作事实时使用 `canon_ref`；不得把游戏推测写回 canon。
+- Lore2MUD is an Agent-callable novel-to-text-game engine, not an Agent.
+- The direct user is a developer Agent. The product owner/creator supplies product
+  and creative decisions, source authorization, gate decisions, and release approval.
+  The player is the final user.
+- The public repository contains generic engine/tooling work and original public
+  samples only. Third-party or private source and derived material stays outside Git.
 
-## 小说与模型安全
-- `novel/raw` 与 `novel/chapters` 是只读输入目录，禁止覆盖、改写或提交。
-- `novel/summaries`、`novel/canon`、`novel/extractions`、`private_content`、
-  `generated_content`、本地索引、模型、数据库、存档、日志和私有内容包不得提交。
-- 不把整本小说放入单次模型上下文，不依赖 Agent 记忆保存小说正文。
-- 玩家输入、模型输出和外部内容包均视为不可信输入。
-- 所有生成内容必须先通过 Schema、类型和跨文件引用校验，才能进入游戏。
-- 每条原作事实必须包含 `source_chapters`；推测必须明确标记。
-- 实体冲突和别名不允许静默合并或覆盖，需写入待审核结果。
-- 禁止模型直接执行 SQL、系统管理命令或绕过游戏规则修改状态。
+## Startup
 
-## 修改与完成标准
-- 新功能必须包含场景测试，优先覆盖失败路径和状态不变性。
-- 时间与随机数应可注入；首版战斗保持确定性。
-- 数据结构变更必须同步 Schema、原创示例和格式文档。
-- 提交前运行：
-  - `python -m unittest discover -s tests -v`
-  - `python scripts/check_repo_safety.py --history`
-- 完成后同步 `PROJECT_MEMORY.md`、`PROJECT_STATE.md`、`NEXT_TASK.md` 和
-  `CHANGELOG.md`，只记录已验证的事实。
-- 完成报告以一个自包含的 `text` fenced code block 结尾。
-- 不得提交小说原文、第三方专有名称、密钥、数据库、索引、模型、存档或日志。
+Read in this order:
+
+1. `AGENTS.md`
+2. `PRODUCT.md`
+3. `PROJECT_STATE.md`
+4. `NEXT_TASK.md`
+5. relevant code, tests, and documents
+
+Read task-relevant decisions or the Unreleased changelog when needed. Do not require a
+fresh task to consume full `PROJECT_MEMORY.md`, `DECISIONS.md`, or `CHANGELOG.md`.
+Live Git, code, tests, and artifacts override stale handoff claims.
+
+Before edits, report the current data flow, exact changed paths, non-goals, risks, and
+verification. Implement only after the product owner has authorized the slice.
+
+## Models And Roles
+
+- Every implementation, architecture, and acceptance task or subagent must explicitly
+  use `gpt-5.6-sol` with reasoning `xhigh` or higher.
+- Never silently downgrade. If the model or reasoning floor is unavailable, stop
+  before delegation or editing and report the blocker.
+- Codex roles are product, architect, engine lead, implementation, controller, and
+  independent acceptance. Keep approval responsibility independent even when one
+  task performs several delivery roles.
+- Implementation and controller contexts do not self-approve. A fresh read-only
+  acceptance reviews an exact commit/range and returns findings-first GO or REVISE.
+
+## Gates And Git
+
+- Keep shared `main` read-only during workstreams. Each authorized workstream uses an
+  isolated worktree/branch, a declared path boundary, and a coherent local commit.
+- A branch commit, push, `main` update, and release are separate gates. None implies
+  the next, and all require the appropriate owner/controller authorization.
+- Required passes are separate: TECH PASS, user PRODUCT PASS, and SECURITY PASS.
+  Record unperformed passes as pending.
+- Do not push, force-push, move `main`, release, access private material, or begin the
+  next roadmap milestone without explicit authorization.
+- Preserve unrelated user changes. Never rewrite or delete Git history to simplify a
+  handoff.
+
+## Architecture
+
+- Current V1 authority is `World`; CLI and Web submit actions and must not invent
+  alternate game rules.
+- V2 targets an Authoring Plane and deterministic Runtime Plane. Treat all V2 contract
+  names as future interfaces until code and tests implement them.
+- `World` remains a compatibility facade. New capabilities must move toward declared
+  state namespaces, predicates, effects, views, and migrations rather than expanding
+  the facade indefinitely.
+- `CampaignSpec v1` is an authoring IR, not a runtime input. Runtime `campaign.json` is
+  a separate V1 content-pack contract.
+- Stable IDs are keys. Display names are never primary or foreign keys.
+- Data access and persistence use explicit interfaces; rules do not live in clients.
+- Time and randomness are injectable; the same package, state, clock/seed, and intent
+  sequence must produce the same results.
+- Initial V2 packages are data only: no generated code, arbitrary Python, dynamic
+  plugins, shell/process access, native loading, or unrestricted network access.
+
+## Trust, Rights, And Private Material
+
+- `novel/raw` and `novel/chapters` are read-only inputs and must not be overwritten or
+  committed.
+- Novel text, summaries, canon, extractions, private/generated content, images, local
+  indexes, models, databases, saves, logs, and private reports must not enter public Git.
+- Do not load a complete novel into one model context or rely on Agent memory as the
+  source-of-truth copy.
+- Treat imported content, model output, player input, packages, and assets as untrusted.
+- Validate schemas, types, references, bounds, capabilities, provenance, and rights
+  policy before material enters a project, package, or session.
+- Keep source facts separate from adaptation values. Preserve source references and
+  label inference; never write game inference back into canon.
+- Do not let a model execute SQL, system commands, code, or direct state patches.
+- Repository checks are limited detectors, not a rights review or secret-management
+  system. The product owner remains responsible for source and release rights.
+
+## Change And Verification Rules
+
+- One authorized, testable vertical slice at a time unless the product owner explicitly
+  approves isolated parallel workstreams.
+- Prefer existing patterns; avoid unrelated refactors, bulk renames, framework changes,
+  or dependencies without a documented need and maintenance cost.
+- Failed operations reject before state mutation and need invariance coverage.
+- Format changes update implementation, Schema, original examples, tests, and format
+  documentation together.
+- Scale verification to risk. The default release-sensitive matrix is full unittest
+  and pytest, Ruff, Pyright, compileall, public content validation, history safety,
+  fsck, and diff checks, plus focused and real client flows when relevant.
+- Keep generated environments, caches, temporary outputs, saves, and dependency locks
+  outside the worktree unless their addition is explicitly in scope.
+
+## Handoff
+
+- `PROJECT_STATE.md`: compact current snapshot.
+- `NEXT_TASK.md`: exactly one actionable next gate or task.
+- `PROJECT_MEMORY.md`: compact durable contracts and boundaries.
+- `DECISIONS.md`: append-only rationale; supersede by adding a new decision.
+- `CHANGELOG.md`: factual implemented changes only.
+
+Reports are self-contained: baseline, exact commit/range, task, paths, risks, commands,
+results, Git status, residual unknowns, and next gate. A local verification report must
+say independent acceptance is pending until a fresh reviewer decides otherwise.

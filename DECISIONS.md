@@ -2237,3 +2237,72 @@
 - Supersedes: DEC-0015's statement that every gate item may be deliberately dropped,
   only for items whose content explicitly sets `droppable=false`; all other DEC-0015
   behavior remains unchanged.
+
+## DEC-0086: Gate 0 recovery and publication establish the V2 baseline
+
+- Date: 2026-08-03
+- Status: Accepted and published to `main`.
+- Context: DEC-0085 closed the public beacon-key and discovery risks but still needed
+  independent acceptance, a CI dependency repair, truthful save-compatibility
+  documentation, post-main verification, and an explicit publish gate before the
+  project could reset product direction.
+- Decision: Record Gate 0 as independently accepted GO and use
+  `1a5a8857579ebf840de4e39e414b52592baea6ba` as the public V2 reset baseline. The
+  controller completed the authorized main/publish sequence; local `main`, local
+  `origin/main`, and a live GitHub `refs/heads/main` query resolve to that commit.
+  Preserve the primary checkout's intentionally untracked `uv.lock` boundary without
+  copying it into isolated worktrees or Git.
+- Evidence: The accepted range includes the public original-demo repair, CI schema
+  validation dependencies, and the final save-compatibility correction. Independent
+  review returned GO; branch and post-main unittest/pytest, Ruff, Pyright, compileall,
+  original-demo validation, Draft 2020-12 validation, history safety, fsck, and diff
+  gates were green. On 2026-08-03 the primary checkout was clean except for
+  `uv.lock`, exactly 14,471 bytes with SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`; the isolated
+  V2 reset worktree did not contain that file.
+- Consequences: Gate 0 is complete and no longer the active task. It authorizes the
+  isolated V2-0 documentation reset only; it does not grant V2-0 TECH/PRODUCT passes,
+  private-material access, another push/main move, a release, or V2-1 implementation.
+- Supersedes: DEC-0085's independent-acceptance-pending state and older current
+  handoff/publish claims only. It does not supersede V1 runtime compatibility or the
+  public/private boundary.
+
+## DEC-0087: V2 product direction and development model
+
+- Date: 2026-08-03
+- Status: Direction accepted; documentation candidate TECH and PRODUCT passes pending.
+- Context: V1 has a capable public text-game runtime and deterministic authoring IRs,
+  but the product entry described a local MUD project, application behavior was split
+  across CLI/Web/World, `CampaignSpec` had no runtime materializer, central modules
+  accumulated responsibilities, and historical handoffs obscured the one current
+  product path.
+- Decision: Define Lore2MUD as an Agent-callable novel-to-text-game engine, not an
+  Agent. The developer Agent is the direct user, the product owner/creator supplies
+  decisions and rights authorization, and the player is the final user. Adopt
+  prototype/traced/sealed modes; an Authoring Plane producing `GameBlueprint v1`,
+  `GameProject v1`, and `GamePackage v2`; and a deterministic Runtime Plane centered
+  on `GameSession`, `GameIntent`, `GameEvent`, `GameView`, and `TurnResult`.
+  `CapabilityDescriptor v1` uses a static catalog, safety levels, namespaced state,
+  predicates/effects/views/migrations, and no dynamic code/plugin execution initially.
+  Keep `World` as a compatibility facade, ship SDK and structured CLI before MCP, and
+  keep `CampaignSpec` as authoring IR rather than runtime input. Adopt the exact
+  V2-0..V2-5 roadmap and PLAT-1 recorded in `docs/v2/roadmap.md`.
+- Evidence: `PRODUCT.md`, `CODE_MAP.md`, `docs/v2/architecture.md`,
+  `docs/v2/development_model.md`, and `docs/v2/roadmap.md` define the product and target
+  against live V1 symbols and file sizes. `README.md`, `AGENTS.md`,
+  `docs/production_workflow.md`, and the compact handoffs route future tasks through
+  TECH PASS, user PRODUCT PASS, and SECURITY PASS. Every implementation,
+  architecture, and acceptance task/subagent must explicitly use `gpt-5.6-sol` at
+  reasoning `xhigh` or higher, stop if unavailable, and never self-approve. Local
+  verification passed 1,390 unittest tests with 12 conditional skips and 1,378 pytest
+  tests with 12 skips, plus Ruff, Pyright, compileall, original-demo validation,
+  history safety, fsck, staged/working diff checks, relative links, exact changed-path
+  and protected-tree byte audits, and stale-claim/privacy/model-floor searches.
+- Consequences: V2-0 remains a documentation candidate until fresh independent TECH
+  GO and user PRODUCT PASS. After both, the controller may make a docs-only seal and
+  route V2-1 Public Runtime Boundary. V2 names are not shipped APIs yet. Shared `main`
+  stays read-only during workstreams; branch commit, push, main movement, and release
+  remain separate gates. Public/private and rights boundaries remain unchanged.
+- Supersedes: Current product framing, startup order, roadmap, and stale active-task
+  claims in the prior snapshots. It does not rewrite historical decisions, remove V1
+  capabilities, authorize private work, or change code/data/save/package contracts.

@@ -4,6 +4,21 @@
 
 ### Changed
 
+- Established the documentation-only Lore2MUD V2 Product & Architecture Reset:
+  `PRODUCT.md`, `CODE_MAP.md`, and `docs/v2/` now define the Agent-callable product,
+  prototype/traced/sealed modes, PLAT-1, Authoring and deterministic Runtime planes,
+  V2 contracts, capability safety, the approved V2-0..V2-5 roadmap, and the separated
+  TECH/PRODUCT/SECURITY development gates. `README.md`, `AGENTS.md`, the production
+  workflow, and compact handoffs now distinguish shipped V1 behavior from V2 targets,
+  identify `CampaignSpec` as authoring IR rather than runtime input, and route the
+  candidate to fresh independent TECH review plus user PRODUCT PASS (DEC-0087).
+- Recorded completion of Gate 0 recovery and publication: the repaired public
+  baseline received independent GO, its branch and post-main test/quality matrices
+  were green, and local `main`, `origin/main`, and live GitHub `main` now resolve to
+  `1a5a8857579ebf840de4e39e414b52592baea6ba`. The primary checkout's preserved
+  untracked `uv.lock` remains 14,471 bytes at SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc` and is not
+  part of this worktree or commit (DEC-0086).
 - Hardened the public `original_demo` finale and discovery flow without changing
   content-pack 0.10.0 or save v9. Items now accept a strict optional `droppable`
   boolean that defaults to `true`; `World.drop()` rejects protected items before
@@ -30,8 +45,8 @@
   isolated GO and combined-gate records. The corrected documentation seal
   `97a1ab3` received fresh focused `GO` with no P0-P3 findings and was
   fast-forwarded to local `main`. This continuity seal records that move and
-  removes current absolute external-private location references; its focused
-  read-only review remains pending (DEC-0081 through DEC-0084).
+  removes current absolute external-private location references. Its then-pending
+  publish state was later closed by Gate 0 (DEC-0081 through DEC-0086).
 - Closed a second CampaignSpec v1 completion-isolation gap found by fresh
   re-review. A location, actor, scene, or knowledge target must now resolve only
   in current-objective scenes from the objective's exact phase, and cannot fire
@@ -617,7 +632,7 @@
   branches, saved and loaded v7/0.8.0 state, and a fresh real CLI flow proved
   prism-sentinel death → `recover` → v7 save/load. `main`, `origin/main`, and the
   directly queried remote `main` all point to `f486e12`; M8 independent acceptance
-  remains pending.
+  was pending at that checkpoint and was later accepted as recorded below.
 - GPT-5.6-sol independently accepted M7.2 and the complete M7 milestone as GO with
   no findings (2026-07-30). Relative to `5497859`, `147633e` is one 22-file
   content/test/public-document commit with zero `src/`, Schema, dependency, or
