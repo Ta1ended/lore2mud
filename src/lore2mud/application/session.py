@@ -198,22 +198,28 @@ class GameSession:
                 draft, focus = self._execute(intent)
                 view = project_game_view(self._world, focus=focus)
             except WorldRuleError as exc:
-                self._restore(original_world, backup, rng_state, sequence)
+                try:
+                    message = str(exc)
+                finally:
+                    self._restore(original_world, backup, rng_state, sequence)
                 return TurnResult(
                     TurnStatus.REJECTED,
                     (),
                     project_game_view(self._world),
-                    RejectionDiagnostic(RejectionCode.INADMISSIBLE_INTENT, str(exc)),
+                    RejectionDiagnostic(RejectionCode.INADMISSIBLE_INTENT, message),
                 )
             except SaveLoadError as exc:
-                self._restore(original_world, backup, rng_state, sequence)
+                try:
+                    message = _persistence_rejection_message(intent, exc)
+                finally:
+                    self._restore(original_world, backup, rng_state, sequence)
                 return TurnResult(
                     TurnStatus.REJECTED,
                     (),
                     project_game_view(self._world),
                     RejectionDiagnostic(
                         RejectionCode.PERSISTENCE_ERROR,
-                        _persistence_rejection_message(intent, exc),
+                        message,
                     ),
                 )
             except Exception:

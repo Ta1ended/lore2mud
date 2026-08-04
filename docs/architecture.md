@@ -9,9 +9,10 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
 
 ### `engine`
 
-`CommandProcessor` 把文本转换为有限的玩家意图，并将动作交给 `World`。
-`World` 持有当前房间、玩家、物品和怪物，是运行时状态的唯一权威。命令层
-不直接更改生命、经验或背包。
+`CommandProcessor` 把 CLI 文本转换为有限的 typed `GameIntent`，提交给传输无关的
+`GameSession`，再渲染 `TurnResult`。Web `PlayerSession` 保持兼容名称，但包装同一个
+`GameSession`。`GameSession` 统一协调一个确定性回合并调用 `World`；`World` 持有当前
+房间、玩家、物品和怪物，是运行时状态的唯一权威。客户端层不直接更改生命、经验或背包。
 
 ### `combat`
 
@@ -78,16 +79,30 @@ lore2mud 首版是本地单人、命令行、内存运行的最小 MUD。架构�
   → World（本次运行的可变状态）
 ```
 
+```text
+CLI/Web 输入
+  → 传输层解析
+  → GameIntent
+  → GameSession
+  → World 权威转移
+  → GameEvent + GameView
+  → TurnResult
+  → 传输层呈现
+```
+
 玩家发出的只是意图。以拾取为例：
 
 ```text
 take item_spark_lantern [数量]
-  → 解析指令
-  → 解析当前房间的 ItemStack 与正整数数量
+  → CLI 解析为 TakeIntent
+  → GameSession 在状态快照前验证合同
+  → World 解析当前房间的 ItemStack 与正整数数量
   → 在写入前检查 stack_limit、可合并栈位或可用容量
   → 原子减少来源栈（清空时移除）
   → 原子合并到背包目标栈或创建新栈
-  → 渲染结果
+  → GameEvent + 当前 GameView
+  → TurnResult
+  → CLI 渲染结果
 ```
 
 可预见的输入、容量和引用失败都发生在修改之前；动作后触发的任务结算若失败，则由
@@ -97,7 +112,8 @@ take item_spark_lantern [数量]
 
 `World` 从不可变 `CampaignDefinition` 初始化四类可变状态：角色的位置/出现/启用/失能状态、
 `SceneState`、`ObjectiveState` 和 `KnowledgeState`。动态描述、出口、角色、活动场景、交互对象、
-动作和日志均由 World 读取同一个条件快照后投影；CLI 与 Web 只消费这些公开方法。
+动作和日志均由 World 读取同一个条件快照后投影；`GameSession` 与玩家安全投影消费这些公开
+方法，CLI 与 Web 只消费 `TurnResult`/`GameView`。
 
 ```text
 campaign.json + narrative_state.json
@@ -142,8 +158,8 @@ move_with_outcome / take / attack / select_option(effects) / buy
 结果、经验和升级信息都按 quest ID 字典序稳定排列。任何奖励或结算异常都会回滚该次
 主动作的房间、怪物、玩家、背包、任务、装备和活动对话状态。
 
-`World.move()` 保持历史返回类型 `Room`；需要任务结果的命令层调用加性的
-`World.move_with_outcome()`。`TakeOutcome`、`AttackOutcome` 和带物品奖励的
+`World.move()` 保持历史返回类型 `Room`；`GameSession` 的 `MoveIntent` 调度调用加性的
+`World.move_with_outcome()`，命令层只渲染 `TurnResult`。`TakeOutcome`、`AttackOutcome` 和带物品奖励的
 `TalkOutcome` 同样携带 `quest_outcomes` 与对应 `level_gains`。`drop` 与 `use` 不会
 重新检查或撤销已完成任务。
 
@@ -155,9 +171,9 @@ move_with_outcome / take / attack / select_option(effects) / buy
 和稳定 ID，且不改变任何运行时状态；通过时物品不会被消耗。出口定义属于内容包，
 不写入存档中的可变状态。
 
-`CommandProcessor.look()` 只读取当前房间的出口定义、物品定义和背包 ID，并显示门禁
-出口所需物品及“未持有”或“已持有”状态；它不复刻、放宽或执行门禁规则。门禁的唯一
-规则权威仍是 `World.move()`，因此这只是展示行为，不是内容或存档契约变更。
+玩家安全 `GameView` 投影读取当前房间的出口定义、物品定义和背包 ID，并提供门禁出口的
+显示状态与可用 `MoveIntent`；`CommandProcessor` 只渲染该投影，不复刻、放宽或执行门禁
+规则。门禁的唯一规则权威仍是 `World.move()`，因此这只是展示行为，不是内容或存档契约变更。
 
 ### 可见目标查看与命令帮助
 
@@ -169,8 +185,9 @@ stacks 与玩家背包 typed stacks；怪物候选只来自当前房间的 `mons
 对话奖励不会成为候选。
 
 三个 frozen tagged 结果为 `ExamineItemOutcome`、`ExamineMonsterOutcome` 和
-`ExamineCharacterOutcome`。命令层只解析 `examine` 语法并渲染结果；无参数、`room`、`here`
-复用现有 `look` 房间摘要。`World.inspect_item()` 仍是物品专用兼容 API，返回原有
+`ExamineCharacterOutcome`。命令层只把 `examine` 语法解析成 `ExamineIntent`，再渲染
+`TurnResult` 中的 focus view；无参数、`room`、`here` 复用现有 `look` 房间摘要。
+`World.inspect_item()` 仍是物品专用兼容 API，返回原有
 `InspectItemOutcome`；`inspect` 的成功输出和缺失错误保持兼容。所有查看分支在死亡和活动
 对话中均可用且只读，不改变房间、玩家、金币、背包、装备、任务、flags、怪物或活动对话。
 
@@ -228,8 +245,8 @@ CampaignSpec 描述有向地点、角色、场景 DAG、目标 DAG、严格 tagg
   active_dialogue: DialogueState | None     # 当前对话位置
 ```
 
-对话状态所有权在 `World`。`CommandProcessor` 只负责解析裸整数 / bye / talk
-指令，将意图转给 World，再将 `TalkOutcome` 渲染为文本。
+对话状态所有权在 `World`。`CommandProcessor` 只负责把裸整数 / bye / talk 指令解析成
+typed Intent，交给 `GameSession`，再从 `TurnResult`/`GameView` 渲染文本。
 
 ### 叙事条件投影
 
@@ -287,9 +304,10 @@ Windows 保留设备名。路径验证发生在序列化、读取或替换世界
 save v9 的 JSON 契约。
 
 `SaveLoadService.save()` 在服务边界把文件系统 `OSError` 转换为带原始异常链的
-`SaveLoadError`，因此 `CommandProcessor` 能将写入失败渲染为正常的“存档失败”文本，
-而不会让 I/O 异常逃出游戏循环。`_atomic_write()` 的原子写入和临时文件清理职责不变；
-非 I/O 编程错误不会被重新标记为存档 I/O 错误。
+`SaveLoadError`；`GameSession` 在恢复权威状态后返回最小 typed persistence rejection，
+`CommandProcessor` 再将其渲染为正常的“存档失败”文本，而不会让 I/O 异常逃出游戏循环。
+`_atomic_write()` 的原子写入和临时文件清理职责不变；非 I/O 编程错误不会被重新标记为
+存档 I/O 错误。
 
 ### 固定金币商店
 

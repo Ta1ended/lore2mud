@@ -11,9 +11,11 @@
   `status/events/view/diagnostics` while preserving `ok/event/snapshot`, and browser
   controls consume projected affordances instead of duplicating gameplay availability
   rules. Exact declared Intent and primitive leaf types are validated before any
-  overridable method/operator can run. Save v9, v7/v8 read gates, content/schema
+  overridable method/operator can run. Rejection diagnostics are normalized before the
+  final rollback and view projection, preventing side-effectful exception formatting
+  from changing authority after restore. Save v9, v7/v8 read gates, content/schema
   versions, runtime campaign, and the public original Demo are unchanged
-  (DEC-0092, DEC-0093).
+  (DEC-0092, DEC-0093, DEC-0094).
 - Replaced the stale repository-wide fixed model/reasoning floor with controller model
   selection by responsibility and risk, explicit recording when exposed, evidence-
   based verification, rework/reassignment for unreliable output, and unchanged fresh
@@ -131,12 +133,12 @@
   contract immutability, rejection invariance, accepted nonlethal combat, hidden-state
   omission, real CLI/Web turn equivalence, save-byte equivalence, runtime campaign
   parity, hostile primitive-subclass rejection, and Windows candidate inclusion.
-  Controller verification passed 47 focused transport tests, 1408 unittest tests with
-  11 skips, serial and xdist pytest at 1397 passed / 11 skipped,
+  Controller verification passed 48 focused transport tests, 1409 unittest tests with
+  11 skips, serial and xdist pytest at 1398 passed / 11 skipped,
   Ruff, Pyright, compileall, original-demo validation, repository history safety,
   fsck, and diff checks; the first xdist startup's pre-collection temp-root permission
   failure was closed by an explicit repository-external temp rerun (DEC-0092,
-  DEC-0093).
+  DEC-0093, DEC-0094).
 - Added the public runtime campaign foundation through optional strict
   `campaign.json` v1. World-authoritative projections cover conditional locations,
   exits, actors, dialogue text, scenes, interactables, actions, objectives,

@@ -31,6 +31,8 @@ _最后更新 / Last updated: 2026-08-04_
   可重载方法或运算符前完成同一合同校验，恶意原始类型子类不能越过状态快照边界。
 - 合同拒绝会恢复原 `World` 身份及规范化可持久化状态、RNG 位置、时钟输入和事件序列，
   且不产生转移事件；意外异常在恢复后继续上抛。
+- `WorldRuleError`/`SaveLoadError` 的诊断先完成规范化，再在 `finally` 中执行最终恢复并投影
+  view；异常对象的可重载格式化不能在回滚后重新改变权威状态。
 - `CommandProcessor` 保持兼容构造和动态 `.world`，但玩法 handler 只提交 Intent 并从
   `TurnResult`/`GameView` 呈现；Web `PlayerSession` 保持名称但包装同一应用会话。
 - Web JSON 新增 `status/events/view/diagnostics`，同时保留 `ok/event/snapshot`；浏览器从
@@ -40,10 +42,10 @@ _最后更新 / Last updated: 2026-08-04_
 
 ### 验证状态
 
-- 聚焦 application/CLI/Web 传输回归：47 passed。
-- `.venv\Scripts\python.exe -m unittest discover`：1408 tests，11 skipped，OK。
-- `.venv\Scripts\python.exe -m pytest -q`：1397 passed，11 skipped；同一套件以
-  `-n auto` 在显式仓库外 TEMP/TMP 与 `--basetemp` 下重跑：1397 passed，11 skipped。
+- 聚焦 application/CLI/Web 传输回归：48 passed。
+- `.venv\Scripts\python.exe -m unittest discover`：1409 tests，11 skipped，OK。
+- `.venv\Scripts\python.exe -m pytest -q`：1398 passed，11 skipped；同一套件以
+  `-n auto` 在显式仓库外 TEMP/TMP 与 `--basetemp` 下重跑：1398 passed，11 skipped。
   第一次 xdist 启动在用户 pytest 临时根目录遇到 `WinError 5`，未进入收集，已按 harness
   问题准确保留并由成功重跑关闭。
 - `ruff check .`、`pyright`、`compileall -q src pipeline scripts tests`、
@@ -114,6 +116,9 @@ compatibility and strict public/private and rights boundaries.
 - Contract rejection restores the original `World` identity plus canonical persistable
   state, RNG position, clock input, and event sequence, and emits no transition event;
   unexpected exceptions are re-raised after restoration.
+- `WorldRuleError`/`SaveLoadError` diagnostics are normalized before a final restore in
+  `finally` and before view projection, so overridable exception formatting cannot
+  mutate authority again after rollback.
 - `CommandProcessor` keeps its compatible constructor and dynamic `.world`, while
   gameplay handlers only submit intents and render `TurnResult`/`GameView`; Web
   `PlayerSession` keeps its name but wraps the same application session.
@@ -125,10 +130,10 @@ compatibility and strict public/private and rights boundaries.
 
 ### Verification Status
 
-- Focused application/CLI/Web transport regressions: 47 passed.
-- `.venv\Scripts\python.exe -m unittest discover`: 1408 tests, 11 skipped, OK.
-- `.venv\Scripts\python.exe -m pytest -q`: 1397 passed, 11 skipped. The same suite
-  with `-n auto` and explicit repository-external TEMP/TMP plus `--basetemp`: 1397
+- Focused application/CLI/Web transport regressions: 48 passed.
+- `.venv\Scripts\python.exe -m unittest discover`: 1409 tests, 11 skipped, OK.
+- `.venv\Scripts\python.exe -m pytest -q`: 1398 passed, 11 skipped. The same suite
+  with `-n auto` and explicit repository-external TEMP/TMP plus `--basetemp`: 1398
   passed, 11 skipped. The first xdist startup hit `WinError 5` in the user's pytest
   temp root before collection; it is accurately retained as a harness issue and
   closed by the successful rerun.

@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 import lore2mud.application.contracts as contracts
 from lore2mud.application import (
@@ -27,7 +28,7 @@ from lore2mud.application import (
 from lore2mud.content.loader import load_content_pack
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.save import SaveLoadError, SaveLoadService, _serialize_world
-from lore2mud.engine.world import World
+from lore2mud.engine.world import World, WorldRuleError
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -52,6 +53,37 @@ class _MutatingFailureService:
 
     def load(self, slot: str | None = None) -> World:
         raise SaveLoadError("forced load failure")
+
+
+class _FormattingFailureService:
+    def __init__(self, error: SaveLoadError) -> None:
+        self._error = error
+
+    def save(self, world: World, slot: str | None = None) -> str:
+        raise self._error
+
+    def load(self, slot: str | None = None) -> World:
+        raise self._error
+
+
+class _MutatingSaveLoadError(SaveLoadError):
+    def __init__(self, mutation: Callable[[], None]) -> None:
+        super().__init__("forced save failure")
+        self._mutation = mutation
+
+    def __str__(self) -> str:
+        self._mutation()
+        return super().__str__()
+
+
+class _MutatingWorldRuleError(WorldRuleError):
+    def __init__(self, mutation: Callable[[], None]) -> None:
+        super().__init__("forced rule failure")
+        self._mutation = mutation
+
+    def __str__(self) -> str:
+        self._mutation()
+        return super().__str__()
 
 
 @dataclass(frozen=True, slots=True)
@@ -224,6 +256,45 @@ class GameSessionContractTests(unittest.TestCase):
         assert load_result.rejection is not None
         self.assertEqual(load_result.rejection.message, "读取存档失败。")
         self.assertNotIn("forced load failure", load_result.rejection.message)
+
+    def test_exception_message_formatting_is_rolled_back_before_rejection_view(
+        self,
+    ) -> None:
+        save_world = World.from_content_pack(self.pack)
+        save_error = _MutatingSaveLoadError(
+            lambda: setattr(save_world.player, "coins", 97)
+        )
+        save_session = GameSession(
+            save_world,
+            _FormattingFailureService(save_error),
+            determinism=DeterminismContext(seed=17, clock=31),
+        )
+
+        save_result = self._assert_rejected_unchanged(
+            save_session,
+            SaveIntent("probe"),
+            RejectionCode.PERSISTENCE_ERROR,
+        )
+        assert save_result.rejection is not None
+        self.assertEqual(save_result.rejection.message, "写入存档失败。")
+
+        rule_world = World.from_content_pack(self.pack)
+        rule_session = GameSession(
+            rule_world,
+            determinism=DeterminismContext(seed=19, clock=37),
+        )
+        rule_error = _MutatingWorldRuleError(
+            lambda: setattr(rule_world.player, "coins", 88)
+        )
+
+        with patch.object(World, "move_with_outcome", side_effect=rule_error):
+            rule_result = self._assert_rejected_unchanged(
+                rule_session,
+                MoveIntent("east"),
+                RejectionCode.INADMISSIBLE_INTENT,
+            )
+        assert rule_result.rejection is not None
+        self.assertEqual(rule_result.rejection.message, "forced rule failure")
 
     def test_persistence_rejection_omits_private_save_path_from_session_and_cli(
         self,

@@ -2558,3 +2558,39 @@
 - Supersedes: DEC-0092 only for the corrected validation boundary and current test
   evidence. It does not rewrite the earlier review history or supersede any product,
   public/private, rights, Git, acceptance, or milestone gate.
+
+## DEC-0094: Complete rejection rollback after exception diagnostic normalization
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; a new exact-commit independent TECH
+  decision is required before advancement.
+- Context: Fresh independent read-only acceptance of exact target
+  `cebb1af7c0c794d441ae05fc888cf1af2ff5876d` returned `REVISE`. A side-effectful
+  `SaveLoadError.__str__()` or `WorldRuleError.__str__()` ran after the existing
+  `_restore()` call, so a rejected turn could return zero events and a pre-mutation
+  `GameView` while leaving the authoritative World changed. The same review found that
+  `docs/architecture.md` still described direct `CommandProcessor -> World` routing and
+  that four current-candidate line counts in `CODE_MAP.md` were stale.
+- Decision: Normalize rule and persistence rejection messages inside `try` blocks,
+  execute the final World/RNG/event-sequence restore in `finally`, and only then project
+  the rejection view and construct `TurnResult`. If exception formatting itself raises,
+  restoration still completes before the unexpected error is re-raised. Add regression
+  coverage for side-effectful rule and persistence exception formatting. Update the V1
+  architecture narrative to the shipped V2-1 flow and refresh current source line counts.
+- Evidence: The new regression first reproduced canonical World byte drift and a coin
+  change from 20 to 97 on the rejected save path, then passed after the ordering fix;
+  the equivalent `WorldRuleError` path also passes. The focused application/CLI/Web
+  matrix passes 48 tests. Full verification passes 1409 unittest tests with 11
+  conditional skips, serial pytest at 1398 passed / 11 skipped, and xdist pytest at
+  1398 passed / 11 skipped with explicit repository-external TEMP/TMP and `--basetemp`.
+  Ruff, Pyright, compileall, original-demo validation, history safety, fsck, and diff
+  checks pass. This controller evidence does not grant TECH GO.
+- Consequences: Rejected turns now restore after every operation that can invoke an
+  exception object's behavior, and returned views match restored authority. No
+  dependency, Schema, content/save version, `World` authority, client responsibility,
+  private-data boundary, publish state, or V2-2 scope changes. Shared `main` remains
+  unmoved, with no push or release.
+- Supersedes: DEC-0093 only for the completed exception-formatting rollback boundary,
+  refreshed documentation evidence, and current verification counts. It does not
+  rewrite prior review history or supersede product, public/private, rights, Git,
+  acceptance, or milestone gates.
