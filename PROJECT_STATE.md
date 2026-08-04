@@ -40,9 +40,10 @@ CLI 共用一个实现。
   `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`，tree 为
   `f7c12fda17257f7a6b539bbbfce97da18452a961`，父提交正是 `eb972903`。全新 Reviewer 13
   严格只读验收后给出 P0-P3 全空与最终 `GO`；产品字节现已冻结。
-- 当前已有 TECH `GO` 与产品所有者对精确产品 SHA 的 PRODUCT PASS；已授权把当前
-  `workstream/v2-2-agent-authoring` 正常推送到同名远端分支。仍没有 SECURITY PASS、
-  `main` 移动/合并、release 或 V2-3 授权。
+- 当前已有 TECH `GO`、产品所有者对精确产品 SHA 的 PRODUCT PASS，以及安全门禁权限方
+  对同一产品 SHA 的明确 SECURITY PASS。远端 workstream 已发布；产品所有者已进一步授权
+  正常发布当前安全封存与 README documentation-only seal。仍没有 `main` 移动/合并、
+  release 或 V2-3 授权。
 - 首次正常推送把远端 workstream 建立在 `8eb549e`；Ubuntu Actions 随后因测试把孤立
   surrogate 直接传入 POSIX subprocess argv 而在产品 CLI 启动前失败。verification-only
   提交 `2dc9475e12087fcca97e15c85c5a4b56220d00de` 只改一个测试辅助函数，并由全新
@@ -134,6 +135,12 @@ CLI 共用一个实现。
   无法编码 lone-surrogate argv 而失败；静态分析和 Windows candidate job 成功。修复后
   Controller 重跑聚焦 81+61、unittest 1483/11、serial 与 xdist 1472/11/619，以及所有
   静态、安全、依赖和 Git 门禁，均通过；产品路径相对 `ec60cb0` 零差异。
+- 最终发布头 `2ae85937cf284147a9a415cf350ef79e1695121b` 的 GitHub Actions tests
+  `31046078308` 与 quality `31046078333` 均为 `completed/success`；随后安全门禁权限方
+  明确返回 `SECURITY PASS`。该决定没有附带新的 P0-P3 报告或测试执行，不应虚构。
+- `README.md` 已重构为更紧凑的双语 GitHub 首页，区分公开 V1 runtime、已验收的
+  V2-1/V2-2 workstream、快速试玩与 authoring 入口，并保留 preview 非 package/release
+  identity 的边界。
 - 第五轮只读验收的唯一 P3 是 `CODE_MAP.md` 两处行数，已在 `b33c088` 关闭。第六轮对
   `b33c088` 返回 typed-SDK 结构化拒绝/诊断上限 P2；第七轮对 `845c04c` 独立关闭该 P2，
   但对循环内存 document 返回一个新 P2；第八轮平台中断且没有 verdict。第九轮对
@@ -158,6 +165,8 @@ CLI 共用一个实现。
   加固及真实 subprocess/Windows smoke 复核；使用继承模型，工具未暴露精确模型 ID。
 - Controller：维护隔离 worktree、冻结接口、集成、修复、全量门禁、单一候选提交和交接；
   模型输出只作为实现输入，不作为正确性证据。
+- Security Gate：安全门禁权限方直接对精确产品 SHA 返回 `SECURITY PASS`；该人类门禁
+  决定不等于新增测试证据，也不授予 push、`main`、release 或 V2-3。
 - Independent TECH Acceptance：第五轮发现文档行数 P3，第六轮发现 typed-SDK P2，
   第七轮关闭旧 P2 后发现循环 document P2，第八轮平台中断无 verdict，第九轮关闭旧 P2
   后发现 typed request 资源 P2，第十轮关闭旧 P2 后发现资源拒绝顺序 P2，第十一轮关闭
@@ -186,14 +195,12 @@ CLI 共用一个实现。
 
 - 当前 Windows 权限下 2 个 POSIX-only 与 9 个 symlink 权限测试未执行；Windows
   PyInstaller smoke 已通过，但仍依赖主项目已安装的固定构建工具链。
-- TECH `GO` 与 PRODUCT PASS 均不等于 SECURITY PASS、`main` 移动/合并、release 或
-  V2-3 授权；workstream 推送也不改变这些边界。
+- TECH `GO`、PRODUCT PASS 与 SECURITY PASS 均已完成，但不等于安全封存文档的 push、
+  `main` 移动/合并、release 或 V2-3 授权；当前安全封存文档的正常 workstream push 已获
+  单独授权。
 - 推送前实时检查确认远端尚无 V2-2 workstream，因此本次只创建同名远端分支，不覆盖或
   force-push 任何 ref。
-- SECURITY 开始前，verification/documentation head 必须正常 fast-forward 到同名远端
-  workstream，且精确 head 的 Actions tests 与 quality 必须绿色。
-- 唯一下一门禁：对精确 V2-2 产品候选
-  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60` 进行独立 SECURITY PASS。
+- 唯一下一门禁：人类明确授权开始 V2-3。在获得授权前，不得开始下一里程碑。
 
 ## English
 
@@ -240,10 +247,11 @@ the Python SDK and structured CLI.
   `f7c12fda17257f7a6b539bbbfce97da18452a961`, with exact parent `eb972903`. Fresh
   Reviewer 13 completed strict read-only acceptance and returned P0-P3 all empty with
   final verdict `GO`; product bytes are now frozen.
-- TECH `GO` and human PRODUCT PASS for the exact product SHA are recorded. A normal push
-  of the current `workstream/v2-2-agent-authoring` branch to the same remote branch is
-  authorized. There is still no SECURITY PASS, `main` movement/merge, release, or V2-3
-  authorization.
+- TECH `GO`, human PRODUCT PASS, and explicit SECURITY PASS from the security gate
+  authority are recorded for the exact product SHA. The workstream is published, and the
+  product owner separately authorized normal publication of the current security and
+  README documentation-only seal. There is still no `main` movement/merge, release, or
+  V2-3 authorization.
 - The first normal push created the remote workstream at `8eb549e`. Ubuntu Actions then
   failed before the product CLI started because the test passed a lone surrogate through
   POSIX subprocess argv. Verification-only commit
@@ -355,6 +363,13 @@ the Python SDK and structured CLI.
   the Windows candidate job succeeded. After the harness repair, Controller reruns passed
   the 81+61 focused matrix, unittest 1483/11, serial and xdist 1472/11/619, and all
   static, safety, dependency, and Git gates. Product paths remain identical to `ec60cb0`.
+- Final published head `2ae85937cf284147a9a415cf350ef79e1695121b` has GitHub Actions
+  tests `31046078308` and quality `31046078333`, both `completed/success`. The security
+  gate authority then explicitly returned `SECURITY PASS`. No new P0-P3 report or test
+  execution accompanied that decision, and none is inferred.
+- `README.md` is refreshed as a compact bilingual GitHub front page that distinguishes
+  the public V1 runtime, accepted V2-1/V2-2 workstreams, quick-start and authoring paths,
+  and the boundary between previews and package/release identity.
 - The fifth read-only review's only P3 was two `CODE_MAP.md` line counts and was closed
   in `b33c088`. The sixth review returned the typed-SDK rejection/diagnostic-bound P2;
   the seventh closed it before finding the cyclic-document P2. The eighth was interrupted
@@ -386,6 +401,9 @@ the Python SDK and structured CLI.
 - Controller: owns the isolated worktree, interface freeze, integration, repairs, full
   gates, single candidate commit, and handoff. Model output is implementation input,
   not correctness evidence.
+- Security Gate: the security gate authority directly returned `SECURITY PASS` for the
+  exact product SHA. This human gate decision is not additional test evidence and grants
+  no push, `main`, release, or V2-3 authority.
 - Independent TECH Acceptance: the fifth review found the documentation line-count P3,
   the sixth found the typed-SDK P2, the seventh closed it before finding the cyclic-
   document P2, the eighth was interrupted without a verdict, the ninth found the typed-
@@ -420,12 +438,10 @@ the Python SDK and structured CLI.
 - Two POSIX-only and nine symlink-privilege tests did not execute under the current
   Windows permissions. Windows PyInstaller smoke passed but still depends on the pinned
   build toolchain installed in the primary project environment.
-- TECH `GO` and PRODUCT PASS are not SECURITY PASS, `main` movement/merge, release, or
-  V2-3 authorization. Publishing the workstream does not change those boundaries.
+- TECH `GO`, PRODUCT PASS, and SECURITY PASS are complete. Normal workstream publication
+  of the security documentation seal is separately authorized, but moving/merging
+  `main`, release, and V2-3 are not.
 - The pre-push live check found no existing remote V2-2 workstream, so this operation
   creates the matching branch without overwriting or force-pushing any ref.
-- Before SECURITY starts, the verification/documentation head must be normally
-  fast-forwarded to the matching remote workstream and exact-head Actions tests and
-  quality must be green.
-- The sole next gate is independent SECURITY PASS for exact V2-2 product candidate
-  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`.
+- The sole next gate is explicit human authorization to begin V2-3. Do not begin the
+  next milestone before that decision.

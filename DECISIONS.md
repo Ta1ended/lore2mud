@@ -3250,3 +3250,64 @@
   documentation-only; the narrow verification-harness repair above is the sole
   exception. DEC-0110's exact product decision, publication scope, privacy, security,
   release, Git, and later-milestone boundaries remain in force.
+
+## DEC-0112: Record V2-2 SECURITY PASS locally
+
+- Date: 2026-08-05
+- Status: V2-2 TECH GO, PRODUCT PASS, and SECURITY PASS complete for the exact product
+  candidate; publication of this documentation-only security seal remains unauthorized.
+- Context: After the accepted product and verification-only repair were published to
+  `origin/workstream/v2-2-agent-authoring` at
+  `2ae85937cf284147a9a415cf350ef79e1695121b`, the security gate authority explicitly
+  replied `SECURITY PASS`. The decision applies to exact product candidate
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`, not to a documentation head, preview or
+  report fingerprint, package/evidence identity, or future release artifact.
+- Decision: Record the explicit SECURITY PASS without changing product, test, Schema,
+  workflow, dependency, packaging, or runtime bytes. Do not infer or invent a separate
+  P0-P3 report, additional security test run, release approval, `main` integration,
+  distribution approval, or V2-3 authorization from the one-line gate decision. Refresh
+  `README.md` in the same documentation-only seal so the GitHub front page describes the
+  current V1 runtime and accepted V2-1/V2-2 workstreams without claiming release or
+  `main` integration.
+- Evidence: Exact product candidate `ec60cb0` already has fresh independent TECH `GO`
+  from Reviewer 13 and human PRODUCT PASS. Verification-only candidate `2dc9475e` has
+  fresh Reviewer 14 `GO`. Final published documentation head `2ae85937` passed GitHub
+  Actions tests `31046078308` and quality `31046078333`, both bound to that exact SHA;
+  live post-publication verification kept remote `main` at `bf3f8b93`. The security gate
+  authority's explicit `SECURITY PASS` is the security decision evidence.
+- Consequences: V2-2 is locally complete across TECH, PRODUCT, and SECURITY gates, while
+  product bytes remain frozen at `ec60cb0`. The sole next gate is explicit authorization
+  to normally fast-forward the documentation-only SECURITY PASS seal to the matching
+  remote workstream. Until then, do not push this seal, move or merge `main`, release,
+  distribute previews/reports, or begin V2-3.
+- Supersedes: DEC-0111 only for pending SECURITY status and next-gate routing. DEC-0111's
+  exact product/verification evidence and all privacy, compatibility, Git, publication,
+  release, and later-milestone boundaries remain in force.
+
+## DEC-0113: Authorize publication of the V2-2 security and README documentation seal
+
+- Date: 2026-08-05
+- Status: Normal workstream publication authorized; `main`, release, and V2-3 remain
+  unauthorized.
+- Context: After the local documentation-only seal recorded SECURITY PASS and refreshed
+  the bilingual GitHub README, the product owner explicitly requested that the controller
+  push it. The authorization applies only to the existing
+  `origin/workstream/v2-2-agent-authoring` ref.
+- Decision: Amend the still-unpublished documentation seal to record this authorization,
+  then normally fast-forward the matching remote workstream without force. Recheck live
+  remote refs before the push and verify exact-head GitHub Actions tests and quality after
+  publication. Do not move or merge `main`, create a release, publish preview/report
+  artifacts, or begin V2-3.
+- Evidence: The pre-publication live check found remote `main` at
+  `bf3f8b93d40a04b21107bc9b7c9f828a7f000539`, remote V2-2 workstream at
+  `2ae85937cf284147a9a415cf350ef79e1695121b`, and the local documentation seal one commit
+  ahead. Its changed paths are exactly `README.md`, `CHANGELOG.md`, `DECISIONS.md`,
+  `PROJECT_STATE.md`, and `NEXT_TASK.md`; product and test paths are byte-identical to the
+  published head. The primary checkout's untracked `uv.lock` retains 14,471 bytes and its
+  authorized SHA-256.
+- Consequences: After a successful fast-forward and green exact-head Actions, stop. The
+  sole next gate becomes explicit human authorization to begin V2-3. That future gate
+  does not itself authorize `main` integration, release, or distribution.
+- Supersedes: DEC-0112 only for documentation-seal publication authority and next-gate
+  routing. DEC-0112's exact SECURITY PASS, product freeze, evidence limits, privacy,
+  release, Git, and later-milestone boundaries remain in force.

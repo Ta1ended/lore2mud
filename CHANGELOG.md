@@ -171,7 +171,16 @@
   transports only non-UTF-8-safe argv through ASCII JSON into a child interpreter, and
   invokes the same `lore2mud.cli.main()` path. Fresh Reviewer 14 returned P0-P3 empty and
   `GO`; all product, Schema, packaging, workflow, dependency, and runtime bytes remain
-  identical to the PRODUCT PASS candidate (DEC-0102 through DEC-0111).
+  identical to the PRODUCT PASS candidate. The security gate authority then explicitly
+  returned `SECURITY PASS` for exact product SHA
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`; this decision adds no product bytes and
+  grants no documentation-seal push, `main` integration, release, or V2-3 authority
+  (DEC-0102 through DEC-0112). Refreshed the bilingual GitHub README around the current
+  V1 runtime, accepted V2-1/V2-2 workstreams, quick-start paths, deterministic authoring
+  flow, and the explicit preview/package/release boundary. The product owner then
+  explicitly authorized a normal non-force publication of this documentation-only
+  security/README seal to the existing V2-2 workstream; `main`, release, and V2-3 remain
+  outside scope (DEC-0113).
 - Added the public V2-1 `lore2mud.application` package: frozen typed `GameIntent`,
   `GameEvent`, `GameView`, `TurnResult`, determinism and rejection contracts;
   `GameSession` turn coordination with rollback and ordered event sequencing; and a

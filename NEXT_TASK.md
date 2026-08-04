@@ -6,8 +6,7 @@
 
 ### 唯一下一门禁
 
-**对精确 V2-2 产品候选 `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`
-进行独立 SECURITY PASS。**
+**人类明确授权开始 V2-3。**
 
 ### 当前依据
 
@@ -21,15 +20,20 @@
 - 首次推送在精确文档头 `8eb549e` 创建了远端 workstream，但 Ubuntu Actions 在产品 CLI
   启动前暴露 POSIX surrogate argv 测试夹具问题。verification-only 提交 `2dc9475e` 只改
   一个测试文件，产品路径相对 `ec60cb0` 零差异；全新 Reviewer 14 给出 P0-P3 全空与 `GO`。
-- 开始 SECURITY 前，最终 workstream head 必须以正常 fast-forward 发布，并确认其
-  GitHub Actions `tests` 与 `quality` 都绑定该精确 SHA 且为绿色。
-- TECH 与 PRODUCT 决定均绑定产品 SHA，不绑定 documentation seal、preview/report
-  fingerprint 或未来 package/evidence identity。
+- 最终远端文档头 `2ae85937` 的 GitHub Actions tests `31046078308` 与 quality
+  `31046078333` 均绑定精确 SHA 并为 `completed/success`；远端 `main` 保持 `bf3f8b93`。
+- 安全门禁权限方已对精确产品 SHA 明确给出 `SECURITY PASS`。TECH、PRODUCT 与 SECURITY
+  决定均绑定产品 SHA，不绑定 documentation seal、preview/report fingerprint 或未来
+  package/evidence identity。
+- 产品所有者已明确授权把当前 SECURITY PASS 与 README documentation-only seal 正常
+  fast-forward 推送到同名远端 workstream。Controller 必须在推送后确认精确 head 的
+  GitHub Actions tests 与 quality 均为绿色，然后停止。
 
-### SECURITY PASS 边界
+### V2-3 授权边界
 
-- SECURITY 验收须另行明确启动，并对精确产品候选执行；本次 workstream 推送不会自动
-  授予 SECURITY PASS。
+- V2-3 只能在新的明确人类授权后开始；TECH、PRODUCT、SECURITY 和本次文档推送均不自动
+  授予该权限。
+- V2-3 授权不自动允许移动/合并 `main`、release 或分发 preview/report；这些仍需分别授权。
 - 不访问私人小说、canon、派生内容、图片、存档或私人报告；只使用公开安全或合成材料。
 - 不把未封存 preview、SimulationReport 或 fingerprint 作为可分发 package、release
   evidence 或安全证明。
@@ -38,16 +42,14 @@
 
 ### 停止规则
 
-远端 workstream 推送完成后立即停止：不移动或合并 `main`，不 release，不开始 V2-3，
-不发布 preview/report。若后续 SECURITY finding 要求改变产品字节，必须形成新候选并重新走
-相应 TECH 与 PRODUCT 门禁；旧决定不转移。
+documentation-only seal 推送并确认 Actions 绿色后立即停止：不移动或合并 `main`，不
+release，不开始 V2-3，不发布 preview/report。等待新的明确 V2-3 授权。
 
 ## English
 
 ### Single Next Gate
 
-**Independent SECURITY PASS for exact V2-2 product candidate
-`ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`.**
+**Explicit human authorization to begin V2-3.**
 
 ### Current Basis
 
@@ -66,16 +68,23 @@
   CLI started. Verification-only commit `2dc9475e` changes one test file, leaves every
   product path identical to `ec60cb0`, and received P0-P3 empty with `GO` from fresh
   Reviewer 14.
-- Before SECURITY starts, the final workstream head must be published by normal
-  fast-forward and both GitHub Actions `tests` and `quality` must be green for that exact
-  SHA.
-- TECH and PRODUCT decisions bind to the product SHA, not the documentation seal,
-  preview/report fingerprints, or a future package/evidence identity.
+- Final remote documentation head `2ae85937` has GitHub Actions tests `31046078308` and
+  quality `31046078333` both bound to the exact SHA with `completed/success`; remote
+  `main` remained `bf3f8b93`.
+- The security gate authority explicitly returned `SECURITY PASS` for the exact product
+  SHA. TECH, PRODUCT, and SECURITY decisions bind to the product SHA, not the
+  documentation seal, preview/report fingerprints, or a future package/evidence identity.
+- The product owner explicitly authorized a normal fast-forward publication of the
+  current SECURITY PASS and README documentation-only seal to the matching remote
+  workstream. The controller must verify exact-head GitHub Actions tests and quality as
+  green after the push, then stop.
 
-### SECURITY PASS Boundary
+### V2-3 Authorization Boundary
 
-- SECURITY acceptance requires separate explicit initiation against the exact product
-  candidate. Publishing the workstream does not grant SECURITY PASS automatically.
+- V2-3 may begin only after new explicit human authorization. TECH, PRODUCT, SECURITY,
+  and this documentation push do not grant that authority automatically.
+- V2-3 authorization would not automatically permit moving/merging `main`, release, or
+  preview/report distribution; those remain separately controlled.
 - Do not access private novels, canon, derived content, images, saves, or private
   reports. Review remains public-safe or synthetic.
 - Do not present the unsealed preview, SimulationReport, or fingerprints as a
@@ -85,7 +94,6 @@
 
 ### Stop Rule
 
-Stop after the remote workstream push completes: do not move or merge `main`, release,
-begin V2-3, or publish previews/reports. If a later SECURITY finding changes product
-bytes, create a new candidate and repeat the applicable TECH and PRODUCT gates; the old
-decisions do not transfer.
+Stop after publishing the documentation-only seal and verifying green Actions: do not
+move or merge `main`, release, begin V2-3, or publish previews/reports. Wait for new
+explicit V2-3 authorization.
