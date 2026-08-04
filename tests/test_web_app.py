@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 import tempfile
 import unittest
 from pathlib import Path
 
-from lore2mud.application import MoveIntent
+from lore2mud.application import MoveIntent, TakeIntent
 from lore2mud.content.loader import load_content_pack
 from lore2mud.engine.save import SaveLoadService
 from lore2mud.web.app import PlayerSession
@@ -20,6 +21,42 @@ DEMO_PATH = PROJECT_ROOT / "examples" / "original_demo"
 @dataclass(frozen=True, slots=True)
 class _ExtendedMoveIntent(MoveIntent):
     plugin_payload: object = None
+
+
+class _MutatingString(str):
+    _mutation: Callable[[], None]
+
+    def __new__(
+        cls,
+        value: str,
+        mutation: Callable[[], None],
+    ) -> _MutatingString:
+        instance = str.__new__(cls, value)
+        instance._mutation = mutation
+        return instance
+
+    def strip(self, chars: str | None = None) -> str:
+        self._mutation()
+        return super().strip(chars)
+
+
+class _MutatingInt(int):
+    _mutation: Callable[[], None]
+
+    def __new__(
+        cls,
+        value: int,
+        mutation: Callable[[], None],
+    ) -> _MutatingInt:
+        instance = int.__new__(cls, value)
+        instance._mutation = mutation
+        return instance
+
+    def __lt__(self, other: object) -> bool:
+        self._mutation()
+        if type(other) is not int:
+            return False
+        return int(self) < other
 
 
 class PlayerSessionTests(unittest.TestCase):
@@ -73,11 +110,50 @@ class PlayerSessionTests(unittest.TestCase):
         self.assertEqual(result["event"]["type"], "error")
         self.assertEqual(result["snapshot"], before)
 
-    def test_web_intent_serialization_rejects_undeclared_subclasses(self) -> None:
-        with self.assertRaisesRegex(TypeError, "undeclared GameIntent"):
-            PlayerSession._intent_json(
-                _ExtendedMoveIntent("east", {"kind": "extension"})
-            )
+    def test_web_intent_serialization_rejects_extensions_and_primitive_subclasses(
+        self,
+    ) -> None:
+        invoked: list[str] = []
+        cases = (
+            _ExtendedMoveIntent("east", {"kind": "extension"}),
+            MoveIntent(_MutatingString("east", lambda: invoked.append("str"))),
+            TakeIntent(
+                "item_linglu_pill",
+                _MutatingInt(1, lambda: invoked.append("int")),
+            ),
+        )
+        for intent in cases:
+            with self.subTest(intent=type(intent).__name__):
+                with self.assertRaisesRegex(TypeError, "invalid GameIntent"):
+                    PlayerSession._intent_json(intent)
+        self.assertEqual(invoked, [])
+
+    def test_web_parser_rejects_primitive_subclasses_before_behavior_runs(self) -> None:
+        before = self.session.snapshot()
+        invoked: list[str] = []
+        cases = (
+            {
+                "type": "move",
+                "direction": _MutatingString(
+                    "east",
+                    lambda: invoked.append("str"),
+                ),
+            },
+            {
+                "type": "take",
+                "target": "item_linglu_pill",
+                "quantity": _MutatingInt(1, lambda: invoked.append("int")),
+            },
+        )
+        for action in cases:
+            with self.subTest(action_type=action["type"]):
+                result = self.session.dispatch(action)
+                self.assertFalse(result["ok"])
+                self.assertEqual(result["status"], "rejected")
+                self.assertEqual(result["events"], [])
+                self.assertEqual(result["snapshot"], before)
+
+        self.assertEqual(invoked, [])
 
     def test_persistence_rejection_omits_private_save_path(self) -> None:
         result = self.action("load", slot="missing")

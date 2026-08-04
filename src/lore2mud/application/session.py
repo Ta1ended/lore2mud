@@ -126,10 +126,11 @@ class GameSession:
         *,
         determinism: DeterminismContext | None = None,
     ) -> None:
-        self._validate_context(determinism or DeterminismContext())
+        context = DeterminismContext() if determinism is None else determinism
+        self._validate_context(context)
         self._world = world
         self._save_service = save_service
-        self._determinism = determinism or DeterminismContext()
+        self._determinism = context
         self._rng = Random(self._determinism.seed)
         self._event_sequence = 0
         self._lock = RLock()
@@ -180,7 +181,7 @@ class GameSession:
         """Validate and execute exactly one intent against the authoritative World."""
         with self._lock:
             try:
-                self._validate_intent(intent)
+                validate_game_intent(intent)
             except _IntentValidationError as exc:
                 return TurnResult(
                     TurnStatus.REJECTED,
@@ -350,68 +351,71 @@ class GameSession:
     @staticmethod
     def _validate_context(context: DeterminismContext) -> None:
         if (
-            isinstance(context.seed, bool)
-            or not isinstance(context.seed, int)
-            or isinstance(context.clock, bool)
-            or not isinstance(context.clock, int)
+            type(context) is not DeterminismContext
+            or type(context.seed) is not int
+            or type(context.clock) is not int
         ):
             raise ValueError("determinism seed and clock must be integers")
 
-    @staticmethod
-    def _validate_intent(intent: GameIntent) -> None:
-        if not is_declared_game_intent(intent):
-            raise _IntentValidationError("intent 必须是已声明的 GameIntent 子类型。")
-        if isinstance(intent, ViewIntent):
-            if not isinstance(intent.kind, ViewKind):
-                raise _IntentValidationError("view kind 无效。")
-            return
-        if isinstance(intent, ExamineIntent):
-            _validate_text(intent.target, "target")
-            if intent.target_kind is not None and not isinstance(
-                intent.target_kind, ExamineTargetKind
-            ):
-                raise _IntentValidationError("target_kind 无效。")
-            return
-        if isinstance(intent, MoveIntent):
-            _validate_text(intent.direction, "direction", maximum=32)
-            return
-        if isinstance(intent, (TakeIntent, DropIntent, UseIntent, BuyIntent, SellIntent)):
-            _validate_text(intent.target, "target")
-            _validate_positive_int(intent.quantity, "quantity")
-            return
-        if isinstance(intent, (EquipIntent, AttackIntent, TalkIntent)):
-            _validate_text(intent.target, "target")
-            return
-        if isinstance(intent, UnequipIntent):
-            if not isinstance(intent.slot, EquipmentSlot):
-                raise _IntentValidationError("slot 无效。")
-            return
-        if isinstance(intent, ChooseDialogueIntent):
-            _validate_positive_int(intent.index, "index")
-            return
-        if isinstance(intent, CampaignActionIntent):
-            _validate_text(intent.action_id, "action_id")
-            if not _STABLE_ID_PATTERN.fullmatch(intent.action_id):
-                raise _IntentValidationError("action_id 必须是稳定 ID。")
-            return
-        if isinstance(intent, (SaveIntent, LoadIntent)):
-            if intent.slot is not None:
-                _validate_text(intent.slot, "slot", maximum=32)
-            return
-        if isinstance(intent, (EndDialogueIntent, RecoverIntent)):
-            return
-        raise _IntentValidationError(f"未知 GameIntent 类型：{type(intent).__name__}")
+
+def validate_game_intent(intent: object) -> None:
+    """Validate one exact V2-1 intent without invoking subclass behavior."""
+    if not is_declared_game_intent(intent):
+        raise _IntentValidationError("intent 必须是已声明的 GameIntent 子类型。")
+    if isinstance(intent, ViewIntent):
+        if type(intent.kind) is not ViewKind:
+            raise _IntentValidationError("view kind 无效。")
+        return
+    if isinstance(intent, ExamineIntent):
+        _validate_text(intent.target, "target")
+        if intent.target_kind is not None and type(
+            intent.target_kind
+        ) is not ExamineTargetKind:
+            raise _IntentValidationError("target_kind 无效。")
+        return
+    if isinstance(intent, MoveIntent):
+        _validate_text(intent.direction, "direction", maximum=32)
+        return
+    if isinstance(intent, (TakeIntent, DropIntent, UseIntent, BuyIntent, SellIntent)):
+        _validate_text(intent.target, "target")
+        _validate_positive_int(intent.quantity, "quantity")
+        return
+    if isinstance(intent, (EquipIntent, AttackIntent, TalkIntent)):
+        _validate_text(intent.target, "target")
+        return
+    if isinstance(intent, UnequipIntent):
+        if type(intent.slot) is not EquipmentSlot:
+            raise _IntentValidationError("slot 无效。")
+        return
+    if isinstance(intent, ChooseDialogueIntent):
+        _validate_positive_int(intent.index, "index")
+        return
+    if isinstance(intent, CampaignActionIntent):
+        _validate_text(intent.action_id, "action_id")
+        if not _STABLE_ID_PATTERN.fullmatch(intent.action_id):
+            raise _IntentValidationError("action_id 必须是稳定 ID。")
+        return
+    if isinstance(intent, (SaveIntent, LoadIntent)):
+        if intent.slot is not None:
+            _validate_text(intent.slot, "slot", maximum=32)
+        return
+    if isinstance(intent, (EndDialogueIntent, RecoverIntent)):
+        return
+    raise _IntentValidationError(f"未知 GameIntent 类型：{type(intent).__name__}")
 
 
 def _validate_text(value: object, field: str, *, maximum: int = 200) -> None:
-    if not isinstance(value, str) or not value.strip():
+    if type(value) is not str:
         raise _IntentValidationError(f"{field} 必须是非空字符串。")
-    if len(value.strip()) > maximum:
+    normalized = value.strip()
+    if not normalized:
+        raise _IntentValidationError(f"{field} 必须是非空字符串。")
+    if len(normalized) > maximum:
         raise _IntentValidationError(f"{field} 过长。")
 
 
 def _validate_positive_int(value: object, field: str) -> None:
-    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+    if type(value) is not int or value < 1:
         raise _IntentValidationError(f"{field} 必须是正整数。")
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import FrozenInstanceError, asdict, dataclass, is_dataclass
 import json
 from pathlib import Path
@@ -56,6 +57,42 @@ class _MutatingFailureService:
 @dataclass(frozen=True, slots=True)
 class _ExtendedMoveIntent(MoveIntent):
     plugin_payload: object = None
+
+
+class _MutatingString(str):
+    _mutation: Callable[[], None]
+
+    def __new__(
+        cls,
+        value: str,
+        mutation: Callable[[], None],
+    ) -> _MutatingString:
+        instance = str.__new__(cls, value)
+        instance._mutation = mutation
+        return instance
+
+    def strip(self, chars: str | None = None) -> str:
+        self._mutation()
+        return super().strip(chars)
+
+
+class _MutatingInt(int):
+    _mutation: Callable[[], None]
+
+    def __new__(
+        cls,
+        value: int,
+        mutation: Callable[[], None],
+    ) -> _MutatingInt:
+        instance = int.__new__(cls, value)
+        instance._mutation = mutation
+        return instance
+
+    def __lt__(self, other: object) -> bool:
+        self._mutation()
+        if type(other) is not int:
+            return False
+        return int(self) < other
 
 
 class GameSessionContractTests(unittest.TestCase):
@@ -116,6 +153,39 @@ class GameSessionContractTests(unittest.TestCase):
             _ExtendedMoveIntent("east", {"kind": "extension"}),
             RejectionCode.MALFORMED_INTENT,
         )
+
+    def test_primitive_subclasses_are_rejected_before_behavior_runs(self) -> None:
+        session = GameSession.from_content_pack(self.pack)
+        invoked: list[str] = []
+
+        def mutate(label: str) -> None:
+            invoked.append(label)
+            session.world.player.coins += 99
+
+        cases = (
+            MoveIntent(_MutatingString("west", lambda: mutate("str"))),
+            TakeIntent(
+                "item_linglu_pill",
+                _MutatingInt(1, lambda: mutate("int")),
+            ),
+        )
+        for intent in cases:
+            with self.subTest(intent=type(intent).__name__):
+                self._assert_rejected_unchanged(
+                    session,
+                    intent,
+                    RejectionCode.MALFORMED_INTENT,
+                )
+
+        command = CommandProcessor.from_session(session).execute(
+            _MutatingString("go east", lambda: mutate("command"))
+        )
+        self.assertIsNotNone(command.turn_result)
+        assert command.turn_result is not None
+        self.assertEqual(command.turn_result.status, TurnStatus.REJECTED)
+        self.assertEqual(command.turn_result.events, ())
+        self.assertEqual(invoked, [])
+        self.assertEqual(session.world.player.coins, 20)
 
     def test_inadmissible_intent_rejection_preserves_all_session_state(self) -> None:
         session = GameSession.from_content_pack(

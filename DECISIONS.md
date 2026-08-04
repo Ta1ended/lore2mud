@@ -2521,3 +2521,40 @@
   floor, and DEC-0088/DEC-0091 handoff text only where it said V2-1 was not started.
   It does not supersede the accepted product direction, PLAT-1, public/private and
   rights boundaries, Git gates, or later milestone ownership.
+
+## DEC-0093: Reject executable primitive subclasses before the V2-1 snapshot boundary
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; a fresh exact-commit independent TECH
+  decision is still required before advancement.
+- Context: Two independent read-only reviews of the local V2-1 candidate returned
+  `REVISE`. The first found undeclared Intent subclasses, public persistence-path
+  leakage, and stale transport-flow documentation. After those findings were fixed,
+  the second demonstrated that exact Intent objects could still contain `str` or `int`
+  subclasses whose overridden operations mutated authoritative state during validation,
+  before `GameSession.submit()` captured its rollback snapshot. It also found that the
+  verification counts recorded by DEC-0092 and the current handoff were stale.
+- Decision: Validate every public V2-1 request as an exact declared Intent with exact
+  `DeterminismContext`, `str`, `int`, and Enum leaf types before invoking any value
+  method or operator. Reuse that validator for Web Intent serialization, reject Web
+  primitive/container subclasses during parsing, and reject non-exact CLI command
+  strings before `strip()` or `shlex` processing. These checks are contract rejection,
+  so they emit no transition event and leave canonical World bytes, identity, RNG,
+  clock, event sequence, and save-visible metadata unchanged.
+- Evidence: Malicious `str` and `int` regression values attempt state mutation from
+  overridden `strip()` and comparison operations across `GameSession`, CLI, Web
+  parsing, and Web serialization; all are rejected before their behavior runs. The
+  focused application/CLI/Web matrix passed 47 tests. Full verification passed 1408
+  unittest tests with 11 conditional skips, serial pytest at 1397 passed / 11 skipped,
+  and xdist pytest at 1397 passed / 11 skipped with explicit repository-external
+  TEMP/TMP and `--basetemp`. Ruff, Pyright, compileall, original-demo validation,
+  history safety, fsck, and the working diff check passed. This evidence does not grant
+  TECH GO.
+- Consequences: DEC-0092 remains the historical implementation decision, but its
+  pre-repair test counts and validation detail are superseded by this record. No
+  dependency, Schema, content/save version, `World` authority, client responsibility,
+  private-data boundary, publish state, or V2-2 scope changes. Shared `main` remains
+  unmoved, with no push or release.
+- Supersedes: DEC-0092 only for the corrected validation boundary and current test
+  evidence. It does not rewrite the earlier review history or supersede any product,
+  public/private, rights, Git, acceptance, or milestone gate.

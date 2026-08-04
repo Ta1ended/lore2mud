@@ -43,9 +43,8 @@ from lore2mud.application.contracts import (
     UnequipIntent,
     UseEventData,
     UseIntent,
-    is_declared_game_intent,
 )
-from lore2mud.application.session import GameSession
+from lore2mud.application.session import GameSession, validate_game_intent
 from lore2mud.content.models import ContentPack
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.save import SaveLoadService
@@ -195,13 +194,13 @@ class PlayerSession:
     def _validate_action(
         raw_action: object,
     ) -> tuple[str, dict[str, object]]:
-        if not isinstance(raw_action, dict):
+        if type(raw_action) is not dict:
             raise PlayerActionError("action 必须是 JSON 对象。")
-        if not all(isinstance(key, str) for key in raw_action):
+        if not all(type(key) is str for key in raw_action):
             raise PlayerActionError("action 字段名必须是字符串。")
         action = dict(raw_action)
         action_type = action.get("type")
-        if not isinstance(action_type, str) or not action_type:
+        if type(action_type) is not str or not action_type:
             raise PlayerActionError("action.type 必须是非空字符串。")
         schema = _ACTION_FIELDS.get(action_type)
         if schema is None:
@@ -228,17 +227,19 @@ class PlayerSession:
         maximum: int = 200,
     ) -> str:
         value = action.get(field)
-        if not isinstance(value, str) or not value.strip():
+        if type(value) is not str:
             raise PlayerActionError(f"action.{field} 必须是非空字符串。")
-        value = value.strip()
-        if len(value) > maximum:
+        normalized = value.strip()
+        if not normalized:
+            raise PlayerActionError(f"action.{field} 必须是非空字符串。")
+        if len(normalized) > maximum:
             raise PlayerActionError(f"action.{field} 过长。")
-        return value
+        return normalized
 
     @staticmethod
     def _quantity(action: dict[str, object], field: str = "quantity") -> int:
         value = action.get(field, 1)
-        if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        if type(value) is not int or value < 1:
             raise PlayerActionError(f"action.{field} 必须是正整数。")
         return value
 
@@ -249,9 +250,12 @@ class PlayerSession:
         value = action["slot"]
         if value is None:
             return None
-        if not isinstance(value, str) or not value.strip():
+        if type(value) is not str:
             raise PlayerActionError("action.slot 必须是非空字符串或 null。")
-        return value.strip()
+        normalized = value.strip()
+        if not normalized:
+            raise PlayerActionError("action.slot 必须是非空字符串或 null。")
+        return normalized
 
     def _intent(
         self,
@@ -493,8 +497,10 @@ class PlayerSession:
 
     @staticmethod
     def _intent_json(intent: GameIntent) -> dict[str, JsonValue]:
-        if not is_declared_game_intent(intent):
-            raise TypeError(f"undeclared GameIntent type: {type(intent).__name__}")
+        try:
+            validate_game_intent(intent)
+        except ValueError as exc:
+            raise TypeError(f"invalid GameIntent: {exc}") from exc
         if isinstance(intent, MoveIntent):
             return {"type": "move", "direction": intent.direction}
         if isinstance(intent, TakeIntent):

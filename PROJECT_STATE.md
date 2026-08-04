@@ -27,6 +27,8 @@ _最后更新 / Last updated: 2026-08-04_
 ### 已实现
 
 - 强类型冻结合同、确定性上下文、有序事件序列、typed 拒绝诊断和完整玩家安全投影。
+- 只接受已声明的精确 Intent 类型及精确的 `str`、`int`、Enum 叶值；CLI/Web 在调用任何
+  可重载方法或运算符前完成同一合同校验，恶意原始类型子类不能越过状态快照边界。
 - 合同拒绝会恢复原 `World` 身份及规范化可持久化状态、RNG 位置、时钟输入和事件序列，
   且不产生转移事件；意外异常在恢复后继续上抛。
 - `CommandProcessor` 保持兼容构造和动态 `.world`，但玩法 handler 只提交 Intent 并从
@@ -38,9 +40,10 @@ _最后更新 / Last updated: 2026-08-04_
 
 ### 验证状态
 
-- `.venv\Scripts\python.exe -m unittest discover`：1402 tests，11 skipped，OK。
-- `.venv\Scripts\python.exe -m pytest -q`：1391 passed，11 skipped；同一套件以
-  `-n auto` 在显式仓库外 TEMP/TMP 与 `--basetemp` 下重跑：1391 passed，11 skipped。
+- 聚焦 application/CLI/Web 传输回归：47 passed。
+- `.venv\Scripts\python.exe -m unittest discover`：1408 tests，11 skipped，OK。
+- `.venv\Scripts\python.exe -m pytest -q`：1397 passed，11 skipped；同一套件以
+  `-n auto` 在显式仓库外 TEMP/TMP 与 `--basetemp` 下重跑：1397 passed，11 skipped。
   第一次 xdist 启动在用户 pytest 临时根目录遇到 `WinError 5`，未进入收集，已按 harness
   问题准确保留并由成功重跑关闭。
 - `ruff check .`、`pyright`、`compileall -q src pipeline scripts tests`、
@@ -104,6 +107,10 @@ compatibility and strict public/private and rights boundaries.
 
 - Typed frozen contracts, determinism context, ordered event sequence, typed rejection
   diagnostics, and a complete player-safe projection.
+- Only exact declared intent types and exact `str`, `int`, and Enum leaf values are
+  accepted. CLI/Web perform the same contract validation before invoking overridable
+  methods or operators, so hostile primitive subclasses cannot cross the snapshot
+  boundary.
 - Contract rejection restores the original `World` identity plus canonical persistable
   state, RNG position, clock input, and event sequence, and emits no transition event;
   unexpected exceptions are re-raised after restoration.
@@ -118,9 +125,10 @@ compatibility and strict public/private and rights boundaries.
 
 ### Verification Status
 
-- `.venv\Scripts\python.exe -m unittest discover`: 1402 tests, 11 skipped, OK.
-- `.venv\Scripts\python.exe -m pytest -q`: 1391 passed, 11 skipped. The same suite
-  with `-n auto` and explicit repository-external TEMP/TMP plus `--basetemp`: 1391
+- Focused application/CLI/Web transport regressions: 47 passed.
+- `.venv\Scripts\python.exe -m unittest discover`: 1408 tests, 11 skipped, OK.
+- `.venv\Scripts\python.exe -m pytest -q`: 1397 passed, 11 skipped. The same suite
+  with `-n auto` and explicit repository-external TEMP/TMP plus `--basetemp`: 1397
   passed, 11 skipped. The first xdist startup hit `WinError 5` in the user's pytest
   temp root before collection; it is accurately retained as a harness issue and
   closed by the successful rerun.

@@ -370,6 +370,8 @@ class CommandProcessor:
 
     def execute(self, raw_command: str) -> CommandResult:
         self._last_turn_result = None
+        if type(raw_command) is not str:
+            return self._error("命令必须是字符串。")
         try:
             parts = shlex.split(raw_command.strip())
         except ValueError as exc:
