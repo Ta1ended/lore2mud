@@ -13,8 +13,12 @@ from lore2mud.application.contracts import (
     AcceptedQuestEvent,
     AttackIntent,
     BuyIntent,
+    CampaignActorStateEvent,
     CampaignActionEventData,
     CampaignActionIntent,
+    CampaignEffectEvent,
+    CampaignEffectValue,
+    CampaignSceneStateEvent,
     ChooseDialogueIntent,
     CombatEventData,
     DeterminismContext,
@@ -43,7 +47,10 @@ from lore2mud.application.contracts import (
     LoadIntent,
     LootEvent,
     MoveEventData,
+    MoveExitEvent,
     MoveIntent,
+    MoveItemStackEvent,
+    MoveRoomEvent,
     PersistenceEventData,
     QuestCompletionEvent,
     QuestKind,
@@ -77,6 +84,7 @@ from lore2mud.engine.world import (
     AcceptQuestEffectOutcome,
     AttackOutcome,
     BuyOutcome,
+    CampaignEffectOutcome,
     CampaignActionOutcome,
     DialogueEndOutcome,
     DropOutcome,
@@ -499,11 +507,30 @@ def _quest_outcomes(values: tuple[QuestOutcome, ...]) -> tuple[QuestCompletionEv
 
 
 def _move_event(outcome: MoveOutcome) -> MoveEventData:
+    room = outcome.room
     return MoveEventData(
-        outcome.room.id,
-        outcome.room.name,
-        _quest_outcomes(outcome.quest_outcomes),
-        _level_gains(outcome.level_gains),
+        room_id=room.id,
+        room_name=room.name,
+        room=MoveRoomEvent(
+            id=room.id,
+            name=room.name,
+            description=room.description,
+            exits=tuple(
+                MoveExitEvent(
+                    direction=direction,
+                    target_room_id=exit_definition.target_room_id,
+                    required_item_id=exit_definition.required_item_id,
+                )
+                for direction, exit_definition in room.exits.items()
+            ),
+            item_stacks=tuple(
+                MoveItemStackEvent(stack.item_id, stack.quantity)
+                for stack in room.item_stacks
+            ),
+            monster_ids=tuple(room.monster_ids),
+        ),
+        quest_outcomes=_quest_outcomes(outcome.quest_outcomes),
+        level_gains=_level_gains(outcome.level_gains),
     )
 
 
@@ -656,7 +683,61 @@ def _campaign_action_event(outcome: CampaignActionOutcome) -> CampaignActionEven
         outcome.action_id,
         outcome.label,
         outcome.result_text,
+        tuple(_campaign_effect_event(effect) for effect in outcome.effect_outcomes),
     )
+
+
+def _campaign_effect_event(outcome: CampaignEffectOutcome) -> CampaignEffectEvent:
+    return CampaignEffectEvent(
+        kind=outcome.kind,
+        target_id=outcome.target_id,
+        before=_campaign_effect_value(outcome.before),
+        after=_campaign_effect_value(outcome.after),
+    )
+
+
+def _campaign_effect_value(value: object) -> CampaignEffectValue:
+    if value is None:
+        return None
+    if type(value) is str:
+        return value
+    if type(value) is int:
+        return value
+    if type(value) is bool:
+        return value
+    if not isinstance(value, dict):
+        raise AssertionError(f"未知 campaign effect value：{value!r}")
+
+    if set(value) == {"location_id", "presence", "enabled", "incapacitated"}:
+        location_id = value["location_id"]
+        presence = value["presence"]
+        enabled = value["enabled"]
+        incapacitated = value["incapacitated"]
+        if (
+            location_id is not None
+            and type(location_id) is not str
+            or type(presence) is not str
+            or type(enabled) is not bool
+            or type(incapacitated) is not bool
+        ):
+            raise AssertionError(f"无效 campaign actor state：{value!r}")
+        return CampaignActorStateEvent(
+            location_id=location_id,
+            presence=presence,
+            enabled=enabled,
+            incapacitated=incapacitated,
+        )
+
+    if set(value) == {"status", "stage_index"}:
+        status = value["status"]
+        stage_index = value["stage_index"]
+        if type(status) is not str or (
+            stage_index is not None and type(stage_index) is not int
+        ):
+            raise AssertionError(f"无效 campaign scene state：{value!r}")
+        return CampaignSceneStateEvent(status=status, stage_index=stage_index)
+
+    raise AssertionError(f"未知 campaign effect mapping：{value!r}")
 
 
 def _recovery_event(outcome: RecoverOutcome) -> RecoveryEventData:

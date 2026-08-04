@@ -259,6 +259,60 @@ class MagicCampaignRuntimeTests(unittest.TestCase):
         )
         self.assertEqual(self.world.available_interactables(), ())
 
+    def test_web_event_preserves_campaign_effect_outcomes(self) -> None:
+        pack = load_content_pack(MAGIC)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            session = PlayerSession(pack, SaveLoadService(pack, Path(temp_dir)))
+            result = session.dispatch(
+                {"type": "campaign_action", "action_id": "action_open_ward"}
+            )
+
+        effects = result["event"]["data"]["effect_outcomes"]
+        self.assertEqual(len(effects), 9)
+        self.assertEqual(
+            effects[0],
+            {
+                "kind": "set_narrative_state",
+                "target_id": "state_ward_open",
+                "before": False,
+                "after": True,
+            },
+        )
+        actor_effect = next(
+            effect for effect in effects if effect["kind"] == "move_actor"
+        )
+        self.assertEqual(actor_effect["before"]["presence"], "present")
+        self.assertEqual(actor_effect["after"]["presence"], "absent")
+
+    def test_application_preserves_declared_campaign_action_order(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "magic"
+            shutil.copytree(MAGIC, path)
+            state_path = path / "narrative_state.json"
+            document = json.loads(state_path.read_text("utf-8"))
+            power = next(
+                state
+                for state in document["states"]
+                if state["id"] == "state_ward_power"
+            )
+            power["maximum"] = 10
+            state_path.write_text(json.dumps(document, indent=2), encoding="utf-8")
+            pack = load_content_pack(path)
+            session = PlayerSession(pack, SaveLoadService(pack, Path(temp_dir) / "saves"))
+
+            expected = ["action_unstable_charge", "action_open_ward"]
+            view_ids = [
+                action.id for action in session.game_session.view().campaign.actions
+            ]
+            web_ids = [
+                action["id"] for action in session.snapshot()["campaign"]["actions"]
+            ]
+            cli = CommandProcessor(session.world).execute("actions").text
+
+        self.assertEqual(view_ids, expected)
+        self.assertEqual(web_ids, expected)
+        self.assertLess(cli.index(expected[0]), cli.index(expected[1]))
+
     def test_hidden_actions_reject_id_cli_string_and_raw_index(self) -> None:
         snapshot = _serialize_world(self.world)
         with self.assertRaisesRegex(WorldRuleError, "当前不可用"):

@@ -98,6 +98,7 @@ def project_game_view(world: World, *, focus: FocusView | None = None) -> GameVi
         for direction, exit_def in sorted(world.available_exits().items())
     )
 
+    # V1 CLI/Web presentation preserves the authored entity order.
     room_items = tuple(
         _item_view(
             world,
@@ -105,7 +106,7 @@ def project_game_view(world: World, *, focus: FocusView | None = None) -> GameVi
             stack.quantity,
             actions=_available_actions(world, (TakeIntent(stack.item_id),)),
         )
-        for stack in sorted(world.current_room.item_stacks, key=lambda value: value.item_id)
+        for stack in world.current_room.item_stacks
     )
     inventory = tuple(
         _item_view(
@@ -135,7 +136,7 @@ def project_game_view(world: World, *, focus: FocusView | None = None) -> GameVi
             defense=monster.defense,
             attack_intent=_available(world, AttackIntent(monster.id)),
         )
-        for monster_id in sorted(world.current_room.monster_ids)
+        for monster_id in world.current_room.monster_ids
         for monster in (world.monsters[monster_id],)
     )
     characters = tuple(
@@ -145,7 +146,7 @@ def project_game_view(world: World, *, focus: FocusView | None = None) -> GameVi
             description=world.character_description(character.id),
             talk=_available(world, TalkIntent(character.id)),
         )
-        for character in sorted(world.available_characters(), key=lambda value: value.id)
+        for character in world.available_characters()
     )
 
     return GameView(
@@ -349,10 +350,7 @@ def _campaign_view(world: World) -> CampaignView:
     )
 
     actions_by_interactable: dict[str, list[CampaignActionView]] = {}
-    for projected in sorted(
-        world.available_campaign_actions(),
-        key=lambda value: (value.interactable_id, value.action.id),
-    ):
+    for projected in world.available_campaign_actions():
         intent = CampaignActionIntent(projected.action.id)
         available = _available(world, intent)
         if not isinstance(available, CampaignActionIntent):

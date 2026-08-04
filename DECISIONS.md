@@ -2662,3 +2662,77 @@
 - Supersedes: DEC-0095 only for the completed determinism rollback boundary and current
   implementation evidence. It does not rewrite prior review history or supersede
   product, public/private, rights, Git, acceptance, or milestone gates.
+
+## DEC-0097: Preserve V1 Web snapshot shape and authored entity order
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; a fresh exact-commit independent TECH
+  decision is required before advancement.
+- Context: Fresh independent reacceptance of exact target
+  `6e7d0ea9360910c14522ba41f77c5925da8ea7d3` returned `REVISE` for one P2 and one P3.
+  The compatibility Web `snapshot` reused the player-safe serializer, which correctly
+  omitted unavailable V2 actions but also removed V1 fields whose values were `null`.
+  Separately, `GameView` sorted room items by stable ID, changing the public Demo's
+  authored CLI/Web presentation order.
+- Decision: Keep the new player-safe `view` omission rule unchanged, then explicitly
+  restore only the V1 nullable compatibility keys in `snapshot`: exit requirement
+  identifiers/names, item healing/equipment fields, equipment slots, dialogue/shop,
+  and journal status. Preserve authored room item, monster, and character order in the
+  shared projection; this order is deterministic content input and remains identical
+  across CLI and Web. Add exact public-Demo regressions for the legacy keys and item
+  order in both transports.
+- Evidence: The finding-specific command/Web/application/transport matrix passes 33
+  tests. Full verification passes 1410 unittest tests with 11 conditional skips,
+  serial pytest at 1399 passed / 11 skipped, and xdist pytest at 1399 passed / 11
+  skipped with explicit repository-external TEMP/TMP and `--basetemp`. The first
+  resumed unittest attempt lacked an explicit worktree `PYTHONPATH`, loaded stale
+  modules from the primary checkout's editable install, and failed; the corrected
+  worktree-bound rerun supplies the valid evidence. Ruff, Pyright, compileall,
+  original-demo validation, history safety, fsck, and diff checks pass. This controller
+  evidence does not grant TECH GO.
+- Consequences: Existing Web consumers can continue testing legacy field presence,
+  and V1 CLI/Web presentation retains content-authored order. New unavailable actions
+  remain absent rather than appearing as `null`. No dependency, Schema, content/save
+  version, `World` authority, private-data boundary, publish state, or V2-2 scope
+  changes. Shared `main` remains unmoved, with no push or release.
+- Supersedes: DEC-0096 only for the two completed compatibility repairs and current
+  verification evidence. It does not rewrite prior review history or supersede
+  product, public/private, rights, Git, acceptance, or milestone gates.
+
+## DEC-0098: Preserve complete V1 event payloads and campaign action order
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; a fresh exact-commit independent TECH
+  decision is required before advancement.
+- Context: Fresh independent reacceptance of exact target
+  `731459742cdbda9a32bc87956cb0a15e033d5100` returned `REVISE` for one P2 and one P3.
+  The Web adapter preserved the legacy top-level `event` but compressed move room data,
+  omitted runtime-campaign effect outcomes, and removed explicit nulls from dialogue
+  event data. Separately, the application projection re-sorted authoritative campaign
+  actions by ID instead of retaining each interactable's declared `action_ids` order.
+  The target commit also carried a future 2026-08-05 timestamp relative to the
+  2026-08-04 controller date.
+- Decision: Extend the immutable typed event contract with a complete move-room fact,
+  typed campaign effect values, and ordered effect outcomes. The Web compatibility
+  renderer reconstructs the old `event.data` shape with explicit nulls from those
+  facts, while the new event JSON stays typed. Consume
+  `World.available_campaign_actions()` in its authoritative order without a second ID
+  sort. Add exact move/dialogue/campaign JSON and CLI/Web/GameView ordering regressions.
+  Amend the local repair commit with 2026-08-04 author and committer dates so the
+  reviewed target has no future audit timestamp.
+- Evidence: The finding-specific Web/application/runtime-campaign/transport matrix
+  passes 49 tests. Full verification passes 1414 unittest tests with 11 conditional
+  skips, serial pytest at 1403 passed / 11 skipped, and xdist pytest at 1403 passed /
+  11 skipped with explicit repository-external TEMP/TMP and `--basetemp`. Ruff,
+  Pyright, compileall, original-demo validation, history safety, fsck, and diff checks
+  pass. This controller evidence does not grant TECH GO.
+- Consequences: Legacy Web consumers again receive the complete V1 move, dialogue, and
+  campaign event payloads; `GameEvent` remains an immutable ordered fact rather than a
+  raw outcome or event bus. Campaign actions retain content-authored order in
+  GameView, CLI, and Web. No dependency, Schema, content/save version, `World`
+  authority, private-data boundary, publish state, or V2-2 scope changes. Shared
+  `main` remains unmoved, with no push or release.
+- Supersedes: DEC-0097 only for the completed event-payload and campaign-order repairs,
+  corrected local audit timestamp, and current verification evidence. It does not
+  rewrite prior review history or supersede product, public/private, rights, Git,
+  acceptance, or milestone gates.

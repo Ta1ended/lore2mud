@@ -81,7 +81,20 @@ class PlayerSessionTests(unittest.TestCase):
         self.assertEqual(snapshot["room"]["id"], "room_ember_wharf")
         self.assertEqual(snapshot["room"]["exits"][0]["direction"], "east")
         self.assertFalse(snapshot["room"]["exits"][0]["locked"])
+        self.assertIsNone(snapshot["room"]["exits"][0]["required_item_id"])
+        self.assertIsNone(snapshot["room"]["exits"][0]["required_item_name"])
         self.assertEqual(len(snapshot["room"]["items"]), 4)
+        self.assertEqual(
+            [item["id"] for item in snapshot["room"]["items"]],
+            [
+                "item_spark_lantern",
+                "item_linglu_pill",
+                "item_crystal_blade",
+                "item_bronze_scale_mail",
+            ],
+        )
+        self.assertIsNone(snapshot["room"]["items"][0]["heal_amount"])
+        self.assertIsNone(snapshot["room"]["items"][0]["slot"])
         self.assertEqual(len(snapshot["quests"]), 3)
         self.assertIsNone(snapshot["dialogue"])
         self.assertIsNone(snapshot["shop"])
@@ -168,6 +181,32 @@ class PlayerSessionTests(unittest.TestCase):
         self.assertEqual(result["event"]["message"], "存档文件不存在。")
         self.assertNotIn(str(Path(self.temp_dir.name).resolve()), rendered)
 
+    def test_move_legacy_event_preserves_complete_v1_room_payload(self) -> None:
+        result = self.action("move", direction="east")
+        room = result["event"]["data"]["room"]
+
+        self.assertEqual(
+            set(room),
+            {"id", "name", "description", "exits", "item_stacks", "monster_ids"},
+        )
+        self.assertEqual(room["id"], "room_glassgrass_path")
+        self.assertEqual(
+            room["exits"]["west"],
+            {
+                "target_room_id": "room_ember_wharf",
+                "required_item_id": "item_chen_token",
+            },
+        )
+        self.assertEqual(
+            room["exits"]["east"],
+            {
+                "target_room_id": "room_silent_observatory",
+                "required_item_id": None,
+            },
+        )
+        self.assertEqual(room["item_stacks"], [])
+        self.assertEqual(room["monster_ids"], [])
+
     def test_dialogue_snapshot_and_effects_use_typed_world_results(self) -> None:
         self.action("move", direction="east")
         started = self.action("talk", target="character_elder_chen")
@@ -182,6 +221,26 @@ class PlayerSessionTests(unittest.TestCase):
         advanced = self.action("choose_dialogue", index=1)
         self.assertTrue(advanced["ok"])
         self.assertIsNotNone(advanced["snapshot"]["dialogue"])
+
+    def test_dialogue_legacy_event_preserves_null_fields(self) -> None:
+        self.action("move", direction="east")
+        self.action("talk", target="character_elder_chen")
+        self.action("choose_dialogue", index=4)
+
+        ended = self.action("choose_dialogue", index=2)
+        data = ended["event"]["data"]
+        flag_effect = next(
+            effect
+            for effect in data["effect_outcomes"]
+            if effect.get("flag_id") == "flag_chen_warned_ash_mite"
+        )
+
+        self.assertIn("node_id", data)
+        self.assertIsNone(data["node_id"])
+        self.assertIn("node_text", data)
+        self.assertIsNone(data["node_text"])
+        self.assertIn("old_value", flag_effect)
+        self.assertIsNone(flag_effect["old_value"])
 
     def test_shop_snapshot_and_transactions_are_structured(self) -> None:
         self.action("move", direction="east")

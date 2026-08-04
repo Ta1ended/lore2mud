@@ -377,15 +377,31 @@ class PlayerSession:
         if isinstance(payload, MoveEventData):
             return {
                 "room": {
-                    "id": payload.room_id,
-                    "name": payload.room_name,
+                    "id": payload.room.id,
+                    "name": payload.room.name,
+                    "description": payload.room.description,
+                    "exits": {
+                        exit_value.direction: {
+                            "target_room_id": exit_value.target_room_id,
+                            "required_item_id": exit_value.required_item_id,
+                        }
+                        for exit_value in payload.room.exits
+                    },
+                    "item_stacks": [
+                        {
+                            "item_id": stack.item_id,
+                            "quantity": stack.quantity,
+                        }
+                        for stack in payload.room.item_stacks
+                    ],
+                    "monster_ids": list(payload.room.monster_ids),
                 },
-                "quest_outcomes": PlayerSession._json_value(
+                "quest_outcomes": PlayerSession._legacy_json_value(
                     payload.quest_outcomes
                 ),
-                "level_gains": PlayerSession._json_value(payload.level_gains),
+                "level_gains": PlayerSession._legacy_json_value(payload.level_gains),
             }
-        value = PlayerSession._json_value(payload)
+        value = PlayerSession._legacy_json_value(payload)
         assert isinstance(value, dict)
         return value
 
@@ -446,6 +462,32 @@ class PlayerSession:
         value = PlayerSession._json_value(view)
         assert isinstance(value, dict)
         value.pop("focus", None)
+
+        room = value["room"]
+        assert isinstance(room, dict)
+        exits = room["exits"]
+        assert isinstance(exits, list)
+        for exit_value in exits:
+            assert isinstance(exit_value, dict)
+            exit_value.setdefault("required_item_id", None)
+            exit_value.setdefault("required_item_name", None)
+
+        for item_values in (room["items"], value["inventory"]):
+            assert isinstance(item_values, list)
+            for item_value in item_values:
+                assert isinstance(item_value, dict)
+                item_value.setdefault("heal_amount", None)
+                item_value.setdefault("slot", None)
+
+        campaign = value["campaign"]
+        assert isinstance(campaign, dict)
+        for entry_group in ("objectives", "knowledge", "journal"):
+            entries = campaign[entry_group]
+            assert isinstance(entries, list)
+            for entry in entries:
+                assert isinstance(entry, dict)
+                entry.setdefault("status", None)
+
         value["dialogue"] = (
             PlayerSession._json_value(view.dialogue)
             if view.dialogue is not None
@@ -494,6 +536,32 @@ class PlayerSession:
                 result[definition.name] = PlayerSession._json_value(item)
             return result
         raise TypeError(f"unsupported JSON projection value: {type(value).__name__}")
+
+    @staticmethod
+    def _legacy_json_value(value: object) -> JsonValue:
+        if value is None:
+            return None
+        if isinstance(value, Enum):
+            return value.value
+        if isinstance(value, (str, int, bool)):
+            return value
+        if isinstance(value, (tuple, list)):
+            return [PlayerSession._legacy_json_value(item) for item in value]
+        if isinstance(value, dict):
+            return {
+                str(key): PlayerSession._legacy_json_value(item)
+                for key, item in value.items()
+            }
+        if is_dataclass(value) and not isinstance(value, type):
+            return {
+                definition.name: PlayerSession._legacy_json_value(
+                    getattr(value, definition.name)
+                )
+                for definition in fields(value)
+            }
+        raise TypeError(
+            f"unsupported legacy JSON value: {type(value).__name__}"
+        )
 
     @staticmethod
     def _intent_json(intent: GameIntent) -> dict[str, JsonValue]:

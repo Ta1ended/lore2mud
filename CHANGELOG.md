@@ -16,8 +16,11 @@
   from changing authority after restore; the same snapshot restores the original
   determinism-context identity and exact seed/clock values. CLI dialogue menus now
   render current actionable options from `GameView` rather than replaying the broader
-  dialogue event payload. Save v9, v7/v8 read gates, content/schema versions, runtime
-  campaign, and the public original Demo are unchanged (DEC-0092 through DEC-0096).
+  dialogue event payload. A fresh compatibility review also restored legacy Web
+  `snapshot` nullable fields, complete V1 `event.data` payloads, and authored entity and
+  campaign-action order without exposing unavailable actions in the new player-safe
+  view. Save v9, v7/v8 read gates, content/schema versions, runtime campaign, and the
+  public original Demo are unchanged (DEC-0092 through DEC-0098).
 - Replaced the stale repository-wide fixed model/reasoning floor with controller model
   selection by responsibility and risk, explicit recording when exposed, evidence-
   based verification, rework/reassignment for unreliable output, and unchanged fresh

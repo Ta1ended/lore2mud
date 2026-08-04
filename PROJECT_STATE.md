@@ -41,15 +41,23 @@ _最后更新 / Last updated: 2026-08-04_
   继续记录转移事实，不能重新引入投影已判定不可执行的选项。
 - Web JSON 新增 `status/events/view/diagnostics`，同时保留 `ok/event/snapshot`；浏览器从
   投影的具体 affordance 取得可用动作，不再复制锁、死亡、物品、交易、对话或战役规则。
+- 兼容 `snapshot` 保留 V1 已有的显式空值字段；新的玩家安全 `view` 仍让不可用动作缺席。
+  兼容 `event.data` 也从 typed event 恢复完整 V1 room、campaign effect 和显式空值形状。
+  房间物品、怪物、角色及 campaign action 继续按内容声明顺序投影，CLI/Web 不会因
+  V2-1 按 ID 重排。
 - save v9 写入、v7/v8 读取门禁、内容 Schema/版本、公开 Demo 和 runtime campaign 格式
   均未改变。
 
 ### 验证状态
 
-- 聚焦 application/CLI/Web/dialogue 传输回归：66 passed。
-- `.venv\Scripts\python.exe -m unittest discover`：1410 tests，11 skipped，OK。
-- `.venv\Scripts\python.exe -m pytest -q`：1399 passed，11 skipped；同一套件以
-  `-n auto` 在显式仓库外 TEMP/TMP 与 `--basetemp` 下重跑：1399 passed，11 skipped。
+- 针对 Web 兼容形状、typed campaign effects 和 V1 可见顺序 findings 的聚焦回归：
+  49 passed。
+- `.venv\Scripts\python.exe -m unittest discover`：1414 tests，11 skipped，OK。
+- 恢复开发后的第一次 `unittest discover` 未显式绑定隔离 worktree 的 `src`，因此项目
+  `.venv` 的主仓库 editable install 混入旧模块并失败；设置 `PYTHONPATH=<worktree>/src`
+  后同一完整命令通过。该失败准确保留为 harness 配置问题，不计作代码通过证据。
+- `.venv\Scripts\python.exe -m pytest -q`：1403 passed，11 skipped；同一套件以
+  `-n auto` 在显式仓库外 TEMP/TMP 与 `--basetemp` 下重跑：1403 passed，11 skipped。
   第一次 xdist 启动在用户 pytest 临时根目录遇到 `WinError 5`，未进入收集，已按 harness
   问题准确保留并由成功重跑关闭。
 - `ruff check .`、`pyright`、`compileall -q src pipeline scripts tests`、
@@ -135,15 +143,26 @@ compatibility and strict public/private and rights boundaries.
 - Web JSON adds `status/events/view/diagnostics` while preserving
   `ok/event/snapshot`; the browser consumes concrete projected affordances instead of
   duplicating lock, death, item, trade, dialogue, or campaign rules.
+- The compatibility `snapshot` retains V1's explicit nullable fields while unavailable
+  actions remain absent from the new player-safe `view`. Compatibility `event.data`
+  also reconstructs the complete V1 room, campaign-effect, and explicit-null shapes
+  from typed events. Room items, monsters, characters, and campaign actions retain
+  authored order instead of being re-sorted by V2-1.
 - Save v9 writes, v7/v8 read gates, content Schema/version, the public Demo, and runtime
   campaign format are unchanged.
 
 ### Verification Status
 
-- Focused application/CLI/Web/dialogue transport regressions: 66 passed.
-- `.venv\Scripts\python.exe -m unittest discover`: 1410 tests, 11 skipped, OK.
-- `.venv\Scripts\python.exe -m pytest -q`: 1399 passed, 11 skipped. The same suite
-  with `-n auto` and explicit repository-external TEMP/TMP plus `--basetemp`: 1399
+- Finding-specific Web shape, typed campaign-effect, and V1 visible-order regressions:
+  49 passed.
+- `.venv\Scripts\python.exe -m unittest discover`: 1414 tests, 11 skipped, OK.
+- The first resumed `unittest discover` did not explicitly bind the isolated
+  worktree's `src`, so the project virtualenv's editable primary-checkout install mixed
+  in stale modules and failed. The same full command passed with
+  `PYTHONPATH=<worktree>/src`; the failed attempt is retained as a harness
+  configuration issue and is not counted as passing evidence.
+- `.venv\Scripts\python.exe -m pytest -q`: 1403 passed, 11 skipped. The same suite
+  with `-n auto` and explicit repository-external TEMP/TMP plus `--basetemp`: 1403
   passed, 11 skipped. The first xdist startup hit `WinError 5` in the user's pytest
   temp root before collection; it is accurately retained as a harness issue and
   closed by the successful rerun.

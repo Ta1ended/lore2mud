@@ -107,10 +107,10 @@ Line counts are orientation for this candidate, not quality scores:
 | `pipeline/forge.py` | 1409 | V1 inspection/adaptation workspace lifecycle. | Not yet the V2 workbench. |
 | `src/lore2mud/engine/save.py` | 1110 | Save v9, v7/v8 read gates, reconstruction. | State evolution remains coupled to save core. |
 | `src/lore2mud/engine/commands.py` | 1094 | CLI parsing and `TurnResult` text rendering. | Legacy routing compatibility remains broad. |
-| `src/lore2mud/application/contracts.py` | 693 | Typed V2-1 request/result/view/event values. | Current closed action set is V1-specific. |
-| `src/lore2mud/application/session.py` | 668 | Turn coordination and transaction boundary. | Projection rollback uses whole-World copies. |
-| `src/lore2mud/web/app.py` | 556 | Web parsing and JSON compatibility rendering. | Legacy and V2 response shapes coexist. |
-| `src/lore2mud/application/projection.py` | 533 | Safe projection and concrete affordances. | Affordance probes copy and execute V1 rules. |
+| `src/lore2mud/application/contracts.py` | 750 | Typed V2-1 request/result/view/event values. | Current closed action set is V1-specific. |
+| `src/lore2mud/application/session.py` | 749 | Turn coordination and transaction boundary. | Projection rollback uses whole-World copies. |
+| `src/lore2mud/web/app.py` | 624 | Web parsing and JSON compatibility rendering. | Legacy and V2 response shapes coexist. |
+| `src/lore2mud/application/projection.py` | 531 | Safe projection and concrete affordances. | Affordance probes copy and execute V1 rules. |
 | `src/lore2mud/content/models.py` | 470 | Frozen content definitions. | One aggregate spans optional gameplay domains. |
 
 ## Where Future Changes Go

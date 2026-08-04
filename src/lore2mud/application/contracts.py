@@ -255,9 +255,33 @@ class LootEvent:
 
 
 @dataclass(frozen=True, slots=True)
+class MoveExitEvent:
+    direction: str
+    target_room_id: str
+    required_item_id: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class MoveItemStackEvent:
+    item_id: str
+    quantity: int
+
+
+@dataclass(frozen=True, slots=True)
+class MoveRoomEvent:
+    id: str
+    name: str
+    description: str
+    exits: tuple[MoveExitEvent, ...]
+    item_stacks: tuple[MoveItemStackEvent, ...]
+    monster_ids: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class MoveEventData:
     room_id: str
     room_name: str
+    room: MoveRoomEvent
     quest_outcomes: tuple[QuestCompletionEvent, ...] = ()
     level_gains: tuple[LevelGainEvent, ...] = ()
 
@@ -384,6 +408,39 @@ class CampaignActionEventData:
     action_id: str
     label: str
     result_text: str
+    effect_outcomes: tuple[CampaignEffectEvent, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class CampaignActorStateEvent:
+    location_id: str | None
+    presence: str
+    enabled: bool
+    incapacitated: bool
+
+
+@dataclass(frozen=True, slots=True)
+class CampaignSceneStateEvent:
+    status: str
+    stage_index: int | None
+
+
+CampaignEffectValue: TypeAlias = (
+    str
+    | int
+    | bool
+    | None
+    | CampaignActorStateEvent
+    | CampaignSceneStateEvent
+)
+
+
+@dataclass(frozen=True, slots=True)
+class CampaignEffectEvent:
+    kind: str
+    target_id: str
+    before: CampaignEffectValue
+    after: CampaignEffectValue
 
 
 @dataclass(frozen=True, slots=True)
