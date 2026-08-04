@@ -261,9 +261,15 @@ class GameSessionContractTests(unittest.TestCase):
         self,
     ) -> None:
         save_world = World.from_content_pack(self.pack)
-        save_error = _MutatingSaveLoadError(
-            lambda: setattr(save_world.player, "coins", 97)
-        )
+        save_session: GameSession | None = None
+
+        def mutate_save_state() -> None:
+            save_world.player.coins = 97
+            assert save_session is not None
+            object.__setattr__(save_session.determinism, "seed", 997)
+            object.__setattr__(save_session.determinism, "clock", 999)
+
+        save_error = _MutatingSaveLoadError(mutate_save_state)
         save_session = GameSession(
             save_world,
             _FormattingFailureService(save_error),
@@ -283,9 +289,13 @@ class GameSessionContractTests(unittest.TestCase):
             rule_world,
             determinism=DeterminismContext(seed=19, clock=37),
         )
-        rule_error = _MutatingWorldRuleError(
-            lambda: setattr(rule_world.player, "coins", 88)
-        )
+
+        def mutate_rule_state() -> None:
+            rule_world.player.coins = 88
+            object.__setattr__(rule_session.determinism, "seed", 887)
+            object.__setattr__(rule_session.determinism, "clock", 889)
+
+        rule_error = _MutatingWorldRuleError(mutate_rule_state)
 
         with patch.object(World, "move_with_outcome", side_effect=rule_error):
             rule_result = self._assert_rejected_unchanged(
@@ -373,6 +383,7 @@ class GameSessionContractTests(unittest.TestCase):
         before_world = _world_bytes(original_world)
         before_view = session.view()
         before_context = session.determinism
+        before_determinism = (before_context.seed, before_context.clock)
         before_rng = session._rng.getstate()  # noqa: SLF001 - contract invariant probe
         before_sequence = session.event_sequence
 
@@ -387,6 +398,10 @@ class GameSessionContractTests(unittest.TestCase):
         self.assertEqual(_world_bytes(session.world), before_world)
         self.assertEqual(result.view, before_view)
         self.assertIs(session.determinism, before_context)
+        self.assertEqual(
+            (session.determinism.seed, session.determinism.clock),
+            before_determinism,
+        )
         self.assertEqual(session._rng.getstate(), before_rng)  # noqa: SLF001
         self.assertEqual(session.event_sequence, before_sequence)
         return result

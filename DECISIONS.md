@@ -2629,3 +2629,36 @@
 - Supersedes: DEC-0094 only for current CLI dialogue rendering and verification counts.
   It does not rewrite prior review history or supersede product, public/private,
   rights, Git, acceptance, or milestone gates.
+
+## DEC-0096: Restore determinism-context identity and values on rejected turns
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; a fresh exact-commit independent TECH
+  decision is required before advancement.
+- Context: Fresh independent reacceptance of exact target
+  `5c3cb1715252f3e3455f3ec7d77c71c7715c8a78` returned `REVISE` for one P1. The
+  rejection snapshot restored World, RNG, and event sequence, but did not restore the
+  frozen `DeterminismContext`. A side-effectful `SaveLoadError.__str__()` used
+  `object.__setattr__()` to change `clock` from 31 to 999; the turn returned rejected
+  with no events and unchanged World/view while the public determinism context drifted.
+- Decision: Snapshot the original `DeterminismContext` object plus exact `seed` and
+  `clock` values with every authoritative turn snapshot. Every restore path writes the
+  original values back onto that same frozen object with `object.__setattr__()` and
+  reattaches the original identity before returning or re-raising. Extend the malicious
+  rule/persistence exception-formatting regression to mutate World, seed, and clock and
+  assert context identity plus value invariance.
+- Evidence: The focused application/CLI/Web/dialogue matrix passes 66 tests. Full
+  verification passes 1410 unittest tests with 11 conditional skips, serial pytest at
+  1399 passed / 11 skipped, and xdist pytest at 1399 passed / 11 skipped with explicit
+  repository-external TEMP/TMP and `--basetemp`. Ruff, Pyright, compileall,
+  original-demo validation, history safety, fsck, and diff checks pass. This controller
+  evidence does not grant TECH GO.
+- Consequences: Contract rejection now preserves canonical World state, World identity,
+  RNG position, determinism-context identity and values, event sequence, save-visible
+  metadata, and returned-view consistency even under side-effectful exception
+  formatting. No dependency, Schema, content/save version, `World` authority,
+  private-data boundary, publish state, or V2-2 scope changes. Shared `main` remains
+  unmoved, with no push or release.
+- Supersedes: DEC-0095 only for the completed determinism rollback boundary and current
+  implementation evidence. It does not rewrite prior review history or supersede
+  product, public/private, rights, Git, acceptance, or milestone gates.

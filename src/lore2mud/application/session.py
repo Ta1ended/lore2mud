@@ -113,6 +113,7 @@ class _IntentValidationError(ValueError):
 
 _EventDraft: TypeAlias = tuple[GameEventKind, GameEventPayload]
 _RngState: TypeAlias = tuple[int, tuple[int, ...], float | None]
+_DeterminismState: TypeAlias = tuple[int, int]
 _STABLE_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 
 
@@ -193,6 +194,8 @@ class GameSession:
             original_world = self._world
             backup = deepcopy(original_world)
             rng_state = self._rng.getstate()
+            determinism = self._determinism
+            determinism_state = (determinism.seed, determinism.clock)
             sequence = self._event_sequence
             try:
                 draft, focus = self._execute(intent)
@@ -201,7 +204,14 @@ class GameSession:
                 try:
                     message = str(exc)
                 finally:
-                    self._restore(original_world, backup, rng_state, sequence)
+                    self._restore(
+                        original_world,
+                        backup,
+                        rng_state,
+                        determinism,
+                        determinism_state,
+                        sequence,
+                    )
                 return TurnResult(
                     TurnStatus.REJECTED,
                     (),
@@ -212,7 +222,14 @@ class GameSession:
                 try:
                     message = _persistence_rejection_message(intent, exc)
                 finally:
-                    self._restore(original_world, backup, rng_state, sequence)
+                    self._restore(
+                        original_world,
+                        backup,
+                        rng_state,
+                        determinism,
+                        determinism_state,
+                        sequence,
+                    )
                 return TurnResult(
                     TurnStatus.REJECTED,
                     (),
@@ -223,7 +240,14 @@ class GameSession:
                     ),
                 )
             except Exception:
-                self._restore(original_world, backup, rng_state, sequence)
+                self._restore(
+                    original_world,
+                    backup,
+                    rng_state,
+                    determinism,
+                    determinism_state,
+                    sequence,
+                )
                 raise
 
             if draft is None:
@@ -342,6 +366,8 @@ class GameSession:
         original_world: World,
         backup: World,
         rng_state: _RngState,
+        determinism: DeterminismContext,
+        determinism_state: _DeterminismState,
         sequence: int,
     ) -> None:
         for definition in fields(World):
@@ -352,6 +378,10 @@ class GameSession:
             )
         self._world = original_world
         self._rng.setstate(rng_state)
+        seed, clock = determinism_state
+        object.__setattr__(determinism, "seed", seed)
+        object.__setattr__(determinism, "clock", clock)
+        self._determinism = determinism
         self._event_sequence = sequence
 
     @staticmethod

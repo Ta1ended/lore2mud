@@ -33,6 +33,8 @@ _最后更新 / Last updated: 2026-08-04_
   且不产生转移事件；意外异常在恢复后继续上抛。
 - `WorldRuleError`/`SaveLoadError` 的诊断先完成规范化，再在 `finally` 中执行最终恢复并投影
   view；异常对象的可重载格式化不能在回滚后重新改变权威状态。
+- 拒绝快照保留原 `DeterminismContext` 身份及精确 `seed/clock`；即使冻结值被低层
+  `object.__setattr__` 原地篡改，也会在返回或重新上抛前恢复同一对象及原值。
 - `CommandProcessor` 保持兼容构造和动态 `.world`，但玩法 handler 只提交 Intent 并从
   `TurnResult`/`GameView` 呈现；Web `PlayerSession` 保持名称但包装同一应用会话。
 - CLI 对话的当前编号菜单只从玩家安全 `GameView.dialogue.options` 呈现；有序 dialogue event
@@ -121,6 +123,9 @@ compatibility and strict public/private and rights boundaries.
 - `WorldRuleError`/`SaveLoadError` diagnostics are normalized before a final restore in
   `finally` and before view projection, so overridable exception formatting cannot
   mutate authority again after rollback.
+- Rejection snapshots retain the original `DeterminismContext` identity and exact
+  `seed`/`clock` values. Even low-level in-place mutation through `object.__setattr__`
+  is restored on the same object before return or re-raise.
 - `CommandProcessor` keeps its compatible constructor and dynamic `.world`, while
   gameplay handlers only submit intents and render `TurnResult`/`GameView`; Web
   `PlayerSession` keeps its name but wraps the same application session.

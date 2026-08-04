@@ -13,10 +13,11 @@
   rules. Exact declared Intent and primitive leaf types are validated before any
   overridable method/operator can run. Rejection diagnostics are normalized before the
   final rollback and view projection, preventing side-effectful exception formatting
-  from changing authority after restore. CLI dialogue menus now render current
-  actionable options from `GameView` rather than replaying the broader dialogue event
-  payload. Save v9, v7/v8 read gates, content/schema versions, runtime campaign, and
-  the public original Demo are unchanged (DEC-0092 through DEC-0095).
+  from changing authority after restore; the same snapshot restores the original
+  determinism-context identity and exact seed/clock values. CLI dialogue menus now
+  render current actionable options from `GameView` rather than replaying the broader
+  dialogue event payload. Save v9, v7/v8 read gates, content/schema versions, runtime
+  campaign, and the public original Demo are unchanged (DEC-0092 through DEC-0096).
 - Replaced the stale repository-wide fixed model/reasoning floor with controller model
   selection by responsibility and risk, explicit recording when exposed, evidence-
   based verification, rework/reassignment for unreliable output, and unchanged fresh
@@ -139,7 +140,7 @@
   Ruff, Pyright, compileall, original-demo validation, repository history safety,
   fsck, and diff checks; the first xdist startup's pre-collection temp-root permission
   failure was closed by an explicit repository-external temp rerun (DEC-0092 through
-  DEC-0095).
+  DEC-0096).
 - Added the public runtime campaign foundation through optional strict
   `campaign.json` v1. World-authoritative projections cover conditional locations,
   exits, actors, dialogue text, scenes, interactables, actions, objectives,
