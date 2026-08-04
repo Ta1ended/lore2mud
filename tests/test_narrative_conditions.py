@@ -464,7 +464,17 @@ class NarrativeConditionWebTests(unittest.TestCase):
                 {"type": "talk", "target": "character_beacon_echo"}
             )
             options = started["snapshot"]["dialogue"]["options"]
-            self.assertEqual(options, [{"index": 1, "id": "opt_beacon_bye", "text": "先听一会儿回声。"}])
+            self.assertEqual(
+                options,
+                [
+                    {
+                        "index": 1,
+                        "id": "opt_beacon_bye",
+                        "text": "先听一会儿回声。",
+                        "intent": {"type": "choose_dialogue", "index": 1},
+                    }
+                ],
+            )
             before = started["snapshot"]
             rejected = session.dispatch({"type": "choose_dialogue", "index": 2})
             self.assertFalse(rejected["ok"])

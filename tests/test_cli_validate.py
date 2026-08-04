@@ -223,7 +223,7 @@ class LegacyCommandTests(unittest.TestCase):
             mock.patch("lore2mud.cli.run_game", return_value=0) as mock_run,
             mock.patch("lore2mud.cli.SaveLoadService"),
             mock.patch("lore2mud.cli.load_content_pack") as mock_load,
-            mock.patch("lore2mud.cli.World"),
+            mock.patch("lore2mud.cli.GameSession"),
         ):
             mock_load.return_value = mock.MagicMock()
             main(["--content", str(DEMO_PATH), "--player-name", "测试者"])
@@ -235,7 +235,7 @@ class LegacyCommandTests(unittest.TestCase):
             mock.patch("lore2mud.cli.run_game", return_value=0) as mock_run,
             mock.patch("lore2mud.cli.SaveLoadService"),
             mock.patch("lore2mud.cli.load_content_pack") as mock_load,
-            mock.patch("lore2mud.cli.World"),
+            mock.patch("lore2mud.cli.GameSession"),
         ):
             mock_load.return_value = mock.MagicMock()
             main(["--content", str(DEMO_PATH), "--save-dir", "custom-saves"])
@@ -247,7 +247,7 @@ class LegacyCommandTests(unittest.TestCase):
             mock.patch("lore2mud.cli.run_game", return_value=0) as mock_run,
             mock.patch("lore2mud.cli.SaveLoadService"),
             mock.patch("lore2mud.cli.load_content_pack") as mock_load,
-            mock.patch("lore2mud.cli.World"),
+            mock.patch("lore2mud.cli.GameSession"),
         ):
             mock_load.return_value = mock.MagicMock()
             main([

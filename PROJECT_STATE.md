@@ -1,6 +1,6 @@
 # 项目状态 / Project State
 
-_最后更新 / Last updated: 2026-08-03_
+_最后更新 / Last updated: 2026-08-04_
 
 ## 中文
 
@@ -11,50 +11,69 @@ _最后更新 / Last updated: 2026-08-03_
 
 ### 当前状态
 
-- V2-0 已接受并发布的基线是
-  `077b8eb568f193b0b3ccab47410bec35dc4c2a9c`。开始任何新任务前都必须核对实时 Git，
-  并确认在线 `main` 等于该基线，或是只包含后来已独立验收并发布的提交。
-- V2 合同名称仍只是已接受的方向，尚未实现为已发布 API。
+- 已核对的在线公开 `main` 是
+  `564530d87aea17da26544b7793701e0dca0fe57d`；GitHub Actions tests
+  `30846680303` 与 quality `30846680343` 成功。
+- V2-1 隔离候选位于 `workstream/v2-1-game-session`，基于已获规划 TECH GO 的
+  `1d4b26d9127d4229893911cf260cf3c2f4b0ce3a`。共享 `main` 未移动，没有 push、
+  release 或 V2-2 工作。
+- `src/lore2mud/application/` 已实现本地候选的 `GameIntent`、`GameSession`、
+  `GameEvent`、`GameView` 和 `TurnResult`；`World` 仍是唯一玩法权威，CLI 与 Web
+  保留解析和呈现职责。
+- Controller 全量门禁已完成；本工作流只可继续创建连贯本地提交并对精确提交执行独立
+  只读 TECH 验收。本文件不自我授予 TECH、PRODUCT 或 SECURITY PASS；最终 TECH
+  verdict 只以本工作流的独立验收记录和 Controller 最终报告为准。
 
-### 已完成
-- V2-0 已完成：修复目标 `d13dd0590f47f6477b476cfbdab2715b8f4aba7a`
-  获得独立 TECH GO，产品所有者明确给出 PRODUCT PASS；最终封印目标
-  `077b8eb568f193b0b3ccab47410bec35dc4c2a9c` 又获得全新独立 GO，P0-P3 均无发现。
+### 已实现
 
-### 进行中
-- 当前没有任何 V2 实现在进行；V2-1 已路由但尚未开始。
+- 强类型冻结合同、确定性上下文、有序事件序列、typed 拒绝诊断和完整玩家安全投影。
+- 合同拒绝会恢复原 `World` 身份及规范化可持久化状态、RNG 位置、时钟输入和事件序列，
+  且不产生转移事件；意外异常在恢复后继续上抛。
+- `CommandProcessor` 保持兼容构造和动态 `.world`，但玩法 handler 只提交 Intent 并从
+  `TurnResult`/`GameView` 呈现；Web `PlayerSession` 保持名称但包装同一应用会话。
+- Web JSON 新增 `status/events/view/diagnostics`，同时保留 `ok/event/snapshot`；浏览器从
+  投影的具体 affordance 取得可用动作，不再复制锁、死亡、物品、交易、对话或战役规则。
+- save v9 写入、v7/v8 读取门禁、内容 Schema/版本、公开 Demo 和 runtime campaign 格式
+  均未改变。
 
-### 阻塞项
-- V2-1 范围当前没有已知产品或架构阻塞；新任务仍须核对实时引用与已接受基线。
+### 验证状态
 
-### 验证
-- 最终封印分支的 quality `30829532319` 和 tests `30829532606` 成功；在线
-  `main` 的 quality `30829717919` 和 tests `30829718590` 也于 2026-08-03 成功。
+- `.venv\Scripts\python.exe -m unittest discover`：1402 tests，11 skipped，OK。
+- `.venv\Scripts\python.exe -m pytest -q`：1391 passed，11 skipped；同一套件以
+  `-n auto` 在显式仓库外 TEMP/TMP 与 `--basetemp` 下重跑：1391 passed，11 skipped。
+  第一次 xdist 启动在用户 pytest 临时根目录遇到 `WinError 5`，未进入收集，已按 harness
+  问题准确保留并由成功重跑关闭。
+- `ruff check .`、`pyright`、`compileall -q src pipeline scripts tests`、
+  `lore2mud validate --content examples/original_demo`、
+  `check_repo_safety.py --history`、`git fsck --full --no-dangling`、working/staged
+  `git diff --check` 均通过。
+- Windows PyInstaller 与 zipapp 的构建、包内容和仓库外冷启动由全量测试真实覆盖。
+- 独立验收不由本实现上下文自我决定；精确 verdict 见 Controller 最终报告。
+
+### 角色与模型
+
+- Controller/Implementation：当前根任务，负责接口冻结、集成、测试、提交和门禁。
+- Product/Specification：只读验收矩阵；Architect/Engine Lead：只读运行时、存档和客户端
+  边界检查。两者继承当前任务模型，工具未暴露更细的模型标识。
+- Independent Acceptance：必须是未参与实现的新任务，严格只读审查精确提交。模型输出
+  不是证据，结论必须由代码、测试和 Git 证据支撑。
 
 ### 保持的边界
 
-- 保持现有公开内容、权威 `World` 行为、save v9 写入以及受支持的 v7/v8 读取兼容性。
-- 私有源文本、设定、改编内容、图像和报告不得进入公开 Git；没有新的私有访问授权。
-- 所有实现、架构和验收任务或子 Agent 必须明确使用 `gpt-5.6-sol`，reasoning 为
-  `xhigh` 或更高；不可静默降级，也不可自我批准。
-- 主检出目录中有意未跟踪的 `uv.lock` 边界保持不变：14,471 字节，SHA-256
-  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`。
-  主检出目录可保留这份未跟踪副本，但绝不能提交；隔离工作树不得创建或复制它。
+- 私有源文本、canon、派生改编、图片、存档和报告不得访问或进入公开 Git。
+- 不新增依赖，不改变 Schema、内容包版本或 save 格式，不实现 Capability、SDK、
+  structured CLI、MCP、`SimulationReport`、proofing、迁移、插件、新 Demo 或 V2-2。
+- 主检出目录的未跟踪 `uv.lock` 保持 14,471 字节，SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`；隔离
+  worktree 中不得出现该文件。
 
-### 关键路径
+### 剩余风险
 
-- `README.md`：中英双语的公开项目入口、产品边界与快速开始。
-- `AGENTS.md`：任务、模型、门禁、架构与安全规则。
-- `PRODUCT.md`、`CODE_MAP.md`：产品方向与当前 V1 数据流。
-- `docs/v2/architecture.md`、`docs/v2/roadmap.md`：目标合同与已批准顺序。
-- `NEXT_TASK.md`：唯一已路由的下一任务。
-
-### 风险与未知项
-
-- `World`、加载、存档、命令、Web 和战役模块仍然较大且耦合，边界必须渐进引入。
-- `CampaignSpec v1` 仍是创作 IR，没有运行时物化器，也不是运行时输入。
-- MCP、动态插件、生成代码及不受限的主机/网络访问均未获授权；SDK 和结构化 CLI
-  仍应先于任何 MCP 适配器。
+- 当前 V1 规则不消费 `DeterminismContext` 的 RNG/时钟；合同已保留并测试其拒绝不变性，
+  但未来真正消费这些输入时仍需新的可观察确定性测试。
+- 玩家 affordance 通过隔离 `deepcopy(World)` 探测现有规则，范围明确且不建立 V2-2
+  通用动作目录，但大型内容包的性能仍需后续实测。
+- `World`、loader、save 和传统命令渲染仍较大；V2-1 不授权整体拆分。
 
 ## English
 
@@ -66,58 +85,82 @@ compatibility and strict public/private and rights boundaries.
 
 ### Current Status
 
-- The accepted and published V2-0 baseline is
-  `077b8eb568f193b0b3ccab47410bec35dc4c2a9c`. Before any new task, verify live Git
-  and confirm live `main` is that baseline or contains only later independently
-  accepted and published commits.
-- V2 contract names remain accepted direction and are not implemented shipped APIs.
+- Verified live public `main` is
+  `564530d87aea17da26544b7793701e0dca0fe57d`; GitHub Actions tests
+  `30846680303` and quality `30846680343` succeeded.
+- The isolated V2-1 candidate is on `workstream/v2-1-game-session`, based on the
+  planning TECH-GO commit `1d4b26d9127d4229893911cf260cf3c2f4b0ce3a`.
+  Shared `main` has not moved; there is no push, release, or V2-2 work.
+- `src/lore2mud/application/` implements the local candidate's `GameIntent`,
+  `GameSession`, `GameEvent`, `GameView`, and `TurnResult`. `World` remains the sole
+  gameplay authority; CLI and Web retain parsing and rendering responsibilities.
+- The controller full matrix is complete. This workstream may continue only by making
+  a coherent local commit and running fresh read-only TECH acceptance on that exact
+  commit. This file grants no TECH, PRODUCT, or SECURITY PASS itself; the final TECH
+  verdict is authoritative only in this workstream's independent acceptance record
+  and controller report.
 
-### Completed
-- V2-0 is complete: repair target `d13dd0590f47f6477b476cfbdab2715b8f4aba7a`
-  received independent TECH GO and the product owner's explicit PRODUCT PASS; final
-  seal target `077b8eb568f193b0b3ccab47410bec35dc4c2a9c` then received a fresh
-  independent GO with no P0-P3 findings.
+### Implemented
 
-### In Progress
-- No V2 implementation is in progress; V2-1 is routed but not started.
+- Typed frozen contracts, determinism context, ordered event sequence, typed rejection
+  diagnostics, and a complete player-safe projection.
+- Contract rejection restores the original `World` identity plus canonical persistable
+  state, RNG position, clock input, and event sequence, and emits no transition event;
+  unexpected exceptions are re-raised after restoration.
+- `CommandProcessor` keeps its compatible constructor and dynamic `.world`, while
+  gameplay handlers only submit intents and render `TurnResult`/`GameView`; Web
+  `PlayerSession` keeps its name but wraps the same application session.
+- Web JSON adds `status/events/view/diagnostics` while preserving
+  `ok/event/snapshot`; the browser consumes concrete projected affordances instead of
+  duplicating lock, death, item, trade, dialogue, or campaign rules.
+- Save v9 writes, v7/v8 read gates, content Schema/version, the public Demo, and runtime
+  campaign format are unchanged.
 
-### Blockers
-- No product or architecture blocker is known for V2-1; a fresh task must still check
-  live refs and the accepted baseline.
+### Verification Status
 
-### Verification
-- Final-seal branch quality run `30829532319` and tests run `30829532606` succeeded;
-  live-`main` quality run `30829717919` and tests run `30829718590` also succeeded on
-  2026-08-03.
+- `.venv\Scripts\python.exe -m unittest discover`: 1402 tests, 11 skipped, OK.
+- `.venv\Scripts\python.exe -m pytest -q`: 1391 passed, 11 skipped. The same suite
+  with `-n auto` and explicit repository-external TEMP/TMP plus `--basetemp`: 1391
+  passed, 11 skipped. The first xdist startup hit `WinError 5` in the user's pytest
+  temp root before collection; it is accurately retained as a harness issue and
+  closed by the successful rerun.
+- `ruff check .`, `pyright`, `compileall -q src pipeline scripts tests`,
+  `lore2mud validate --content examples/original_demo`,
+  `check_repo_safety.py --history`, `git fsck --full --no-dangling`, and working/staged
+  `git diff --check` all pass.
+- Full tests execute real Windows PyInstaller and zipapp build, content, and
+  repository-external cold-start coverage.
+- Independent acceptance is not self-decided by this implementation context; consult
+  the controller's final report for the exact verdict.
+
+### Roles And Models
+
+- Controller/Implementation: the current root task, owning interface freeze,
+  integration, tests, commit, and gates.
+- Product/Specification: read-only acceptance matrix; Architect/Engine Lead: read-only
+  runtime, save, and client boundary review. Both inherited the current task model;
+  the tool did not expose a finer model identifier.
+- Independent Acceptance: a fresh task that did not implement the candidate and must
+  review the exact commit strictly read-only. Model output is not evidence; code,
+  tests, and Git facts must support the verdict.
 
 ### Preserved Boundaries
 
-- Preserve existing public content, authoritative `World` behavior, save v9 writes,
-  and supported v7/v8 read compatibility.
-- Private source text, canon, adaptations, images, and reports stay out of public Git;
-  no new private access is authorized.
-- Every implementation, architecture, and acceptance task or subagent must explicitly
-  use `gpt-5.6-sol` with reasoning `xhigh` or higher; never silently downgrade or
-  self-approve.
-- The intentionally untracked primary-checkout `uv.lock` boundary remains unchanged:
-  14,471 bytes, SHA-256
-  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`.
-  The primary checkout may retain that untracked copy, but it must never be committed;
-  isolated worktrees must not create or copy it.
+- Private source text, canon, derived adaptations, images, saves, and reports are not
+  accessed and cannot enter public Git.
+- No new dependency, Schema/content/save version, Capability, SDK, structured CLI,
+  MCP, `SimulationReport`, proofing, migration, plugin, new Demo, or V2-2 work.
+- The primary checkout's untracked `uv.lock` remains 14,471 bytes, SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`;
+  it must remain absent from the isolated worktree.
 
-### Key Paths
+### Residual Risks
 
-- `README.md`: bilingual public project entry, product boundary, and quick start.
-- `AGENTS.md`: task, model, gate, architecture, and safety rules.
-- `PRODUCT.md`, `CODE_MAP.md`: product direction and current V1 data flows.
-- `docs/v2/architecture.md`, `docs/v2/roadmap.md`: target contracts and approved order.
-- `NEXT_TASK.md`: the single routed next task.
-
-### Risks And Unknowns
-
-- `World`, loader, save, command, Web, and campaign modules remain large and coupled;
-  boundaries must be introduced incrementally.
-- `CampaignSpec v1` remains authoring IR with no runtime materializer and is not a
-  runtime input.
-- MCP, dynamic plugins, generated code, and unrestricted host/network access are not
-  authorized; SDK and structured CLI still precede any MCP adapter.
+- Current V1 rules do not consume the `DeterminismContext` RNG/clock. Rejection
+  invariance is preserved and tested, but future real consumers require new observable
+  determinism tests.
+- Player affordances probe existing rules on isolated `deepcopy(World)` values. This
+  is bounded and does not create the V2-2 general action catalog, but large-pack
+  performance remains to be measured later.
+- `World`, loader, save, and legacy command rendering remain large; V2-1 does not
+  authorize wholesale decomposition.

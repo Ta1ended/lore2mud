@@ -20,10 +20,13 @@ One task may hold one or more roles, but approval roles remain independent:
 | Controller | Maintain worktree boundaries, compose accepted candidates, and route gates. |
 | Independent acceptance | Read-only findings-first review of an exact commit/range; return GO or REVISE. |
 
-Every subagent used for implementation, architecture, or acceptance must be
-explicitly `gpt-5.6-sol` with reasoning `xhigh` or higher. Do not silently downgrade.
-If that model or reasoning floor is unavailable, stop before delegating or editing and
-report the blocker to the product owner.
+The controller selects an available model and reasoning level for each responsibility
+domain according to task complexity, stability, and risk. Record the selection when
+the tool exposes it, the assigned responsibility, produced artifacts, verification,
+and any rework. Model output is not correctness evidence. Shared contracts,
+persistence, state transactions, security boundaries, and independent acceptance
+should use the most reliable available reasoning; incomplete, contradictory,
+out-of-scope, or unverifiable work is reassigned rather than integrated.
 
 ## Required Passes
 

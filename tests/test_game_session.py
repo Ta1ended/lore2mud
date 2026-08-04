@@ -1,0 +1,213 @@
+"""V2-1 application contract and rejection-invariance tests."""
+
+from __future__ import annotations
+
+from dataclasses import FrozenInstanceError, asdict, is_dataclass
+import json
+from pathlib import Path
+import unittest
+
+import lore2mud.application.contracts as contracts
+from lore2mud.application import (
+    AttackIntent,
+    DeterminismContext,
+    GameSession,
+    LoadIntent,
+    MoveIntent,
+    RejectionCode,
+    SaveIntent,
+    TakeIntent,
+    TurnStatus,
+    UseIntent,
+    ViewIntent,
+    ViewKind,
+)
+from lore2mud.content.loader import load_content_pack
+from lore2mud.engine.save import SaveLoadError, _serialize_world
+from lore2mud.engine.world import World
+
+
+ROOT = Path(__file__).resolve().parents[1]
+DEMO = ROOT / "examples" / "original_demo"
+MAGIC = ROOT / "tests" / "fixtures" / "campaign_magic"
+
+
+def _world_bytes(world: World) -> bytes:
+    return json.dumps(
+        _serialize_world(world),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+
+
+class _MutatingFailureService:
+    def save(self, world: World, slot: str | None = None) -> str:
+        world.player.coins += 99
+        world.flags["flag_should_rollback"] = True
+        raise SaveLoadError("forced save failure")
+
+    def load(self, slot: str | None = None) -> World:
+        raise SaveLoadError("forced load failure")
+
+
+class GameSessionContractTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.pack = load_content_pack(DEMO)
+
+    def test_all_application_contract_dataclasses_are_frozen(self) -> None:
+        dataclass_types = [
+            value
+            for value in vars(contracts).values()
+            if isinstance(value, type)
+            and value.__module__ == contracts.__name__
+            and is_dataclass(value)
+        ]
+        self.assertTrue(dataclass_types)
+        for value in dataclass_types:
+            with self.subTest(contract=value.__name__):
+                self.assertTrue(value.__dataclass_params__.frozen)
+
+        intent = MoveIntent("east")
+        with self.assertRaises(FrozenInstanceError):
+            intent.direction = "west"  # type: ignore[misc]
+
+    def test_event_sequence_is_stable_and_read_only_turns_do_not_advance_it(self) -> None:
+        session = GameSession.from_content_pack(self.pack)
+
+        first = session.submit(MoveIntent("east"))
+        viewed = session.submit(ViewIntent(ViewKind.STATUS))
+        second = session.submit(MoveIntent("east"))
+
+        self.assertEqual(first.status, TurnStatus.ACCEPTED)
+        self.assertEqual([event.sequence for event in first.events], [1])
+        self.assertEqual(viewed.status, TurnStatus.ACCEPTED)
+        self.assertEqual(viewed.events, ())
+        self.assertEqual([event.sequence for event in second.events], [2])
+        with self.assertRaises(FrozenInstanceError):
+            first.events[0].sequence = 99  # type: ignore[misc]
+
+    def test_malformed_intent_rejection_preserves_all_session_state(self) -> None:
+        session = GameSession.from_content_pack(
+            self.pack,
+            determinism=DeterminismContext(seed=742, clock=1904),
+        )
+        accepted = session.submit(MoveIntent("east"))
+        self.assertEqual(accepted.status, TurnStatus.ACCEPTED)
+
+        self._assert_rejected_unchanged(
+            session,
+            TakeIntent("item_linglu_pill", True),  # type: ignore[arg-type]
+            RejectionCode.MALFORMED_INTENT,
+        )
+
+    def test_inadmissible_intent_rejection_preserves_all_session_state(self) -> None:
+        session = GameSession.from_content_pack(
+            self.pack,
+            determinism=DeterminismContext(seed=11, clock=29),
+        )
+
+        self._assert_rejected_unchanged(
+            session,
+            MoveIntent("west"),
+            RejectionCode.INADMISSIBLE_INTENT,
+        )
+
+    def test_persistence_rejection_rolls_back_even_a_mutating_service(self) -> None:
+        world = World.from_content_pack(self.pack)
+        session = GameSession(
+            world,
+            _MutatingFailureService(),
+            determinism=DeterminismContext(seed=91, clock=37),
+        )
+
+        self._assert_rejected_unchanged(
+            session,
+            SaveIntent("broken"),
+            RejectionCode.PERSISTENCE_ERROR,
+        )
+
+        self._assert_rejected_unchanged(
+            session,
+            LoadIntent("missing"),
+            RejectionCode.PERSISTENCE_ERROR,
+        )
+
+    def test_nonlethal_combat_remains_an_accepted_in_world_outcome(self) -> None:
+        session = GameSession.from_content_pack(self.pack)
+        session.submit(TakeIntent("item_crystal_blade"))
+        from lore2mud.application import EquipIntent
+
+        session.submit(EquipIntent("item_crystal_blade"))
+        session.submit(MoveIntent("east"))
+        session.submit(MoveIntent("east"))
+
+        result = session.submit(AttackIntent("monster_ash_mite"))
+
+        self.assertEqual(result.status, TurnStatus.ACCEPTED)
+        self.assertEqual(len(result.events), 1)
+        payload = result.events[0].payload
+        self.assertIsInstance(payload, contracts.CombatEventData)
+        assert isinstance(payload, contracts.CombatEventData)
+        self.assertFalse(payload.monster_defeated)
+        self.assertEqual(result.view.room.monsters[0].hp, 1)
+
+    def test_player_view_omits_hidden_state_and_unavailable_actions(self) -> None:
+        world = World.from_content_pack(load_content_pack(MAGIC))
+        world.flags = {"flag_z": False, "flag_a": True}
+        session = GameSession(world)
+
+        view = session.view()
+        document = asdict(view)
+        rendered = json.dumps(document, ensure_ascii=False, sort_keys=True)
+        action_ids = [action.id for action in view.campaign.actions]
+
+        self.assertNotIn("narrative_state", rendered)
+        self.assertNotIn("state_ward_power", rendered)
+        self.assertNotIn("knowledge_ward_nature", rendered)
+        self.assertNotIn("action_finish_ward", action_ids)
+        self.assertEqual([flag.id for flag in view.flags], ["flag_a", "flag_z"])
+
+        demo = GameSession.from_content_pack(self.pack)
+        demo.submit(TakeIntent("item_linglu_pill"))
+        pill = next(item for item in demo.view().inventory if item.id == "item_linglu_pill")
+        self.assertNotIn(UseIntent("item_linglu_pill"), pill.actions)
+        demo.submit(MoveIntent("east"))
+        west = next(
+            exit_view
+            for exit_view in demo.view().room.exits
+            if exit_view.direction == "west"
+        )
+        self.assertTrue(west.locked)
+        self.assertIsNone(west.move)
+
+    def _assert_rejected_unchanged(
+        self,
+        session: GameSession,
+        intent: contracts.GameIntent,
+        code: RejectionCode,
+    ) -> None:
+        original_world = session.world
+        before_world = _world_bytes(original_world)
+        before_view = session.view()
+        before_context = session.determinism
+        before_rng = session._rng.getstate()  # noqa: SLF001 - contract invariant probe
+        before_sequence = session.event_sequence
+
+        result = session.submit(intent)
+
+        self.assertEqual(result.status, TurnStatus.REJECTED)
+        self.assertEqual(result.events, ())
+        self.assertIsNotNone(result.rejection)
+        assert result.rejection is not None
+        self.assertEqual(result.rejection.code, code)
+        self.assertIs(session.world, original_world)
+        self.assertEqual(_world_bytes(session.world), before_world)
+        self.assertEqual(result.view, before_view)
+        self.assertIs(session.determinism, before_context)
+        self.assertEqual(session._rng.getstate(), before_rng)  # noqa: SLF001
+        self.assertEqual(session.event_sequence, before_sequence)
+
+
+if __name__ == "__main__":
+    unittest.main()

@@ -1,6 +1,7 @@
 # Lore2MUD V2 Product Definition
 
-_Status: V2-0 direction accepted and published; V2-1 routed, 2026-08-04_
+_Status: V2-0 direction accepted and published; V2-1 local implementation candidate,
+TECH/PRODUCT/publication gates separate, 2026-08-04_
 
 ## Product
 
@@ -58,6 +59,10 @@ V2 capability requirements: it emits an authoring diagnostic and blocks preview 
 and simulation until V2-3. Runtime output is a deterministic `TurnResult` containing
 `GameEvent` records and a player-safe `GameView`.
 `CampaignSpec v1` is an authoring IR, **not** a runtime input.
+
+The V2-1 local candidate applies these runtime contracts to the existing V1
+`ContentPack`/`World` compatibility profile. It does not implement or imply a sealed
+`GamePackage v2`, capability resolution, an SDK, or publication.
 
 ## Platform Acceptance: PLAT-1
 

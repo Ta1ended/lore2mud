@@ -1,6 +1,7 @@
 # Lore2MUD V2 Target Architecture
 
-_Status: architecture direction, not implemented API_
+_Status: V2-1 runtime contracts implemented in a local candidate; later V2 contracts
+remain architecture direction and no publication is implied_
 
 ## Two Planes
 
@@ -112,6 +113,12 @@ being ignored or resolved early.
 
 ## Runtime Contracts
 
+The V2-1 candidate implements this section in `src/lore2mud/application/`:
+`contracts.py` defines frozen typed values, `session.py` coordinates one turn around
+authoritative `World`, and `projection.py` builds the detached player-safe view. The
+current compatibility profile stores immutable seed/clock inputs and a session-owned
+event sequence; V1 gameplay does not yet consume RNG or clock values.
+
 - `GameSession`: owns one package-bound deterministic state, clock/seed inputs,
   event sequence, and save boundary.
 - `GameIntent`: typed request for an existing engine action. It is not a plugin
@@ -134,11 +141,12 @@ existing `World` semantics require it.
 
 ## Compatibility Strategy
 
-`World` remains a compatibility facade during migration. V2 adapters initially
+`World` remains the compatibility authority during migration. The V2-1 adapters
 translate typed intents to existing `World` operations and translate typed outcomes
-to events/views. New clients call `GameSession`; they do not call `World` directly.
-CLI and Web move to the shared application layer in V2-1 while V1 public content and
-supported saves remain regression fixtures.
+to events/views. CLI and Web now use the shared `GameSession` application layer;
+`CommandProcessor` and Web `PlayerSession` retain their compatibility names and
+transport parsing/rendering roles. V1 public content and supported saves remain
+regression fixtures.
 
 New capabilities must not accumulate new branches in `World`. V2-3 moves capability
 state, predicates, effects, views, and migrations behind declared modules. Legacy

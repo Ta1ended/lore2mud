@@ -1,21 +1,59 @@
-"""Structured player actions and snapshots for the local browser UI."""
+"""Web parsing and rendering adapters for the shared application boundary."""
 
 from __future__ import annotations
 
-from dataclasses import asdict, is_dataclass
+from dataclasses import fields, is_dataclass
+from enum import Enum
 import shlex
-from threading import RLock
-from typing import Any, Callable
+from typing import TypeAlias
 
-from lore2mud.content.models import (
-    CollectItemQuestDefinition,
-    ContentPack,
-    MonsterDefeatedQuestDefinition,
-    ReachRoomQuestDefinition,
+from lore2mud.application.contracts import (
+    AttackIntent,
+    BuyIntent,
+    CampaignActionEventData,
+    CampaignActionIntent,
+    ChooseDialogueIntent,
+    CombatEventData,
+    DeterminismContext,
+    DialogueEndEventData,
+    DialogueEventData,
+    DropIntent,
+    EndDialogueIntent,
+    EquipIntent,
+    EquipmentEventData,
+    EquipmentSlot,
+    GameEvent,
+    GameIntent,
+    GameView,
+    ItemTransferEventData,
+    LoadIntent,
+    MoveEventData,
+    MoveIntent,
+    PersistenceEventData,
+    RecoverIntent,
+    RecoveryEventData,
+    RejectionCode,
+    SaveIntent,
+    SellIntent,
+    TakeIntent,
+    TalkIntent,
+    TradeEventData,
+    TurnResult,
+    TurnStatus,
+    UnequipIntent,
+    UseEventData,
+    UseIntent,
 )
+from lore2mud.application.session import GameSession
+from lore2mud.content.models import ContentPack
 from lore2mud.engine.commands import CommandProcessor
-from lore2mud.engine.save import SaveLoadError, SaveLoadService
-from lore2mud.engine.world import World, WorldRuleError
+from lore2mud.engine.save import SaveLoadService
+from lore2mud.engine.world import World
+
+
+JsonValue: TypeAlias = (
+    str | int | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
+)
 
 
 class PlayerActionError(ValueError):
@@ -56,7 +94,7 @@ _READ_ONLY_COMMANDS = frozenset({
 
 
 class PlayerSession:
-    """Own one authoritative World and expose a structured player boundary."""
+    """Keep the legacy Web composition name while delegating turns to GameSession."""
 
     def __init__(
         self,
@@ -64,55 +102,110 @@ class PlayerSession:
         save_service: SaveLoadService,
         *,
         player_name: str = "旅人",
+        determinism: DeterminismContext | None = None,
     ) -> None:
-        self._pack = pack
-        self._save_service = save_service
-        self._world = World.from_content_pack(pack, player_name=player_name)
-        self._commands = CommandProcessor(
-            self._world, save_service=self._save_service
+        self._session = GameSession.from_content_pack(
+            pack,
+            save_service,
+            player_name=player_name,
+            determinism=determinism,
         )
-        self._lock = RLock()
+        self._commands = CommandProcessor.from_session(self._session)
+        self._last_turn_result: TurnResult | None = None
 
     @property
     def world(self) -> World:
-        """Return the current authoritative World for integration tests."""
-        return self._world
+        """Return the current compatibility World for existing integrations."""
+        return self._session.world
 
-    def dispatch(self, raw_action: object) -> dict[str, Any]:
-        """Validate and execute one player intent, always returning a snapshot."""
-        with self._lock:
-            try:
-                action_type, action = self._validate_action(raw_action)
-                event = self._execute(action_type, action)
-                return {
-                    "ok": True,
-                    "event": event,
-                    "snapshot": self._snapshot(),
-                }
-            except (PlayerActionError, WorldRuleError, SaveLoadError) as exc:
-                return {
-                    "ok": False,
-                    "event": {"type": "error", "message": str(exc), "data": {}},
-                    "snapshot": self._snapshot(),
-                }
+    @property
+    def game_session(self) -> GameSession:
+        return self._session
 
-    def snapshot(self) -> dict[str, Any]:
-        """Return a read-only JSON-ready view of the authoritative World."""
-        with self._lock:
-            return self._snapshot()
+    @property
+    def last_turn_result(self) -> TurnResult | None:
+        return self._last_turn_result
+
+    def dispatch(self, raw_action: object) -> dict[str, JsonValue]:
+        """Parse one Web action, submit one typed turn, and render its result."""
+        try:
+            action_type, action = self._validate_action(raw_action)
+            if action_type == "command":
+                return self._dispatch_command(action)
+            intent = self._intent(action_type, action)
+        except PlayerActionError as exc:
+            result = self._session.reject(
+                RejectionCode.MALFORMED_INTENT,
+                str(exc),
+            )
+            self._last_turn_result = result
+            return self._render_response(
+                result,
+                legacy_type="error",
+                message=str(exc),
+                legacy_data={},
+            )
+
+        result = self._session.submit(intent)
+        self._last_turn_result = result
+        if result.status is TurnStatus.REJECTED:
+            assert result.rejection is not None
+            return self._render_response(
+                result,
+                legacy_type="error",
+                message=result.rejection.message,
+                legacy_data={},
+            )
+        event = result.events[0] if result.events else None
+        return self._render_response(
+            result,
+            legacy_type=event.kind.value if event is not None else action_type,
+            message=self._message(action_type, event),
+            legacy_data=self._legacy_event_data(event),
+        )
+
+    def snapshot(self) -> dict[str, JsonValue]:
+        """Return the compatibility JSON snapshot rendered from GameView."""
+        return self._legacy_snapshot(self._session.view())
+
+    def _dispatch_command(
+        self,
+        action: dict[str, object],
+    ) -> dict[str, JsonValue]:
+        command = self._text(action, "command", maximum=500)
+        self._validate_fallback_command(command)
+        command_result = self._commands.execute(command)
+        turn = command_result.turn_result
+        if turn is None:
+            turn = TurnResult(TurnStatus.ACCEPTED, (), self._session.view())
+        self._last_turn_result = turn
+        event_type = "command" if turn.status is TurnStatus.ACCEPTED else "error"
+        return self._render_response(
+            turn,
+            legacy_type=event_type,
+            message=command_result.text,
+            legacy_data={
+                "command": command,
+                "should_quit": command_result.should_quit,
+            },
+        )
 
     @staticmethod
-    def _validate_action(raw_action: object) -> tuple[str, dict[str, Any]]:
+    def _validate_action(
+        raw_action: object,
+    ) -> tuple[str, dict[str, object]]:
         if not isinstance(raw_action, dict):
             raise PlayerActionError("action 必须是 JSON 对象。")
+        if not all(isinstance(key, str) for key in raw_action):
+            raise PlayerActionError("action 字段名必须是字符串。")
         action = dict(raw_action)
         action_type = action.get("type")
         if not isinstance(action_type, str) or not action_type:
             raise PlayerActionError("action.type 必须是非空字符串。")
-        fields = _ACTION_FIELDS.get(action_type)
-        if fields is None:
+        schema = _ACTION_FIELDS.get(action_type)
+        if schema is None:
             raise PlayerActionError(f"未知 action 类型：{action_type}。")
-        required, optional = fields
+        required, optional = schema
         keys = set(action) - {"type"}
         missing = required - keys
         unknown = keys - required - optional
@@ -127,7 +220,12 @@ class PlayerSession:
         return action_type, action
 
     @staticmethod
-    def _text(action: dict[str, Any], field: str, *, maximum: int = 200) -> str:
+    def _text(
+        action: dict[str, object],
+        field: str,
+        *,
+        maximum: int = 200,
+    ) -> str:
         value = action.get(field)
         if not isinstance(value, str) or not value.strip():
             raise PlayerActionError(f"action.{field} 必须是非空字符串。")
@@ -137,14 +235,14 @@ class PlayerSession:
         return value
 
     @staticmethod
-    def _quantity(action: dict[str, Any], field: str = "quantity") -> int:
+    def _quantity(action: dict[str, object], field: str = "quantity") -> int:
         value = action.get(field, 1)
         if isinstance(value, bool) or not isinstance(value, int) or value < 1:
             raise PlayerActionError(f"action.{field} 必须是正整数。")
         return value
 
     @staticmethod
-    def _slot(action: dict[str, Any]) -> str | None:
+    def _slot(action: dict[str, object]) -> str | None:
         if "slot" not in action:
             return None
         value = action["slot"]
@@ -154,72 +252,49 @@ class PlayerSession:
             raise PlayerActionError("action.slot 必须是非空字符串或 null。")
         return value.strip()
 
-    def _execute(self, action_type: str, action: dict[str, Any]) -> dict[str, Any]:
-        operations: dict[str, Callable[[], object]] = {
-            "move": lambda: self._world.move_with_outcome(
-                self._text(action, "direction", maximum=32)
-            ),
-            "take": lambda: self._world.take(
-                self._text(action, "target"), self._quantity(action)
-            ),
-            "drop": lambda: self._world.drop(
-                self._text(action, "target"), self._quantity(action)
-            ),
-            "use": lambda: self._world.use(
-                self._text(action, "target"), self._quantity(action)
-            ),
-            "equip": lambda: self._world.equip(self._text(action, "target")),
-            "unequip": lambda: self._world.unequip(
-                self._text(action, "slot", maximum=16)
-            ),
-            "attack": lambda: self._world.attack(self._text(action, "target")),
-            "talk": lambda: self._world.start_dialogue(
-                self._text(action, "target")
-            ),
-            "choose_dialogue": lambda: self._world.select_option(
-                self._quantity(action, "index")
-            ),
-            "end_dialogue": self._world.end_dialogue,
-            "buy": lambda: self._world.buy(
-                self._text(action, "target"), self._quantity(action)
-            ),
-            "sell": lambda: self._world.sell(
-                self._text(action, "target"), self._quantity(action)
-            ),
-            "recover": self._world.recover,
-            "campaign_action": lambda: self._world.execute_campaign_action(
-                self._text(action, "action_id")
-            ),
-        }
-
+    def _intent(
+        self,
+        action_type: str,
+        action: dict[str, object],
+    ) -> GameIntent:
+        if action_type == "move":
+            return MoveIntent(self._text(action, "direction", maximum=32))
+        if action_type == "take":
+            return TakeIntent(self._text(action, "target"), self._quantity(action))
+        if action_type == "drop":
+            return DropIntent(self._text(action, "target"), self._quantity(action))
+        if action_type == "use":
+            return UseIntent(self._text(action, "target"), self._quantity(action))
+        if action_type == "equip":
+            return EquipIntent(self._text(action, "target"))
+        if action_type == "unequip":
+            slot = self._text(action, "slot", maximum=16).casefold()
+            try:
+                equipment_slot = EquipmentSlot(slot)
+            except ValueError as exc:
+                raise PlayerActionError("action.slot 必须是 hand 或 body。") from exc
+            return UnequipIntent(equipment_slot)
+        if action_type == "attack":
+            return AttackIntent(self._text(action, "target"))
+        if action_type == "talk":
+            return TalkIntent(self._text(action, "target"))
+        if action_type == "choose_dialogue":
+            return ChooseDialogueIntent(self._quantity(action, "index"))
+        if action_type == "end_dialogue":
+            return EndDialogueIntent()
+        if action_type == "buy":
+            return BuyIntent(self._text(action, "target"), self._quantity(action))
+        if action_type == "sell":
+            return SellIntent(self._text(action, "target"), self._quantity(action))
         if action_type == "save":
-            slot = self._slot(action)
-            self._save_service.save(self._world, slot)
-            return self._event(
-                "save", {"slot": slot or "default"}, f"已保存到 {slot or 'default'}。"
-            )
+            return SaveIntent(self._slot(action))
         if action_type == "load":
-            slot = self._slot(action)
-            self._replace_world(self._save_service.load(slot))
-            return self._event(
-                "load", {"slot": slot or "default"}, f"已读取 {slot or 'default'}。"
-            )
-        if action_type == "command":
-            command = self._text(action, "command", maximum=500)
-            self._validate_fallback_command(command)
-            result = self._commands.execute(command)
-            return self._event(
-                "command",
-                {"command": command, "should_quit": result.should_quit},
-                result.text,
-            )
-
-        outcome = operations[action_type]()
-        return self._event(
-            action_type,
-            self._json_value(outcome),
-            self._message(action_type, outcome),
-        )
+            return LoadIntent(self._slot(action))
+        if action_type == "recover":
+            return RecoverIntent()
+        if action_type == "campaign_action":
+            return CampaignActionIntent(self._text(action, "action_id"))
+        raise PlayerActionError(f"未知 action 类型：{action_type}。")
 
     @staticmethod
     def _validate_fallback_command(command: str) -> None:
@@ -234,322 +309,239 @@ class PlayerSession:
                 f"{allowed}。其他行动请使用结构化界面控件。"
             )
 
-    def _replace_world(self, world: World) -> None:
-        self._world = world
-        self._commands = CommandProcessor(
-            self._world, save_service=self._save_service
-        )
+    @staticmethod
+    def _render_response(
+        result: TurnResult,
+        *,
+        legacy_type: str,
+        message: str,
+        legacy_data: dict[str, JsonValue],
+    ) -> dict[str, JsonValue]:
+        diagnostics: list[JsonValue] = []
+        if result.rejection is not None:
+            diagnostics.append({
+                "code": result.rejection.code.value,
+                "message": result.rejection.message,
+            })
+        return {
+            "ok": result.status is TurnStatus.ACCEPTED,
+            "status": result.status.value,
+            "events": [PlayerSession._event_json(event) for event in result.events],
+            "view": PlayerSession._json_value(result.view),
+            "diagnostics": diagnostics,
+            "event": {
+                "type": legacy_type,
+                "message": message,
+                "data": legacy_data,
+            },
+            "snapshot": PlayerSession._legacy_snapshot(result.view),
+        }
 
     @staticmethod
-    def _json_value(value: object) -> Any:
-        if is_dataclass(value) and not isinstance(value, type):
-            return asdict(value)
+    def _event_json(event: GameEvent) -> dict[str, JsonValue]:
+        return {
+            "sequence": event.sequence,
+            "type": event.kind.value,
+            "data": PlayerSession._json_value(event.payload),
+        }
+
+    @staticmethod
+    def _legacy_event_data(event: GameEvent | None) -> dict[str, JsonValue]:
+        if event is None:
+            return {}
+        payload = event.payload
+        if isinstance(payload, CombatEventData):
+            return {
+                "combat": {
+                    "monster_name": payload.monster_name,
+                    "damage_to_monster": payload.damage_to_monster,
+                    "damage_to_player": payload.damage_to_player,
+                    "monster_defeated": payload.monster_defeated,
+                    "player_defeated": payload.player_defeated,
+                    "experience_reward": payload.experience_reward,
+                },
+                "combat_level_gains": PlayerSession._json_value(
+                    payload.combat_level_gains
+                ),
+                "quest_outcomes": PlayerSession._json_value(
+                    payload.quest_outcomes
+                ),
+                "level_gains": PlayerSession._json_value(payload.level_gains),
+                "loot_item": PlayerSession._json_value(payload.loot_item),
+            }
+        if isinstance(payload, MoveEventData):
+            return {
+                "room": {
+                    "id": payload.room_id,
+                    "name": payload.room_name,
+                },
+                "quest_outcomes": PlayerSession._json_value(
+                    payload.quest_outcomes
+                ),
+                "level_gains": PlayerSession._json_value(payload.level_gains),
+            }
+        value = PlayerSession._json_value(payload)
+        assert isinstance(value, dict)
         return value
 
     @staticmethod
-    def _event(action_type: str, data: Any, message: str) -> dict[str, Any]:
-        return {"type": action_type, "message": message, "data": data}
+    def _message(action_type: str, event: GameEvent | None) -> str:
+        if event is None:
+            return "行动已接受。"
+        payload = event.payload
+        if isinstance(payload, MoveEventData):
+            return f"来到 {payload.room_name}。"
+        if isinstance(payload, ItemTransferEventData):
+            return (
+                f"拾取 {payload.item_name}。"
+                if action_type == "take"
+                else f"放下 {payload.item_name}。"
+            )
+        if isinstance(payload, UseEventData):
+            return f"使用 {payload.item_name}。"
+        if isinstance(payload, EquipmentEventData):
+            return (
+                f"装备 {payload.item_name}。"
+                if action_type == "equip"
+                else f"卸下 {payload.item_name}。"
+            )
+        if isinstance(payload, CombatEventData):
+            return (
+                f"攻击 {payload.monster_name}，"
+                f"造成 {payload.damage_to_monster} 点伤害。"
+            )
+        if isinstance(payload, DialogueEventData):
+            return (
+                f"与 {payload.character_name} 对话。"
+                if action_type == "talk"
+                else "选择了对话回应。"
+            )
+        if isinstance(payload, DialogueEndEventData):
+            return "结束对话。"
+        if isinstance(payload, TradeEventData):
+            return (
+                f"购买 {payload.item_name}。"
+                if action_type == "buy"
+                else f"出售 {payload.item_name}。"
+            )
+        if isinstance(payload, RecoveryEventData):
+            return f"在 {payload.room_name} 恢复。"
+        if isinstance(payload, CampaignActionEventData):
+            return payload.result_text
+        if isinstance(payload, PersistenceEventData):
+            return (
+                f"已保存到 {payload.slot}。"
+                if action_type == "save"
+                else f"已读取 {payload.slot}。"
+            )
+        return "行动已接受。"
 
     @staticmethod
-    def _message(action_type: str, outcome: object) -> str:
-        labels = {
-            "move": lambda: f"来到 {outcome.room.name}。",  # type: ignore[attr-defined]
-            "take": lambda: f"拾取 {outcome.item_name}。",  # type: ignore[attr-defined]
-            "drop": lambda: f"放下 {outcome.item_name}。",  # type: ignore[attr-defined]
-            "use": lambda: f"使用 {outcome.item_name}。",  # type: ignore[attr-defined]
-            "equip": lambda: f"装备 {outcome.item_name}。",  # type: ignore[attr-defined]
-            "unequip": lambda: f"卸下 {outcome.item_name}。",  # type: ignore[attr-defined]
-            "attack": lambda: (
-                f"攻击 {outcome.combat.monster_name}，造成 "  # type: ignore[attr-defined]
-                f"{outcome.combat.damage_to_monster} 点伤害。"  # type: ignore[attr-defined]
-            ),
-            "talk": lambda: f"与 {outcome.character_name} 对话。",  # type: ignore[attr-defined]
-            "choose_dialogue": lambda: "选择了对话回应。",
-            "end_dialogue": lambda: "结束对话。",
-            "buy": lambda: f"购买 {outcome.item_name}。",  # type: ignore[attr-defined]
-            "sell": lambda: f"出售 {outcome.item_name}。",  # type: ignore[attr-defined]
-            "recover": lambda: f"在 {outcome.room_name} 恢复。",  # type: ignore[attr-defined]
-            "campaign_action": lambda: outcome.result_text,  # type: ignore[attr-defined]
-        }
-        return labels[action_type]()
-
-    def _snapshot(self) -> dict[str, Any]:
-        world = self._world
-        player = world.player
-        room = world.current_room
-        inventory = [self._item_snapshot(stack) for stack in player.inventory.stacks]
-        room_items = [self._item_snapshot(stack) for stack in room.item_stacks]
-        held_ids = player.inventory.all_item_ids
-
-        exits = []
-        for direction, exit_def in sorted(world.available_exits().items()):
-            requirement = exit_def.required_item_id
-            exits.append(
-                {
-                    "direction": direction,
-                    "target_room_id": exit_def.target_room_id,
-                    "target_room_name": world.rooms[exit_def.target_room_id].name,
-                    "required_item_id": requirement,
-                    "required_item_name": (
-                        world.items[requirement].name if requirement else None
-                    ),
-                    "locked": requirement is not None and requirement not in held_ids,
-                }
-            )
-
-        monsters = [
-            {
-                "id": monster.id,
-                "name": monster.name,
-                "description": monster.description,
-                "hp": monster.hp,
-                "max_hp": monster.max_hp,
-                "attack": monster.attack,
-                "defense": monster.defense,
-            }
-            for monster_id in room.monster_ids
-            for monster in (world.monsters[monster_id],)
-        ]
-        characters = [
-            {
-                "id": character.id,
-                "name": character.name,
-                "description": world.character_description(character.id),
-            }
-            for character in world.available_characters()
-        ]
-
-        return {
-            "pack": {
-                "id": world.pack_id,
-                "name": world.pack_name,
-                "version": world.pack_version,
-            },
-            "player": {
-                "id": player.id,
-                "name": player.name,
-                "alive": player.is_alive,
-                "hp": player.hp,
-                "max_hp": player.max_hp,
-                "level": player.level,
-                "experience": player.experience,
-                "experience_to_next_level": player.level * 10,
-                "attack": world.effective_attack,
-                "base_attack": player.attack,
-                "defense": world.effective_defense,
-                "base_defense": player.defense,
-                "coins": player.coins,
-                "inventory_capacity": player.inventory.capacity,
-                "inventory_stack_count": player.inventory.stack_count,
-            },
-            "room": {
-                "id": room.id,
-                "name": room.name,
-                "description": world.location_description(),
-                "exits": exits,
-                "items": room_items,
-                "monsters": monsters,
-                "characters": characters,
-            },
-            "inventory": inventory,
-            "equipment": {
-                "hand": self._equipped_item(world.equipped.hand),
-                "body": self._equipped_item(world.equipped.body),
-            },
-            "quests": self._quest_snapshots(),
-            "campaign": self._campaign_snapshot(),
-            "dialogue": self._dialogue_snapshot(),
-            "shop": self._shop_snapshot(),
-            "flags": [
-                {"id": flag_id, "value": value}
-                for flag_id, value in sorted(world.flags.items())
-            ],
-        }
-
-    def _item_snapshot(self, stack: object) -> dict[str, Any]:
-        item_id = stack.item_id  # type: ignore[attr-defined]
-        item = self._world.items[item_id]
-        return {
-            "id": item.id,
-            "name": item.name,
-            "description": item.description,
-            "quantity": stack.quantity,  # type: ignore[attr-defined]
-            "heal_amount": item.heal_amount,
-            "slot": item.slot,
-            "attack_bonus": item.attack_bonus,
-            "defense_bonus": item.defense_bonus,
-            "equipped": item_id in {
-                self._world.equipped.hand,
-                self._world.equipped.body,
-            },
-        }
-
-    def _equipped_item(self, item_id: str | None) -> dict[str, Any] | None:
-        if item_id is None:
-            return None
-        item = self._world.items[item_id]
-        return {
-            "id": item.id,
-            "name": item.name,
-            "attack_bonus": item.attack_bonus,
-            "defense_bonus": item.defense_bonus,
-        }
-
-    def _quest_snapshots(self) -> list[dict[str, Any]]:
-        world = self._world
-        quests = []
-        for quest_id in sorted(world.quest_states):
-            state = world.quest_states[quest_id]
-            quest = world.quest_defs[quest_id]
-            target: dict[str, Any]
-            if isinstance(quest, MonsterDefeatedQuestDefinition):
-                monster = world.monsters[quest.target_monster_id]
-                target = {
-                    "kind": quest.kind,
-                    "id": monster.id,
-                    "name": monster.name,
-                    "current": 1 if not monster.is_alive else 0,
-                    "required": 1,
-                }
-            elif isinstance(quest, ReachRoomQuestDefinition):
-                target_room = world.rooms[quest.target_room_id]
-                target = {
-                    "kind": quest.kind,
-                    "id": target_room.id,
-                    "name": target_room.name,
-                    "current": 1 if player_room(world) == target_room.id else 0,
-                    "required": 1,
-                }
-            elif isinstance(quest, CollectItemQuestDefinition):
-                item = world.items[quest.target_item_id]
-                stack = world.player.inventory.find_stack(item.id)
-                target = {
-                    "kind": quest.kind,
-                    "id": item.id,
-                    "name": item.name,
-                    "current": stack.quantity if stack else 0,
-                    "required": quest.required_quantity,
-                }
-            else:
-                raise AssertionError(f"未知任务定义：{quest!r}")
-            quests.append(
-                {
-                    "id": quest.id,
-                    "name": quest.name,
-                    "description": quest.description,
-                    "completed": state.completed,
-                    "reward_experience": quest.reward_experience,
-                    "target": target,
-                }
-            )
-        return quests
-
-    def _campaign_snapshot(self) -> dict[str, Any]:
-        world = self._world
-        scenes = []
-        for scene in world.available_scenes():
-            state = world.scene_states[scene.id]
-            assert state.stage_index is not None
-            scenes.append(
-                {
-                    "id": scene.id,
-                    "name": scene.name,
-                    "status": state.status,
-                    "stage_id": scene.stages[state.stage_index].id,
-                    "description": world.scene_description(scene.id),
-                }
-            )
-        interactables = []
-        action_rows: list[dict[str, Any]] = []
-        actions_by_interactable: dict[str, list[Any]] = {}
-        for projected in world.available_campaign_actions():
-            actions_by_interactable.setdefault(projected.interactable_id, []).append(
-                projected.action
-            )
-        for interactable in world.available_interactables():
-            actions = actions_by_interactable.get(interactable.id, [])
-            action_snapshots = [
-                {"id": action.id, "label": action.label}
-                for action in actions
-            ]
-            interactables.append(
-                {
-                    "id": interactable.id,
-                    "name": interactable.name,
-                    "kind": interactable.kind,
-                    "description": world.interactable_description(interactable.id),
-                    "actions": action_snapshots,
-                }
-            )
-            action_rows.extend(
-                {
-                    "id": action["id"],
-                    "label": action["label"],
-                    "interactable_id": interactable.id,
-                }
-                for action in action_snapshots
-            )
-        journal = [asdict(entry) for entry in world.available_log_entries()]
-        return {
-            "scenes": scenes,
-            "interactables": interactables,
-            "actions": action_rows,
-            "objectives": [
-                entry for entry in journal if entry["category"] == "objective"
-            ],
-            "knowledge": [
-                entry for entry in journal if entry["category"] == "knowledge"
-            ],
-            "journal": journal,
-        }
-
-    def _dialogue_snapshot(self) -> dict[str, Any] | None:
-        active = self._world.active_dialogue
-        if active is None:
-            return None
-        dialogue = self._world.dialogue_defs[active.dialogue_id]
-        character = self._world.characters[dialogue.character_id]
-        node = dialogue.nodes[active.current_node_id]
-        options = self._world.available_dialogue_options(dialogue.id, node.id)
-        return {
-            "dialogue_id": dialogue.id,
-            "character_id": character.id,
-            "character_name": character.name,
-            "node_id": node.id,
-            "text": self._world.dialogue_node_text(dialogue.id, node.id),
-            "options": [
-                {"index": index, "id": option.id, "text": option.text}
-                for index, option in enumerate(options, 1)
-            ],
-        }
-
-    def _shop_snapshot(self) -> dict[str, Any] | None:
-        world = self._world
-        shop = next(
-            (
-                value
-                for value in sorted(world.shop_defs.values(), key=lambda value: value.id)
-                if value.room_id == world.player.room_id
-            ),
-            None,
+    def _legacy_snapshot(view: GameView) -> dict[str, JsonValue]:
+        value = PlayerSession._json_value(view)
+        assert isinstance(value, dict)
+        value.pop("focus", None)
+        value["dialogue"] = (
+            PlayerSession._json_value(view.dialogue)
+            if view.dialogue is not None
+            else None
         )
-        if shop is None:
-            return None
-        return {
-            "id": shop.id,
-            "name": shop.name,
-            "catalog": [
-                {
-                    "item_id": listing.item_id,
-                    "item_name": world.items[listing.item_id].name,
-                    "buy_price": listing.buy_price,
-                    "sell_price": listing.sell_price,
-                }
-                for listing in shop.catalog
-            ],
+        value["shop"] = (
+            PlayerSession._json_value(view.shop)
+            if view.shop is not None
+            else None
+        )
+        value["equipment"] = {
+            "hand": (
+                PlayerSession._json_value(view.equipment.hand)
+                if view.equipment.hand is not None
+                else None
+            ),
+            "body": (
+                PlayerSession._json_value(view.equipment.body)
+                if view.equipment.body is not None
+                else None
+            ),
         }
+        return value
 
+    @staticmethod
+    def _json_value(value: object) -> JsonValue:
+        if value is None or isinstance(value, (str, int, bool)):
+            return value
+        if isinstance(value, Enum):
+            return value.value
+        if isinstance(value, GameIntent):
+            return PlayerSession._intent_json(value)
+        if isinstance(value, (tuple, list)):
+            return [PlayerSession._json_value(item) for item in value]
+        if isinstance(value, dict):
+            return {
+                str(key): PlayerSession._json_value(item)
+                for key, item in value.items()
+            }
+        if is_dataclass(value) and not isinstance(value, type):
+            result: dict[str, JsonValue] = {}
+            for definition in fields(value):
+                item = getattr(value, definition.name)
+                if item is None:
+                    continue
+                result[definition.name] = PlayerSession._json_value(item)
+            return result
+        raise TypeError(f"unsupported JSON projection value: {type(value).__name__}")
 
-def player_room(world: World) -> str:
-    """Keep quest progress construction explicit and easy to unit test."""
-    return world.player.room_id
+    @staticmethod
+    def _intent_json(intent: GameIntent) -> dict[str, JsonValue]:
+        if isinstance(intent, MoveIntent):
+            return {"type": "move", "direction": intent.direction}
+        if isinstance(intent, TakeIntent):
+            return {
+                "type": "take",
+                "target": intent.target,
+                "quantity": intent.quantity,
+            }
+        if isinstance(intent, DropIntent):
+            return {
+                "type": "drop",
+                "target": intent.target,
+                "quantity": intent.quantity,
+            }
+        if isinstance(intent, UseIntent):
+            return {
+                "type": "use",
+                "target": intent.target,
+                "quantity": intent.quantity,
+            }
+        if isinstance(intent, EquipIntent):
+            return {"type": "equip", "target": intent.target}
+        if isinstance(intent, UnequipIntent):
+            return {"type": "unequip", "slot": intent.slot.value}
+        if isinstance(intent, AttackIntent):
+            return {"type": "attack", "target": intent.target}
+        if isinstance(intent, TalkIntent):
+            return {"type": "talk", "target": intent.target}
+        if isinstance(intent, ChooseDialogueIntent):
+            return {"type": "choose_dialogue", "index": intent.index}
+        if isinstance(intent, EndDialogueIntent):
+            return {"type": "end_dialogue"}
+        if isinstance(intent, BuyIntent):
+            return {
+                "type": "buy",
+                "target": intent.target,
+                "quantity": intent.quantity,
+            }
+        if isinstance(intent, SellIntent):
+            return {
+                "type": "sell",
+                "target": intent.target,
+                "quantity": intent.quantity,
+            }
+        if isinstance(intent, CampaignActionIntent):
+            return {"type": "campaign_action", "action_id": intent.action_id}
+        if isinstance(intent, RecoverIntent):
+            return {"type": "recover"}
+        if isinstance(intent, SaveIntent):
+            return {"type": "save", "slot": intent.slot}
+        if isinstance(intent, LoadIntent):
+            return {"type": "load", "slot": intent.slot}
+        raise TypeError(f"unsupported Web intent: {type(intent).__name__}")

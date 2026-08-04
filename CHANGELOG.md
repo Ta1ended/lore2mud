@@ -4,6 +4,18 @@
 
 ### Changed
 
+- Routed CLI and Web gameplay turns through one transport-neutral V2-1 application
+  boundary while retaining authoritative `World`, the compatible
+  `CommandProcessor(world, save_service)` surface, and Web `PlayerSession` name.
+  CLI/Web now parse typed requests and render `TurnResult`; Web responses add
+  `status/events/view/diagnostics` while preserving `ok/event/snapshot`, and browser
+  controls consume projected affordances instead of duplicating gameplay availability
+  rules. Save v9, v7/v8 read gates, content/schema versions, runtime campaign, and the
+  public original Demo are unchanged (DEC-0092).
+- Replaced the stale repository-wide fixed model/reasoning floor with controller model
+  selection by responsibility and risk, explicit recording when exposed, evidence-
+  based verification, rework/reassignment for unreliable output, and unchanged fresh
+  independent acceptance requirements (DEC-0092).
 - Made the public `README.md` and the two human-facing handoffs bilingual with Chinese
   first and English second. The README now mirrors the product boundary, current V1,
   V2 targets, quick start, repository map, public/private boundary, authoring tools,
@@ -110,6 +122,17 @@
 
 ### Added
 
+- Added the public V2-1 `lore2mud.application` package: frozen typed `GameIntent`,
+  `GameEvent`, `GameView`, `TurnResult`, determinism and rejection contracts;
+  `GameSession` turn coordination with rollback and ordered event sequencing; and a
+  detached player-safe projection with concrete V1 affordances. New tests prove
+  contract immutability, rejection invariance, accepted nonlethal combat, hidden-state
+  omission, real CLI/Web turn equivalence, save-byte equivalence, runtime campaign
+  parity, and Windows candidate inclusion. Controller verification passed 1402
+  unittest tests with 11 skips, serial and xdist pytest at 1391 passed / 11 skipped,
+  Ruff, Pyright, compileall, original-demo validation, repository history safety,
+  fsck, and diff checks; the first xdist startup's pre-collection temp-root permission
+  failure was closed by an explicit repository-external temp rerun (DEC-0092).
 - Added the public runtime campaign foundation through optional strict
   `campaign.json` v1. World-authoritative projections cover conditional locations,
   exits, actors, dialogue text, scenes, interactables, actions, objectives,

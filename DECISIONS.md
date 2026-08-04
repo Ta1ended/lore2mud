@@ -2472,3 +2472,52 @@
   left milestone ownership ambiguous. It does not supersede the accepted product
   direction, safety boundaries, PLAT-1, DEC-0088's V2-1 routing, or later bilingual
   maintenance decisions.
+
+## DEC-0092: Implement the V2-1 public runtime boundary without moving World authority
+
+- Date: 2026-08-04
+- Status: Local implementation candidate; controller verification and exact-commit
+  independent TECH decision are required before advancement.
+- Context: Live public `main` was verified at
+  `564530d87aea17da26544b7793701e0dca0fe57d` with successful GitHub Actions tests
+  `30846680303` and quality `30846680343`. The accepted planning candidate
+  `1d4b26d9127d4229893911cf260cf3c2f4b0ce3a` refined V2-1 as the narrow flow
+  `CLI/Web parsing -> GameIntent -> GameSession -> TurnResult -> transport rendering`.
+  V1 previously split application behavior across `CommandProcessor`, Web
+  `PlayerSession`, and direct `World` calls.
+- Decision: Add `src/lore2mud/application/` with frozen typed intent, event, view,
+  determinism, rejection, and turn-result values; one locked `GameSession` around the
+  authoritative compatibility `World`; and one detached player-safe projection.
+  Contract rejection restores canonical persistable state, RNG position, immutable
+  clock input, event sequence, and original `World` identity before returning no
+  transition event. CLI and Web keep parsing/rendering and compatibility names, but
+  submit typed requests through the shared session. Concrete player affordances are
+  projected from isolated V1 rule probes; no public general admissible-intent catalog
+  is introduced. Save/content/schema versions and `World` gameplay systems remain
+  unchanged.
+- Decision: Replace the repository-wide fixed `gpt-5.6-sol`/`xhigh` floor with
+  controller-selected available models and reasoning levels based on responsibility,
+  complexity, stability, and risk. Record selections when exposed, verify every
+  output through code/tests/Git evidence, prefer reliable reasoning for high-risk
+  shared boundaries, and reassign unverifiable work. Independent acceptance remains
+  fresh, read-only, exact-target, findings-first, and separate from implementation.
+- Evidence: Product/Specification and Architect/Engine Lead completed read-only scope
+  and compatibility reviews. Focused contract, cross-transport, CLI, Web, save,
+  dialogue, gameplay, runtime-campaign, and Windows packaging regressions pass after
+  closing stale client-test and zipapp-index coverage. Full verification passed 1402
+  unittest tests with 11 conditional skips, serial pytest at 1391 passed / 11 skipped,
+  and xdist pytest at 1391 passed / 11 skipped. The first xdist startup hit a
+  pre-collection `WinError 5` in the user pytest temp root; an explicit
+  repository-external TEMP/TMP and `--basetemp` rerun passed. Ruff, Pyright,
+  compileall, original-demo validation, history safety, fsck, and working/staged diff
+  checks passed. This controller evidence does not grant TECH GO.
+- Consequences: `World` remains authoritative; `GameEvent` is a result fact rather than
+  an event bus or second state authority. V2-1 does not gain Capability, SDK,
+  structured CLI, MCP, `SimulationReport`, proofing, migration, plugin, new Demo,
+  new content/save version, or private-material scope. Shared `main` stays unmoved and
+  there is no push or release. After a fresh independent TECH GO on the exact final
+  candidate, the only next owner gate is PRODUCT PASS; TECH GO does not imply it.
+- Supersedes: DEC-0087 and DEC-0088 only where they imposed a fixed model/reasoning
+  floor, and DEC-0088/DEC-0091 handoff text only where it said V2-1 was not started.
+  It does not supersede the accepted product direction, PLAT-1, public/private and
+  rights boundaries, Git gates, or later milestone ownership.

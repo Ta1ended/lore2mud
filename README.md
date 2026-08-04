@@ -32,10 +32,11 @@ Lore2MUD 是一个**供 Agent 调用的小说转文字游戏引擎**。开发 Ag
 - save v9 写入、受约束的命名存档槽，以及受保护的 v7/v8 读取兼容；
 - 内容校验、公开原创示例、确定性创作编译器、仓库安全检查、Windows 打包和本地 Web 玩家端。
 
-`World`、`CommandProcessor` 和 Web `PlayerSession` 是当前 V1 类型。
-`GameBlueprint`、`GameProject`、`GamePackage v2`、`CapabilityDescriptor`、
-`GameSession`、`GameIntent`、`GameEvent`、`GameView` 和 `TurnResult` 是 V2 目标，
-尚未由 V2-0 文档重置实现。
+`World` 仍是当前 V1 玩法权威。V2-1 本地候选已实现 `GameSession`、`GameIntent`、
+`GameEvent`、`GameView` 和 `TurnResult`，并让 `CommandProcessor` 与 Web
+`PlayerSession` 作为兼容传输适配器使用同一应用层；该候选尚未发布，也不代表 PRODUCT
+PASS。`GameBlueprint`、`GameProject`、`GamePackage v2` 和 `CapabilityDescriptor`
+仍是后续 V2 目标。
 
 流水线中的 `CampaignSpec v1` 是确定性的创作中间表示，不是运行时输入，也不能与内容包的
 运行时 `campaign.json` 互换。
@@ -187,10 +188,12 @@ exposes play through a text CLI and local Web client. Current capabilities inclu
 - content validation, public original examples, deterministic authoring compilers,
   repository safety checks, Windows packaging, and a local Web player.
 
-`World`, `CommandProcessor`, and Web `PlayerSession` are current V1 types.
-`GameBlueprint`, `GameProject`, `GamePackage v2`, `CapabilityDescriptor`,
-`GameSession`, `GameIntent`, `GameEvent`, `GameView`, and `TurnResult` are V2 targets
-and are not implemented by the V2-0 documentation reset.
+`World` remains the current V1 gameplay authority. The V2-1 local candidate implements
+`GameSession`, `GameIntent`, `GameEvent`, `GameView`, and `TurnResult`, with
+`CommandProcessor` and Web `PlayerSession` retained as compatibility transport
+adapters over the same application layer. The candidate is not published and does not
+imply PRODUCT PASS. `GameBlueprint`, `GameProject`, `GamePackage v2`, and
+`CapabilityDescriptor` remain later V2 targets.
 
 The pipeline `CampaignSpec v1` is a deterministic authoring IR. It is **not** a
 runtime input and is not interchangeable with a content pack's runtime

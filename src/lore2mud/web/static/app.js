@@ -123,12 +123,13 @@ function renderRoom() {
   ui.roomDescription.textContent = room.description;
   ui.aliveState.textContent = snapshot.player.alive ? "状态正常" : "已经倒下";
   ui.aliveState.classList.toggle("dead", !snapshot.player.alive);
-  ui.recoveryPanel.hidden = snapshot.player.alive;
+  ui.recoveryPanel.hidden = !snapshot.player.recover;
   ui.recoverButton.disabled = busy;
   ui.exitList.replaceChildren();
   room.exits.forEach((exit) => {
-    const node = button(directionLabel(exit.direction), {type: "move", direction: exit.direction}, `button exit-button${exit.locked ? " locked" : ""}`);
-    node.disabled = busy || exit.locked || !snapshot.player.alive;
+    const node = exit.move
+      ? button(directionLabel(exit.direction), exit.move, "button exit-button")
+      : element("div", "button exit-button locked", directionLabel(exit.direction));
     node.append(element("span", "", exit.locked ? `需要 ${exit.required_item_name}` : exit.target_room_name));
     ui.exitList.append(node);
   });
@@ -138,16 +139,16 @@ function renderRoom() {
   room.monsters.forEach((monster) => ui.encounterList.append(entityRow(
     monster.name,
     `${monster.description} 生命 ${monster.hp}/${monster.max_hp}`,
-    [button("攻击", {type: "attack", target: monster.id}, "button danger")],
+    monster.attack_intent ? [button("攻击", monster.attack_intent, "button danger")] : [],
     "hp-inline",
   )));
   room.characters.forEach((character) => ui.encounterList.append(entityRow(
     character.name, character.description,
-    [button("交谈", {type: "talk", target: character.id}, "button primary")],
+    character.talk ? [button("交谈", character.talk, "button primary")] : [],
   )));
   room.items.forEach((item) => ui.encounterList.append(entityRow(
     `${item.name} ×${item.quantity}`, item.description,
-    [button("拾取", {type: "take", target: item.id})],
+    item.actions.map(actionButton),
   )));
   if (!room.monsters.length && !room.characters.length && !room.items.length) {
     ui.encounterList.append(empty("这里只有雾声与旧设施的回响。"));
@@ -175,7 +176,7 @@ function renderEquipment() {
     const equipped = snapshot.equipment[slot];
     const row = element("div", "equipment-row");
     row.append(element("span", "", label), element("strong", "", equipped ? equipped.name : "未装备"));
-    if (equipped) row.append(button("卸下", {type: "unequip", slot}));
+    if (equipped && equipped.unequip) row.append(button("卸下", equipped.unequip));
     ui.equipmentList.append(row);
   });
 }
@@ -193,9 +194,7 @@ function renderInventory() {
     copy.append(element("p", "", item.description));
     if (modifiers.length) copy.append(element("span", "item-meta", modifiers.join(" · ")));
     const actions = element("div", "item-actions");
-    if (item.heal_amount) actions.append(button("使用", {type: "use", target: item.id}));
-    if (item.slot && !item.equipped) actions.append(button("装备", {type: "equip", target: item.id}));
-    if (!item.equipped) actions.append(button("放下", {type: "drop", target: item.id}));
+    item.actions.forEach((action) => actions.append(actionButton(action)));
     row.append(copy, actions);
     ui.inventoryList.append(row);
   });
@@ -228,15 +227,11 @@ function renderCampaign() {
     scene.name, scene.description, [],
   )));
   campaign.interactables.forEach((interactable) => {
-    const actions = interactable.actions.map((action) => {
-      const actionButton = button(
-        action.label,
-        {type: "campaign_action", action_id: action.id},
-        "button primary",
-      );
-      actionButton.disabled = busy || !snapshot.player.alive || Boolean(snapshot.dialogue);
-      return actionButton;
-    });
+    const actions = interactable.actions.map((action) => button(
+      action.label,
+      action.intent,
+      "button primary",
+    ));
     ui.campaignList.append(entityRow(interactable.name, interactable.description, actions));
   });
 
@@ -285,7 +280,7 @@ function renderDialogue() {
   ui.dialogueText.textContent = dialogue.text;
   ui.dialogueOptions.replaceChildren();
   dialogue.options.forEach((option) => {
-    ui.dialogueOptions.append(button(`${option.index}. ${option.text}`, {type: "choose_dialogue", index: option.index}, "button primary"));
+    ui.dialogueOptions.append(button(`${option.index}. ${option.text}`, option.intent, "button primary"));
   });
 }
 
@@ -300,11 +295,7 @@ function renderShop() {
     const copy = element("div", "");
     copy.append(element("strong", "", listing.item_name), element("div", "shop-price", `买 ${listing.buy_price} · 卖 ${listing.sell_price}`));
     const actions = element("div", "entity-actions");
-    actions.append(button("购买", {type: "buy", target: listing.item_id}));
-    const owned = snapshot.inventory.some((item) => item.id === listing.item_id && !item.equipped);
-    const sellButton = button("出售", {type: "sell", target: listing.item_id});
-    sellButton.disabled = busy || !owned;
-    actions.append(sellButton);
+    listing.actions.forEach((action) => actions.append(actionButton(action)));
     row.append(copy, actions);
     ui.shopList.append(row);
   });
@@ -321,6 +312,14 @@ function renderEvents() {
 }
 
 function empty(text) { return element("p", "empty", text); }
+
+function actionButton(action) {
+  const labels = {
+    take: "拾取", drop: "放下", use: "使用", equip: "装备",
+    buy: "购买", sell: "出售",
+  };
+  return button(labels[action.type] || action.type, action);
+}
 
 function drawRouteMap() {
   const canvas = ui.canvas;
@@ -381,8 +380,12 @@ function drawRouteMap() {
 
 byId("save-button").addEventListener("click", () => sendAction({type: "save", slot: normalizedSlot()}));
 byId("load-button").addEventListener("click", () => sendAction({type: "load", slot: normalizedSlot()}));
-byId("recover-button").addEventListener("click", () => sendAction({type: "recover"}));
-byId("end-dialogue").addEventListener("click", () => sendAction({type: "end_dialogue"}));
+byId("recover-button").addEventListener("click", () => {
+  if (snapshot.player.recover) sendAction(snapshot.player.recover);
+});
+byId("end-dialogue").addEventListener("click", () => {
+  if (snapshot.dialogue && snapshot.dialogue.end) sendAction(snapshot.dialogue.end);
+});
 byId("clear-log").addEventListener("click", () => { history.length = 0; renderEvents(); });
 byId("command-form").addEventListener("submit", (event) => {
   event.preventDefault();
