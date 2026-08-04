@@ -1,6 +1,6 @@
 # Lore2MUD V2 Product Definition
 
-_Status: V2-0 direction-reset candidate, 2026-08-03_
+_Status: V2-0 direction accepted and published; V2-1 routed, 2026-08-04_
 
 ## Product
 
@@ -20,8 +20,8 @@ supports human review at every boundary instead of treating model output as trus
 
 | Mode | Purpose | Required guarantees | Typical output |
 |---|---|---|---|
-| `prototype` | Explore a playable interpretation quickly. | Explicit source boundary, validated structures, deterministic runtime. Not release evidence. | Mutable `GameProject v1` and preview build. |
-| `traced` | Make adaptation choices reviewable. | Provenance links, rights status, creator decisions, validation and simulation reports. | Traceable project and candidate package. |
+| `prototype` | Explore a playable interpretation quickly. | Explicit source boundary, validated structures, deterministic runtime. Not release evidence. | Mutable `GameProject v1` and non-distributable preview build. |
+| `traced` | Make adaptation choices reviewable. | Provenance links, rights status, creator decisions, validation and simulation reports. | Traceable project, preview candidate, and evidence reports. |
 | `sealed` | Freeze an accepted build. | Canonical inputs, hashes, capability policy, reproducible build, security and product gates. | Immutable `GamePackage v2` plus evidence manifest. |
 
 Promotion is one-way for a particular build record: a sealed package is never
@@ -43,12 +43,17 @@ Authoring outputs:
 
 - `GameBlueprint v1`: portable creator intent and gameplay requirements;
 - `GameProject v1`: normalized, validated build inputs and trace records;
+- preview build: an unsealed, non-distributable runtime input for isolated validation
+  and simulation; it is never release evidence;
 - `GamePackage v2`: sealed runtime data, assets, capability requirements, and hashes;
 - structured build, validation, simulation, provenance, rights, and security reports.
 
-Runtime input is a `GamePackage v2` plus a typed `GameIntent`. Runtime output is a
-deterministic `TurnResult` containing `GameEvent` records and a player-safe
-`GameView`. `CampaignSpec v1` is an authoring IR, **not** a runtime input.
+Production runtime input is a sealed `GamePackage v2` plus a typed `GameIntent`.
+During V2-2 authoring, deterministic simulation may use an isolated preview build
+through the same session semantics, but it cannot mutate the caller's project or a
+live player session and is not distributable. Runtime output is a deterministic
+`TurnResult` containing `GameEvent` records and a player-safe `GameView`.
+`CampaignSpec v1` is an authoring IR, **not** a runtime input.
 
 ## Platform Acceptance: PLAT-1
 

@@ -2399,3 +2399,65 @@
   boundary, repository flows, and verification matrix.
 - Supersedes: DEC-0089 only where it previously left `README.md` outside the default
   bilingual set; the bilingual handoff policy remains unchanged.
+
+## DEC-0091: Refine milestone ownership with adopted reference patterns
+
+- Date: 2026-08-04
+- Status: Planning direction authorized; local planning candidate verified.
+- Context: The product owner supplied a synthesized set of patterns from comparable
+  projects and authorized a planning-only update. The current V2 direction already
+  contained most safety boundaries, but the short roadmap did not assign diagnostics,
+  preview simulation, capability resolution, sealing, workbench hashing, and narrative
+  constraints precisely enough to prevent later scope leakage. Review also found a
+  lifecycle ambiguity: V2-2 must build and simulate before V2-4, while `GamePackage v2`
+  was described only as sealed.
+- Decision: Keep V2-1 limited to the transport-neutral runtime boundary with the fixed
+  flow `CLI/Web parsing -> GameIntent -> GameSession -> TurnResult -> transport
+  rendering`. Contract-rejected intents emit no transition events and preserve all
+  authoritative session state, while accepted actions may retain deterministic
+  unsuccessful in-world outcomes from existing `World` rules. Assign machine-readable
+  authoring diagnostics, isolated unsealed preview builds, simulation evidence,
+  SDK/structured-CLI parity, bounded player-safe admissible-intent descriptors, and
+  read-only proofing to V2-2. V2-2 may record capability requirement IDs but cannot
+  resolve them. Assign engine-shipped catalog resolution, exact versions, namespaces,
+  dependencies/conflicts, safety levels, and explicit migration contracts to V2-3.
+  Assign canonical sealed `GamePackage v2` identity, end-to-end adaptation traces,
+  stable story/scene/resume anchors, and explicit anchor migrations to V2-4. Assign the
+  nontechnical workbench and semantic/UI hash separation enforcement to V2-5, reusing
+  the V2-2 SDK/application services instead of creating alternate rules.
+- Narrative and trust rule: Deterministic branching and progressive disclosure are
+  allowed only within owner-approved `GameBlueprint` constraints. Capabilities,
+  runtime logic, and model output cannot invent source facts, broaden rights or
+  adaptation scope, expose private material, or bypass approved disclosure
+  constraints. Only deterministic source-controlled engine code mutates authoritative
+  runtime state; authoring and proofing use artifacts or isolated session copies.
+- Rejected alternatives: This roadmap does not authorize migration to Evennia,
+  Ranvier, CoffeeMud, or another MUD framework; database-first authority; an event-bus
+  or event-sourced V2-1 rewrite; package-provided/generated executable code; dynamic
+  plugins; runtime model adjudication; a workbench-only compiler/runtime; multiplayer
+  scope; or treating preview/report/UI metadata as sealed package identity.
+- Privacy and identity: Public diagnostics, simulation reports, proofing exports,
+  player views, and sealed metadata omit raw private excerpts, absolute private paths,
+  private source hashes, and identifiers that reveal private content. V2-4 owns
+  canonical semantic package identity; V2-5 workspace layout and presentation metadata
+  remain outside it, while reports/traces may have a separate evidence identity.
+- Evidence: Live `main` and `origin/main` were verified at
+  `564530d87aea17da26544b7793701e0dca0fe57d` before the isolated planning workstream.
+  `PRODUCT.md`, `docs/v2/architecture.md`, `docs/v2/roadmap.md`,
+  `docs/v2/reference_patterns.md`, and bilingual `NEXT_TASK.md` encode the refined
+  lifecycle and milestone boundaries without implementing a V2 API. Local planning
+  verification passed on 2026-08-04: strict UTF-8/no-BOM/final-newline checks, relative
+  links, bilingual single-action parity, unique milestone ownership, exact changed-path
+  scope, `git diff --check`, repository history safety, `git fsck --full --no-dangling`,
+  protected implementation-tree identity, the preserved `uv.lock` boundary, and a
+  public-plan leakage scan. No implementation test was run or claimed.
+- Consequences: V2-1 remains the single routed next implementation task and does not
+  gain Capability, SDK, structured CLI, diagnostics, simulation-report, migration,
+  sealing, workbench, MCP, new content/save version, or private-material scope.
+  Publication remains separately gated by a fresh independent TECH review and
+  product-owner review. No implementation, push, `main` movement, release, or V2-2
+  start is authorized.
+- Supersedes: DEC-0087 only where it assigned the static capability catalog to V2-2 or
+  left milestone ownership ambiguous. It does not supersede the accepted product
+  direction, safety boundaries, PLAT-1, DEC-0088's V2-1 routing, or later bilingual
+  maintenance decisions.
