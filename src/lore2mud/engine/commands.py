@@ -18,6 +18,7 @@ from lore2mud.application.contracts import (
     CombatEventData,
     DialogueEndEventData,
     DialogueEventData,
+    DialogueView,
     DropIntent,
     EndDialogueIntent,
     EquipIntent,
@@ -930,7 +931,10 @@ class CommandProcessor:
             return self._rejected(result)
         payload = result.events[0].payload
         assert isinstance(payload, DialogueEventData)
-        return CommandResult(self._render_talk(payload), turn_result=result)
+        return CommandResult(
+            self._render_talk(payload, result.view.dialogue),
+            turn_result=result,
+        )
 
     def _select_option(self, index: int) -> CommandResult:
         result = self._submit(ChooseDialogueIntent(index))
@@ -938,7 +942,10 @@ class CommandProcessor:
             return self._rejected(result)
         payload = result.events[0].payload
         assert isinstance(payload, DialogueEventData)
-        return CommandResult(self._render_talk(payload), turn_result=result)
+        return CommandResult(
+            self._render_talk(payload, result.view.dialogue),
+            turn_result=result,
+        )
 
     def _bye(self, arguments: list[str]) -> CommandResult:
         if arguments:
@@ -954,7 +961,10 @@ class CommandProcessor:
         )
 
     @staticmethod
-    def _render_talk(outcome: DialogueEventData) -> str:
+    def _render_talk(
+        outcome: DialogueEventData,
+        dialogue: DialogueView | None,
+    ) -> str:
         lines: list[str] = []
         for effect in outcome.effect_outcomes:
             if isinstance(effect, GrantedItemEvent):
@@ -986,10 +996,12 @@ class CommandProcessor:
                     lines.append(f"标记 {effect.flag_id} 已设为 {value}。")
                 else:
                     lines.append(f"标记 {effect.flag_id} 保持 {value}。")
-        if outcome.node_text is not None:
+        if dialogue is not None:
+            lines.append(f"[{dialogue.character_name}] {dialogue.text}")
+            for option in dialogue.options:
+                lines.append(f"  {option.index}. {option.text}")
+        elif outcome.node_text is not None:
             lines.append(f"[{outcome.character_name}] {outcome.node_text}")
-        for index, option in enumerate(outcome.options, 1):
-            lines.append(f"  {index}. {option.text}")
         if outcome.ended:
             lines.append("对话结束了。")
         return "\n".join(lines)

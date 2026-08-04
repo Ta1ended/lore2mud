@@ -2594,3 +2594,38 @@
   refreshed documentation evidence, and current verification counts. It does not
   rewrite prior review history or supersede product, public/private, rights, Git,
   acceptance, or milestone gates.
+
+## DEC-0095: Render current CLI dialogue actions from the player-safe view
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; another fresh exact-commit independent
+  TECH decision is required before advancement.
+- Context: Fresh independent reacceptance of exact target
+  `5d59f0ca83f64fe7a89f65feb3b6d9ed4b943ab9` returned `REVISE` for one P2. The
+  application projection correctly omitted dialogue choices whose effects were no
+  longer admissible, but `CommandProcessor._render_talk()` numbered every option from
+  `DialogueEventData`. After the public Demo's one-time Elder Chen reward was claimed,
+  Web/GameView exposed only `opt_back3` while CLI still displayed `opt_bye4`; selecting
+  it immediately produced a rule rejection.
+- Decision: Keep dialogue events as ordered transition facts, but render the CLI's
+  current dialogue text and numbered actionable choices from
+  `TurnResult.view.dialogue`. Preserve projected option indices so CLI selection maps
+  to the same typed `ChooseDialogueIntent` as Web, without duplicating effect or quest
+  rules in the client. When dialogue has ended, retain the event's completion text.
+- Evidence: A public original-Demo regression claims `opt_bye4`, re-enters
+  `node_observatory`, confirms that the event still records both condition-visible
+  options, confirms that `GameView` contains only `opt_back3`, and verifies that CLI
+  output omits the unavailable second choice. The focused application/CLI/Web/dialogue
+  matrix passes 66 tests. Full verification passes 1410 unittest tests with 11
+  conditional skips, serial pytest at 1399 passed / 11 skipped, and xdist pytest at
+  1399 passed / 11 skipped with repository-external TEMP/TMP and `--basetemp`. Ruff,
+  Pyright, compileall, original-demo validation, history safety, fsck, and diff checks
+  pass. This evidence does not grant TECH GO.
+- Consequences: CLI and Web now render the same actionable dialogue surface from the
+  shared player-safe projection. `GameEvent` remains non-authoritative and is not used
+  as a second action catalog. No dependency, Schema, content/save version, `World`
+  authority, private-data boundary, publish state, or V2-2 scope changes. Shared `main`
+  remains unmoved, with no push or release.
+- Supersedes: DEC-0094 only for current CLI dialogue rendering and verification counts.
+  It does not rewrite prior review history or supersede product, public/private,
+  rights, Git, acceptance, or milestone gates.
