@@ -2772,3 +2772,31 @@
 - Supersedes: DEC-0098 only for the completed nested-alias rollback repair and current
   verification evidence. It does not rewrite prior review history or supersede product,
   public/private, rights, Git, acceptance, or milestone gates.
+
+## DEC-0100: Seal V2-1 TECH GO and PRODUCT PASS locally
+
+- Date: 2026-08-04
+- Status: Local product seal; publication remains separately gated.
+- Context: Fresh independent read-only acceptance of exact product candidate
+  `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5` returned `GO` with no P0-P3 findings.
+  The product owner then explicitly granted `PRODUCT PASS` on 2026-08-04. The accepted
+  product bytes remain those of `d642a9d`; this follow-up changes handoff and decision
+  documentation only.
+- Decision: Record both gates against the exact product candidate and freeze V2-1
+  locally. Route the sole next gate to separate explicit push/publication authorization.
+  PRODUCT PASS does not authorize push, `main` movement, SECURITY PASS, release, or
+  V2-2, and a documentation seal must not be presented as a newly accepted product
+  candidate.
+- Evidence: Independent acceptance reproduced and closed the nested-alias rollback
+  defect, passed 270 focused tests plus the named compatibility probes, 1414 unittest
+  tests with 11 skips, serial and xdist pytest at 1403 passed / 11 skipped, all static,
+  validation, safety, fsck, diff, CLI, Web, save-v9, and v7/v8 read gates, and ended on
+  a clean exact target. The human product owner supplied the required PRODUCT PASS in
+  the controller task after that report.
+- Consequences: V2-1 is technically and product accepted at `d642a9d` but remains local.
+  A later publication controller must recheck live remote ancestry and Actions, receive
+  explicit push authorization, and push only the workstream branch. No private-data,
+  dependency, Schema, content/save version, runtime authority, or V2-2 scope changes.
+- Supersedes: DEC-0099 only for gate status and next-task routing. It does not rewrite
+  prior findings, acceptance evidence, product boundaries, rights constraints, or Git
+  safety requirements.

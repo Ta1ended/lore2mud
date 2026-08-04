@@ -4,6 +4,11 @@
 
 ### Changed
 
+- Locally sealed V2-1 product acceptance: exact product candidate
+  `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5` received fresh independent TECH GO with
+  no P0-P3 findings, and the product owner explicitly granted PRODUCT PASS on
+  2026-08-04. This documentation seal does not authorize push, `main` movement,
+  SECURITY PASS, release, or V2-2 (DEC-0100).
 - Routed CLI and Web gameplay turns through one transport-neutral V2-1 application
   boundary while retaining authoritative `World`, the compatible
   `CommandProcessor(world, save_service)` surface, and Web `PlayerSession` name.

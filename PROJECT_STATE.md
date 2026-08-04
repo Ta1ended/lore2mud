@@ -14,15 +14,18 @@ _最后更新 / Last updated: 2026-08-04_
 - 已核对的在线公开 `main` 是
   `564530d87aea17da26544b7793701e0dca0fe57d`；GitHub Actions tests
   `30846680303` 与 quality `30846680343` 成功。
-- V2-1 隔离候选位于 `workstream/v2-1-game-session`，基于已获规划 TECH GO 的
-  `1d4b26d9127d4229893911cf260cf3c2f4b0ce3a`。共享 `main` 未移动，没有 push、
-  release 或 V2-2 工作。
+- V2-1 产品候选位于 `workstream/v2-1-game-session`，精确目标为
+  `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5`，基于已获规划 TECH GO 的
+  `1d4b26d9127d4229893911cf260cf3c2f4b0ce3a`。
+- 全新独立只读验收对该精确目标给出 P0-P3 全空的 `GO`；产品所有者随后于
+  2026-08-04 明确给出 `PRODUCT PASS`。V2-1 已在本地封存。
+- 共享 `main` 未移动，没有 push、SECURITY PASS、release 或 V2-2 工作。
 - `src/lore2mud/application/` 已实现本地候选的 `GameIntent`、`GameSession`、
   `GameEvent`、`GameView` 和 `TurnResult`；`World` 仍是唯一玩法权威，CLI 与 Web
   保留解析和呈现职责。
-- Controller 全量门禁已完成；本工作流只可继续创建连贯本地提交并对精确提交执行独立
-  只读 TECH 验收。本文件不自我授予 TECH、PRODUCT 或 SECURITY PASS；最终 TECH
-  verdict 只以本工作流的独立验收记录和 Controller 最终报告为准。
+- Controller 全量门禁、精确提交上的独立 TECH 验收和产品门禁均已完成。本状态记录
+  人类产品所有者给出的 PRODUCT PASS，但不授权 push、移动 `main`、SECURITY PASS、
+  release 或开始 V2-2。
 
 ### 已实现
 
@@ -67,7 +70,10 @@ _最后更新 / Last updated: 2026-08-04_
   `check_repo_safety.py --history`、`git fsck --full --no-dangling`、working/staged
   `git diff --check` 均通过。
 - Windows PyInstaller 与 zipapp 的构建、包内容和仓库外冷启动由全量测试真实覆盖。
-- 独立验收不由本实现上下文自我决定；精确 verdict 见 Controller 最终报告。
+- 全新独立验收对 `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5` 给出 P0-P3 全空的
+  `GO`；其扩展 focused 矩阵为 270 passed，v7/v8 精确读取回归为 4 passed，真实
+  CLI/Web/save smoke 通过。
+- 产品所有者于 2026-08-04 明确给出 `PRODUCT PASS`。
 
 ### 角色与模型
 
@@ -76,6 +82,7 @@ _最后更新 / Last updated: 2026-08-04_
   边界检查。两者继承当前任务模型，工具未暴露更细的模型标识。
 - Independent Acceptance：必须是未参与实现的新任务，严格只读审查精确提交。模型输出
   不是证据，结论必须由代码、测试和 Git 证据支撑。
+- Product Owner：基于独立 TECH GO 和 Controller 交接，对精确产品候选给出 PRODUCT PASS。
 
 ### 保持的边界
 
@@ -109,17 +116,19 @@ compatibility and strict public/private and rights boundaries.
 - Verified live public `main` is
   `564530d87aea17da26544b7793701e0dca0fe57d`; GitHub Actions tests
   `30846680303` and quality `30846680343` succeeded.
-- The isolated V2-1 candidate is on `workstream/v2-1-game-session`, based on the
-  planning TECH-GO commit `1d4b26d9127d4229893911cf260cf3c2f4b0ce3a`.
-  Shared `main` has not moved; there is no push, release, or V2-2 work.
+- The V2-1 product candidate is on `workstream/v2-1-game-session` at exact target
+  `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5`, based on planning TECH-GO commit
+  `1d4b26d9127d4229893911cf260cf3c2f4b0ce3a`.
+- Fresh independent read-only acceptance returned `GO` with no P0-P3 findings on that
+  exact target; the product owner then explicitly granted `PRODUCT PASS` on
+  2026-08-04. V2-1 is locally sealed.
+- Shared `main` has not moved; there is no push, SECURITY PASS, release, or V2-2 work.
 - `src/lore2mud/application/` implements the local candidate's `GameIntent`,
   `GameSession`, `GameEvent`, `GameView`, and `TurnResult`. `World` remains the sole
   gameplay authority; CLI and Web retain parsing and rendering responsibilities.
-- The controller full matrix is complete. This workstream may continue only by making
-  a coherent local commit and running fresh read-only TECH acceptance on that exact
-  commit. This file grants no TECH, PRODUCT, or SECURITY PASS itself; the final TECH
-  verdict is authoritative only in this workstream's independent acceptance record
-  and controller report.
+- The controller full matrix, exact-commit independent TECH acceptance, and product
+  gate are complete. This status records the human product owner's PRODUCT PASS but
+  does not authorize push, `main` movement, SECURITY PASS, release, or V2-2 work.
 
 ### Implemented
 
@@ -178,8 +187,11 @@ compatibility and strict public/private and rights boundaries.
   `git diff --check` all pass.
 - Full tests execute real Windows PyInstaller and zipapp build, content, and
   repository-external cold-start coverage.
-- Independent acceptance is not self-decided by this implementation context; consult
-  the controller's final report for the exact verdict.
+- Fresh independent acceptance returned `GO` with no P0-P3 findings on
+  `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5`; its expanded focused matrix passed 270
+  tests, its exact v7/v8 read regression passed 4 tests, and real CLI/Web/save smoke
+  passed.
+- The product owner explicitly granted `PRODUCT PASS` on 2026-08-04.
 
 ### Roles And Models
 
@@ -191,6 +203,8 @@ compatibility and strict public/private and rights boundaries.
 - Independent Acceptance: a fresh task that did not implement the candidate and must
   review the exact commit strictly read-only. Model output is not evidence; code,
   tests, and Git facts must support the verdict.
+- Product Owner: granted PRODUCT PASS to the exact product candidate after independent
+  TECH GO and the controller handoff.
 
 ### Preserved Boundaries
 
