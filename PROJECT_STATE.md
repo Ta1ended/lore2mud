@@ -30,7 +30,9 @@ _最后更新 / Last updated: 2026-08-04_
 - 只接受已声明的精确 Intent 类型及精确的 `str`、`int`、Enum 叶值；CLI/Web 在调用任何
   可重载方法或运算符前完成同一合同校验，恶意原始类型子类不能越过状态快照边界。
 - 合同拒绝会恢复原 `World` 身份及规范化可持久化状态、RNG 位置、时钟输入和事件序列，
-  且不产生转移事件；意外异常在恢复后继续上抛。
+  且不产生转移事件；提交前已有的嵌套 dataclass、dict、list 和 set 会在原对象上递归恢复，
+  外部持有的 player、inventory、room、stack 等 alias 仍指向同一对象；意外异常在恢复后
+  继续上抛。
 - `WorldRuleError`/`SaveLoadError` 的诊断先完成规范化，再在 `finally` 中执行最终恢复并投影
   view；异常对象的可重载格式化不能在回滚后重新改变权威状态。
 - 拒绝快照保留原 `DeterminismContext` 身份及精确 `seed/clock`；即使冻结值被低层
@@ -50,8 +52,8 @@ _最后更新 / Last updated: 2026-08-04_
 
 ### 验证状态
 
-- 针对 Web 兼容形状、typed campaign effects 和 V1 可见顺序 findings 的聚焦回归：
-  49 passed。
+- 针对嵌套 `World` alias 回滚 finding 的聚焦回归：11 passed；应用、CLI、Web 与
+  runtime campaign 交叉矩阵：55 passed。
 - `.venv\Scripts\python.exe -m unittest discover`：1414 tests，11 skipped，OK。
 - 恢复开发后的第一次 `unittest discover` 未显式绑定隔离 worktree 的 `src`，因此项目
   `.venv` 的主仓库 editable install 混入旧模块并失败；设置 `PYTHONPATH=<worktree>/src`
@@ -90,6 +92,8 @@ _最后更新 / Last updated: 2026-08-04_
   但未来真正消费这些输入时仍需新的可观察确定性测试。
 - 玩家 affordance 通过隔离 `deepcopy(World)` 探测现有规则，范围明确且不建立 V2-2
   通用动作目录，但大型内容包的性能仍需后续实测。
+- 原位回滚覆盖当前 `World` 使用的 dataclass、dict、list 和 set 对象图；未来若引入新的
+  可变容器类型，必须同步扩展恢复实现和 alias 回归。
 - `World`、loader、save 和传统命令渲染仍较大；V2-1 不授权整体拆分。
 
 ## English
@@ -126,8 +130,10 @@ compatibility and strict public/private and rights boundaries.
   methods or operators, so hostile primitive subclasses cannot cross the snapshot
   boundary.
 - Contract rejection restores the original `World` identity plus canonical persistable
-  state, RNG position, clock input, and event sequence, and emits no transition event;
-  unexpected exceptions are re-raised after restoration.
+  state, RNG position, clock input, and event sequence, and emits no transition event.
+  Existing nested dataclass, dict, list, and set objects are recursively restored in
+  place, so external player, inventory, room, and stack aliases retain identity and
+  restored values; unexpected exceptions are re-raised after restoration.
 - `WorldRuleError`/`SaveLoadError` diagnostics are normalized before a final restore in
   `finally` and before view projection, so overridable exception formatting cannot
   mutate authority again after rollback.
@@ -153,8 +159,8 @@ compatibility and strict public/private and rights boundaries.
 
 ### Verification Status
 
-- Finding-specific Web shape, typed campaign-effect, and V1 visible-order regressions:
-  49 passed.
+- The nested-`World` alias rollback regression passes 11 tests; the application, CLI,
+  Web, and runtime-campaign cross-matrix passes 55 tests.
 - `.venv\Scripts\python.exe -m unittest discover`: 1414 tests, 11 skipped, OK.
 - The first resumed `unittest discover` did not explicitly bind the isolated
   worktree's `src`, so the project virtualenv's editable primary-checkout install mixed
@@ -204,5 +210,8 @@ compatibility and strict public/private and rights boundaries.
 - Player affordances probe existing rules on isolated `deepcopy(World)` values. This
   is bounded and does not create the V2-2 general action catalog, but large-pack
   performance remains to be measured later.
+- In-place rollback covers the dataclass, dict, list, and set object graph used by the
+  current `World`; any future mutable container type requires matching restoration and
+  alias regression coverage.
 - `World`, loader, save, and legacy command rendering remain large; V2-1 does not
   authorize wholesale decomposition.

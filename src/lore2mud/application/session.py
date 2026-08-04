@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from dataclasses import fields
+from dataclasses import dataclass, fields, is_dataclass
 from random import Random
 import re
 from threading import RLock
@@ -123,6 +123,94 @@ _EventDraft: TypeAlias = tuple[GameEventKind, GameEventPayload]
 _RngState: TypeAlias = tuple[int, tuple[int, ...], float | None]
 _DeterminismState: TypeAlias = tuple[int, int]
 _STABLE_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
+_MISSING = object()
+
+
+@dataclass(frozen=True, slots=True)
+class _WorldSnapshot:
+    backup: World
+    references: tuple[tuple[object, object], ...]
+
+
+def _capture_world(world: World) -> _WorldSnapshot:
+    memo: dict[int, object] = {}
+    backup = deepcopy(world, memo)
+    references: list[tuple[object, object]] = []
+    _collect_snapshot_references(world, memo, set(), references)
+    return _WorldSnapshot(backup, tuple(references))
+
+
+def _collect_snapshot_references(
+    value: object,
+    memo: dict[int, object],
+    visited: set[int],
+    references: list[tuple[object, object]],
+) -> None:
+    identity = id(value)
+    if identity in visited:
+        return
+    visited.add(identity)
+
+    copied = memo.get(identity, _MISSING)
+    if copied is not _MISSING:
+        references.append((value, copied))
+
+    if is_dataclass(value) and not isinstance(value, type):
+        for definition in fields(value):
+            _collect_snapshot_references(
+                getattr(value, definition.name),
+                memo,
+                visited,
+                references,
+            )
+        return
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _collect_snapshot_references(key, memo, visited, references)
+            _collect_snapshot_references(item, memo, visited, references)
+        return
+    if isinstance(value, (list, tuple, set, frozenset)):
+        for item in value:
+            _collect_snapshot_references(item, memo, visited, references)
+
+
+def _restore_world(snapshot: _WorldSnapshot) -> None:
+    restore_memo = {
+        id(backup): original for original, backup in snapshot.references
+    }
+    for original, backup in snapshot.references:
+        if is_dataclass(original) and not isinstance(original, type):
+            values = tuple(
+                (
+                    definition.name,
+                    deepcopy(getattr(backup, definition.name), restore_memo),
+                )
+                for definition in fields(original)
+            )
+            for name, value in values:
+                object.__setattr__(original, name, value)
+            continue
+        if isinstance(original, dict):
+            assert isinstance(backup, dict)
+            values = tuple(
+                (
+                    deepcopy(key, restore_memo),
+                    deepcopy(value, restore_memo),
+                )
+                for key, value in backup.items()
+            )
+            original.clear()
+            original.update(values)
+            continue
+        if isinstance(original, list):
+            assert isinstance(backup, list)
+            original[:] = [deepcopy(value, restore_memo) for value in backup]
+            continue
+        if isinstance(original, set):
+            assert isinstance(backup, set)
+            values = {deepcopy(value, restore_memo) for value in backup}
+            original.clear()
+            original.update(values)
 
 
 class GameSession:
@@ -200,7 +288,7 @@ class GameSession:
                 )
 
             original_world = self._world
-            backup = deepcopy(original_world)
+            snapshot = _capture_world(original_world)
             rng_state = self._rng.getstate()
             determinism = self._determinism
             determinism_state = (determinism.seed, determinism.clock)
@@ -214,7 +302,7 @@ class GameSession:
                 finally:
                     self._restore(
                         original_world,
-                        backup,
+                        snapshot,
                         rng_state,
                         determinism,
                         determinism_state,
@@ -232,7 +320,7 @@ class GameSession:
                 finally:
                     self._restore(
                         original_world,
-                        backup,
+                        snapshot,
                         rng_state,
                         determinism,
                         determinism_state,
@@ -250,7 +338,7 @@ class GameSession:
             except Exception:
                 self._restore(
                     original_world,
-                    backup,
+                    snapshot,
                     rng_state,
                     determinism,
                     determinism_state,
@@ -372,18 +460,13 @@ class GameSession:
     def _restore(
         self,
         original_world: World,
-        backup: World,
+        snapshot: _WorldSnapshot,
         rng_state: _RngState,
         determinism: DeterminismContext,
         determinism_state: _DeterminismState,
         sequence: int,
     ) -> None:
-        for definition in fields(World):
-            setattr(
-                original_world,
-                definition.name,
-                deepcopy(getattr(backup, definition.name)),
-            )
+        _restore_world(snapshot)
         self._world = original_world
         self._rng.setstate(rng_state)
         seed, clock = determinism_state

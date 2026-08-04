@@ -48,7 +48,10 @@ def _world_bytes(world: World) -> bytes:
 class _MutatingFailureService:
     def save(self, world: World, slot: str | None = None) -> str:
         world.player.coins += 99
+        world.player.inventory.capacity = 77
         world.flags["flag_should_rollback"] = True
+        world.current_room.item_stacks[0].quantity = 91
+        world.current_room.item_stacks.clear()
         raise SaveLoadError("forced save failure")
 
     def load(self, slot: str | None = None) -> World:
@@ -233,6 +236,12 @@ class GameSessionContractTests(unittest.TestCase):
 
     def test_persistence_rejection_rolls_back_even_a_mutating_service(self) -> None:
         world = World.from_content_pack(self.pack)
+        player = world.player
+        inventory = player.inventory
+        flags = world.flags
+        room = world.current_room
+        room_items = room.item_stacks
+        first_item = room_items[0]
         session = GameSession(
             world,
             _MutatingFailureService(),
@@ -247,6 +256,16 @@ class GameSessionContractTests(unittest.TestCase):
         assert save_result.rejection is not None
         self.assertEqual(save_result.rejection.message, "写入存档失败。")
         self.assertNotIn("forced save failure", save_result.rejection.message)
+        self.assertIs(session.world.player, player)
+        self.assertIs(player.inventory, inventory)
+        self.assertIs(session.world.flags, flags)
+        self.assertIs(session.world.current_room, room)
+        self.assertIs(room.item_stacks, room_items)
+        self.assertIs(room_items[0], first_item)
+        self.assertEqual(player.coins, 20)
+        self.assertEqual(inventory.capacity, 10)
+        self.assertNotIn("flag_should_rollback", flags)
+        self.assertEqual(first_item.quantity, 1)
 
         load_result = self._assert_rejected_unchanged(
             session,

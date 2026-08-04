@@ -2736,3 +2736,39 @@
   corrected local audit timestamp, and current verification evidence. It does not
   rewrite prior review history or supersede product, public/private, rights, Git,
   acceptance, or milestone gates.
+
+## DEC-0099: Restore rejected turns on the existing World object graph
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; a fresh exact-commit independent TECH
+  decision is required before advancement.
+- Context: Fresh independent reacceptance of exact target
+  `d11f6ed0b445436d0ed61f5eebad9f1921709d7d` by a read-only
+  `gpt-5.6-sol`/`xhigh` task returned `REVISE` for one P2. Rejection rollback restored
+  the top-level `World` identity and canonical bytes by assigning deep-copied fields,
+  but callers holding pre-turn `player`, inventory, room, collection, or item-stack
+  aliases could still observe illegal rejected-turn mutations on detached old objects.
+- Decision: Capture the pre-turn `World` with the deepcopy identity mapping, retain the
+  corresponding original references, and recursively restore existing dataclass,
+  dict, list, and set objects in place. Root and nested fields are rebound to their
+  original references while container contents and mutable values are restored from
+  the isolated backup. Add a persistence-failure regression that mutates player coins,
+  inventory capacity, flags, a room item stack, and its containing list, then asserts
+  identity and value invariance through every retained alias.
+- Evidence: The exact alias regression module passes 11 tests; the application, CLI,
+  Web, command, and runtime-campaign cross-matrix passes 55 tests. Full verification
+  passes 1414 unittest tests with 11 conditional skips, serial pytest at 1403 passed /
+  11 skipped, and xdist pytest at 1403 passed / 11 skipped with explicit repository-
+  external TEMP/TMP and `--basetemp`. Ruff, Pyright, compileall, and original-demo
+  validation pass. Repository history safety, fsck, diff checks, and a fresh exact-
+  commit independent decision remain required after the coherent repair commit. This
+  controller evidence does not grant TECH GO.
+- Consequences: Contract rejection now preserves the observable identity and values of
+  the existing compatibility `World` object graph as well as canonical state, RNG,
+  clock, determinism context, event sequence, and save-visible metadata. No dependency,
+  Schema, content/save version, `World` authority, client responsibility, private-data
+  boundary, publish state, or V2-2 scope changes. Shared `main` remains unmoved, with
+  no push or release.
+- Supersedes: DEC-0098 only for the completed nested-alias rollback repair and current
+  verification evidence. It does not rewrite prior review history or supersede product,
+  public/private, rights, Git, acceptance, or milestone gates.

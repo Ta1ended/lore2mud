@@ -14,13 +14,15 @@
   overridable method/operator can run. Rejection diagnostics are normalized before the
   final rollback and view projection, preventing side-effectful exception formatting
   from changing authority after restore; the same snapshot restores the original
-  determinism-context identity and exact seed/clock values. CLI dialogue menus now
+  determinism-context identity and exact seed/clock values, and recursively restores
+  the existing `World` object graph in place so nested compatibility aliases remain
+  valid. CLI dialogue menus now
   render current actionable options from `GameView` rather than replaying the broader
   dialogue event payload. A fresh compatibility review also restored legacy Web
   `snapshot` nullable fields, complete V1 `event.data` payloads, and authored entity and
   campaign-action order without exposing unavailable actions in the new player-safe
   view. Save v9, v7/v8 read gates, content/schema versions, runtime campaign, and the
-  public original Demo are unchanged (DEC-0092 through DEC-0098).
+  public original Demo are unchanged (DEC-0092 through DEC-0099).
 - Replaced the stale repository-wide fixed model/reasoning floor with controller model
   selection by responsibility and risk, explicit recording when exposed, evidence-
   based verification, rework/reassignment for unreliable output, and unchanged fresh
