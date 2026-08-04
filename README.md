@@ -94,8 +94,9 @@ scripts/               仓库安全和交付辅助工具
 
 ```text
 JSON 内容 -> load_content_pack() -> ContentPack -> World
-玩家命令/动作 -> CommandProcessor 或 PlayerSession -> World -> 结果/视图
-World <-> SaveLoadService -> 带版本的本地存档
+玩家命令/动作 -> CLI/Web 解析 -> GameIntent -> GameSession -> World 权威 API
+World 结果 -> GameSession -> TurnResult（状态 + 有序事件 + 当前 GameView）-> CLI/Web 呈现
+GameSession <-> SaveLoadService -> 带版本的本地存档
 ```
 
 目标 V2 数据流：
@@ -252,8 +253,9 @@ The current runtime flow is:
 
 ```text
 JSON content -> load_content_pack() -> ContentPack -> World
-player command/action -> CommandProcessor or PlayerSession -> World -> result/view
-World <-> SaveLoadService -> versioned local save
+player command/action -> CLI/Web parsing -> GameIntent -> GameSession -> authoritative World API
+World outcome -> GameSession -> TurnResult (status + ordered events + current GameView) -> CLI/Web rendering
+GameSession <-> SaveLoadService -> versioned local save
 ```
 
 The target V2 flow is:

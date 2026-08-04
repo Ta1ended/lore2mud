@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 import tempfile
 import unittest
 from pathlib import Path
 
+from lore2mud.application import MoveIntent
 from lore2mud.content.loader import load_content_pack
 from lore2mud.engine.save import SaveLoadService
 from lore2mud.web.app import PlayerSession
@@ -13,6 +15,11 @@ from lore2mud.web.app import PlayerSession
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEMO_PATH = PROJECT_ROOT / "examples" / "original_demo"
+
+
+@dataclass(frozen=True, slots=True)
+class _ExtendedMoveIntent(MoveIntent):
+    plugin_payload: object = None
 
 
 class PlayerSessionTests(unittest.TestCase):
@@ -65,6 +72,25 @@ class PlayerSessionTests(unittest.TestCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["event"]["type"], "error")
         self.assertEqual(result["snapshot"], before)
+
+    def test_web_intent_serialization_rejects_undeclared_subclasses(self) -> None:
+        with self.assertRaisesRegex(TypeError, "undeclared GameIntent"):
+            PlayerSession._intent_json(
+                _ExtendedMoveIntent("east", {"kind": "extension"})
+            )
+
+    def test_persistence_rejection_omits_private_save_path(self) -> None:
+        result = self.action("load", slot="missing")
+        rendered = str(result)
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "rejected")
+        self.assertEqual(
+            result["diagnostics"],
+            [{"code": "persistence_error", "message": "存档文件不存在。"}],
+        )
+        self.assertEqual(result["event"]["message"], "存档文件不存在。")
+        self.assertNotIn(str(Path(self.temp_dir.name).resolve()), rendered)
 
     def test_dialogue_snapshot_and_effects_use_typed_world_results(self) -> None:
         self.action("move", direction="east")

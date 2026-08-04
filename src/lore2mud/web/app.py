@@ -43,6 +43,7 @@ from lore2mud.application.contracts import (
     UnequipIntent,
     UseEventData,
     UseIntent,
+    is_declared_game_intent,
 )
 from lore2mud.application.session import GameSession
 from lore2mud.content.models import ContentPack
@@ -492,6 +493,8 @@ class PlayerSession:
 
     @staticmethod
     def _intent_json(intent: GameIntent) -> dict[str, JsonValue]:
+        if not is_declared_game_intent(intent):
+            raise TypeError(f"undeclared GameIntent type: {type(intent).__name__}")
         if isinstance(intent, MoveIntent):
             return {"type": "move", "direction": intent.direction}
         if isinstance(intent, TakeIntent):

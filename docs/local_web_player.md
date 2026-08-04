@@ -19,10 +19,10 @@ Internet service. `--port` can select another local port.
 ```text
 browser control
   -> POST /api/action with a typed action object
-  -> PlayerSession validates the untrusted action
-  -> World public API / SaveLoadService
-  -> typed outcome event + authoritative snapshot
-  -> browser renders controls from snapshot fields
+  -> PlayerSession validates and parses the untrusted action into GameIntent
+  -> GameSession submits one turn to the authoritative World / SaveLoadService
+  -> TurnResult with status, ordered events, and current player-safe GameView
+  -> PlayerSession renders JSON; browser renders projected affordances
 ```
 
 The browser never derives game state from Chinese response text. Structured actions
@@ -83,10 +83,11 @@ error event, and an authoritative unchanged snapshot. Malformed HTTP requests re
   numeric constants rejected as HTTP 400.
 - Responses use a restrictive Content Security Policy, `nosniff`, no referrer, and
   no-store headers.
-- One process serves exactly one unauthenticated `PlayerSession`, which owns one
-  World and serializes actions with a reentrant lock. A successful load replaces
-  both the session World and its command processor. This is a loopback single-player
-  boundary, not a multi-user session model.
+- One process serves exactly one unauthenticated `PlayerSession`, which wraps one
+  `GameSession`. The application session owns the authoritative `World`, serializes
+  turns with a reentrant lock, and replaces its World only after a successful load;
+  `CommandProcessor` reads that current World dynamically. This is a loopback
+  single-player boundary, not a multi-user session model.
 - A `campaign_action` payload carries only a stable action ID. `PlayerSession` cannot
   execute it through the text-command fallback; `World.execute_campaign_action()`
   recomputes current scene/interactable/condition availability before every mutation.

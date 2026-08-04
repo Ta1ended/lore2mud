@@ -63,6 +63,7 @@ from lore2mud.application.contracts import (
     UseIntent,
     ViewIntent,
     ViewKind,
+    is_declared_game_intent,
 )
 from lore2mud.application.projection import (
     character_focus,
@@ -209,7 +210,10 @@ class GameSession:
                     TurnStatus.REJECTED,
                     (),
                     project_game_view(self._world),
-                    RejectionDiagnostic(RejectionCode.PERSISTENCE_ERROR, str(exc)),
+                    RejectionDiagnostic(
+                        RejectionCode.PERSISTENCE_ERROR,
+                        _persistence_rejection_message(intent, exc),
+                    ),
                 )
             except Exception:
                 self._restore(original_world, backup, rng_state, sequence)
@@ -355,7 +359,7 @@ class GameSession:
 
     @staticmethod
     def _validate_intent(intent: GameIntent) -> None:
-        if not isinstance(intent, GameIntent) or type(intent) is GameIntent:
+        if not is_declared_game_intent(intent):
             raise _IntentValidationError("intent 必须是已声明的 GameIntent 子类型。")
         if isinstance(intent, ViewIntent):
             if not isinstance(intent.kind, ViewKind):
@@ -409,6 +413,24 @@ def _validate_text(value: object, field: str, *, maximum: int = 200) -> None:
 def _validate_positive_int(value: object, field: str) -> None:
     if isinstance(value, bool) or not isinstance(value, int) or value < 1:
         raise _IntentValidationError(f"{field} 必须是正整数。")
+
+
+def _persistence_rejection_message(
+    intent: GameIntent,
+    error: SaveLoadError,
+) -> str:
+    detail = str(error)
+    if detail.startswith("存档服务不可用"):
+        return "存档服务不可用。"
+    if detail.startswith("存档槽位"):
+        return "存档槽位无效。"
+    if detail.startswith("存档文件不存在"):
+        return "存档文件不存在。"
+    if type(intent) is SaveIntent:
+        return "写入存档失败。"
+    if type(intent) is LoadIntent:
+        return "读取存档失败。"
+    return "存档操作失败。"
 
 
 def _level_gains(values: tuple[LevelGain, ...]) -> tuple[LevelGainEvent, ...]:

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError, asdict, is_dataclass
+from dataclasses import FrozenInstanceError, asdict, dataclass, is_dataclass
 import json
 from pathlib import Path
+import tempfile
 import unittest
 
 import lore2mud.application.contracts as contracts
@@ -23,7 +24,8 @@ from lore2mud.application import (
     ViewKind,
 )
 from lore2mud.content.loader import load_content_pack
-from lore2mud.engine.save import SaveLoadError, _serialize_world
+from lore2mud.engine.commands import CommandProcessor
+from lore2mud.engine.save import SaveLoadError, SaveLoadService, _serialize_world
 from lore2mud.engine.world import World
 
 
@@ -49,6 +51,11 @@ class _MutatingFailureService:
 
     def load(self, slot: str | None = None) -> World:
         raise SaveLoadError("forced load failure")
+
+
+@dataclass(frozen=True, slots=True)
+class _ExtendedMoveIntent(MoveIntent):
+    plugin_payload: object = None
 
 
 class GameSessionContractTests(unittest.TestCase):
@@ -101,6 +108,15 @@ class GameSessionContractTests(unittest.TestCase):
             RejectionCode.MALFORMED_INTENT,
         )
 
+    def test_undeclared_intent_subclass_is_rejected_without_state_change(self) -> None:
+        session = GameSession.from_content_pack(self.pack)
+
+        self._assert_rejected_unchanged(
+            session,
+            _ExtendedMoveIntent("east", {"kind": "extension"}),
+            RejectionCode.MALFORMED_INTENT,
+        )
+
     def test_inadmissible_intent_rejection_preserves_all_session_state(self) -> None:
         session = GameSession.from_content_pack(
             self.pack,
@@ -121,17 +137,42 @@ class GameSessionContractTests(unittest.TestCase):
             determinism=DeterminismContext(seed=91, clock=37),
         )
 
-        self._assert_rejected_unchanged(
+        save_result = self._assert_rejected_unchanged(
             session,
             SaveIntent("broken"),
             RejectionCode.PERSISTENCE_ERROR,
         )
+        assert save_result.rejection is not None
+        self.assertEqual(save_result.rejection.message, "写入存档失败。")
+        self.assertNotIn("forced save failure", save_result.rejection.message)
 
-        self._assert_rejected_unchanged(
+        load_result = self._assert_rejected_unchanged(
             session,
             LoadIntent("missing"),
             RejectionCode.PERSISTENCE_ERROR,
         )
+        assert load_result.rejection is not None
+        self.assertEqual(load_result.rejection.message, "读取存档失败。")
+        self.assertNotIn("forced load failure", load_result.rejection.message)
+
+    def test_persistence_rejection_omits_private_save_path_from_session_and_cli(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = SaveLoadService(self.pack, Path(temp_dir))
+            session = GameSession.from_content_pack(self.pack, service)
+
+            result = session.submit(LoadIntent("missing"))
+
+            self.assertEqual(result.status, TurnStatus.REJECTED)
+            self.assertIsNotNone(result.rejection)
+            assert result.rejection is not None
+            self.assertEqual(result.rejection.message, "存档文件不存在。")
+            self.assertNotIn(str(Path(temp_dir).resolve()), result.rejection.message)
+
+            command = CommandProcessor.from_session(session).execute("load missing")
+            self.assertEqual(command.text, "读档失败：存档文件不存在。")
+            self.assertNotIn(str(Path(temp_dir).resolve()), command.text)
 
     def test_nonlethal_combat_remains_an_accepted_in_world_outcome(self) -> None:
         session = GameSession.from_content_pack(self.pack)
@@ -186,7 +227,7 @@ class GameSessionContractTests(unittest.TestCase):
         session: GameSession,
         intent: contracts.GameIntent,
         code: RejectionCode,
-    ) -> None:
+    ) -> contracts.TurnResult:
         original_world = session.world
         before_world = _world_bytes(original_world)
         before_view = session.view()
@@ -207,6 +248,7 @@ class GameSessionContractTests(unittest.TestCase):
         self.assertIs(session.determinism, before_context)
         self.assertEqual(session._rng.getstate(), before_rng)  # noqa: SLF001
         self.assertEqual(session.event_sequence, before_sequence)
+        return result
 
 
 if __name__ == "__main__":

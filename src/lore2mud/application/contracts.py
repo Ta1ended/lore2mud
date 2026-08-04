@@ -185,6 +185,33 @@ class LoadIntent(GameIntent):
     slot: str | None = None
 
 
+_DECLARED_GAME_INTENT_TYPES: tuple[type[GameIntent], ...] = (
+    ViewIntent,
+    ExamineIntent,
+    MoveIntent,
+    TakeIntent,
+    DropIntent,
+    UseIntent,
+    EquipIntent,
+    UnequipIntent,
+    AttackIntent,
+    TalkIntent,
+    ChooseDialogueIntent,
+    EndDialogueIntent,
+    BuyIntent,
+    SellIntent,
+    CampaignActionIntent,
+    RecoverIntent,
+    SaveIntent,
+    LoadIntent,
+)
+
+
+def is_declared_game_intent(value: object) -> bool:
+    """Return whether value has one of the exact V2-1 intent types."""
+    return type(value) in _DECLARED_GAME_INTENT_TYPES
+
+
 ItemAction: TypeAlias = TakeIntent | DropIntent | UseIntent | EquipIntent
 ShopAction: TypeAlias = BuyIntent | SellIntent
 
