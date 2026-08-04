@@ -35,7 +35,8 @@ Authoring inputs:
   public Git;
 - creator decisions: audience, genre, tone, play length, adaptation boundaries,
   acceptance criteria, and rights status;
-- an approved `GameBlueprint v1`, capability selection, and optional asset manifest;
+- an approved `GameBlueprint v1`, declared capability requirements, and optional asset
+  manifest; capability selection and resolution begin only in V2-3;
 - validated existing artifacts such as a `NarrativeModel`, used only through an
   explicit authoring adapter.
 
@@ -44,15 +45,18 @@ Authoring outputs:
 - `GameBlueprint v1`: portable creator intent and gameplay requirements;
 - `GameProject v1`: normalized, validated build inputs and trace records;
 - preview build: an unsealed, non-distributable runtime input for isolated validation
-  and simulation; it is never release evidence;
+  and simulation; before V2-3 it uses only the engine-defined V1 compatibility profile,
+  rejects any declared V2 capability requirement, and is never release evidence;
 - `GamePackage v2`: sealed runtime data, assets, capability requirements, and hashes;
 - structured build, validation, simulation, provenance, rights, and security reports.
 
 Production runtime input is a sealed `GamePackage v2` plus a typed `GameIntent`.
 During V2-2 authoring, deterministic simulation may use an isolated preview build
 through the same session semantics, but it cannot mutate the caller's project or a
-live player session and is not distributable. Runtime output is a deterministic
-`TurnResult` containing `GameEvent` records and a player-safe `GameView`.
+live player session and is not distributable. V2-2 does not ignore or resolve declared
+V2 capability requirements: it emits an authoring diagnostic and blocks preview build
+and simulation until V2-3. Runtime output is a deterministic `TurnResult` containing
+`GameEvent` records and a player-safe `GameView`.
 `CampaignSpec v1` is an authoring IR, **not** a runtime input.
 
 ## Platform Acceptance: PLAT-1

@@ -40,14 +40,15 @@ into the wrong milestone.
 | Contract-rejection invariance | V2-1 | Rejected intents emit no transition events and preserve canonical authoritative state. |
 | Stable machine-readable diagnostics | V2-2 | SDK and CLI share stage/code/severity/location/message/hint semantics. |
 | Isolated deterministic simulation evidence | V2-2 | Preview builds and reports cannot mutate projects, candidates, or live sessions. |
+| Deterministic preview/report fingerprints | V2-2 | Normalized preview inputs and reports are reproducible but are not package identity or release evidence. |
 | Player-safe admissible-intent descriptors | V2-2 | Tooling may expose bounded descriptors without hidden IDs or private conditions. |
 | Read-only proofing projection | V2-2 | Semantic relationships are stable; graph/UI layout is nonsemantic workspace data. |
 | Engine-shipped static capability catalog | V2-3 | Projects/packages declare requirements; the engine resolves exact safe versions. |
 | Namespaced capability state and pre-session rejection | V2-3 | Invalid dependencies, conflicts, safety, namespace, or migration sets fail before state creation. |
 | End-to-end adaptation trace chain | V2-4 | Source, rights, decisions, transformations, project elements, and sealed elements remain linked. |
-| Canonical sealed identity and stable anchors | V2-4 | Sealed bytes are never replaced in place; incremental anchors migrate explicitly. |
+| Canonical package/evidence identity and stable anchors | V2-4 | Sealed bytes and evidence manifests have canonical identities; incremental anchors migrate explicitly. |
 | One compiler/runtime toolchain for the workbench | V2-5 | The UI consumes SDK/application services and cannot introduce alternate rules. |
-| Semantic/UI hash separation | V2-4 and V2-5 | V2-4 defines package identity; V2-5 keeps presentation/workspace state outside it. |
+| Workbench metadata exclusion and parity enforcement | V2-5 | The UI enforces V2-4 identity boundaries and keeps presentation/workspace state outside them. |
 
 ## Interpretation Rules
 
@@ -65,6 +66,12 @@ simulation. They are not release evidence and are not `GamePackage v2`. V2-4 own
 canonical package identity, sealing, provenance/rights closure, and promotion to a
 distributable `GamePackage v2`.
 
+Before V2-3, V2-2 preview builds use one engine-defined V1 compatibility profile backed
+by current `World` behavior. The profile is neither package-selectable nor a capability
+catalog. A project may record syntactically valid V2 capability requirement IDs, but any
+such declaration blocks preview construction and simulation with a stable diagnostic
+until V2-3 resolves it.
+
 ### Narrative Choice Authority
 
 Deterministic branching and progressive disclosure are allowed only when authorized by
@@ -75,13 +82,16 @@ on creator-approved alternate paths, endings, prerequisites, or disclosure order
 
 ### Hash And Identity Boundary
 
-- Semantic project/package identity includes runtime-affecting data, declared
-  capabilities, shipped assets, canonical rules/configuration, and required rights or
-  compatibility policy.
-- Evidence identity may separately bind diagnostics, traces, reports, simulations, and
-  release approvals.
-- Workspace identity may include graph coordinates, panes, folding, zoom, selection,
-  caches, and editor preferences. These values never affect semantic package hashes.
+- V2-2 owns deterministic fingerprints for normalized preview inputs and simulation
+  reports. They support reproducibility but are not package identity or release
+  evidence.
+- V2-4 owns canonical `GamePackage v2` identity and a separate evidence-manifest
+  identity. Runtime-affecting data, resolved capabilities, shipped assets, canonical
+  rules/configuration, required rights/compatibility policy, and admitted release
+  evidence are bound there according to their respective contracts.
+- V2-5 owns workbench enforcement. Graph coordinates, panes, folding, zoom, selection,
+  caches, editor preferences, and other presentation metadata remain workspace data and
+  cannot affect either V2-4 identity.
 
 ### Privacy-Safe Diagnostics And Trace
 

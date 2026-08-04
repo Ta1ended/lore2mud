@@ -2403,7 +2403,7 @@
 ## DEC-0091: Refine milestone ownership with adopted reference patterns
 
 - Date: 2026-08-04
-- Status: Planning direction authorized; local planning candidate verified.
+- Status: Planning direction authorized; revised local planning candidate verified.
 - Context: The product owner supplied a synthesized set of patterns from comparable
   projects and authorized a planning-only update. The current V2 direction already
   contained most safety boundaries, but the short roadmap did not assign diagnostics,
@@ -2419,12 +2419,16 @@
   authoring diagnostics, isolated unsealed preview builds, simulation evidence,
   SDK/structured-CLI parity, bounded player-safe admissible-intent descriptors, and
   read-only proofing to V2-2. V2-2 may record capability requirement IDs but cannot
-  resolve them. Assign engine-shipped catalog resolution, exact versions, namespaces,
-  dependencies/conflicts, safety levels, and explicit migration contracts to V2-3.
-  Assign canonical sealed `GamePackage v2` identity, end-to-end adaptation traces,
-  stable story/scene/resume anchors, and explicit anchor migrations to V2-4. Assign the
-  nontechnical workbench and semantic/UI hash separation enforcement to V2-5, reusing
-  the V2-2 SDK/application services instead of creating alternate rules.
+  resolve them. Before V2-3, V2-2 preview builds use only one engine-defined V1
+  compatibility profile; any declared V2 capability requirement blocks preview build
+  and simulation with a stable diagnostic. Assign engine-shipped catalog resolution,
+  exact versions, namespaces, dependencies/conflicts, safety levels, and explicit
+  migration contracts to V2-3.
+  Assign canonical sealed `GamePackage v2` and evidence-manifest identity, end-to-end
+  adaptation traces, stable story/scene/resume anchors, and explicit anchor migrations
+  to V2-4. V2-2 owns only deterministic preview/report fingerprints; V2-5 enforces the
+  V2-4 identity boundary for workbench metadata and parity, reusing the V2-2
+  SDK/application services instead of creating alternate rules.
 - Narrative and trust rule: Deterministic branching and progressive disclosure are
   allowed only within owner-approved `GameBlueprint` constraints. Capabilities,
   runtime logic, and model output cannot invent source facts, broaden rights or
@@ -2438,9 +2442,10 @@
   scope; or treating preview/report/UI metadata as sealed package identity.
 - Privacy and identity: Public diagnostics, simulation reports, proofing exports,
   player views, and sealed metadata omit raw private excerpts, absolute private paths,
-  private source hashes, and identifiers that reveal private content. V2-4 owns
-  canonical semantic package identity; V2-5 workspace layout and presentation metadata
-  remain outside it, while reports/traces may have a separate evidence identity.
+  private source hashes, and identifiers that reveal private content. V2-2 report
+  fingerprints are reproducibility evidence only. V2-4 owns canonical semantic package
+  and evidence-manifest identity. V2-5 workspace layout and presentation metadata remain
+  outside both identities and cannot introduce a second hashing contract.
 - Evidence: Live `main` and `origin/main` were verified at
   `564530d87aea17da26544b7793701e0dca0fe57d` before the isolated planning workstream.
   `PRODUCT.md`, `docs/v2/architecture.md`, `docs/v2/roadmap.md`,
@@ -2450,7 +2455,13 @@
   links, bilingual single-action parity, unique milestone ownership, exact changed-path
   scope, `git diff --check`, repository history safety, `git fsck --full --no-dangling`,
   protected implementation-tree identity, the preserved `uv.lock` boundary, and a
-  public-plan leakage scan. No implementation test was run or claimed.
+  public-plan leakage scan. An initial independent read-only review returned `REVISE`
+  for two P2 planning contradictions: unresolved capability requirements in V2-2
+  previews and joint ownership of semantic identity. This revision assigns a fixed V1
+  compatibility profile to V2-2 and splits identity ownership across V2-2 fingerprints,
+  V2-4 package/evidence identities, and V2-5 enforcement. The focused P2 correction
+  checks, relative-link validation, protected-path audit, repository history safety, and
+  Git integrity checks then passed again. No implementation test was run or claimed.
 - Consequences: V2-1 remains the single routed next implementation task and does not
   gain Capability, SDK, structured CLI, diagnostics, simulation-report, migration,
   sealing, workbench, MCP, new content/save version, or private-material scope.

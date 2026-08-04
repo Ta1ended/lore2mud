@@ -86,9 +86,15 @@ builds, `SimulationReport v1`, Python SDK, and structured CLI.
   simulation tools without revealing hidden actions, hidden IDs, private source, or
   privileged conditions.
 - Provide a read-only proofing projection. Graph layout, folding, zoom, selection,
-  caches, and other UI metadata remain outside semantic hashes.
+  caches, and other UI metadata cannot affect normalized preview inputs or deterministic
+  report fingerprints. These V2-2 fingerprints are not package identity or release
+  evidence.
 - Allow blueprints/projects to record syntactically validated capability requirement
   IDs only. Catalog lookup and semantic capability resolution belong to V2-3.
+- Build V2-2 previews only with one engine-defined V1 compatibility profile backed by
+  current `World` behavior. The profile is not package-selectable and is not a catalog.
+  Any declared V2 capability requirement produces a stable diagnostic and blocks preview
+  build and simulation until V2-3; it is never ignored or resolved early.
 
 ### Non-Goals
 
@@ -99,8 +105,11 @@ builds, `SimulationReport v1`, Python SDK, and structured CLI.
 
 ### Acceptance Evidence
 
-- A fresh Agent can initialize a project, build a preview, validate, simulate, and
+- A fresh Agent can initialize a project that declares no V2 capability requirements,
+  build a preview against the fixed V1 compatibility profile, validate, simulate, and
   explain diagnostics without reading or modifying `src/`.
+- A project that declares any V2 capability requirement is rejected with the same
+  stable diagnostic by the SDK and structured CLI before preview construction.
 - SDK and structured CLI produce equivalent normalized artifacts, diagnostics, exit
   meaning, and simulation evidence for the same inputs.
 - Simulation advances only an isolated session copy and cannot mutate the caller's
@@ -108,8 +117,9 @@ builds, `SimulationReport v1`, Python SDK, and structured CLI.
 - Public exports contain no raw private excerpts, absolute private paths, private
   source hashes, or identifiers that reveal private content.
 
-**Exit:** a fresh Agent can build, validate, and simulate through published contracts
-without reading or modifying `src`; preview lifecycle and evidence are deterministic.
+**Exit:** a fresh Agent can build, validate, and simulate a fixed-profile V1-compatible
+project through published contracts without reading or modifying `src`; unsupported V2
+capability requirements reject deterministically, and preview evidence is reproducible.
 
 ## V2-3 Capability Module Architecture
 
@@ -165,6 +175,9 @@ identity, and incremental story content.
 
 - Reserve `GamePackage v2` for canonical sealed bytes. A sealed build is never
   regenerated or replaced in place; any change creates a new candidate identity.
+- Define canonical package identity and a separate canonical evidence-manifest identity
+  when sealing. V2-2 report fingerprints become release evidence only when V2-4 admits
+  and binds them through the sealed evidence manifest.
 - Use opaque stable story, scene, and resume anchors plus explicit anchor migration
   records for incremental content. Anchors must not expose private source paths or
   raw text.
@@ -206,10 +219,11 @@ playtests, packaging, and security audit.
 - Build the workbench as a client of V2-2 SDK/application services. It cannot own a
   second compiler, validator, simulation engine, or runtime rule set.
 - Keep graph coordinates, pane state, folding, zoom, selection, caches, and proofing
-  presentation metadata outside semantic project/package hashes.
-- Include shipped assets and runtime-affecting data in package identity. Track
-  diagnostics, traces, reports, and workbench metadata separately in evidence or
-  workspace identities.
+  presentation metadata outside the V2-4 package and evidence-manifest identities. V2-5
+  enforces this existing boundary; it does not define a second identity contract.
+- Enforce the V2-4 rule that shipped assets and runtime-affecting data affect package
+  identity. Diagnostics, traces, and reports enter the V2-4 evidence manifest only
+  through its admission contract; workbench metadata remains workspace-only.
 - Require validate, simulate, and seal gates before distribution. The workbench cannot
   directly patch a live `GameSession` or bypass those gates.
 
@@ -222,8 +236,8 @@ playtests, packaging, and security audit.
 
 - Workbench and structured CLI produce equivalent build, validation, simulation, and
   sealing results for the same project inputs.
-- UI-only edits leave semantic project/package identity unchanged; runtime-affecting
-  edits change it.
+- UI-only edits leave the V2-4 package and evidence-manifest identities unchanged;
+  runtime-affecting edits change package identity under the V2-4 contract.
 - Three to five external users or Agents independently complete different-genre
   projects, and players can finish the resulting games.
 
@@ -240,6 +254,7 @@ The technical first path uses the existing public `urban_investigation` family. 
 product sample is a new original investigation. Cultivation is the second genre.
 
 PLAT-1 is developed incrementally across V2-1 through V2-5. V2-2 may prove only the
-preview build/validate/simulate portion; V2-4 owns sealed package evidence; V2-5 owns
-independent nontechnical workflow evidence. No milestone may claim complete platform
-acceptance before the full scenario passes independently.
+fixed-profile preview build/validate/simulate portion; V2-4 owns sealed package and
+evidence-manifest identity; V2-5 owns independent nontechnical workflow evidence and
+workbench parity enforcement. No milestone may claim complete platform acceptance
+before the full scenario passes independently.

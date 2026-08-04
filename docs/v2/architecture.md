@@ -42,8 +42,9 @@ It says what must be built without prescribing engine internals.
 
 A normalized build workspace: approved blueprint, imported source references,
 creator decisions, generated and reviewed material, stable IDs, capability
-configuration, assets, trace records, validation state, and build lock. Mutable work
-lives here; a project is not directly playable or distributable.
+requirements, assets, trace records, validation state, and build lock. Resolved
+capability configuration begins in V2-3. Mutable work lives here; a project is not
+directly playable or distributable.
 
 ### Preview Build
 
@@ -51,6 +52,10 @@ An unsealed runtime candidate derived from a `GameProject` for validation, isola
 simulation, and local proofing. It is non-distributable, cannot be treated as release
 evidence, and cannot mutate the source project or any live player session. A later
 change may produce a different preview without creating or replacing a sealed package.
+Before V2-3, preview construction uses one engine-defined V1 compatibility profile that
+is not package-selectable and is not a `CapabilityDescriptor` catalog. Any declared V2
+capability requirement blocks preview construction and simulation with a stable
+authoring diagnostic; it is never ignored or resolved early.
 
 ### AuthoringDiagnostic v1
 
@@ -67,14 +72,16 @@ preview/runtime-input hashes, engine version, seed and clock inputs, initial and
 authoritative-state hashes, each `GameIntent`, accepted/rejected status, event types,
 view hashes, win/loss conditions, a replayable witness trace, and save/load checkpoint
 equivalence. Reports are evidence artifacts, not semantic package content, and do not
-by themselves prove PLAT-1 or a sealed release.
+by themselves prove PLAT-1 or a sealed release. V2-2 may define deterministic report
+fingerprints, but V2-4 owns canonical package and evidence-manifest identity.
 
 ### Read-Only Proofing Projection
 
 An authoring projection of stable story, scene, reference, diagnostic, and reachability
 relationships. Graph coordinates, pane state, zoom, selection, folding, caches, and
-other presentation metadata are workspace concerns and never enter semantic project or
-package hashes.
+other presentation metadata are workspace concerns. In V2-2 they cannot affect
+normalized preview inputs or report fingerprints; V2-4 later defines canonical package
+and evidence-manifest identity, and V2-5 enforces the exclusion in the workbench.
 
 ### GamePackage v2
 
@@ -99,7 +106,9 @@ The descriptor is selected from an engine-shipped catalog. A package cannot inje
 Python, import a module by path, or provide executable hooks. V2-2 projects may record
 syntactically valid capability requirement IDs, but catalog lookup, version resolution,
 dependency/conflict checks, namespace ownership, safety enforcement, and migration
-dispatch begin in V2-3.
+dispatch begin in V2-3. Because V2-2 preview builds use only the fixed V1 compatibility
+profile, any declared V2 capability requirement blocks preview construction rather than
+being ignored or resolved early.
 
 ## Runtime Contracts
 
