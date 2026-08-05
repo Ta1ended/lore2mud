@@ -18,6 +18,11 @@
   `workstream/v2-2-agent-authoring` 正常推送到同名远端分支。
 - 推送前实时 `git ls-remote` 显示远端 `main=bf3f8b93`、V2-1 workstream=`eb972903`，
   且远端尚无 V2-2 workstream；因此授权操作只创建新分支，不覆盖或 force-push ref。
+- 首次推送在精确文档头 `8eb549e` 创建了远端 workstream，但 Ubuntu Actions 在产品 CLI
+  启动前暴露 POSIX surrogate argv 测试夹具问题。verification-only 提交 `2dc9475e` 只改
+  一个测试文件，产品路径相对 `ec60cb0` 零差异；全新 Reviewer 14 给出 P0-P3 全空与 `GO`。
+- 开始 SECURITY 前，最终 workstream head 必须以正常 fast-forward 发布，并确认其
+  GitHub Actions `tests` 与 `quality` 都绑定该精确 SHA 且为绿色。
 - TECH 与 PRODUCT 决定均绑定产品 SHA，不绑定 documentation seal、preview/report
   fingerprint 或未来 package/evidence identity。
 
@@ -56,6 +61,14 @@
 - The pre-push live `git ls-remote` showed remote `main=bf3f8b93`, V2-1
   workstream=`eb972903`, and no remote V2-2 workstream. The authorized operation therefore
   creates a branch without overwriting or force-pushing a ref.
+- The first push created the remote workstream at exact documentation head `8eb549e`,
+  but Ubuntu Actions exposed a POSIX surrogate-argv test-harness issue before the product
+  CLI started. Verification-only commit `2dc9475e` changes one test file, leaves every
+  product path identical to `ec60cb0`, and received P0-P3 empty with `GO` from fresh
+  Reviewer 14.
+- Before SECURITY starts, the final workstream head must be published by normal
+  fast-forward and both GitHub Actions `tests` and `quality` must be green for that exact
+  SHA.
 - TECH and PRODUCT decisions bind to the product SHA, not the documentation seal,
   preview/report fingerprints, or a future package/evidence identity.
 

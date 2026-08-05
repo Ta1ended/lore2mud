@@ -164,8 +164,14 @@
   independently reproducing the final typed-scalar repair and rerunning focused, full,
   static, safety, and Git gates. The product owner then explicitly granted PRODUCT PASS
   for that exact product SHA and authorized a normal push of the V2-2 workstream branch;
-  product bytes remain frozen and SECURITY PASS remains separate (DEC-0102 through
-  DEC-0110).
+  product bytes remain frozen and SECURITY PASS remains separate. The first workstream
+  publication exposed one POSIX-only test-harness failure before the product CLI could
+  start: a lone surrogate could not be encoded into Linux subprocess argv. Verification-
+  only commit `2dc9475e12087fcca97e15c85c5a4b56220d00de` keeps normal subprocess coverage,
+  transports only non-UTF-8-safe argv through ASCII JSON into a child interpreter, and
+  invokes the same `lore2mud.cli.main()` path. Fresh Reviewer 14 returned P0-P3 empty and
+  `GO`; all product, Schema, packaging, workflow, dependency, and runtime bytes remain
+  identical to the PRODUCT PASS candidate (DEC-0102 through DEC-0111).
 - Added the public V2-1 `lore2mud.application` package: frozen typed `GameIntent`,
   `GameEvent`, `GameView`, `TurnResult`, determinism and rejection contracts;
   `GameSession` turn coordination with rollback and ordered event sequencing; and a

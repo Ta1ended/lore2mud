@@ -43,6 +43,10 @@ CLI 共用一个实现。
 - 当前已有 TECH `GO` 与产品所有者对精确产品 SHA 的 PRODUCT PASS；已授权把当前
   `workstream/v2-2-agent-authoring` 正常推送到同名远端分支。仍没有 SECURITY PASS、
   `main` 移动/合并、release 或 V2-3 授权。
+- 首次正常推送把远端 workstream 建立在 `8eb549e`；Ubuntu Actions 随后因测试把孤立
+  surrogate 直接传入 POSIX subprocess argv 而在产品 CLI 启动前失败。verification-only
+  提交 `2dc9475e12087fcca97e15c85c5a4b56220d00de` 只改一个测试辅助函数，并由全新
+  Reviewer 14 以 P0-P3 全空和 `GO` 独立验收；产品字节与 PRODUCT PASS 均不变。
 
 ### 已实现
 
@@ -125,6 +129,11 @@ CLI 共用一个实现。
 - GitHub REST 复核 live `main=bf3f8b93`、V2-1 workstream=`eb972903`；GitHub Actions
   tests `30967832753` 与 quality `30967832780` 仍为 exact `eb972903` 的
   `completed/success`。
+- 首次 V2-2 workstream 推送精确绑定 `8eb549e`，且推送后 `main` 仍为 `bf3f8b93`。
+  Actions tests `31043215852` 与 quality `31043215795` 的 Ubuntu test jobs 因 POSIX
+  无法编码 lone-surrogate argv 而失败；静态分析和 Windows candidate job 成功。修复后
+  Controller 重跑聚焦 81+61、unittest 1483/11、serial 与 xdist 1472/11/619，以及所有
+  静态、安全、依赖和 Git 门禁，均通过；产品路径相对 `ec60cb0` 零差异。
 - 第五轮只读验收的唯一 P3 是 `CODE_MAP.md` 两处行数，已在 `b33c088` 关闭。第六轮对
   `b33c088` 返回 typed-SDK 结构化拒绝/诊断上限 P2；第七轮对 `845c04c` 独立关闭该 P2，
   但对循环内存 document 返回一个新 P2；第八轮平台中断且没有 verdict。第九轮对
@@ -154,7 +163,9 @@ CLI 共用一个实现。
   后发现 typed request 资源 P2，第十轮关闭旧 P2 后发现资源拒绝顺序 P2，第十一轮关闭
   DEC-0106 P2 后发现 typed artifact bounded parity P2 与 CHANGELOG P3，第十二轮关闭
   DEC-0107 findings 后发现 unsupported typed scalar `TypeError` P2；第十三轮关闭
-  DEC-0108 finding 并对精确候选给出 P0-P3 全空与 TECH `GO`。有 verdict 的
+  DEC-0108 finding 并对精确候选给出 P0-P3 全空与 TECH `GO`；第十四轮对 verification-only
+  候选 `2dc9475e` 独立确认产品字节冻结、真实 CLI 子进程路径与稳定诊断等价，P0-P3 全空并
+  给出 `GO`。有 verdict 的
   轮次均为全新、未参与实现、严格只读任务并按 findings-first 输出。它们使用继承模型，
   工具未暴露可审计精确模型 ID；模型输出不替代测试、静态检查与 Git 证据。
 
@@ -179,6 +190,8 @@ CLI 共用一个实现。
   V2-3 授权；workstream 推送也不改变这些边界。
 - 推送前实时检查确认远端尚无 V2-2 workstream，因此本次只创建同名远端分支，不覆盖或
   force-push 任何 ref。
+- SECURITY 开始前，verification/documentation head 必须正常 fast-forward 到同名远端
+  workstream，且精确 head 的 Actions tests 与 quality 必须绿色。
 - 唯一下一门禁：对精确 V2-2 产品候选
   `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60` 进行独立 SECURITY PASS。
 
@@ -231,6 +244,12 @@ the Python SDK and structured CLI.
   of the current `workstream/v2-2-agent-authoring` branch to the same remote branch is
   authorized. There is still no SECURITY PASS, `main` movement/merge, release, or V2-3
   authorization.
+- The first normal push created the remote workstream at `8eb549e`. Ubuntu Actions then
+  failed before the product CLI started because the test passed a lone surrogate through
+  POSIX subprocess argv. Verification-only commit
+  `2dc9475e12087fcca97e15c85c5a4b56220d00de` changes one test helper, received P0-P3
+  empty with `GO` from fresh Reviewer 14, and leaves the product bytes and PRODUCT PASS
+  unchanged.
 
 ### Implemented
 
@@ -330,6 +349,12 @@ the Python SDK and structured CLI.
 - GitHub REST reconfirmed live `main=bf3f8b93` and V2-1 workstream=`eb972903`.
   GitHub Actions tests `30967832753` and quality `30967832780` remain
   `completed/success` for exact `eb972903`.
+- The first V2-2 workstream push bound exact `8eb549e`, while `main` remained
+  `bf3f8b93`. Actions tests `31043215852` and quality `31043215795` failed their Ubuntu
+  test jobs because POSIX could not encode the lone-surrogate argv; static analysis and
+  the Windows candidate job succeeded. After the harness repair, Controller reruns passed
+  the 81+61 focused matrix, unittest 1483/11, serial and xdist 1472/11/619, and all
+  static, safety, dependency, and Git gates. Product paths remain identical to `ec60cb0`.
 - The fifth read-only review's only P3 was two `CODE_MAP.md` line counts and was closed
   in `b33c088`. The sixth review returned the typed-SDK rejection/diagnostic-bound P2;
   the seventh closed it before finding the cyclic-document P2. The eighth was interrupted
@@ -368,6 +393,9 @@ the Python SDK and structured CLI.
   Reviewer 11 closed DEC-0106 before finding the typed-artifact parity P2 and CHANGELOG
   P3; Reviewer 12 closed DEC-0107 before finding the unsupported typed-scalar P2.
   Reviewer 13 closed DEC-0108 and granted exact-candidate TECH `GO` with P0-P3 empty.
+  Reviewer 14 independently confirmed frozen product bytes, the real CLI child-process
+  path, and stable diagnostic equivalence for verification-only candidate `2dc9475e`,
+  then returned P0-P3 empty and `GO`.
   Every verdict-bearing review was fresh, non-implementing, strictly read-only, and
   findings-first. The tasks used inherited models whose auditable exact IDs were not
   exposed; model output does not replace tests, static checks, or Git evidence.
@@ -396,5 +424,8 @@ the Python SDK and structured CLI.
   V2-3 authorization. Publishing the workstream does not change those boundaries.
 - The pre-push live check found no existing remote V2-2 workstream, so this operation
   creates the matching branch without overwriting or force-pushing any ref.
+- Before SECURITY starts, the verification/documentation head must be normally
+  fast-forwarded to the matching remote workstream and exact-head Actions tests and
+  quality must be green.
 - The sole next gate is independent SECURITY PASS for exact V2-2 product candidate
   `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`.

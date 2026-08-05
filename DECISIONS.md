@@ -3209,3 +3209,44 @@
 - Supersedes: DEC-0109 only for PRODUCT PASS status, workstream-push authorization, and
   next-gate routing. DEC-0109's exact TECH verdict and all product-byte, privacy,
   compatibility, security, release, Git, and later-milestone boundaries remain in force.
+
+## DEC-0111: Repair the post-publication POSIX CLI test transport without changing product bytes
+
+- Date: 2026-08-05
+- Status: Verification-only repair independently accepted; V2-2 product SHA, TECH GO,
+  and PRODUCT PASS unchanged; normal workstream fast-forward remains authorized;
+  SECURITY PASS remains pending.
+- Context: The first normal publication created remote
+  `workstream/v2-2-agent-authoring` at documentation head
+  `8eb549ead9118caf6677bf03e6bd837bed11c62c` without moving `main`. GitHub Actions tests
+  `31043215852` and quality `31043215795` then failed on every Ubuntu Python job because
+  `tests/test_authoring_end_to_end.py` passed a lone UTF-16 surrogate directly through
+  POSIX subprocess argv. Python raised `UnicodeEncodeError` before the product CLI,
+  parser, or shared authoring service started. Static analysis and the Windows candidate
+  job succeeded.
+- Decision: Keep exact PRODUCT PASS candidate
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60` frozen. For ordinary arguments, retain the
+  real `python -m lore2mud author` subprocess. Only when a test argument cannot be UTF-8
+  encoded, serialize the exact argv as ASCII JSON and rehydrate it inside an independent
+  Python child process before calling the same `lore2mud.cli.main(argv)` entry point.
+  Treat commit `2dc9475e12087fcca97e15c85c5a4b56220d00de` as a verification-only candidate,
+  not a new product candidate or product decision.
+- Evidence: Controller verification passed the exact surrogate regression, the 81-test
+  plus 61-subtest authoring/Windows matrix, full unittest at 1,483 with 11 conditional
+  skips, and serial/xdist pytest at 1,472 passed, 11 skipped, and 619 subtests. Ruff,
+  Pyright, compileall, public-Demo validation, `pip check`, history safety, fsck, and diff
+  checks passed. A product-path comparison against `ec60cb0` found no changes. Fresh,
+  non-implementing Reviewer 14 independently confirmed exact SHA/parent/clean status,
+  one changed test file, the ordinary and surrogate subprocess paths, canonical SDK/CLI
+  rejection equivalence, 81 focused tests plus 61 subtests, static/Git gates, P0-P3 all
+  empty, and final verdict `GO`.
+- Consequences: A documentation-only seal may record this verdict, after which the
+  controller may normally fast-forward only
+  `origin/workstream/v2-2-agent-authoring` and must verify exact-head tests and quality
+  Actions before closing publication. No new PRODUCT PASS is required because product
+  bytes did not change. No force push, `main` movement/merge, release, SECURITY PASS,
+  private-material access, or V2-3 work is authorized.
+- Supersedes: DEC-0110 only for its statement that every post-product commit must be
+  documentation-only; the narrow verification-harness repair above is the sole
+  exception. DEC-0110's exact product decision, publication scope, privacy, security,
+  release, Git, and later-milestone boundaries remain in force.
