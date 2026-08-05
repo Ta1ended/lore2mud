@@ -159,7 +159,11 @@
   1,472 tests with 11 conditional skips and 619
   subtests. No dependency, V1 content/save version, `World`,
   `pipeline/forge.py`, release, `main`, V2-3, or private-material boundary changes.
-  Fresh exact-commit TECH acceptance remains pending (DEC-0102 through DEC-0108).
+  Fresh non-implementing Reviewer 13 accepted exact product candidate
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60` with P0-P3 empty and TECH `GO` after
+  independently reproducing the final typed-scalar repair and rerunning focused, full,
+  static, safety, and Git gates. Product bytes are frozen; human PRODUCT PASS remains the
+  sole next gate (DEC-0102 through DEC-0109).
 - Added the public V2-1 `lore2mud.application` package: frozen typed `GameIntent`,
   `GameEvent`, `GameView`, `TurnResult`, determinism and rejection contracts;
   `GameSession` turn coordination with rollback and ordered event sequencing; and a

@@ -36,10 +36,12 @@ CLI 共用一个实现。
   决策范围遗漏 DEC-0106 的 P3，最终给出 `REVISE`。第十二轮对精确候选
   `e1f3a806b987209f7ed9435384739c9e6865d513` 关闭 DEC-0107 findings，但发现 typed
   project/report 中的 `bytes` 等非 JSON 标量会从 SDK 泄漏原始 `TypeError` 的 P2，并给出
-  `REVISE`。DEC-0108 修复与完整本地门禁已通过；本文件无法自引用 amend 后 SHA，
-  Controller 会在提交后把精确 SHA 交给全新 Reviewer 13。
-- 当前没有 TECH `GO`、PRODUCT PASS、SECURITY PASS、push、merge、release、`main`
-  移动或 V2-3 授权。
+  `REVISE`。DEC-0108 修复后的精确产品候选是
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`，tree 为
+  `f7c12fda17257f7a6b539bbbfce97da18452a961`，父提交正是 `eb972903`。全新 Reviewer 13
+  严格只读验收后给出 P0-P3 全空与最终 `GO`；产品字节现已冻结。
+- 当前已有 TECH `GO`，但没有 PRODUCT PASS、SECURITY PASS、publication、push、merge、
+  release、`main` 移动或 V2-3 授权。
 
 ### 已实现
 
@@ -103,7 +105,8 @@ CLI 共用一个实现。
   `pytest -n auto`：同为 `1472 passed, 11 skipped, 619 subtests passed`。
 - `ruff check .`、标准 `pyright`（`0 errors, 0 warnings`）、compileall、公开
   `original_demo` validate、`pip check`、history safety、fsck 和工作树/baseline whitespace
-  检查均已在 DEC-0108 工作树字节上通过；精确提交后的 baseline range diff 将在 amend 后重跑。
+  检查均已在 DEC-0108 产品字节上通过；提交后确认父提交精确为 `eb972903`、range 仅一个
+  提交、ancestry/clean/baseline diff checks 均通过。
 - 11 个 skip 全是此 Windows 主机缺少 symlink privilege/POSIX symlink 的条件性覆盖；没有
   将其写成通过。
 - 非产品 harness 记录：一次聚焦命令引用不存在的 `tests/test_cli.py`；一次显式把测试文件
@@ -128,8 +131,8 @@ CLI 共用一个实现。
   该 P2 的诊断等价性，却发现资源拒绝顺序 P2。第十一轮对 `cb974cb` 关闭 DEC-0106 P2，
   但发现 typed blueprint/project/report bounded parity P2 与 CHANGELOG P3。第十二轮对
   `e1f3a806` 关闭 DEC-0107 findings，但发现 unsupported typed scalar 泄漏 `TypeError` 的
-  P2。DEC-0108 已修复并通过完整本地门禁；amend 后候选仍需全新 Reviewer 13 验收，
-  Controller 不能授予 TECH `GO`。
+  P2。DEC-0108 已修复；第十三轮在精确候选 `ec60cb0` 上独立复现六条稳定拒绝与所有
+  零调用 spy，并以 P0-P3 全空给出 TECH `GO`。
 
 ### 角色与模型
 
@@ -149,9 +152,10 @@ CLI 共用一个实现。
   第七轮关闭旧 P2 后发现循环 document P2，第八轮平台中断无 verdict，第九轮关闭旧 P2
   后发现 typed request 资源 P2，第十轮关闭旧 P2 后发现资源拒绝顺序 P2，第十一轮关闭
   DEC-0106 P2 后发现 typed artifact bounded parity P2 与 CHANGELOG P3，第十二轮关闭
-  DEC-0107 findings 后发现 unsupported typed scalar `TypeError` P2；有 verdict 的
+  DEC-0107 findings 后发现 unsupported typed scalar `TypeError` P2；第十三轮关闭
+  DEC-0108 finding 并对精确候选给出 P0-P3 全空与 TECH `GO`。有 verdict 的
   轮次均为全新、未参与实现、严格只读任务并按 findings-first 输出。它们使用继承模型，
-  工具未暴露可审计精确模型 ID；DEC-0108 amend 后候选必须交给全新 Reviewer 13 决定。
+  工具未暴露可审计精确模型 ID；模型输出不替代测试、静态检查与 Git 证据。
 
 ### 保持的边界
 
@@ -168,12 +172,12 @@ CLI 共用一个实现。
 
 ### 剩余风险与唯一下一门禁
 
-- 当前修复的提交后精确 range check 和全新独立 TECH 决定仍待完成；Windows PyInstaller
-  smoke 已通过，但仍依赖主项目已安装的固定构建工具链。
-- 即使 TECH `GO`，仍没有 PRODUCT PASS、SECURITY PASS、publication、push、merge、
-  release、`main` 移动或 V2-3 授权。
-- 唯一下一门禁：把 DEC-0108 修复 amend 为一个干净、连贯的精确 V2-2 产品候选，并交给
-  全新 Reviewer 13 严格只读验收；最终只能输出 `GO` 或 `REVISE`。
+- 当前 Windows 权限下 2 个 POSIX-only 与 9 个 symlink 权限测试未执行；Windows
+  PyInstaller smoke 已通过，但仍依赖主项目已安装的固定构建工具链。
+- TECH `GO` 不等于 PRODUCT PASS、SECURITY PASS、publication、push、merge、release、
+  `main` 移动或 V2-3 授权。
+- 唯一下一门禁：产品所有者对精确 V2-2 产品候选
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60` 给出明确的人类 `PRODUCT PASS`。
 
 ## English
 
@@ -215,11 +219,13 @@ the Python SDK and structured CLI.
   Reviewer 12 on exact candidate `e1f3a806b987209f7ed9435384739c9e6865d513`
   closed the DEC-0107 findings but found a P2 because non-JSON scalars such as `bytes`
   in typed projects/reports escaped raw `TypeError` from SDK operations. It issued
-  `REVISE`. DEC-0108 is repaired and full local gates pass; this file cannot self-
-  reference the amended SHA. The Controller will give that exact candidate to fresh
-  Reviewer 13.
-- There is currently no TECH `GO`, PRODUCT PASS, SECURITY PASS, push, merge, release,
-  `main` movement, or V2-3 authorization.
+  `REVISE`. The DEC-0108 repair produced exact product candidate
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`, tree
+  `f7c12fda17257f7a6b539bbbfce97da18452a961`, with exact parent `eb972903`. Fresh
+  Reviewer 13 completed strict read-only acceptance and returned P0-P3 all empty with
+  final verdict `GO`; product bytes are now frozen.
+- TECH `GO` is recorded, but there is no PRODUCT PASS, SECURITY PASS, publication,
+  push, merge, release, `main` movement, or V2-3 authorization.
 
 ### Implemented
 
@@ -294,8 +300,8 @@ the Python SDK and structured CLI.
   `pytest -n auto`: the same `1472 passed, 11 skipped, 619 subtests passed`.
 - `ruff check .`, standard `pyright` (`0 errors, 0 warnings`), compileall, public
   `original_demo` validation, `pip check`, history safety, fsck, and working-tree/baseline
-  whitespace checks pass on the DEC-0108 worktree bytes. The exact post-commit baseline
-  range diff will be rerun after amending the candidate.
+  whitespace checks pass on the DEC-0108 product bytes. Post-commit checks confirm exact
+  parent `eb972903`, a one-commit range, valid ancestry, clean status, and baseline diff.
 - All 11 skips are conditional coverage for unavailable Windows symlink privilege or
   POSIX symlinks; they are not reported as passes.
 - Non-product harness record: one focused command referenced nonexistent
@@ -326,8 +332,8 @@ the Python SDK and structured CLI.
   P2; Reviewer 10 closed that one before finding the preview-order P2. Reviewer 11 closed
   DEC-0106 but found the typed-artifact bounded-parity P2 and CHANGELOG P3 in `cb974cb`.
   Reviewer 12 closed those findings on `e1f3a806` but found the unsupported typed-scalar
-  `TypeError` P2. DEC-0108 is repaired and full local gates pass. The amended candidate
-  still requires fresh Reviewer 13; Controller verification cannot grant TECH `GO`.
+  `TypeError` P2. Reviewer 13 independently reproduced all six stable rejections and
+  zero-call spies on exact candidate `ec60cb0`, then returned P0-P3 empty and TECH `GO`.
 
 ### Roles And Models
 
@@ -355,9 +361,10 @@ the Python SDK and structured CLI.
   request resource P2, Reviewer 10 found the preview-order P2 after closing that one, and
   Reviewer 11 closed DEC-0106 before finding the typed-artifact parity P2 and CHANGELOG
   P3; Reviewer 12 closed DEC-0107 before finding the unsupported typed-scalar P2.
+  Reviewer 13 closed DEC-0108 and granted exact-candidate TECH `GO` with P0-P3 empty.
   Every verdict-bearing review was fresh, non-implementing, strictly read-only, and
   findings-first. The tasks used inherited models whose auditable exact IDs were not
-  exposed. Fresh Reviewer 13 must decide the amended DEC-0108 candidate.
+  exposed; model output does not replace tests, static checks, or Git evidence.
 
 ### Preserved Boundaries
 
@@ -376,11 +383,10 @@ the Python SDK and structured CLI.
 
 ### Residual Risks And Single Next Gate
 
-- The post-commit exact-range check and a fresh independent TECH decision remain
-  pending. Windows PyInstaller smoke passed but still depends on the pinned build
-  toolchain installed in the primary project environment.
-- Even TECH `GO` would not grant PRODUCT PASS, SECURITY PASS, publication, push,
-  merge, release, `main` movement, or V2-3 authorization.
-- The sole next gate is to amend the DEC-0108 repair into one clean coherent exact V2-2
-  product candidate and submit it to fresh Reviewer 13 for strict read-only acceptance
-  ending only in `GO` or `REVISE`.
+- Two POSIX-only and nine symlink-privilege tests did not execute under the current
+  Windows permissions. Windows PyInstaller smoke passed but still depends on the pinned
+  build toolchain installed in the primary project environment.
+- TECH `GO` is not PRODUCT PASS, SECURITY PASS, publication, push, merge, release,
+  `main` movement, or V2-3 authorization.
+- The sole next gate is explicit human `PRODUCT PASS` from the product owner for exact
+  V2-2 product candidate `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`.

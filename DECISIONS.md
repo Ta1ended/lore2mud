@@ -3145,3 +3145,36 @@
   DEC-0107 bounded canonical parity, DEC-0106 request-first ordering, and every V2-2
   scope, privacy, compatibility, product, security, publication, Git, and later-
   milestone boundary.
+
+## DEC-0109: Seal V2-2 independent TECH GO locally
+
+- Date: 2026-08-05
+- Status: V2-2 independent TECH GO recorded; human PRODUCT PASS remains pending.
+- Context: Fresh, non-implementing Reviewer 13 performed strict read-only acceptance of
+  exact product candidate `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`, tree
+  `f7c12fda17257f7a6b539bbbfce97da18452a961`, whose exact parent is accepted V2-1
+  documentation head `eb972903a0b959f09a647a1727a6ed66f2d098f7`. The review returned
+  P0/P1/P2/P3 all empty and final verdict `GO`, independently reproducing closure of
+  DEC-0108's unsupported typed-scalar P2.
+- Decision: Freeze the exact V2-2 product bytes at `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`.
+  Create one documentation-only seal updating `DECISIONS.md`, `CHANGELOG.md`,
+  `PROJECT_STATE.md`, and `NEXT_TASK.md`; do not rerun full TECH acceptance because the
+  accepted product bytes do not change. Route the sole next gate to the human product
+  owner for explicit `PRODUCT PASS` on the exact product candidate.
+- Evidence: Reviewer 13 confirmed exact SHA/branch/tree/parent, one-commit ancestry, and
+  a clean worktree. Its independent adversarial probe returned one canonical
+  serialization-stage `authoring_input_invalid_json` for every malformed typed project
+  or report path with zero preview/materialization/`GameSession`/replay/proofing calls.
+  Independent focused authoring and Windows tests passed 81 tests; full unittest passed
+  1,483 with 11 conditional skips; full pytest passed 1,472 plus 619 subtests with the
+  same 11 conditional skips. Ruff, Pyright, compileall, public-Demo validation, history
+  safety, fsck, diff checks, and final clean status passed. Controller xdist independently
+  passed the same 1,472/11/619 matrix. The 11 skips are two POSIX-only and nine Windows
+  symlink-privilege cases, not passes.
+- Consequences: V2-2 has TECH `GO` only. There is no PRODUCT PASS, SECURITY PASS,
+  publication, push, merge, `main` movement, release, distribution authorization, or
+  V2-3 authorization. The preview/report fingerprints remain reproducibility evidence,
+  not package/evidence identity or a release seal.
+- Supersedes: DEC-0108 only for pending independent acceptance and next-gate routing.
+  DEC-0108's implementation, verification, scope, privacy, compatibility, publication,
+  Git, and later-milestone boundaries remain in force.
