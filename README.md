@@ -1,193 +1,239 @@
+<div align="center">
+
 # Lore2MUD
 
-**把叙事世界观变成可运行的文字游戏引擎**
+**把公开安全或已授权的故事材料，构建为确定、可验证、可重放的文字游戏。**
 
-Lore2MUD 是一个本地优先、内容包驱动的 Python 文字 MUD（文字冒险）引擎。  
-它把「通用游戏规则」和「具体故事内容」彻底分离，让你可以用结构化 JSON 内容包，快速构建包含房间、物品、装备、战斗、任务、对话、商店的单人文字世界。
+Agent-callable · Local-first · Deterministic · Public-safe
 
-当前版本已经自带一个完全原创的八房间演示世界（「微光边站」），支持完整的冒险闭环。运行时**零第三方依赖**，只用 Python 标准库。
+[![tests](https://github.com/Ta1ended/lore2mud/actions/workflows/tests.yml/badge.svg)](https://github.com/Ta1ended/lore2mud/actions/workflows/tests.yml)
+[![quality](https://github.com/Ta1ended/lore2mud/actions/workflows/quality.yml/badge.svg)](https://github.com/Ta1ended/lore2mud/actions/workflows/quality.yml)
+![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB)
+![Status](https://img.shields.io/badge/status-alpha-orange)
+![License](https://img.shields.io/badge/license-MIT-2ea44f)
 
-> 本仓库只包含通用引擎、工具与原创示例。  
-> **不包含**任何第三方小说、角色、世界观、图片或音频。  
-> MIT 许可证仅覆盖仓库自有代码与原创演示内容。你自行导入或生成的材料，权利需自行确认。
+</div>
 
----
+## 中文
 
-## 它适合做什么？
+Lore2MUD 是一个**供开发 Agent 调用的小说转文字游戏引擎**。
 
-- 想快速做一个可玩的文字冒险 / 轻量 MUD 原型
-- 想把自己的原创故事（或有授权的小说）变成可交互的游戏
-- 需要一个**确定性、可测试、可验证**的文字游戏运行时（方便 AI Agent 或工具链调用）
-- 希望内容与引擎解耦，方便换皮、扩展、做多个独立故事包
+开发 Agent 通过 Python SDK、结构化 CLI 和 JSON Schema 创建游戏；产品所有者负责创意、
+来源授权和发布决策；玩家通过文字 CLI 或本地 Web 客户端游玩。Lore2MUD 本身不是 Agent，
+也不会在运行时用自由文本模型取代确定性规则。
 
-它**不是**：
-- 自动创作小说的 AI
-- 多人在线 MUD 服务器
-- 可以直接塞进任意小说就自动出完整游戏的黑盒
+### 当前状态
 
----
+> 状态快照：2026-08-05。V2-2 已完成 TECH、PRODUCT 和 SECURITY 门禁，
+> 但这不等于 release、`main` 集成或 V2-3 授权。
 
-## 当前能力（V1）
+| 里程碑 | 交付内容 | 状态 |
+|---|---|---|
+| V1 | 内容包、权威 `World`、CLI/Web、玩法与存档 | 公开可用 |
+| V2-1 | `GameIntent`、`GameSession`、事件、视图与回合结果 | 已验收 |
+| V2-2 | Blueprint、Project、preview、simulation、proofing、SDK/CLI | 已验收 |
+| V2-3 | capability catalog、版本与依赖解析 | 未开始 |
+| V2-4 / V2-5 | package 封存、证据身份与 Agent workbench | 规划中 |
 
-| 系统           | 说明 |
-|----------------|------|
-| 房间与探索     | 多房间地图、出口、物品门禁 |
-| 物品与背包     | 强类型物品堆、数量限制、拾取/丢弃 |
-| 装备           | 手部 / 身体装备槽，提供攻击/防御加成 |
-| 消耗品         | 可使用恢复道具 |
-| 战斗           | 确定性回合制战斗 + 战败恢复 |
-| 任务           | 收集、到达、击败等多种任务类型，支持分段接取 |
-| 对话           | 强类型对话树 + 原子效果（给物品、设标记、接任务等） |
-| 商店与金币     | 固定商店买卖 |
-| 存档           | 版本化存档（当前写 v9，兼容读取旧版） |
-| 内容校验       | `validate` 命令可在不启动游戏的情况下检查内容包 |
-| 本地 Web 客户端| 浏览器也能玩 |
-| 创作流水线     | 小说拆分、事实候选、设定注册表、叙事模型编译等工具（`pipeline/`） |
+当前 V2-2 实现位于 `workstream/v2-2-agent-authoring`。它尚未成为 release，preview 也不是
+可分发的 `GamePackage v2`。
 
-所有游戏规则都由 `World` 作为唯一权威状态持有，命令层只负责解析与展示，保证行为可测试、可复现。
+### 已有能力
 
----
+**运行时**
 
-## 快速开始
+- 严格的多文件 JSON 内容包和 Schema 校验
+- 房间、出口、物品门禁、背包、装备、商店、任务、对话与原子效果
+- 确定性战斗、战利品、失败恢复和可选 runtime campaign
+- save v9 写入，以及受约束的 v7/v8 读取兼容
+- 文字 CLI、本地 Web 玩家端和 Windows 打包候选
 
-**要求**：Python 3.11 或更高版本。
+**Agent 创作接口**
 
-```bash
-# 1. 克隆并进入项目
+- typed `GameBlueprint v1`、`GameProject v1` 和 `AuthoringDiagnostic v1`
+- 规范 JSON、稳定排序、SHA-256 和确定性 fingerprint
+- 固定 V1 compatibility profile 的未封存 preview
+- 隔离 `GameSession` 模拟、witness replay 和 save/load checkpoint 等价性
+- `SimulationReport v1`、玩家安全的 admissible intents 和只读 proofing
+- 调用同一 `AuthoringService` 的 Python SDK 与 structured CLI
+
+### 架构
+
+```mermaid
+flowchart LR
+    A["Public-safe inputs"] --> C["GameProject v1"]
+    B["Approved GameBlueprint v1"] --> C
+    C --> D["Validation"]
+    D --> E["Unsealed PreviewBuild v1"]
+    E --> F["Isolated GameSession"]
+    F --> G["SimulationReport v1"]
+    F --> H["ProofingProjection v1"]
+
+    I["GameIntent"] --> F
+    F --> J["Authoritative World"]
+    J --> K["GameEvent + GameView + TurnResult"]
+```
+
+`World` 始终是玩法权威。SDK、CLI、Web、模拟和 proofing 不拥有第二套规则，也不能直接
+修改活动玩家 session。
+
+### 快速开始
+
+需要 Python 3.11 或更高版本。
+
+```powershell
 git clone https://github.com/Ta1ended/lore2mud.git
 cd lore2mud
 
-# 2. 创建虚拟环境并安装（可编辑模式）
 python -m venv .venv
-
-# Linux / macOS
-source .venv/bin/activate
-
-# Windows PowerShell
 .\.venv\Scripts\Activate.ps1
-
 python -m pip install -e .
 ```
 
-### 立刻开玩原创演示世界「微光边站」
+校验并游玩完全原创的公开 Demo：
 
-```bash
+```powershell
+python -m lore2mud validate --content examples/original_demo
 python -m lore2mud play --content examples/original_demo
 ```
 
-进入游戏后输入 `help` 查看所有可用命令。  
-推荐按 [examples/original_demo/README.md](examples/original_demo/README.md) 里的试玩流程走一遍，大约 15–25 分钟能完整体验移动、装备、战斗、任务、对话和商店。
+启动本地 Web 玩家端：
 
-其他常用命令：
-
-```bash
-# 只校验内容包（不启动游戏）
-python -m lore2mud validate --content examples/original_demo
-
-# 启动本地 Web 玩家端
+```powershell
 python -m lore2mud web --content examples/original_demo
-
-# 旧版启动方式（仍然支持）
-python -m lore2mud --content examples/original_demo
 ```
 
----
+浏览器打开 `http://127.0.0.1:8765`。Demo 流程见
+[`examples/original_demo/README.md`](examples/original_demo/README.md)。
 
-## 项目结构
+### 使用 V2-2 Authoring
 
-```text
-src/lore2mud/          # 核心运行时（World、命令处理、战斗、存档、CLI、Web）
-pipeline/              # 确定性创作工具（拆分、事实、注册表、编译器、Forge）
-schemas/               # 公开 JSON Schema 合同
-examples/              # 公开原创内容包（目前主要是 original_demo）
-tests/                 # 单元测试、场景测试、CLI/Web/打包证据
-docs/                  # 格式说明、工作流、V2 架构文档
-scripts/               # 仓库安全检查与辅助脚本
-```
-
-**数据流（当前 V1）**：
-
-```text
-JSON 内容包  →  load_content_pack()  →  ContentPack  →  World
-玩家命令      →  CommandProcessor / PlayerSession  →  World  →  结果
-World        ↔  SaveLoadService  →  版本化本地存档
-```
-
-未来 V2 会更清晰地拆成「创作平面」和「运行时平面」，并引入更正式的 `GameBlueprint` → `GamePackage` 流程，同时保持对现有内容包与存档的兼容。
-
----
-
-## 自己做内容包
-
-内容以**多文件 JSON 内容包**的形式组织，引擎会严格校验引用关系与数据结构。
-
-你可以参考 `examples/original_demo/` 的目录结构和字段定义，或者查看 `docs/` 与 `schemas/` 下的格式合同。
-
-创作相关工具集中在 `pipeline/`，包括：
-- 小说章节拆分
-- 事实候选提取与审查
-- 设定草稿 / 注册表
-- NarrativeModel 与 CampaignSpec 编译器
-
-这些工具目前以「确定性 + 可验证」为设计目标，方便后续接入 Agent 工作流，同时保持人类可审查。
-
----
-
-## 开发与测试
-
-```bash
-# 安装开发依赖
+```powershell
+git fetch origin
+git switch --track origin/workstream/v2-2-agent-authoring
 python -m pip install -e ".[test,quality]"
+python -m lore2mud author --help
+```
 
-# 运行测试
-python -m unittest discover -s tests -v
+结构化命令包括：
+
+```text
+author create-project   创建规范化 GameProject v1
+author validate         校验并规范化项目
+author preview          构造固定 profile 的不可分发 preview
+author simulate         运行隔离、确定性的模拟
+author replay           重放并验证 SimulationReport witness
+author proof            生成玩家安全的只读 proofing projection
+```
+
+完整命令、SDK 和合同说明见
+[`docs/v2/authoring_interface.md`](docs/v2/authoring_interface.md)。
+
+### 重要边界
+
+- Preview 未封存且不可分发，不是 `GamePackage v2`。
+- Preview/report fingerprint 只证明可复现性，不是 package 或 release identity。
+- V2-2 不解析 capability requirements；任何非空 requirement 都会阻止 preview/simulation。
+- `CampaignSpec v1` 是 authoring IR，不是 runtime input 或 preview package。
+- 游戏回合中不执行任意 Python、动态插件、生成代码或模型裁决。
+- 私人小说、canon、派生内容、图片、存档和报告不进入公开仓库。
+- MIT 许可证只覆盖仓库自有代码和原创材料，不授予外部内容权利。
+
+### 仓库地图
+
+```text
+src/lore2mud/application/   typed runtime application layer
+src/lore2mud/authoring/     V2-2 authoring contracts and services
+src/lore2mud/engine/        authoritative gameplay and persistence
+src/lore2mud/content/       strict content loading and validation
+src/lore2mud/web/           local Web player
+pipeline/                   deterministic V1 authoring compilers and Forge
+schemas/                    public JSON Schema contracts
+examples/                   original public content
+tests/                      runtime, authoring, replay and packaging evidence
+docs/                       formats, architecture, workflow and roadmap
+```
+
+### 开发
+
+开始修改前请阅读 [`AGENTS.md`](AGENTS.md)、[`PRODUCT.md`](PRODUCT.md)、
+[`PROJECT_STATE.md`](PROJECT_STATE.md)、[`NEXT_TASK.md`](NEXT_TASK.md) 和
+[`CODE_MAP.md`](CODE_MAP.md)。
+
+```powershell
+python -m unittest discover
 python -m pytest -q
-
-# 代码质量
+python -m pytest -q -n auto
 python -m ruff check .
 python -m pyright
 python -m compileall -q src pipeline scripts tests
-
-# 内容与安全检查
 python -m lore2mud validate --content examples/original_demo
 python scripts/check_repo_safety.py --history
+git fsck --full --no-dangling
+git diff --check
 ```
 
-更详细的开发约定、任务边界与架构说明见：
-- [PRODUCT.md](PRODUCT.md) — 产品定义与边界
-- [CODE_MAP.md](CODE_MAP.md) — 当前代码地图
-- [docs/v2/](docs/v2/) — V2 目标架构与路线图
-- [AGENTS.md](AGENTS.md) — 给开发 Agent 的指引（如果你也在用 Agent 协作）
+本地测试通过不等于独立验收，也不自动授权 push、release、移动 `main` 或开始下一里程碑。
 
 ---
 
-## 公开与私有边界（重要）
+<details>
+<summary><strong>English</strong></summary>
 
-| 公共仓库包含                     | 不包含（应放在所有者控制的外部工作区）     |
-|----------------------------------|--------------------------------------------|
-| 通用引擎与工具代码               | 第三方小说原文、拆分章节                   |
-| 公开 Schema 与测试               | 私人摘要、设定、来源追踪                   |
-| 原创示例内容包                   | 专有改编、图片、音频、资产                 |
-| 产品 / 架构 / 格式文档           | 本地存档、日志、报告、索引数据库           |
+Lore2MUD is an **Agent-callable novel-to-text-game engine** for building deterministic,
+inspectable, and replayable text games from public-safe or explicitly authorized material.
 
-私人材料永远是只读输入，绝不应提交到本仓库。模型输出和导入内容在使用前必须经过校验，并保留来源追溯。
+A developer Agent uses the Python SDK, structured CLI, and JSON contracts. The product owner
+controls creative direction, rights, acceptance, and release. Players use the text CLI or local
+Web client. Lore2MUD is not itself an Agent and does not replace deterministic runtime rules with
+free-form model adjudication.
 
----
+### Status
 
-## 许可证
+As of August 5, 2026, V2-2 has completed TECH, PRODUCT, and SECURITY gates. This does not
+authorize release, `main` integration, or V2-3.
 
-MIT License。详见 [LICENSE](LICENSE)。
+The accepted V2-2 workstream provides:
 
-MIT 仅覆盖本仓库中的自有代码与原创演示内容。  
-你导入、生成或改编的外部材料不在本许可证授权范围内。
+- typed `GameBlueprint v1`, `GameProject v1`, and stable diagnostics;
+- canonical JSON, deterministic fingerprints, and fixed-profile previews;
+- isolated `GameSession` simulation and replayable `SimulationReport v1` evidence;
+- player-safe admissible intents and read-only proofing projections;
+- one shared implementation exposed through the Python SDK and structured CLI.
 
----
+Try the public runtime:
 
-## 状态
+```powershell
+python -m pip install -e .
+python -m lore2mud validate --content examples/original_demo
+python -m lore2mud play --content examples/original_demo
+python -m lore2mud web --content examples/original_demo
+```
 
-当前处于积极开发中（Alpha）。  
-V1 运行时已可用，并持续完善内容工具与 V2 架构准备。欢迎试用、反馈、提 Issue 或贡献原创内容包。
+Try V2-2:
 
----
+```powershell
+git fetch origin
+git switch --track origin/workstream/v2-2-agent-authoring
+python -m pip install -e ".[test,quality]"
+python -m lore2mud author --help
+```
 
-**玩得开心。如果「微光边站」让你感觉还行，那就对了——这正是这个引擎想要交付的东西。**
+Important boundaries:
+
+- A preview is unsealed and non-distributable. It is not `GamePackage v2`.
+- Preview/report fingerprints prove reproducibility, not package or release identity.
+- Non-empty V2 capability requirements block preview and simulation until V2-3.
+- `CampaignSpec v1` remains authoring IR and is never accepted as runtime input.
+- Runtime turns execute no arbitrary Python, generated code, dynamic plugins, or model calls.
+- Private source and owner-controlled derived artifacts remain outside public Git.
+
+Read the [product definition](PRODUCT.md), [code map](CODE_MAP.md),
+[V2 architecture](docs/v2/architecture.md),
+[authoring interface](docs/v2/authoring_interface.md), and
+[roadmap](docs/v2/roadmap.md).
+
+Repository-owned code and original public examples are available under the
+[MIT License](LICENSE). Imported, private, or generated material may have separate rights.
+
+</details>
