@@ -3178,3 +3178,34 @@
 - Supersedes: DEC-0108 only for pending independent acceptance and next-gate routing.
   DEC-0108's implementation, verification, scope, privacy, compatibility, publication,
   Git, and later-milestone boundaries remain in force.
+
+## DEC-0110: Record V2-2 PRODUCT PASS and authorize workstream publication
+
+- Date: 2026-08-05
+- Status: V2-2 TECH GO and PRODUCT PASS complete; authorized workstream push in scope;
+  SECURITY PASS remains pending.
+- Context: After reviewing the completed V2-2 handoff, the product owner explicitly
+  replied `PRODUCT PASS` and requested a remote push. The product decision applies to
+  exact product candidate `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`, not to the
+  documentation-seal commit, preview/report fingerprints, or any future package or
+  evidence identity.
+- Decision: Record the human PRODUCT PASS and authorize a normal non-force push of the
+  current `workstream/v2-2-agent-authoring` branch to
+  `origin/workstream/v2-2-agent-authoring`. This authorization does not permit moving or
+  merging `main`, release creation, SECURITY PASS, V2-3 work, or publication of private
+  material. Preserve the frozen product bytes and include only documentation seals after
+  the accepted product commit.
+- Evidence: Pre-push live `git ls-remote` found remote `main` at
+  `bf3f8b93d40a04b21107bc9b7c9f828a7f000539`, V2-1 workstream at
+  `eb972903a0b959f09a647a1727a6ed66f2d098f7`, and no existing remote V2-2 workstream.
+  The local branch was clean at documentation seal
+  `1006d969ebd2d97fb97dff7ac09bd8d7cb53e39c`; the accepted product commit remained its
+  ancestor, and the primary checkout's untracked `uv.lock` retained its authorized byte
+  length and SHA-256.
+- Consequences: The remote operation creates the V2-2 workstream without force-pushing
+  or altering `main`. The sole next quality gate is an independently authorized
+  SECURITY PASS for the exact product candidate. Publication to the workstream does not
+  itself grant release, distribution, main integration, or later-milestone authority.
+- Supersedes: DEC-0109 only for PRODUCT PASS status, workstream-push authorization, and
+  next-gate routing. DEC-0109's exact TECH verdict and all product-byte, privacy,
+  compatibility, security, release, Git, and later-milestone boundaries remain in force.

@@ -6,81 +6,73 @@
 
 ### 唯一下一门禁
 
-**产品所有者对精确 V2-2 产品候选
-`ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60` 给出明确的人类 `PRODUCT PASS`。**
+**对精确 V2-2 产品候选 `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`
+进行独立 SECURITY PASS。**
 
 ### 当前依据
 
-- 候选从精确绿色 V2-1 文档头
-  `eb972903a0b959f09a647a1727a6ed66f2d098f7` 开始，tree 为
-  `f7c12fda17257f7a6b539bbbfce97da18452a961`，父提交正是基线，range 只有一个提交。
-- 全新、未参与实现的 Reviewer 13 对该精确 SHA 严格只读验收，P0、P1、P2、P3 全空，
-  最终 verdict 为 `GO`。Reviewer 12 的非 JSON typed scalar P2 已独立复现为关闭。
-- Controller 聚焦矩阵为 `81 passed, 61 subtests passed`，Reviewer 13 独立聚焦测试为
-  `81 passed`。Controller 完整 unittest 为 `1483`、serial/xdist pytest 均为
-  `1472 passed, 11 skipped, 619 subtests passed`；Reviewer 13 独立完成 unittest、serial
-  pytest、Ruff、Pyright、compileall、公开 Demo、history safety、fsck 与 diff checks。
-- 11 个 skip 是 2 个 POSIX-only 与 9 个当前 Windows 权限下的 symlink 场景，不是通过。
-- TECH `GO` 之后仅创建 documentation-only seal；产品字节保持冻结，不重复全量 TECH 验收。
+- 产品候选 tree 为 `f7c12fda17257f7a6b539bbbfce97da18452a961`，父提交正是绿色
+  V2-1 文档头 `eb972903a0b959f09a647a1727a6ed66f2d098f7`。
+- 全新 Reviewer 13 对该精确候选给出 P0-P3 全空与 TECH `GO`。
+- 产品所有者已明确对同一产品 SHA 给出 PRODUCT PASS，并授权把当前
+  `workstream/v2-2-agent-authoring` 正常推送到同名远端分支。
+- 推送前实时 `git ls-remote` 显示远端 `main=bf3f8b93`、V2-1 workstream=`eb972903`，
+  且远端尚无 V2-2 workstream；因此授权操作只创建新分支，不覆盖或 force-push ref。
+- TECH 与 PRODUCT 决定均绑定产品 SHA，不绑定 documentation seal、preview/report
+  fingerprint 或未来 package/evidence identity。
 
-### PRODUCT PASS 边界
+### SECURITY PASS 边界
 
-- 产品评审对象只能是精确候选 `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`，不是文档
-  seal SHA、preview fingerprint、report fingerprint 或未来 package/evidence identity。
-- PRODUCT PASS 只确认 V2-2 产品范围与体验目标；它不授予 SECURITY PASS、publication、
-  push、merge、`main` 移动、release、preview/report 分发或 V2-3 启动。
-- 不访问私人小说、canon、派生内容、图片、存档或私人报告；评审只使用公开安全或合成材料。
+- SECURITY 验收须另行明确启动，并对精确产品候选执行；本次 workstream 推送不会自动
+  授予 SECURITY PASS。
+- 不访问私人小说、canon、派生内容、图片、存档或私人报告；只使用公开安全或合成材料。
+- 不把未封存 preview、SimulationReport 或 fingerprint 作为可分发 package、release
+  evidence 或安全证明。
 - 保留主工作区未跟踪 `uv.lock` 的 14,471 字节和 SHA-256
   `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`。
 
 ### 停止规则
 
-在产品所有者作出精确 SHA 的 PRODUCT 决定前，不再修改产品字节，不 push，不移动或合并
-`main`，不 release，不开始 V2-3。若 PRODUCT 结论要求修改产品，必须形成新的候选并重新走
-相应 TECH 门禁；旧 `GO` 不转移。
+远端 workstream 推送完成后立即停止：不移动或合并 `main`，不 release，不开始 V2-3，
+不发布 preview/report。若后续 SECURITY finding 要求改变产品字节，必须形成新候选并重新走
+相应 TECH 与 PRODUCT 门禁；旧决定不转移。
 
 ## English
 
 ### Single Next Gate
 
-**Explicit human `PRODUCT PASS` from the product owner for exact V2-2 product candidate
+**Independent SECURITY PASS for exact V2-2 product candidate
 `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`.**
 
 ### Current Basis
 
-- The candidate starts from exact green V2-1 documentation head
-  `eb972903a0b959f09a647a1727a6ed66f2d098f7`, has tree
-  `f7c12fda17257f7a6b539bbbfce97da18452a961`, exact baseline parent, and a one-commit
-  range.
-- Fresh non-implementing Reviewer 13 performed strict read-only acceptance of that exact
-  SHA, reported P0, P1, P2, and P3 all empty, and returned final verdict `GO`. Reviewer
-  12's non-JSON typed-scalar P2 was independently reproduced as closed.
-- Controller focused tests passed 81 plus 61 subtests; Reviewer 13 independently passed
-  81 focused tests. Controller full unittest passed 1,483; serial and xdist pytest each
-  passed 1,472 plus 619 subtests with 11 skips. Reviewer 13 independently completed unittest, serial
-  pytest, Ruff, Pyright, compileall, public Demo validation, history safety, fsck, and
-  diff checks.
-- The 11 skips are two POSIX-only and nine symlink scenarios unavailable under the
-  current Windows privileges; they are not passes.
-- Only a documentation seal follows TECH `GO`. Product bytes remain frozen and do not
-  receive a duplicate full TECH review.
+- The product candidate tree is `f7c12fda17257f7a6b539bbbfce97da18452a961`, with
+  exact parent `eb972903a0b959f09a647a1727a6ed66f2d098f7`, the green V2-1 documentation
+  head.
+- Fresh Reviewer 13 returned P0-P3 empty and TECH `GO` for that exact candidate.
+- The product owner explicitly granted PRODUCT PASS for the same product SHA and
+  authorized a normal push of the current `workstream/v2-2-agent-authoring` branch to
+  the matching remote branch.
+- The pre-push live `git ls-remote` showed remote `main=bf3f8b93`, V2-1
+  workstream=`eb972903`, and no remote V2-2 workstream. The authorized operation therefore
+  creates a branch without overwriting or force-pushing a ref.
+- TECH and PRODUCT decisions bind to the product SHA, not the documentation seal,
+  preview/report fingerprints, or a future package/evidence identity.
 
-### PRODUCT PASS Boundary
+### SECURITY PASS Boundary
 
-- Product review targets exact candidate `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`,
-  not the documentation-seal SHA, preview/report fingerprints, or a future package or
-  evidence identity.
-- PRODUCT PASS confirms only V2-2 product scope and experience goals. It does not grant
-  SECURITY PASS, publication, push, merge, `main` movement, release, preview/report
-  distribution, or authorization to begin V2-3.
+- SECURITY acceptance requires separate explicit initiation against the exact product
+  candidate. Publishing the workstream does not grant SECURITY PASS automatically.
 - Do not access private novels, canon, derived content, images, saves, or private
   reports. Review remains public-safe or synthetic.
+- Do not present the unsealed preview, SimulationReport, or fingerprints as a
+  distributable package, release evidence, or security proof.
 - Preserve the primary checkout's untracked `uv.lock` at 14,471 bytes and SHA-256
   `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`.
 
 ### Stop Rule
 
-Until the product owner decides PRODUCT status for the exact SHA, do not change product
-bytes, push, move or merge `main`, release, or begin V2-3. If PRODUCT review requires a
-product change, create a new candidate and repeat the applicable TECH gate; the old
-`GO` does not transfer.
+Stop after the remote workstream push completes: do not move or merge `main`, release,
+begin V2-3, or publish previews/reports. If a later SECURITY finding changes product
+bytes, create a new candidate and repeat the applicable TECH and PRODUCT gates; the old
+decisions do not transfer.

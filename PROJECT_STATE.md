@@ -40,8 +40,9 @@ CLI 共用一个实现。
   `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`，tree 为
   `f7c12fda17257f7a6b539bbbfce97da18452a961`，父提交正是 `eb972903`。全新 Reviewer 13
   严格只读验收后给出 P0-P3 全空与最终 `GO`；产品字节现已冻结。
-- 当前已有 TECH `GO`，但没有 PRODUCT PASS、SECURITY PASS、publication、push、merge、
-  release、`main` 移动或 V2-3 授权。
+- 当前已有 TECH `GO` 与产品所有者对精确产品 SHA 的 PRODUCT PASS；已授权把当前
+  `workstream/v2-2-agent-authoring` 正常推送到同名远端分支。仍没有 SECURITY PASS、
+  `main` 移动/合并、release 或 V2-3 授权。
 
 ### 已实现
 
@@ -136,8 +137,8 @@ CLI 共用一个实现。
 
 ### 角色与模型
 
-- Product/Specification：只读提炼字段语义、验收场景、兼容边界与非目标；未授予
-  PRODUCT PASS。
+- Product/Specification：只读提炼字段语义、验收场景、兼容边界与非目标；产品所有者已对
+  精确产品候选 `ec60cb0` 授予 PRODUCT PASS，并授权同名 workstream 远端推送。
 - Architect/Engine Lead：只读检查 V2-1 application、loader/save、CLI、Forge、Schema、
   测试和 Windows packaging，确认 `src/lore2mud/authoring/` 的最小归属。
 - Contracts/Project Implementation：原隔离任务中止且没有可集成产出；Controller 接管
@@ -174,10 +175,12 @@ CLI 共用一个实现。
 
 - 当前 Windows 权限下 2 个 POSIX-only 与 9 个 symlink 权限测试未执行；Windows
   PyInstaller smoke 已通过，但仍依赖主项目已安装的固定构建工具链。
-- TECH `GO` 不等于 PRODUCT PASS、SECURITY PASS、publication、push、merge、release、
-  `main` 移动或 V2-3 授权。
-- 唯一下一门禁：产品所有者对精确 V2-2 产品候选
-  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60` 给出明确的人类 `PRODUCT PASS`。
+- TECH `GO` 与 PRODUCT PASS 均不等于 SECURITY PASS、`main` 移动/合并、release 或
+  V2-3 授权；workstream 推送也不改变这些边界。
+- 推送前实时检查确认远端尚无 V2-2 workstream，因此本次只创建同名远端分支，不覆盖或
+  force-push 任何 ref。
+- 唯一下一门禁：对精确 V2-2 产品候选
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60` 进行独立 SECURITY PASS。
 
 ## English
 
@@ -224,8 +227,10 @@ the Python SDK and structured CLI.
   `f7c12fda17257f7a6b539bbbfce97da18452a961`, with exact parent `eb972903`. Fresh
   Reviewer 13 completed strict read-only acceptance and returned P0-P3 all empty with
   final verdict `GO`; product bytes are now frozen.
-- TECH `GO` is recorded, but there is no PRODUCT PASS, SECURITY PASS, publication,
-  push, merge, release, `main` movement, or V2-3 authorization.
+- TECH `GO` and human PRODUCT PASS for the exact product SHA are recorded. A normal push
+  of the current `workstream/v2-2-agent-authoring` branch to the same remote branch is
+  authorized. There is still no SECURITY PASS, `main` movement/merge, release, or V2-3
+  authorization.
 
 ### Implemented
 
@@ -337,8 +342,9 @@ the Python SDK and structured CLI.
 
 ### Roles And Models
 
-- Product/Specification: read-only extraction of field semantics, acceptance
-  scenarios, compatibility limits, and non-goals; no PRODUCT PASS was granted.
+- Product/Specification: read-only extraction of field semantics, acceptance scenarios,
+  compatibility limits, and non-goals. The product owner granted PRODUCT PASS for exact
+  product candidate `ec60cb0` and authorized publication to the matching workstream.
 - Architect/Engine Lead: read-only review of the V2-1 application layer, loader/save,
   CLI, Forge, Schemas, tests, and Windows packaging; confirmed the minimal
   `src/lore2mud/authoring/` ownership boundary.
@@ -386,7 +392,9 @@ the Python SDK and structured CLI.
 - Two POSIX-only and nine symlink-privilege tests did not execute under the current
   Windows permissions. Windows PyInstaller smoke passed but still depends on the pinned
   build toolchain installed in the primary project environment.
-- TECH `GO` is not PRODUCT PASS, SECURITY PASS, publication, push, merge, release,
-  `main` movement, or V2-3 authorization.
-- The sole next gate is explicit human `PRODUCT PASS` from the product owner for exact
-  V2-2 product candidate `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`.
+- TECH `GO` and PRODUCT PASS are not SECURITY PASS, `main` movement/merge, release, or
+  V2-3 authorization. Publishing the workstream does not change those boundaries.
+- The pre-push live check found no existing remote V2-2 workstream, so this operation
+  creates the matching branch without overwriting or force-pushing any ref.
+- The sole next gate is independent SECURITY PASS for exact V2-2 product candidate
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`.
