@@ -58,11 +58,32 @@ def _schema_registry() -> tuple[dict[str, object], Registry]:
     return schemas, registry
 
 
+def _cli_subprocess_command(arguments: tuple[str, ...]) -> list[str]:
+    try:
+        for argument in arguments:
+            argument.encode("utf-8")
+    except UnicodeEncodeError:
+        # POSIX argv cannot carry lone UTF-16 surrogates. Rehydrate the exact
+        # arguments inside a child interpreter, then run the same CLI entry point.
+        encoded_arguments = json.dumps(
+            ["author", *arguments],
+            ensure_ascii=True,
+            separators=(",", ":"),
+        )
+        runner = (
+            "import json; "
+            "from lore2mud.cli import main; "
+            f"raise SystemExit(main(json.loads({encoded_arguments!r})))"
+        )
+        return [sys.executable, "-c", runner]
+    return [sys.executable, "-m", "lore2mud", "author", *arguments]
+
+
 def _run_cli(*arguments: str) -> tuple[subprocess.CompletedProcess[bytes], object]:
     environment = os.environ.copy()
     environment["PYTHONPATH"] = str(ROOT / "src")
     completed = subprocess.run(
-        [sys.executable, "-m", "lore2mud", "author", *arguments],
+        _cli_subprocess_command(arguments),
         cwd=ROOT,
         env=environment,
         capture_output=True,
