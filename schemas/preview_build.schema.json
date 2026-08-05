@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/preview_build.schema.json",
+  "title": "Lore2MUD PreviewBuild v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "preview_id",
+    "project_id",
+    "kind",
+    "sealed",
+    "distributable",
+    "release_evidence",
+    "identity_scope",
+    "profile_id",
+    "blueprint_sha256",
+    "project_sha256",
+    "engine_version",
+    "content_files",
+    "fingerprint"
+  ],
+  "properties": {
+    "format_version": {"const": 1},
+    "preview_id": {"$ref": "#/$defs/stableId96"},
+    "project_id": {"$ref": "#/$defs/stableId"},
+    "kind": {"const": "preview"},
+    "sealed": {"const": false},
+    "distributable": {"const": false},
+    "release_evidence": {"const": false},
+    "identity_scope": {"const": "preview_reproducibility_only"},
+    "profile_id": {"const": "lore2mud.v1.compatibility.fixed"},
+    "blueprint_sha256": {"$ref": "#/$defs/sha256"},
+    "project_sha256": {"$ref": "#/$defs/sha256"},
+    "engine_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "content_files": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 10,
+      "items": {"$ref": "#/$defs/contentFile"}
+    },
+    "fingerprint": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "stableId96": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,95}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "contentFile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "sha256", "document"],
+      "properties": {
+        "name": {
+          "enum": [
+            "pack.json",
+            "rooms.json",
+            "items.json",
+            "monsters.json",
+            "characters.json",
+            "quests.json",
+            "dialogues.json",
+            "shops.json",
+            "narrative_state.json",
+            "campaign.json"
+          ]
+        },
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "document": {}
+      }
+    }
+  }
+}

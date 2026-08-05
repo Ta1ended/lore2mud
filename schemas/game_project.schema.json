@@ -1,0 +1,147 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/game_project.schema.json",
+  "title": "GameProject v1",
+  "description": "An immutable public-safe authoring project over canonical V1 content inputs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "project_id",
+    "blueprint",
+    "blueprint_sha256",
+    "public_inputs",
+    "content_files",
+    "creator_decisions",
+    "trace_records",
+    "build_lock",
+    "workspace_metadata"
+  ],
+  "properties": {
+    "format_version": { "const": 1 },
+    "project_id": { "$ref": "#/$defs/stable_id" },
+    "blueprint": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/game_blueprint.schema.json"
+    },
+    "blueprint_sha256": { "$ref": "#/$defs/sha256" },
+    "public_inputs": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/public_input" }
+    },
+    "content_files": {
+      "type": "array",
+      "minItems": 8,
+      "maxItems": 10,
+      "items": { "$ref": "#/$defs/content_file" }
+    },
+    "creator_decisions": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/creator_decision" }
+    },
+    "trace_records": {
+      "type": "array",
+      "maxItems": 8192,
+      "items": { "$ref": "#/$defs/trace_record" }
+    },
+    "build_lock": { "$ref": "#/$defs/build_lock" },
+    "workspace_metadata": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/workspace_metadata" }
+    }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "non_blank": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "\\S"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "public_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_id", "media_type", "label", "visibility"],
+      "properties": {
+        "artifact_id": { "$ref": "#/$defs/stable_id" },
+        "media_type": { "$ref": "#/$defs/non_blank" },
+        "label": { "$ref": "#/$defs/non_blank" },
+        "visibility": { "const": "public_safe" }
+      }
+    },
+    "content_file": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "sha256", "document"],
+      "properties": {
+        "name": {
+          "enum": [
+            "pack.json",
+            "rooms.json",
+            "items.json",
+            "monsters.json",
+            "characters.json",
+            "quests.json",
+            "dialogues.json",
+            "shops.json",
+            "narrative_state.json",
+            "campaign.json"
+          ]
+        },
+        "sha256": { "$ref": "#/$defs/sha256" },
+        "document": {}
+      }
+    },
+    "creator_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision_id", "statement"],
+      "properties": {
+        "decision_id": { "$ref": "#/$defs/stable_id" },
+        "statement": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "trace_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trace_id",
+        "source_artifact_id",
+        "target_artifact_id",
+        "decision_id"
+      ],
+      "properties": {
+        "trace_id": { "$ref": "#/$defs/stable_id" },
+        "source_artifact_id": { "$ref": "#/$defs/stable_id" },
+        "target_artifact_id": { "$ref": "#/$defs/stable_id" },
+        "decision_id": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "build_lock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_sha256"],
+      "properties": {
+        "input_sha256": { "$ref": "#/$defs/sha256" }
+      }
+    },
+    "workspace_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "value"],
+      "properties": {
+        "key": { "$ref": "#/$defs/non_blank" },
+        "value": { "$ref": "#/$defs/non_blank" }
+      }
+    }
+  }
+}

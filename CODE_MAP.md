@@ -1,12 +1,14 @@
 # Lore2MUD Current Code Map
 
-_Baseline: V2-1 local candidate based on
-`1d4b26d9127d4229893911cf260cf3c2f4b0ce3a`, 2026-08-04_
+_Baseline: V2-2 local candidate based on accepted V2-1 documentation head
+`eb972903a0b959f09a647a1727a6ed66f2d098f7`, 2026-08-05. Independent TECH
+acceptance is pending._
 
 This map describes the current isolated candidate. `World` remains the authoritative
-V1 gameplay implementation; the V2-1 application contracts now exist below both
-clients. Later V2 authoring, package, capability, SDK, diagnostics, simulation,
-proofing, and MCP contracts remain future work.
+V1 gameplay implementation; the V2-1 application contracts remain below both player
+clients, and the V2-2 authoring service now builds only fixed-profile previews and
+isolated evidence over that same runtime. Package sealing, capability resolution,
+workbench UI, and MCP remain future work.
 
 ## Runtime Data Flow
 
@@ -56,6 +58,35 @@ against the same `ContentPack`. V2-1 changes no save or content format.
   admissible-intent catalog is introduced.
 - `src/lore2mud/application/__init__.py`: public V2-1 runtime exports.
 
+## Authoring Contracts
+
+```text
+approved GameBlueprint v1 + public-safe inputs + bounded V1 content snapshot
+  -> GameProject v1 normalization and build lock
+  -> fixed lore2mud.v1.compatibility.fixed PreviewBuild v1
+  -> fresh ContentPack + SaveLoadService + GameSession per evidence run
+  -> SimulationReport v1 / read-only ProofingProjection v1
+  -> shared AuthoringResult v1
+  -> AgentAuthoringSDK / structured author CLI
+```
+
+- `src/lore2mud/authoring/contracts.py`: frozen V2-2 blueprint, project,
+  diagnostics, preview, request/report, descriptor, proofing, and result values.
+- `src/lore2mud/authoring/project.py`: bounded public input capture, typed canonical
+  round trips, canonical V1 content snapshots, validation, build locks, and capability
+  rejection.
+- `src/lore2mud/authoring/preview.py`: current-engine, fixed-profile,
+  non-distributable preview construction and validation.
+- `src/lore2mud/authoring/simulation.py`: bounded typed project/report entry checks,
+  isolated typed-intent simulation, state/view hashes, witness replay, conditions, and
+  save/load checkpoint evidence.
+- `src/lore2mud/authoring/proofing.py`: bounded read-only nodes, edges, and concrete
+  admissible intents derived only from a detached player-safe `GameView`.
+- `src/lore2mud/authoring/serialization.py`: canonical JSON, hashes, stable ordering,
+  and typed artifact/result documents.
+- `src/lore2mud/authoring/service.py`: the single application implementation called
+  by `AgentAuthoringSDK` and the structured CLI adapter.
+
 ## Client Composition
 
 ### CLI
@@ -64,6 +95,11 @@ against the same `ContentPack`. V2-1 changes no save or content format.
 `GameSession`, and starts `CommandProcessor`. `CommandProcessor` retains its existing
 constructor, `.world`, help, parser, and text rendering compatibility, but gameplay
 handlers submit typed intents and render only from `TurnResult`/`GameView`.
+
+The same entry point also owns argument parsing for `author create-project`,
+`validate`, `preview`, `simulate`, `replay`, and `proof`. Those commands parse bounded
+JSON and present canonical results, while all domain behavior remains in the shared
+authoring service.
 
 ### Web
 
@@ -75,7 +111,7 @@ and minimal diagnostics while retaining the compatible `ok`, `event`, and `snaps
 fields. `src/lore2mud/web/static/app.js` consumes projected affordance intents instead
 of rebuilding movement, death, item, trade, dialogue, or campaign availability rules.
 
-## Authoring Data Flow
+## Existing Pipeline Authoring Flow
 
 ```text
 source chapters / reviewed facts (private when applicable)
@@ -101,37 +137,46 @@ Line counts are orientation for this candidate, not quality scores:
 
 | File | Lines | Current responsibility | Remaining risk |
 |---|---:|---|---|
-| `src/lore2mud/content/loader.py` | 2633 | Parse, validate, cross-link content files. | Format changes remain monolithic. |
+| `src/lore2mud/content/loader.py` | 2648 | Parse, validate, cross-link content files. | Format changes remain monolithic. |
 | `pipeline/campaign.py` | 2380 | Campaign authoring IR, validation, compiler, CLI. | Authoring types and implementation remain colocated. |
 | `src/lore2mud/engine/world.py` | 2141 | Authoritative state and gameplay rules. | Compatibility facade remains large. |
 | `pipeline/forge.py` | 1409 | V1 inspection/adaptation workspace lifecycle. | Not yet the V2 workbench. |
-| `src/lore2mud/engine/save.py` | 1110 | Save v9, v7/v8 read gates, reconstruction. | State evolution remains coupled to save core. |
+| `src/lore2mud/engine/save.py` | 1126 | Save v9, v7/v8 read gates, reconstruction. | State evolution remains coupled to save core. |
 | `src/lore2mud/engine/commands.py` | 1094 | CLI parsing and `TurnResult` text rendering. | Legacy routing compatibility remains broad. |
 | `src/lore2mud/application/contracts.py` | 750 | Typed V2-1 request/result/view/event values. | Current closed action set is V1-specific. |
-| `src/lore2mud/application/session.py` | 832 | Turn coordination and transaction boundary. | Rejection snapshots restore the existing World object graph in place. |
+| `src/lore2mud/authoring/simulation.py` | 958 | Isolated simulation, replay, hashes, and checkpoints. | Evidence is V2-2 reproducibility proof, not release identity. |
+| `src/lore2mud/authoring/project.py` | 823 | Blueprint/project normalization and bounded content capture. | Fixed V1 file set only; no V2 capability resolver. |
+| `src/lore2mud/application/session.py` | 794 | Turn coordination and transaction boundary. | Rejection snapshots restore the existing World object graph in place. |
+| `src/lore2mud/authoring/structured_cli.py` | 696 | Bounded structured transport and atomic output. | Intentionally thin; service parity must remain tested. |
+| `src/lore2mud/authoring/serialization.py` | 730 | Canonical authoring documents, bounded in-memory traversal, and typed loaders. | Public JSON shapes must remain aligned with Schemas and result envelopes. |
 | `src/lore2mud/web/app.py` | 624 | Web parsing and JSON compatibility rendering. | Legacy and V2 response shapes coexist. |
 | `src/lore2mud/application/projection.py` | 531 | Safe projection and concrete affordances. | Affordance probes copy and execute V1 rules. |
 | `src/lore2mud/content/models.py` | 470 | Frozen content definitions. | One aggregate spans optional gameplay domains. |
+| `src/lore2mud/authoring/contracts.py` | 326 | Frozen V2-2 public authoring values. | V2-3/V2-4 contracts must not be folded into v1 formats. |
+| `src/lore2mud/authoring/proofing.py` | 305 | Player-safe proofing and admissible descriptors. | Initial-view projection only; no workbench state. |
+| `src/lore2mud/authoring/preview.py` | 315 | Fixed-profile preview construction and loading. | Current engine version only; never distributable. |
 
 ## Where Future Changes Go
 
 | Change | Target ownership |
 |---|---|
 | Shared CLI/Web turn semantics | Existing V2-1 application/session layer. |
-| Creator intent and game requirements | Future `GameBlueprint v1` authoring contract. |
-| Normalized build workspace and trace | Future `GameProject v1` authoring contract. |
+| Creator intent and game requirements | Existing V2-2 `GameBlueprint v1` contract. |
+| Normalized build workspace and trace | Existing V2-2 `GameProject v1` contract. |
 | Runtime distribution | Future `GamePackage v2`, not `CampaignSpec`. |
-| General admissible-intent/tooling descriptions | V2-2, not the V2-1 player view. |
+| General admissible-intent/tooling descriptions | Existing V2-2 proofing projection, not the V2-1 player view. |
 | New gameplay domain | V2-3 capability module with namespaced state and migrations. |
 | Backward-compatible V1 behavior | `World` compatibility authority and adapters. |
 | Save evolution | Later session/package state contract plus explicit migrations. |
 | New client | Consume `GameIntent` and `TurnResult`; do not call `World` rules directly. |
-| Agent integration | Python SDK and structured CLI first; MCP only after stabilization. |
+| Agent integration | Existing Python SDK and structured CLI; MCP remains later scope. |
 | Novel provenance and rights | Authoring-plane manifests and traced/sealed gates. |
 
 ## Navigation
 
 - `src/lore2mud/application/` - V2-1 public runtime boundary.
+- `src/lore2mud/authoring/` - V2-2 contracts, service, preview, simulation, proofing,
+  SDK, structured CLI, and canonical serialization.
 - `src/lore2mud/content/models.py` - `ContentPack` and frozen V1 definitions.
 - `src/lore2mud/content/loader.py` - public content validation authority.
 - `src/lore2mud/engine/world.py` - gameplay and mutable-state authority.
@@ -141,6 +186,9 @@ Line counts are orientation for this candidate, not quality scores:
 - `src/lore2mud/cli.py` / `src/lore2mud/web/server.py` - transport entry points.
 - `pipeline/narrative_model.py` / `pipeline/campaign.py` - authoring IR compilers.
 - `pipeline/forge.py` - current resumable authoring workspace.
+- `docs/v2/authoring_interface.md` - V2-2 formats, identities, limits, and commands.
+- `tests/test_authoring_*.py` - V2-2 contracts, determinism, privacy, parity, and
+  isolation evidence.
 - `tests/test_game_session.py` - contract, invariance, and safe-view evidence.
 - `tests/test_transport_equivalence.py` - real CLI/Web parity and save evidence.
 - `schemas/` / `docs/*_format.md` - V1 data contracts.

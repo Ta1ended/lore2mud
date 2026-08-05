@@ -2846,3 +2846,302 @@
   publication state, and next-task routing. It preserves DEC-0100 as historical
   evidence and does not rewrite prior findings, rights constraints, or milestone
   boundaries.
+
+## DEC-0102: Implement V2-2 as one fixed-profile authoring and evidence service
+
+- Date: 2026-08-05
+- Status: Local V2-2 product candidate; fresh exact-commit independent TECH
+  acceptance is pending.
+- Context: The product owner authorized V2-2 implementation in an isolated worktree
+  without push, `main` movement, merge, release, or V2-3 scope. Live GitHub `main`
+  remained `564530d87aea17da26544b7793701e0dca0fe57d`; it did not contain the accepted
+  V2-1 documentation head, so the candidate branch starts from exact green head
+  `eb972903a0b959f09a647a1727a6ed66f2d098f7`, whose accepted V2-1 product ancestor is
+  `c8ee518ef39f938ece374cbd3f7c9bca06de2408`. DEC-0091 assigns deterministic
+  preview/report fingerprints and player-safe authoring evidence to V2-2 while
+  reserving capability resolution for V2-3, package/evidence identity for V2-4, and
+  workbench behavior for V2-5.
+- Decision: Add one `src/lore2mud/authoring/` boundary for frozen blueprint, project,
+  diagnostic, preview, simulation, descriptor, proofing, and result contracts;
+  canonical serialization; bounded project capture; a shared `AuthoringService`;
+  `AgentAuthoringSDK`; and structured `author` CLI commands. Projects may record only
+  syntactically valid capability requirement IDs. Any non-empty set returns stable
+  `capability_requirement_unsupported_v2_2` diagnostics before preview construction or
+  simulation. The only profile is the engine-defined
+  `lore2mud.v1.compatibility.fixed` profile, and preview/report loaders require the
+  current engine version.
+- Decision: Preview bytes are explicitly unsealed, non-distributable, and not release
+  evidence. Their fingerprints and report fingerprints prove reproducibility only;
+  they are not `GamePackage v2`, package identity, evidence-manifest identity, or a
+  publication gate. Workspace/proofing metadata is serialized with the editable
+  project but excluded from the build lock, semantic project bytes, preview identity,
+  and simulation report identity.
+- Decision: Capture each allowlisted V1 content document with the shared bounded JSON
+  limits before the legacy loader receives an immutable temporary snapshot. Run every
+  simulation, replay, state hash, and checkpoint in fresh temporary content/save
+  roots through `GameSession`, typed `GameIntent`, and `SaveLoadService`; never accept
+  a caller's active session or mutate `World` directly. Proofing reads only a detached
+  player-safe `GameView`, exports only known public trace endpoints, and rejects hard
+  node, edge, text, or descriptor limits without truncation.
+- Evidence: The focused contract, privacy, preview, simulation, proofing, SDK/CLI,
+  real subprocess parity, and Windows packaging matrix passed 68 tests plus 43
+  subtests; the real PyInstaller author workflow passed one test plus three subtests.
+  Full unittest passed 1470 tests with 11 conditional skips. Serial and xdist pytest
+  each passed 1459 tests with 11 conditional skips and 601 subtests. Ruff, Pyright,
+  compileall, public-Demo validation, pip consistency, history safety, fsck, and
+  whitespace checks passed. The exact post-commit baseline range check remains part of
+  candidate freezing. This controller evidence does not grant TECH GO.
+- Consequences: V2-2 adds no dependency, capability catalog, semver, namespace,
+  dependency/conflict resolver, migration, package seal, evidence manifest, workbench,
+  MCP surface, alternate compiler/runtime, content/save version, runtime campaign
+  change, or `World` decomposition. `CampaignSpec v1` remains authoring IR and is not
+  a preview input. The sole next gate is a fresh non-implementing read-only TECH
+  decision on the exact coherent candidate. A `GO` still requires a documentation-only
+  seal and then human PRODUCT PASS; it does not authorize push, `main`, release,
+  publication, SECURITY PASS, or V2-3.
+- Supersedes: DEC-0101 only for the completed authorization-to-start-V2-2 routing. It
+  preserves the accepted V2-1 product/publication record and every private-data,
+  rights, Git, product, security, and later-milestone boundary.
+
+## DEC-0103: Normalize untrusted typed SDK inputs before V2-2 authoring work
+
+- Date: 2026-08-05
+- Status: Local V2-2 acceptance-repair candidate; a fresh exact-commit independent
+  TECH decision is required.
+- Context: Fresh read-only acceptance of exact candidate
+  `b33c0886c4f8b4bae658edef194fe24877d78344` returned `REVISE` with one P2. A caller
+  could manually construct a frozen `GameProject` or `SimulationReport` whose nested
+  values were not valid contract data. Project serialization then parsed embedded
+  content bytes or accessed nested fields before domain validation, so SDK operations
+  could raise raw `JSONDecodeError` or `AttributeError` instead of returning an
+  `AuthoringResult`. The capability gate also ran before typed-project validation, so
+  4,097 invalid requirement IDs produced 4,097 diagnostics despite the result Schema's
+  4,096-item bound. The structured CLI document path remained bounded and structured.
+- Decision: Reuse the shared bounded UTF-8 JSON limits for in-memory canonical content
+  bytes. Normalize exact typed blueprint, project, simulation-request, and report values
+  through their document loaders before preview, simulation, replay, or proofing work;
+  translate decode, recursion, shape, and nested-type failures into stable domain
+  rejection diagnostics. Validate a project before deriving capability diagnostics,
+  cap the diagnostic projection at 4,096 entries, and never materialize preview runtime
+  state for an invalid project or unsupported capability set.
+- Evidence: Direct SDK regressions now return one serializable rejection envelope for
+  malformed embedded JSON, over-limit embedded bytes, invalid nested blueprint/request/
+  report values, and all project-consuming operations. A 4,097-requirement typed value
+  is rejected as `preview_project_invalid` before capability diagnostics. The corrected
+  focused authoring and Windows packaging matrix passed 72 tests plus 43 subtests.
+  Full unittest passed 1474 tests with 11 conditional skips. Serial and xdist pytest
+  each passed 1463 tests with 11 conditional skips and 601 subtests. Ruff and standard
+  Pyright, compileall, public-Demo validation, and dependency consistency passed. The
+  repository-history safety, fsck, and working-tree diff checks also passed. The exact
+  post-commit range check remains a candidate-freezing gate rather than TECH approval.
+- Consequences: The SDK and structured CLI retain one implementation and stable result
+  model; no alternate compiler/runtime, dependency, V1 content/save version, runtime
+  campaign, `World`, capability-resolution, package-sealing, workbench, or later-V2
+  scope is introduced. During repair, live GitHub `main` advanced from `564530d` to the
+  green README-only commit `bf3f8b93d40a04b21107bc9b7c9f828a7f000539`; it remains
+  divergent from and does not contain `eb972903`, so the exact V2-2 baseline and scope
+  do not change. The only next gate is fresh read-only TECH acceptance of the new exact
+  coherent candidate.
+- Supersedes: DEC-0102 only for the typed-input rejection order, current verification
+  counts, prior exact candidate, and pending-review handoff. It preserves the V2-2
+  product contract, non-goals, public/private boundary, and all separate product,
+  security, publication, Git, and later-milestone gates.
+
+## DEC-0104: Bound cyclic in-memory authoring documents before SDK validation
+
+- Date: 2026-08-05
+- Status: Local V2-2 acceptance-repair candidate; a fresh exact-commit independent
+  TECH decision is required.
+- Context: Fresh read-only acceptance of exact candidate
+  `845c04cc4a3ad3134b7cc39b025cda91ae389a25` independently closed the DEC-0103 P2 but
+  returned `REVISE` with one new P2. `validate_unicode_scalars()` iterated direct Python
+  list, tuple, and dict values without cycle detection or traversal limits. A dict or
+  list containing itself therefore kept the public SDK `validate_blueprint_document()`
+  and `validate_project_document()` entry points busy instead of returning the promised
+  bounded `AuthoringResult`. The structured CLI JSON-byte path was unaffected.
+- Decision: Traverse direct in-memory authoring documents iteratively under the shared
+  depth-64, 200,000-node, and 1,000,000-character string limits. Track container
+  identities on the active traversal path so cycles reject while repeated references
+  to a shared acyclic value remain valid for later domain validation. Map traversal
+  failures through the existing stable single `blueprint_invalid` or `project_invalid`
+  result envelopes; add no public diagnostic code or alternate validation policy.
+- Evidence: Regressions cover self-referential dict and list values across both SDK
+  document entry points, require one serializable diagnostic, and validate each result
+  against `AuthoringResult v1`. Direct probes now terminate in microseconds rather than
+  watchdog timeouts. The corrected focused authoring and Windows packaging matrix
+  passed 73 tests plus 47 subtests. Full unittest passed 1475 tests with 11 conditional
+  skips; serial and xdist pytest each passed 1464 tests with 11 conditional skips and
+  605 subtests. Ruff, standard Pyright, compileall, public-Demo validation, dependency
+  consistency, history safety, fsck, and working-tree diff checks passed. The exact
+  post-commit baseline range check remains a candidate-freezing gate, not TECH approval.
+- Consequences: Direct SDK documents now share a bounded termination guarantee with the
+  rest of the authoring boundary. No dependency, Schema, content/save version, runtime
+  campaign, `World`, preview identity, simulation behavior, capability resolution,
+  package sealing, workbench, or later-V2 scope changes. The only next gate is fresh
+  read-only TECH acceptance of the amended single exact candidate.
+- Supersedes: DEC-0103 only for in-memory document traversal, current verification
+  counts, exact prior candidate, and pending-review routing. It preserves DEC-0103's
+  typed normalization order and every V2-2 scope, privacy, compatibility, product,
+  security, publication, Git, and later-milestone boundary.
+
+## DEC-0105: Apply shared bounded JSON rules to typed simulation requests
+
+- Date: 2026-08-05
+- Status: Local V2-2 acceptance-repair candidate; a fresh exact-commit independent
+  TECH decision is required.
+- Context: Fresh read-only acceptance of exact candidate
+  `1ea39acc195581461c56ad56ee98dcaa1ab0ce77` independently closed the earlier typed-
+  input and cyclic-document findings but returned `REVISE` with one P2. A directly
+  constructed `SimulationRequest` exceeding the shared string, byte, depth, or node
+  limits raised `AuthoringDocumentTraversalError` from the Python SDK, while the same
+  over-8-MiB request through the structured CLI returned a Schema-valid
+  `authoring_input_too_large` rejection. No preview or session state was mutated.
+- Decision: Preflight typed in-memory values iteratively for cycles, depth, and node
+  count, stream their canonical JSON encoding under the shared 8-MiB byte cap, and
+  round-trip the bytes through the existing bounded reader so string and integer rules
+  cannot diverge. Normalize bounded-reader failures at the simulation boundary to one
+  serialization-stage `authoring_input_<stable-code>` diagnostic before preview or
+  isolated session construction. Keep the existing Unicode rejection and domain
+  request validation contracts unchanged.
+- Evidence: Regressions cover a 1,000,001-character string, an encoded request over
+  8 MiB, depth and node limits plus one, and a 65-digit integer. They require one
+  Schema-valid SDK rejection with `too_complex`, `too_large`, or `invalid_json` as
+  appropriate, and prove exact SDK/CLI equivalence for the over-8-MiB request. The
+  corrected focused authoring and Windows packaging matrix passed 75 tests plus 52
+  subtests. Full unittest passed 1477 tests with 11 conditional skips; serial and xdist
+  pytest each passed 1466 tests with 11 conditional skips and 610 subtests. Ruff,
+  standard Pyright, compileall, public-Demo validation, dependency consistency,
+  history safety, fsck, and whitespace checks passed. The exact post-commit baseline
+  range check remains a candidate-freezing gate, not TECH approval.
+- Consequences: The Python SDK and structured CLI now share the same bounded typed-
+  request rejection semantics without a second parser or runtime. No dependency,
+  Schema, content/save version, runtime campaign, `World`, preview/report identity,
+  capability resolution, package sealing, workbench, or later-V2 scope changes. The
+  only next gate is fresh read-only TECH acceptance of the amended single exact
+  candidate.
+- Supersedes: DEC-0104 only for typed simulation-request resource normalization,
+  verification counts, exact prior candidate, and pending-review routing. It preserves
+  DEC-0104's cycle guarantee and every V2-2 scope, privacy, compatibility, product,
+  security, publication, Git, and later-milestone boundary.
+
+## DEC-0106: Reject typed simulation resource failures before preview work
+
+- Date: 2026-08-05
+- Status: Local V2-2 acceptance-repair candidate; a fresh exact-commit independent
+  TECH decision is required.
+- Context: Fresh read-only acceptance of exact candidate
+  `e7054d7c14a6e77f92874becdad6a9e451b72705` verified the DEC-0105 diagnostic and SDK/CLI
+  byte equivalence but found one P2 in the rejection order. `simulate_project()` built a
+  preview before validating an over-limit typed request, and `simulate_preview()` loaded
+  and materialized the preview before the same validation. A capability-blocked project
+  could therefore mask the required resource diagnostic. An independent spy observed
+  `build_preview=1`, preview materialization twice, and `session=0` for an over-8-MiB
+  request.
+- Decision: Reuse the existing typed-request canonical normalization helper as a
+  resource-only preflight before project preview construction and before preview loading.
+  Resource failures (cycle/depth/node/byte/string/integer/Unicode) return the existing
+  single serialization-stage `authoring_input_*` envelope and take precedence over
+  capability diagnostics. Shape and domain validation remain in the existing post-preview
+  request validation path, so unrelated semantic ordering does not change.
+- Evidence: Regression spies cover SDK `simulate()` and direct `simulate_preview()` and
+  assert zero `build_preview`, preview-load/materializer, and `GameSession` calls for all
+  five resource-limit cases; a capability-blocked project returns
+  `authoring_input_too_complex` before the capability diagnostic. The corrected focused
+  authoring and Windows packaging matrix passed 75 tests plus 52 subtests; simulation and
+  end-to-end matrices passed 18 tests plus 17 subtests. Full unittest passed 1477 tests
+  with 11 conditional skips; serial and xdist pytest each passed 1466 tests with 11
+  conditional skips and 610 subtests. Ruff, standard Pyright, compileall, public-Demo
+  validation, dependency consistency, history safety, fsck, and working-tree/baseline
+  whitespace checks passed. The exact post-commit range check remains a candidate-
+  freezing step, not TECH approval.
+- Consequences: Over-limit typed requests cannot construct or load preview state and
+  cannot be hidden by capability rejection, while valid requests retain the same
+  deterministic simulation/report behavior. No dependency, Schema, content/save version,
+  runtime campaign, `World`, preview/report identity, capability catalog, package seal,
+  workbench, or later-V2 scope changes.
+- Supersedes: DEC-0105 only for resource-rejection ordering, current verification counts,
+  exact prior candidate, and pending-review routing. It preserves DEC-0105's bounded
+  normalization semantics and every V2-2 scope, privacy, compatibility, product, security,
+  publication, Git, and later-milestone boundary.
+
+## DEC-0107: Apply bounded canonical parity to typed authoring artifacts
+
+- Date: 2026-08-05
+- Status: Locally verified V2-2 acceptance-repair candidate; a fresh exact-commit
+  independent TECH decision is required.
+- Context: Fresh read-only acceptance of exact candidate
+  `cb974cb9ae2f4736e52f1f519e4aa8947c54be07` independently verified the DEC-0106
+  request-resource ordering repair but returned `REVISE` with one P2 and one P3. A
+  directly constructed `GameBlueprint` with a 65-digit default seed passed the typed SDK
+  project constructor, while the equivalent structured-CLI JSON was rejected as
+  `authoring_input_invalid_json`. The resulting typed project could then validate,
+  preview, simulate, replay, and proof despite containing a value that could not cross
+  the bounded CLI transport. The changelog also stopped its decision range at DEC-0105
+  and therefore omitted the DEC-0106 repair.
+- Decision: Normalize every exact typed `GameBlueprint`, `GameProject`, and
+  `SimulationReport` through canonical JSON and the shared bounded reader before its
+  domain loader. Map bounded-reader failures at the shared service boundary to one
+  serialization-stage `authoring_input_<stable-code>` rejection with public artifact ID
+  `blueprint`, `project`, or `report`. Define Blueprint default seed and clock as signed
+  64-bit integers in both Schema and loader. In `simulate_project()`, retain DEC-0106's
+  request-resource preflight first, then normalize the project before any preview work.
+  Preserve DEC-0104's direct cyclic-document `blueprint_invalid`/`project_invalid`
+  contract and all existing domain diagnostics.
+- Evidence: The repair-focused authoring and Windows packaging matrix passes 80 tests
+  plus 61 subtests. Real subprocess regressions prove SDK/CLI-equivalent canonical
+  rejection bytes for a 65-digit typed blueprint, all five project-consuming operations,
+  and a 65-digit typed report. Signed-64 boundary regressions cover Schema and loader.
+  Spies prove a project resource rejection precedes preview construction and that a
+  request resource rejection still precedes project validation. Full unittest passes
+  1,482 tests with 11 conditional skips; serial and xdist pytest each pass 1,471 tests
+  with 11 conditional skips and 619 subtests. Ruff, standard Pyright, compileall, public-
+  Demo validation, dependency consistency, history safety, fsck, and working-tree
+  whitespace checks pass. The exact post-commit range check remains candidate-freezing
+  evidence, not TECH approval.
+- Consequences: Typed SDK values can no longer create or consume authoring artifacts that
+  the structured CLI cannot read under the shared resource contract. No dependency,
+  content/save version, runtime campaign, `World`, preview/report identity, capability
+  resolution, package seal, workbench, or later-V2 scope changes. The only next gate is
+  to amend the single exact candidate, complete its exact-range check, and submit it to
+  a fresh non-implementing read-only TECH acceptance task.
+- Supersedes: DEC-0106 only for typed blueprint/project/report resource parity, Blueprint
+  integer bounds, current verification counts, exact prior candidate, and pending-review
+  routing. It preserves DEC-0106 request-first ordering and every V2-2 scope, privacy,
+  compatibility, product, security, publication, Git, and later-milestone boundary.
+
+## DEC-0108: Normalize unsupported typed scalars into bounded rejections
+
+- Date: 2026-08-05
+- Status: Locally verified V2-2 acceptance-repair candidate; a fresh exact-commit
+  independent TECH decision is required.
+- Context: Fresh read-only acceptance of exact candidate
+  `e1f3a806b987209f7ed9435384739c9e6865d513` independently verified the DEC-0107
+  bounded canonical parity repair and all broad gates, but returned `REVISE` with one
+  P2. A directly constructed typed `GameProject` containing `bytes` in workspace
+  metadata, or a typed `SimulationReport` containing `bytes` as `player_name`, escaped
+  raw `TypeError` from `JSONEncoder.iterencode()` through SDK validate, preview,
+  simulate, replay, and proof paths instead of returning a stable `AuthoringResult`.
+- Decision: Treat JSON encoder `TypeError` during the shared bounded canonical round
+  trip as `BoundedJsonError(INVALID_JSON)`. Existing service boundaries then return the
+  existing serialization-stage `authoring_input_invalid_json` rejection with public
+  artifact ID `project` or `report`. Add an exact regression covering all five typed
+  project operations and typed-report replay, including canonical result serialization.
+  Do not add a diagnostic code, Schema revision, alternate serializer, or runtime path.
+- Evidence: The exact Reviewer 12 reproduction now returns six stable bounded rejection
+  envelopes. The repaired authoring and Windows packaging matrix passes 81 tests plus
+  61 subtests. Full unittest passes 1,483 tests with 11 conditional skips; serial and
+  xdist pytest each pass 1,472 tests with 11 conditional skips and 619 subtests. Ruff,
+  standard Pyright, compileall, public-Demo validation, dependency consistency, history
+  safety, fsck, and working-tree whitespace checks pass. The primary checkout's
+  untracked `uv.lock` remains 14,471 bytes with its authorized SHA-256. The exact
+  post-commit range check remains candidate-freezing evidence, not TECH approval.
+- Consequences: Unsupported typed Python scalars can no longer escape public SDK
+  operations as raw encoder exceptions. Existing resource precedence, domain
+  diagnostics, canonical bytes, fingerprints, Schemas, content/save compatibility,
+  `World`, and later-V2 boundaries do not change. The only next gate is to amend the
+  single exact candidate and submit it to fresh non-implementing Reviewer 13.
+- Supersedes: DEC-0107 only for unsupported typed scalar normalization, current
+  verification counts, exact prior candidate, and pending-review routing. It preserves
+  DEC-0107 bounded canonical parity, DEC-0106 request-first ordering, and every V2-2
+  scope, privacy, compatibility, product, security, publication, Git, and later-
+  milestone boundary.

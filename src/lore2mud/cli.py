@@ -9,6 +9,7 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from lore2mud.application.session import GameSession
+from lore2mud.authoring.structured_cli import add_author_parser
 from lore2mud.content.loader import (
     ContentValidationError,
     load_content_pack,
@@ -105,7 +106,7 @@ def _cmd_web(args: argparse.Namespace) -> int:
 
 # -- Parser ------------------------------------------------------------------
 
-_COMMANDS = frozenset({"play", "validate", "web"})
+_COMMANDS = frozenset({"play", "validate", "web", "author"})
 
 
 def _port_number(value: str) -> int:
@@ -156,7 +157,7 @@ def _inject_legacy_subcommand(argv: list[str]) -> list[str]:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    """Build the CLI parser with play, validate, and web subcommands."""
+    """Build the legacy player and structured authoring command parser."""
     parser = argparse.ArgumentParser(
         prog="lore2mud",
         description="本地单人文字 MUD 引擎。",
@@ -236,6 +237,9 @@ def _build_parser() -> argparse.ArgumentParser:
         help="监听端口（默认：8765）",
     )
     web_parser.set_defaults(func=_cmd_web)
+
+    # -- structured authoring command family --
+    add_author_parser(subparsers)
 
     return parser
 

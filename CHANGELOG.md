@@ -133,6 +133,33 @@
 
 ### Added
 
+- Added the local V2-2 Agent Authoring Interface candidate over accepted V2-1 head
+  `eb972903a0b959f09a647a1727a6ed66f2d098f7`. New frozen contracts and Draft 2020-12
+  Schemas cover `GameBlueprint v1`, `GameProject v1`, `AuthoringDiagnostic v1`,
+  non-distributable fixed-profile previews, `SimulationRequest v1`,
+  `SimulationReport v1`, bounded admissible-intent descriptors, read-only proofing,
+  and the shared `AuthoringResult v1` envelope. `AgentAuthoringSDK` and `author`
+  structured CLI commands call one application service. Public V1 content is bounded
+  and canonically captured before loader validation; in-memory typed content and direct
+  Python document graphs use bounded normalization; malformed nested values, cyclic
+  containers, and unsupported non-JSON typed scalars become stable rejection envelopes;
+  and typed blueprints, projects,
+  simulation requests, and reports share the CLI's byte/depth/node/string/integer limits
+  and stable `authoring_input_*` failures. Blueprint default seed/clock values are signed
+  64-bit in both Schema and loader, request resource checks retain precedence over typed
+  project normalization, and project validation precedes bounded capability diagnostics.
+  Simulations use only
+  fresh `GameSession` values and typed intents, with witness replay, state/view hashes,
+  and save/load checkpoint evidence. Independent review found stale `CODE_MAP` counts,
+  typed-SDK rejection/diagnostic-bound and cyclic-document P2s, typed-request
+  resource-limit/order P2s, a typed blueprint/project/report bounded-parity P2, and an
+  unsupported typed-scalar exception P2; all are corrected in the current local
+  candidate. Its repair-focused matrix is 81 tests plus 61 subtests; full unittest
+  passes 1,483 tests with 11 conditional skips, while serial and xdist pytest each pass
+  1,472 tests with 11 conditional skips and 619
+  subtests. No dependency, V1 content/save version, `World`,
+  `pipeline/forge.py`, release, `main`, V2-3, or private-material boundary changes.
+  Fresh exact-commit TECH acceptance remains pending (DEC-0102 through DEC-0108).
 - Added the public V2-1 `lore2mud.application` package: frozen typed `GameIntent`,
   `GameEvent`, `GameView`, `TurnResult`, determinism and rejection contracts;
   `GameSession` turn coordination with rollback and ordered event sequencing; and a

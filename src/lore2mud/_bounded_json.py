@@ -69,6 +69,14 @@ def read_bounded_json(path: Path, limits: JsonReadLimits) -> JsonValue:
             detail=str(exc),
         ) from exc
 
+    return parse_bounded_json(raw, limits)
+
+
+def parse_bounded_json(raw: bytes, limits: JsonReadLimits) -> JsonValue:
+    """Decode one in-memory UTF-8 JSON payload under the shared read limits."""
+    if type(raw) is not bytes:
+        raise BoundedJsonError(JsonReadErrorCode.INVALID_JSON)
+
     if len(raw) > limits.max_bytes:
         raise BoundedJsonError(JsonReadErrorCode.TOO_LARGE)
     try:

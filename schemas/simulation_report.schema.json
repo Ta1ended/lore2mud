@@ -1,0 +1,168 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/simulation_report.schema.json",
+  "title": "Lore2MUD SimulationReport v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "project_id",
+    "blueprint_sha256",
+    "project_sha256",
+    "preview_fingerprint",
+    "request_sha256",
+    "engine_version",
+    "seed",
+    "clock",
+    "player_name",
+    "initial_state_sha256",
+    "final_state_sha256",
+    "initial_view_sha256",
+    "final_view_sha256",
+    "turns",
+    "condition_results",
+    "outcome",
+    "witness_trace",
+    "replay_verified",
+    "checkpoints",
+    "identity_scope",
+    "fingerprint"
+  ],
+  "properties": {
+    "format_version": {"const": 1},
+    "project_id": {"$ref": "#/$defs/stableId"},
+    "blueprint_sha256": {"$ref": "#/$defs/sha256"},
+    "project_sha256": {"$ref": "#/$defs/sha256"},
+    "preview_fingerprint": {"$ref": "#/$defs/sha256"},
+    "request_sha256": {"$ref": "#/$defs/sha256"},
+    "engine_version": {"type": "string", "minLength": 1, "maxLength": 64},
+    "seed": {"$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json#/$defs/int64"},
+    "clock": {"$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json#/$defs/int64"},
+    "player_name": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "\\S"},
+    "initial_state_sha256": {"$ref": "#/$defs/sha256"},
+    "final_state_sha256": {"$ref": "#/$defs/sha256"},
+    "initial_view_sha256": {"$ref": "#/$defs/sha256"},
+    "final_view_sha256": {"$ref": "#/$defs/sha256"},
+    "turns": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {"$ref": "#/$defs/turn"}
+    },
+    "condition_results": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/conditionResult"}
+    },
+    "outcome": {"enum": ["win", "loss", "undetermined"]},
+    "witness_trace": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {"$ref": "#/$defs/turn"}
+    },
+    "replay_verified": {"type": "boolean"},
+    "checkpoints": {
+      "type": "array",
+      "maxItems": 1025,
+      "items": {"$ref": "#/$defs/checkpoint"}
+    },
+    "identity_scope": {"const": "simulation_reproducibility_only"},
+    "fingerprint": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "turn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "intent",
+        "status",
+        "rejection_code",
+        "event_types",
+        "view_sha256"
+      ],
+      "properties": {
+        "index": {"type": "integer", "minimum": 1, "maximum": 1024},
+        "intent": {"$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json#/$defs/gameIntent"},
+        "status": {"enum": ["accepted", "rejected"]},
+        "rejection_code": {
+          "type": ["string", "null"],
+          "enum": ["malformed_intent", "inadmissible_intent", "persistence_error", null]
+        },
+        "event_types": {
+          "type": "array",
+          "maxItems": 8,
+          "items": {
+            "enum": [
+              "move",
+              "take",
+              "drop",
+              "use",
+              "equip",
+              "unequip",
+              "attack",
+              "talk",
+              "choose_dialogue",
+              "end_dialogue",
+              "buy",
+              "sell",
+              "campaign_action",
+              "recover",
+              "save",
+              "load"
+            ]
+          }
+        },
+        "view_sha256": {"$ref": "#/$defs/sha256"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "accepted"}}},
+          "then": {"properties": {"rejection_code": {"const": null}}},
+          "else": {
+            "properties": {
+              "rejection_code": {"type": "string"},
+              "event_types": {"maxItems": 0}
+            }
+          }
+        }
+      ]
+    },
+    "conditionResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["condition", "matched"],
+      "properties": {
+        "condition": {"$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json#/$defs/condition"},
+        "matched": {"type": "boolean"}
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "after_step",
+        "before_state_sha256",
+        "loaded_state_sha256",
+        "before_view_sha256",
+        "loaded_view_sha256",
+        "equivalent"
+      ],
+      "properties": {
+        "after_step": {"type": "integer", "minimum": 0, "maximum": 1024},
+        "before_state_sha256": {"$ref": "#/$defs/sha256"},
+        "loaded_state_sha256": {"$ref": "#/$defs/sha256"},
+        "before_view_sha256": {"$ref": "#/$defs/sha256"},
+        "loaded_view_sha256": {"$ref": "#/$defs/sha256"},
+        "equivalent": {"type": "boolean"}
+      }
+    }
+  }
+}

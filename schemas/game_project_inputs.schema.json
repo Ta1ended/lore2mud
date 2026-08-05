@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/game_project_inputs.schema.json",
+  "title": "GameProject creation inputs v1",
+  "description": "Optional public-safe typed collections shared by the structured CLI and Python SDK project constructor.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "public_inputs",
+    "creator_decisions",
+    "trace_records",
+    "workspace_metadata"
+  ],
+  "properties": {
+    "format_version": { "const": 1 },
+    "public_inputs": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/public_input" }
+    },
+    "creator_decisions": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/creator_decision" }
+    },
+    "trace_records": {
+      "type": "array",
+      "maxItems": 8192,
+      "items": { "$ref": "#/$defs/trace_record" }
+    },
+    "workspace_metadata": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/workspace_metadata" }
+    }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "non_blank": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "\\S"
+    },
+    "public_input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_id", "media_type", "label", "visibility"],
+      "properties": {
+        "artifact_id": { "$ref": "#/$defs/stable_id" },
+        "media_type": { "$ref": "#/$defs/non_blank" },
+        "label": { "$ref": "#/$defs/non_blank" },
+        "visibility": { "const": "public_safe" }
+      }
+    },
+    "creator_decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["decision_id", "statement"],
+      "properties": {
+        "decision_id": { "$ref": "#/$defs/stable_id" },
+        "statement": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "trace_record": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "trace_id",
+        "source_artifact_id",
+        "target_artifact_id",
+        "decision_id"
+      ],
+      "properties": {
+        "trace_id": { "$ref": "#/$defs/stable_id" },
+        "source_artifact_id": { "$ref": "#/$defs/stable_id" },
+        "target_artifact_id": { "$ref": "#/$defs/stable_id" },
+        "decision_id": { "$ref": "#/$defs/stable_id" }
+      }
+    },
+    "workspace_metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["key", "value"],
+      "properties": {
+        "key": { "$ref": "#/$defs/non_blank" },
+        "value": { "$ref": "#/$defs/non_blank" }
+      }
+    }
+  }
+}

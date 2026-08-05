@@ -1,0 +1,50 @@
+{
+  "acceptance_scenarios": [
+    {
+      "description": "The player can inspect the opening investigation and reach a deterministic result.",
+      "outcome": "win",
+      "scenario_id": "opening_investigation"
+    }
+  ],
+  "adaptation_boundaries": {
+    "allowed": [
+      "original_public_fixture"
+    ],
+    "excluded": [
+      "private_source_material"
+    ]
+  },
+  "approval": {
+    "approved": true,
+    "approver": "fixture_owner",
+    "decision_id": "approve_public_fixture"
+  },
+  "asset_requirements": [],
+  "audience": "general",
+  "blueprint_id": "urban_authoring_blueprint",
+  "capability_requirement_ids": [],
+  "default_determinism": {
+    "clock": 600,
+    "seed": 20260805
+  },
+  "format_version": 1,
+  "genre": "urban_investigation",
+  "play_length": {
+    "maximum_minutes": 30,
+    "minimum_minutes": 20,
+    "target_minutes": 25
+  },
+  "provenance_requirements": [
+    "public_input_trace"
+  ],
+  "required_game_loops": [
+    "dialogue",
+    "explore",
+    "investigate"
+  ],
+  "rights_assertions": [
+    "original_public_fixture"
+  ],
+  "title": "Rainline Investigation",
+  "tone": "grounded"
+}

@@ -1,0 +1,124 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/game_blueprint.schema.json",
+  "title": "GameBlueprint v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "blueprint_id",
+    "title",
+    "approval",
+    "audience",
+    "genre",
+    "tone",
+    "play_length",
+    "adaptation_boundaries",
+    "required_game_loops",
+    "acceptance_scenarios",
+    "capability_requirement_ids",
+    "asset_requirements",
+    "provenance_requirements",
+    "rights_assertions",
+    "default_determinism"
+  ],
+  "properties": {
+    "format_version": { "const": 1 },
+    "blueprint_id": { "$ref": "#/$defs/stable_id" },
+    "title": { "$ref": "#/$defs/non_blank" },
+    "approval": { "$ref": "#/$defs/approval" },
+    "audience": { "$ref": "#/$defs/non_blank" },
+    "genre": { "$ref": "#/$defs/non_blank" },
+    "tone": { "$ref": "#/$defs/non_blank" },
+    "play_length": { "$ref": "#/$defs/play_length" },
+    "adaptation_boundaries": { "$ref": "#/$defs/adaptation_boundaries" },
+    "required_game_loops": { "$ref": "#/$defs/stable_id_array" },
+    "acceptance_scenarios": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": { "$ref": "#/$defs/acceptance_scenario" }
+    },
+    "capability_requirement_ids": { "$ref": "#/$defs/stable_id_array" },
+    "asset_requirements": { "$ref": "#/$defs/text_array" },
+    "provenance_requirements": { "$ref": "#/$defs/text_array" },
+    "rights_assertions": { "$ref": "#/$defs/text_array" },
+    "default_determinism": { "$ref": "#/$defs/determinism" }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "non_blank": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "\\S"
+    },
+    "int64": {
+      "type": "integer",
+      "minimum": -9223372036854775808,
+      "maximum": 9223372036854775807
+    },
+    "stable_id_array": {
+      "type": "array",
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stable_id" }
+    },
+    "text_array": {
+      "type": "array",
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/non_blank" }
+    },
+    "approval": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["approved", "decision_id", "approver"],
+      "properties": {
+        "approved": { "type": "boolean" },
+        "decision_id": { "$ref": "#/$defs/stable_id" },
+        "approver": { "$ref": "#/$defs/non_blank" }
+      }
+    },
+    "play_length": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["minimum_minutes", "target_minutes", "maximum_minutes"],
+      "properties": {
+        "minimum_minutes": { "type": "integer", "minimum": 1, "maximum": 1440 },
+        "target_minutes": { "type": "integer", "minimum": 1, "maximum": 1440 },
+        "maximum_minutes": { "type": "integer", "minimum": 1, "maximum": 1440 }
+      }
+    },
+    "adaptation_boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed", "excluded"],
+      "properties": {
+        "allowed": { "$ref": "#/$defs/text_array" },
+        "excluded": { "$ref": "#/$defs/text_array" }
+      }
+    },
+    "acceptance_scenario": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scenario_id", "description", "outcome"],
+      "properties": {
+        "scenario_id": { "$ref": "#/$defs/stable_id" },
+        "description": { "$ref": "#/$defs/non_blank" },
+        "outcome": { "enum": ["win", "loss"] }
+      }
+    },
+    "determinism": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["seed", "clock"],
+      "properties": {
+        "seed": { "$ref": "#/$defs/int64" },
+        "clock": { "$ref": "#/$defs/int64" }
+      }
+    }
+  }
+}

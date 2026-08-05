@@ -1,0 +1,31 @@
+{
+  "creator_decisions": [
+    {
+      "decision_id": "keep_opening_public",
+      "statement": "Use only the original public fixture content."
+    }
+  ],
+  "format_version": 1,
+  "public_inputs": [
+    {
+      "artifact_id": "public_fixture_brief",
+      "label": "Public fixture brief",
+      "media_type": "application/json",
+      "visibility": "public_safe"
+    }
+  ],
+  "trace_records": [
+    {
+      "decision_id": "keep_opening_public",
+      "source_artifact_id": "public_fixture_brief",
+      "target_artifact_id": "public_fixture_project",
+      "trace_id": "trace_public_opening"
+    }
+  ],
+  "workspace_metadata": [
+    {
+      "key": "proofing_zoom",
+      "value": "125"
+    }
+  ]
+}
