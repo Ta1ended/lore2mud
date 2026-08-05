@@ -1,6 +1,6 @@
 # 项目状态 / Project State
 
-_最后更新 / Last updated: 2026-08-04_
+_最后更新 / Last updated: 2026-08-05_
 
 ## 中文
 
@@ -11,97 +11,90 @@ _最后更新 / Last updated: 2026-08-04_
 
 ### 当前状态
 
-- 已核对的在线公开 `main` 是
-  `564530d87aea17da26544b7793701e0dca0fe57d`；GitHub Actions tests
-  `30846680303` 与 quality `30846680343` 成功。
-- V2-1 产品候选位于 `workstream/v2-1-game-session`，精确目标为
-  `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5`，基于已获规划 TECH GO 的
+- 已实时核对公开远端 `main` 为
+  `564530d87aea17da26544b7793701e0dca0fe57d`；本阶段没有移动 `main`。
+- V2-1 的精确产品候选是
+  `c8ee518ef39f938ece374cbd3f7c9bca06de2408`，位于远端
+  `workstream/v2-1-game-session`，规划祖先是
   `1d4b26d9127d4229893911cf260cf3c2f4b0ce3a`。
-- 全新独立只读验收对该精确目标给出 P0-P3 全空的 `GO`；产品所有者随后于
-  2026-08-04 明确给出 `PRODUCT PASS`。V2-1 已在本地封存。
-- 共享 `main` 未移动，没有 push、SECURITY PASS、release 或 V2-2 工作。
-- `src/lore2mud/application/` 已实现本地候选的 `GameIntent`、`GameSession`、
-  `GameEvent`、`GameView` 和 `TurnResult`；`World` 仍是唯一玩法权威，CLI 与 Web
-  保留解析和呈现职责。
-- Controller 全量门禁、精确提交上的独立 TECH 验收和产品门禁均已完成。本状态记录
-  人类产品所有者给出的 PRODUCT PASS，但不授权 push、移动 `main`、SECURITY PASS、
-  release 或开始 V2-2。
+- 产品候选已获得全新的独立 TECH `GO` 与 SECURITY `GO`，两者 P0-P3 均为空；
+  产品所有者于 2026-08-05 明确给出该 SHA 的 `PRODUCT PASS`。
+- 候选提交的 GitHub Actions 已成功：tests `30967325238`、quality
+  `30967325246`。当前后续封存只改交接/决策文档，不改变已验收产品字节。
+- V2-1 已完成并发布到工作流分支。没有 release、`main` 集成或 V2-2 工作；唯一下一
+  门禁是产品所有者另行明确授权开始 V2-2，并确认其起始基线。
 
 ### 已实现
 
-- 强类型冻结合同、确定性上下文、有序事件序列、typed 拒绝诊断和完整玩家安全投影。
-- 只接受已声明的精确 Intent 类型及精确的 `str`、`int`、Enum 叶值；CLI/Web 在调用任何
-  可重载方法或运算符前完成同一合同校验，恶意原始类型子类不能越过状态快照边界。
-- 合同拒绝会恢复原 `World` 身份及规范化可持久化状态、RNG 位置、时钟输入和事件序列，
-  且不产生转移事件；提交前已有的嵌套 dataclass、dict、list 和 set 会在原对象上递归恢复，
-  外部持有的 player、inventory、room、stack 等 alias 仍指向同一对象；意外异常在恢复后
-  继续上抛。
-- `WorldRuleError`/`SaveLoadError` 的诊断先完成规范化，再在 `finally` 中执行最终恢复并投影
-  view；异常对象的可重载格式化不能在回滚后重新改变权威状态。
-- 拒绝快照保留原 `DeterminismContext` 身份及精确 `seed/clock`；即使冻结值被低层
-  `object.__setattr__` 原地篡改，也会在返回或重新上抛前恢复同一对象及原值。
-- `CommandProcessor` 保持兼容构造和动态 `.world`，但玩法 handler 只提交 Intent 并从
-  `TurnResult`/`GameView` 呈现；Web `PlayerSession` 保持名称但包装同一应用会话。
-- CLI 对话的当前编号菜单只从玩家安全 `GameView.dialogue.options` 呈现；有序 dialogue event
-  继续记录转移事实，不能重新引入投影已判定不可执行的选项。
-- Web JSON 新增 `status/events/view/diagnostics`，同时保留 `ok/event/snapshot`；浏览器从
-  投影的具体 affordance 取得可用动作，不再复制锁、死亡、物品、交易、对话或战役规则。
-- 兼容 `snapshot` 保留 V1 已有的显式空值字段；新的玩家安全 `view` 仍让不可用动作缺席。
-  兼容 `event.data` 也从 typed event 恢复完整 V1 room、campaign effect 和显式空值形状。
-  房间物品、怪物、角色及 campaign action 继续按内容声明顺序投影，CLI/Web 不会因
-  V2-1 按 ID 重排。
-- save v9 写入、v7/v8 读取门禁、内容 Schema/版本、公开 Demo 和 runtime campaign 格式
-  均未改变。
+- `CLI/Web parsing -> GameIntent -> GameSession -> TurnResult -> transport rendering`
+  已成为共享公共应用边界；`World` 仍是唯一玩法权威，Web `PlayerSession` 保持兼容名称。
+- typed/frozen `GameIntent`、`GameEvent`、`GameView`、`TurnResult` 与拒绝诊断保持稳定顺序，
+  CLI 和 Web 只负责解析及呈现，不复制玩法可用性规则。
+- 合同拒绝在权威状态改变前或失败回滚后返回，无转移事件；原 `World` 对象图、规范化
+  save 状态、RNG、`DeterminismContext` 身份与 seed/clock、事件序列及存档可见元数据
+  保持不变。已接受的游戏内失败仍沿用现有 `World` 结果。
+- 新的内部有界 JSON 读取器在 domain validation 前限制单文件 8 MiB、深度 64、
+  200,000 节点、单字符串 1,000,000 字符与整数 64 位十进制数字，并统一归一化 UTF-8、
+  JSON、递归、数值与 I/O 错误。内容包转换为 `ContentValidationError`，存档转换为
+  `SaveLoadError`/`PERSISTENCE_ERROR`。
+- 对话事件的公共选项从同一回合最终 `GameView` 重建；campaign 公共事件不再携带会
+  泄露 narrative state、离屏 actor、scene stage 或 knowledge 转移的原始 effect outcomes。
+  新 `events` 与兼容 `event.data` 共用同一玩家安全 typed payload。
+- pytest 测试约束更新为 `pytest>=9.0.3,<10`；不可序列化的 unittest `subTest` 标签改为
+  稳定字符串/序号，serial 与 xdist 语义保持一致。Windows zipapp 明确覆盖新增模块。
+- save 仍写 v9，v7/v8 读取条件、Schema、内容包版本、公开 `original_demo` 与 runtime
+  campaign 格式均未改变；未新增运行时依赖。
 
 ### 验证状态
 
-- 针对嵌套 `World` alias 回滚 finding 的聚焦回归：11 passed；应用、CLI、Web 与
-  runtime campaign 交叉矩阵：55 passed。
-- `.venv\Scripts\python.exe -m unittest discover`：1414 tests，11 skipped，OK。
-- 恢复开发后的第一次 `unittest discover` 未显式绑定隔离 worktree 的 `src`，因此项目
-  `.venv` 的主仓库 editable install 混入旧模块并失败；设置 `PYTHONPATH=<worktree>/src`
-  后同一完整命令通过。该失败准确保留为 harness 配置问题，不计作代码通过证据。
-- `.venv\Scripts\python.exe -m pytest -q`：1403 passed，11 skipped；同一套件以
-  `-n auto` 在显式仓库外 TEMP/TMP 与 `--basetemp` 下重跑：1403 passed，11 skipped。
-  第一次 xdist 启动在用户 pytest 临时根目录遇到 `WinError 5`，未进入收集，已按 harness
-  问题准确保留并由成功重跑关闭。
+- 安全/兼容聚焦串行与 xdist 矩阵：`435 passed, 6 skipped, 308 subtests passed`；跳过项
+  均为当前 Windows 主机缺少符号链接权限。
+- 首次完整 `unittest discover` 因共享 `.venv` 的主仓库 editable install 混入旧模块，
+  同时暴露新增文件尚未进入 Git 索引导致 zipapp 遗漏；绑定隔离 worktree 的
+  `PYTHONPATH=src` 并纳入 tracked-file 清单后重跑：1418 tests，11 skipped，OK。
+- 完整 pytest serial：`1407 passed, 11 skipped, 554 subtests passed`；完整 xdist：
+  `1407 passed, 11 skipped, 554 subtests passed`。
 - `ruff check .`、`pyright`、`compileall -q src pipeline scripts tests`、
-  `lore2mud validate --content examples/original_demo`、
-  `check_repo_safety.py --history`、`git fsck --full --no-dangling`、working/staged
+  `lore2mud validate --content examples/original_demo`、`pip check`、
+  `check_repo_safety.py --history`、`git fsck --full --no-dangling` 与 working/staged
   `git diff --check` 均通过。
-- Windows PyInstaller 与 zipapp 的构建、包内容和仓库外冷启动由全量测试真实覆盖。
-- 全新独立验收对 `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5` 给出 P0-P3 全空的
-  `GO`；其扩展 focused 矩阵为 270 passed，v7/v8 精确读取回归为 4 passed，真实
-  CLI/Web/save smoke 通过。
-- 产品所有者于 2026-08-04 明确给出 `PRODUCT PASS`。
+- 全新独立 TECH 验收在精确候选上运行 267 个聚焦测试，并以 pytest 9/xdist 运行
+  `352 passed, 6 skipped, 300 subtests passed`，最终 P0-P3 全空、`GO`。
+- 全新独立 SECURITY 验收运行 `290 passed, 208 subtests passed`，另验证 byte/string/
+  integer/depth/node 的 exact/over 边界、surrogate、non-finite、无效 UTF-8、missing/IO、
+  全响应泄露与事务不变性，最终 P0-P3 全空、`GO`。
 
 ### 角色与模型
 
-- Controller/Implementation：当前根任务，负责接口冻结、集成、测试、提交和门禁。
-- Product/Specification：只读验收矩阵；Architect/Engine Lead：只读运行时、存档和客户端
-  边界检查。两者继承当前任务模型，工具未暴露更细的模型标识。
-- Independent Acceptance：必须是未参与实现的新任务，严格只读审查精确提交。模型输出
-  不是证据，结论必须由代码、测试和 Git 证据支撑。
-- Product Owner：基于独立 TECH GO 和 Controller 交接，对精确产品候选给出 PRODUCT PASS。
+- Controller/Implementation：当前根任务，负责范围、接口冻结、实现、集成、门禁、提交、
+  publication 与最终交接；工具未暴露可审计的精确模型标识。
+- Security Scope/Jason：编码前后的只读安全预审，发现公共事件泄露、无界 JSON、pytest
+  约束与旧交接状态问题；该预审不是最终 verdict，也未参与修复。
+- Independent TECH Acceptance：未参与实现的新任务，严格只读验收精确 SHA，输出 `GO`。
+- Independent SECURITY Acceptance：未参与实现且不复用预审 verdict 的新任务，严格只读
+  验收精确 SHA，输出 `GO`。
+- 两个独立验收任务继承 Controller 可用模型；工具未返回更细模型 ID。所有结论均由代码、
+  自动化测试和 Git 证据支持，Implementation 未自我批准。
+- Product Owner：于 2026-08-05 对 `c8ee518` 明确给出 `PRODUCT PASS`。
 
 ### 保持的边界
 
-- 私有源文本、canon、派生改编、图片、存档和报告不得访问或进入公开 Git。
-- 不新增依赖，不改变 Schema、内容包版本或 save 格式，不实现 Capability、SDK、
-  structured CLI、MCP、`SimulationReport`、proofing、迁移、插件、新 Demo 或 V2-2。
-- 主检出目录的未跟踪 `uv.lock` 保持 14,471 字节，SHA-256
+- 未访问私人小说、canon、派生内容、图片、存档或报告；这些材料未进入公开 Git。
+- 未实现 Capability、SDK、structured CLI、MCP、`SimulationReport`、proofing、迁移、
+  动态插件、新 Demo、V2-2 或整体 `World` 拆分。
+- 没有移动 `main`、创建 release 或改动 Schema、内容包版本、save 写入/读取版本。
+- 主工作区未跟踪 `uv.lock` 保持 14,471 字节，SHA-256
   `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`；隔离
-  worktree 中不得出现该文件。
+  worktree 不包含该文件。
 
 ### 剩余风险
 
-- 当前 V1 规则不消费 `DeterminismContext` 的 RNG/时钟；合同已保留并测试其拒绝不变性，
-  但未来真正消费这些输入时仍需新的可观察确定性测试。
-- 玩家 affordance 通过隔离 `deepcopy(World)` 探测现有规则，范围明确且不建立 V2-2
-  通用动作目录，但大型内容包的性能仍需后续实测。
-- 原位回滚覆盖当前 `World` 使用的 dataclass、dict、list 和 set 对象图；未来若引入新的
-  可变容器类型，必须同步扩展恢复实现和 alias 回归。
-- `World`、loader、save 和传统命令渲染仍较大；V2-1 不授权整体拆分。
+- 当前 V1 规则仍不实际消费 `DeterminismContext` RNG/时钟；未来消费者需要新的可观察
+  确定性测试。
+- 玩家 affordance 通过隔离 `deepcopy(World)` 探测现有规则；大型内容包性能仍需后续实测。
+- 有界 JSON 是单文件边界；未来若扩大受信内容规模，必须通过明确产品决策调整限制并保持
+  拒绝事务测试。
+- V2-1 只发布在工作流分支，尚未集成 `main`；V2-2 的起始分支/基线必须由下一次授权明确。
 
 ## English
 
@@ -113,119 +106,111 @@ compatibility and strict public/private and rights boundaries.
 
 ### Current Status
 
-- Verified live public `main` is
-  `564530d87aea17da26544b7793701e0dca0fe57d`; GitHub Actions tests
-  `30846680303` and quality `30846680343` succeeded.
-- The V2-1 product candidate is on `workstream/v2-1-game-session` at exact target
-  `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5`, based on planning TECH-GO commit
+- Live public remote `main` is verified at
+  `564530d87aea17da26544b7793701e0dca0fe57d`; this stage did not move `main`.
+- The exact V2-1 product candidate is
+  `c8ee518ef39f938ece374cbd3f7c9bca06de2408` on remote
+  `workstream/v2-1-game-session`, with planning ancestor
   `1d4b26d9127d4229893911cf260cf3c2f4b0ce3a`.
-- Fresh independent read-only acceptance returned `GO` with no P0-P3 findings on that
-  exact target; the product owner then explicitly granted `PRODUCT PASS` on
-  2026-08-04. V2-1 is locally sealed.
-- Shared `main` has not moved; there is no push, SECURITY PASS, release, or V2-2 work.
-- `src/lore2mud/application/` implements the local candidate's `GameIntent`,
-  `GameSession`, `GameEvent`, `GameView`, and `TurnResult`. `World` remains the sole
-  gameplay authority; CLI and Web retain parsing and rendering responsibilities.
-- The controller full matrix, exact-commit independent TECH acceptance, and product
-  gate are complete. This status records the human product owner's PRODUCT PASS but
-  does not authorize push, `main` movement, SECURITY PASS, release, or V2-2 work.
+- The candidate received fresh independent TECH `GO` and SECURITY `GO`, both with
+  empty P0-P3 findings. The product owner explicitly granted `PRODUCT PASS` for this
+  SHA on 2026-08-05.
+- Candidate GitHub Actions succeeded: tests `30967325238` and quality `30967325246`.
+  The following seal changes handoff/decision documents only, not accepted product
+  bytes.
+- V2-1 is complete and published on the workstream branch. There is no release,
+  `main` integration, or V2-2 work. The sole next gate is separate product-owner
+  authorization to start V2-2 and select its baseline.
 
 ### Implemented
 
-- Typed frozen contracts, determinism context, ordered event sequence, typed rejection
-  diagnostics, and a complete player-safe projection.
-- Only exact declared intent types and exact `str`, `int`, and Enum leaf values are
-  accepted. CLI/Web perform the same contract validation before invoking overridable
-  methods or operators, so hostile primitive subclasses cannot cross the snapshot
-  boundary.
-- Contract rejection restores the original `World` identity plus canonical persistable
-  state, RNG position, clock input, and event sequence, and emits no transition event.
-  Existing nested dataclass, dict, list, and set objects are recursively restored in
-  place, so external player, inventory, room, and stack aliases retain identity and
-  restored values; unexpected exceptions are re-raised after restoration.
-- `WorldRuleError`/`SaveLoadError` diagnostics are normalized before a final restore in
-  `finally` and before view projection, so overridable exception formatting cannot
-  mutate authority again after rollback.
-- Rejection snapshots retain the original `DeterminismContext` identity and exact
-  `seed`/`clock` values. Even low-level in-place mutation through `object.__setattr__`
-  is restored on the same object before return or re-raise.
-- `CommandProcessor` keeps its compatible constructor and dynamic `.world`, while
-  gameplay handlers only submit intents and render `TurnResult`/`GameView`; Web
-  `PlayerSession` keeps its name but wraps the same application session.
-- The CLI renders the current numbered dialogue menu only from the player-safe
-  `GameView.dialogue.options`. Ordered dialogue events remain transition facts and
-  cannot reintroduce options that the projection found inadmissible.
-- Web JSON adds `status/events/view/diagnostics` while preserving
-  `ok/event/snapshot`; the browser consumes concrete projected affordances instead of
-  duplicating lock, death, item, trade, dialogue, or campaign rules.
-- The compatibility `snapshot` retains V1's explicit nullable fields while unavailable
-  actions remain absent from the new player-safe `view`. Compatibility `event.data`
-  also reconstructs the complete V1 room, campaign-effect, and explicit-null shapes
-  from typed events. Room items, monsters, characters, and campaign actions retain
-  authored order instead of being re-sorted by V2-1.
-- Save v9 writes, v7/v8 read gates, content Schema/version, the public Demo, and runtime
-  campaign format are unchanged.
+- `CLI/Web parsing -> GameIntent -> GameSession -> TurnResult -> transport rendering`
+  is the shared public application boundary. `World` remains the only gameplay
+  authority, and Web `PlayerSession` retains its compatibility name.
+- Typed/frozen `GameIntent`, `GameEvent`, `GameView`, `TurnResult`, and rejection
+  diagnostics preserve stable order. CLI and Web only parse and render; they do not
+  duplicate gameplay availability rules.
+- Contract rejection occurs before authoritative mutation or after full rollback and
+  emits no transition event. The original `World` object graph, canonical save state,
+  RNG, `DeterminismContext` identity and seed/clock, event sequence, and save-visible
+  metadata remain unchanged. Accepted in-world failures retain existing `World`
+  outcomes.
+- A new internal bounded JSON reader limits each file before domain validation to
+  8 MiB, depth 64, 200,000 nodes, 1,000,000 characters per string, and 64 decimal
+  integer digits. It normalizes UTF-8, JSON, recursion, numeric, and I/O failures.
+  Content packages raise `ContentValidationError`; saves raise `SaveLoadError` and
+  become typed `PERSISTENCE_ERROR` rejections.
+- Public dialogue-event options are rebuilt from the final same-turn `GameView`.
+  Public campaign events no longer carry raw effect outcomes that expose narrative
+  state, off-screen actors, scene stages, or knowledge transitions. New `events` and
+  compatibility `event.data` share the same player-safe typed payload.
+- The test constraint is now `pytest>=9.0.3,<10`. Unserializable unittest `subTest`
+  values use stable string/index labels so serial and xdist semantics match. Windows
+  zipapp coverage explicitly includes the new module.
+- Saves still write v9; v7/v8 read conditions, Schemas, content-pack versions, the
+  public `original_demo`, and runtime-campaign formats are unchanged. No runtime
+  dependency was added.
 
 ### Verification Status
 
-- The nested-`World` alias rollback regression passes 11 tests; the application, CLI,
-  Web, and runtime-campaign cross-matrix passes 55 tests.
-- `.venv\Scripts\python.exe -m unittest discover`: 1414 tests, 11 skipped, OK.
-- The first resumed `unittest discover` did not explicitly bind the isolated
-  worktree's `src`, so the project virtualenv's editable primary-checkout install mixed
-  in stale modules and failed. The same full command passed with
-  `PYTHONPATH=<worktree>/src`; the failed attempt is retained as a harness
-  configuration issue and is not counted as passing evidence.
-- `.venv\Scripts\python.exe -m pytest -q`: 1403 passed, 11 skipped. The same suite
-  with `-n auto` and explicit repository-external TEMP/TMP plus `--basetemp`: 1403
-  passed, 11 skipped. The first xdist startup hit `WinError 5` in the user's pytest
-  temp root before collection; it is accurately retained as a harness issue and
-  closed by the successful rerun.
+- Focused security/compatibility serial and xdist matrix:
+  `435 passed, 6 skipped, 308 subtests passed`. Skips are only unavailable symlink
+  privileges on this Windows host.
+- The first full `unittest discover` mixed stale primary-checkout modules through the
+  shared virtualenv's editable install and also exposed that the new file was not yet
+  in the Git index used by the zipapp allowlist. After binding `PYTHONPATH=src` to the
+  isolated worktree and adding the tracked file, the rerun passed 1418 tests with
+  11 skips.
+- Full serial pytest: `1407 passed, 11 skipped, 554 subtests passed`; full xdist:
+  `1407 passed, 11 skipped, 554 subtests passed`.
 - `ruff check .`, `pyright`, `compileall -q src pipeline scripts tests`,
-  `lore2mud validate --content examples/original_demo`,
+  `lore2mud validate --content examples/original_demo`, `pip check`,
   `check_repo_safety.py --history`, `git fsck --full --no-dangling`, and working/staged
-  `git diff --check` all pass.
-- Full tests execute real Windows PyInstaller and zipapp build, content, and
-  repository-external cold-start coverage.
-- Fresh independent acceptance returned `GO` with no P0-P3 findings on
-  `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5`; its expanded focused matrix passed 270
-  tests, its exact v7/v8 read regression passed 4 tests, and real CLI/Web/save smoke
-  passed.
-- The product owner explicitly granted `PRODUCT PASS` on 2026-08-04.
+  `git diff --check` all passed.
+- Fresh independent TECH acceptance ran 267 focused tests plus pytest 9/xdist at
+  `352 passed, 6 skipped, 300 subtests passed`, ending with empty P0-P3 and `GO`.
+- Fresh independent SECURITY acceptance ran `290 passed, 208 subtests passed` plus
+  exact/over byte, string, integer, depth, and node probes; surrogate, non-finite,
+  invalid UTF-8, missing/I/O, whole-response leakage, and transaction-invariance
+  checks; it ended with empty P0-P3 and `GO`.
 
 ### Roles And Models
 
-- Controller/Implementation: the current root task, owning interface freeze,
-  integration, tests, commit, and gates.
-- Product/Specification: read-only acceptance matrix; Architect/Engine Lead: read-only
-  runtime, save, and client boundary review. Both inherited the current task model;
-  the tool did not expose a finer model identifier.
-- Independent Acceptance: a fresh task that did not implement the candidate and must
-  review the exact commit strictly read-only. Model output is not evidence; code,
-  tests, and Git facts must support the verdict.
-- Product Owner: granted PRODUCT PASS to the exact product candidate after independent
-  TECH GO and the controller handoff.
+- Controller/Implementation: the current root task, owning scope, interface freeze,
+  implementation, integration, gates, commits, publication, and final handoff. The
+  tool did not expose an auditable exact model identifier.
+- Security Scope/Jason: read-only pre-review before the repair, finding public-event
+  leakage, unbounded JSON, the pytest constraint, and stale handoff state. This was
+  not the final verdict, and Jason did not implement the repair.
+- Independent TECH Acceptance: a fresh non-implementing task that reviewed the exact
+  SHA strictly read-only and returned `GO`.
+- Independent SECURITY Acceptance: a fresh non-implementing task that did not reuse
+  the pre-review verdict, reviewed the exact SHA strictly read-only, and returned
+  `GO`.
+- Both independent tasks inherited the controller's available model; the tool returned
+  no finer model ID. Code, automated tests, and Git evidence support every verdict;
+  Implementation did not self-approve.
+- Product Owner: explicitly granted `PRODUCT PASS` for `c8ee518` on 2026-08-05.
 
 ### Preserved Boundaries
 
-- Private source text, canon, derived adaptations, images, saves, and reports are not
-  accessed and cannot enter public Git.
-- No new dependency, Schema/content/save version, Capability, SDK, structured CLI,
-  MCP, `SimulationReport`, proofing, migration, plugin, new Demo, or V2-2 work.
+- Private novels, canon, derived content, images, saves, and reports were not accessed
+  and did not enter public Git.
+- No Capability, SDK, structured CLI, MCP, `SimulationReport`, proofing, migration,
+  dynamic plugin, new Demo, V2-2, or wholesale `World` decomposition was implemented.
+- `main` was not moved; no release, Schema/content-version, or save-version change was
+  made.
 - The primary checkout's untracked `uv.lock` remains 14,471 bytes, SHA-256
   `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`;
-  it must remain absent from the isolated worktree.
+  it is absent from the isolated worktree.
 
 ### Residual Risks
 
-- Current V1 rules do not consume the `DeterminismContext` RNG/clock. Rejection
-  invariance is preserved and tested, but future real consumers require new observable
-  determinism tests.
-- Player affordances probe existing rules on isolated `deepcopy(World)` values. This
-  is bounded and does not create the V2-2 general action catalog, but large-pack
-  performance remains to be measured later.
-- In-place rollback covers the dataclass, dict, list, and set object graph used by the
-  current `World`; any future mutable container type requires matching restoration and
-  alias regression coverage.
-- `World`, loader, save, and legacy command rendering remain large; V2-1 does not
-  authorize wholesale decomposition.
+- Current V1 rules still do not consume the determinism RNG/clock; future consumers
+  require new observable determinism tests.
+- Player affordances probe existing rules on isolated `deepcopy(World)` values; large
+  content-pack performance remains to be measured.
+- Bounded JSON limits are per file. Any future trusted-scale increase needs an explicit
+  product decision and preserved rejection-transaction tests.
+- V2-1 is published only on the workstream branch, not integrated into `main`. The next
+  authorization must select the V2-2 starting branch/baseline.

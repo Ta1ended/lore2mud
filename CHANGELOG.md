@@ -4,30 +4,25 @@
 
 ### Changed
 
-- Locally sealed V2-1 product acceptance: exact product candidate
-  `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5` received fresh independent TECH GO with
-  no P0-P3 findings, and the product owner explicitly granted PRODUCT PASS on
-  2026-08-04. This documentation seal does not authorize push, `main` movement,
-  SECURITY PASS, release, or V2-2 (DEC-0100).
-- Routed CLI and Web gameplay turns through one transport-neutral V2-1 application
-  boundary while retaining authoritative `World`, the compatible
-  `CommandProcessor(world, save_service)` surface, and Web `PlayerSession` name.
-  CLI/Web now parse typed requests and render `TurnResult`; Web responses add
-  `status/events/view/diagnostics` while preserving `ok/event/snapshot`, and browser
-  controls consume projected affordances instead of duplicating gameplay availability
-  rules. Exact declared Intent and primitive leaf types are validated before any
-  overridable method/operator can run. Rejection diagnostics are normalized before the
-  final rollback and view projection, preventing side-effectful exception formatting
-  from changing authority after restore; the same snapshot restores the original
-  determinism-context identity and exact seed/clock values, and recursively restores
-  the existing `World` object graph in place so nested compatibility aliases remain
-  valid. CLI dialogue menus now
-  render current actionable options from `GameView` rather than replaying the broader
-  dialogue event payload. A fresh compatibility review also restored legacy Web
-  `snapshot` nullable fields, complete V1 `event.data` payloads, and authored entity and
-  campaign-action order without exposing unavailable actions in the new player-safe
-  view. Save v9, v7/v8 read gates, content/schema versions, runtime campaign, and the
-  public original Demo are unchanged (DEC-0092 through DEC-0099).
+- Completed and published V2-1 on remote `workstream/v2-1-game-session` at exact
+  product candidate `c8ee518ef39f938ece374cbd3f7c9bca06de2408`. Fresh independent
+  TECH and SECURITY acceptance both returned `GO` with no P0-P3 findings, the product
+  owner explicitly granted `PRODUCT PASS` on 2026-08-05, and candidate GitHub Actions
+  tests `30967325238` plus quality `30967325246` succeeded. The post-push handoff seal
+  changes documentation only; `main` remains unmoved, with no release or V2-2 work
+  (DEC-0101).
+- Hardened the transport-neutral V2-1 application boundary while retaining
+  authoritative `World`, the compatible `CommandProcessor(world, save_service)`
+  surface, and Web `PlayerSession` name. Contract rejection restores the existing
+  `World` object graph, canonical save state, RNG, determinism context, event sequence,
+  and save-visible metadata. Untrusted content/save JSON now has explicit byte, depth,
+  node, string, and integer limits with typed error normalization. Public dialogue
+  event options are rebuilt from the final `GameView`, and public campaign events omit
+  raw authoritative effect outcomes from both new and compatibility Web channels.
+  pytest is constrained to `>=9.0.3,<10`, serial/xdist subtest labels are transportable,
+  and Windows zipapp coverage includes the new bounded-reader module. Save v9, v7/v8
+  read gates, content/schema versions, runtime campaign, and the public original Demo
+  remain compatible (DEC-0092 through DEC-0101).
 - Replaced the stale repository-wide fixed model/reasoning floor with controller model
   selection by responsibility and risk, explicit recording when exposed, evidence-
   based verification, rework/reassignment for unreliable output, and unchanged fresh

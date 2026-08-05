@@ -1,76 +1,72 @@
 # 下一任务 / Next Task
 
-_最后更新 / Last updated: 2026-08-04_
+_最后更新 / Last updated: 2026-08-05_
 
 ## 中文
 
 ### 唯一下一门禁
 
-**产品所有者另行明确授权或拒绝将已取得 TECH GO 与 PRODUCT PASS 的精确 V2-1
-产品候选推送到远端工作流分支。**
+**产品所有者另行明确授权开始 V2-2，并指定其已验收起始基线。**
 
-精确产品候选 `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5` 已取得全新独立 TECH GO，
-产品所有者已于 2026-08-04 明确给出 PRODUCT PASS。后续文档封存提交不得被误当作新的
-产品候选。当前仍没有 push 授权；在新的明确授权前必须保持本地停止状态。
+V2-1 的精确产品候选
+`c8ee518ef39f938ece374cbd3f7c9bca06de2408` 已在远端
+`workstream/v2-1-game-session` 发布，取得全新独立 TECH `GO`、SECURITY `GO` 与
+2026-08-05 的人类 `PRODUCT PASS`。候选 GitHub Actions tests `30967325238` 和
+quality `30967325246` 均成功。当前封存提交只同步交接/决策文档，不改变产品字节。
 
-### 发布检查范围
+在新授权前必须停止，不得自动开始 V2-2。
 
-- 使用实时 `git ls-remote` 和 GitHub Actions 重新确认远端 `main`、目标分支、祖先关系和
-  绿色状态；本地 `origin/main` 不能代替实时证据。
-- 只允许推送 `workstream/v2-1-game-session`，不得借此移动 `main`、创建 release 或开始
-  V2-2；推送前必须再次确认 fast-forward/无冲突状态。
-- 若命令行网络在获得 push 授权后再次失败，可使用 GitHub Desktop 添加隔离 worktree，
-  核对分支与 HEAD、Fetch origin，再执行 Publish/Push；不得跳过远端祖先检查。
+### 授权时需要明确
 
-### 所需证据
+- V2-2 是否从已发布的 V2-1 workstream/当前文档封存头继续，或先经过另行授权的集成流程；
+  不得自行移动 `main`。
+- V2-2 仍使用 `docs/v2/roadmap.md` 规定的固定、引擎定义、不可选择的 V1 兼容 profile；
+  capability catalog、版本/依赖解析属于 V2-3，不得提前进入 V2-2。
+- 新阶段必须重新读取仓库交接与 V2 规划文档、实时核对远端和 Actions、创建隔离 worktree，
+  并重新建立 Controller、实现、完整门禁和未参与实现的独立验收。
 
-- 人类产品所有者对 push/publication 的单独明确授权。
-- 已获 TECH GO 与 PRODUCT PASS 的精确产品候选 SHA，以及仅文档封存提交的路径证明。
-- 实时远端 SHA、目标分支 fast-forward 状态、GitHub Actions 和干净工作树证据。
+### 当前停止边界
 
-### 禁止越界
-
-- PRODUCT PASS 本身不授权 push、移动 `main`、SECURITY PASS、release 或 V2-2。
-- 没有明确的新 push 授权，不得执行 Git CLI 或 GitHub Desktop 推送。
-- 不得在产品门禁中扩展 Capability、SDK、structured CLI、MCP、`SimulationReport`、
-  proofing、迁移、插件、新内容或新 save 版本。
+- 不 push/move `main`，不创建 release，不合并分支，不开始 V2-2 实现或规划改动。
+- 不实现 Capability、SDK、structured CLI、MCP、动态插件、迁移、V2-3 能力解析或新内容。
+- 不访问私人小说、canon、派生内容、图片、存档或报告。
+- 当前唯一允许的后续动作是人类给出明确的 V2-2 授权与起始基线决定。
 
 ## English
 
 ### Single Next Gate
 
-**The product owner separately authorizes or declines pushing the exact V2-1 product
-candidate that has received both TECH GO and PRODUCT PASS to the remote workstream
-branch.**
+**The product owner separately authorizes starting V2-2 and selects its accepted
+starting baseline.**
 
-Exact product candidate `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5` received fresh
-independent TECH GO, and the product owner explicitly granted PRODUCT PASS on
-2026-08-04. Later documentation-seal commits are not new product candidates. Push is
-still unauthorized; the workstream must remain stopped locally until new explicit
-authorization is received.
+The exact V2-1 product candidate
+`c8ee518ef39f938ece374cbd3f7c9bca06de2408` is published on remote
+`workstream/v2-1-game-session`. It received fresh independent TECH `GO`, SECURITY
+`GO`, and human `PRODUCT PASS` on 2026-08-05. Candidate GitHub Actions tests
+`30967325238` and quality `30967325246` both succeeded. The current seal only
+synchronizes handoff/decision documents and does not change product bytes.
 
-### Publication Review Scope
+Work must stop until new authorization is supplied; V2-2 does not start
+automatically.
 
-- Reconfirm live remote `main`, target branch, ancestry, and green GitHub Actions with
-  `git ls-remote`; local `origin/main` is not live evidence.
-- Only `workstream/v2-1-game-session` may be pushed. Do not move `main`, create a
-  release, or start V2-2; reconfirm fast-forward/no-conflict status before push.
-- If CLI networking fails after push authorization, GitHub Desktop may add the isolated
-  worktree, verify branch and HEAD, Fetch origin, then Publish/Push. It must not bypass
-  the live ancestry check.
+### Authorization Must Specify
 
-### Required Evidence
+- Whether V2-2 continues from the published V2-1 workstream/current documentation
+  seal or first uses a separately authorized integration process. Do not move `main`
+  implicitly.
+- V2-2 retains the fixed, engine-defined, non-selectable V1 compatibility profile in
+  `docs/v2/roadmap.md`. Capability catalogs and version/dependency resolution belong
+  to V2-3 and must not enter V2-2 early.
+- The new stage must reread repository handoffs and V2 planning documents, verify live
+  remote state and Actions, create an isolated worktree, and re-establish Controller,
+  implementation, full gates, and fresh non-implementing independent acceptance.
 
-- Separate explicit human authorization for push/publication.
-- The exact TECH-GO and PRODUCT-PASS product SHA plus proof that later seal changes are
-  documentation only.
-- Live remote SHA, target-branch fast-forward status, GitHub Actions, and clean-tree
-  evidence.
+### Current Stop Boundary
 
-### Boundaries
-
-- PRODUCT PASS does not authorize push, `main` movement, SECURITY PASS, release, or
-  V2-2.
-- Do not push with Git CLI or GitHub Desktop without new explicit push authorization.
-- The product gate cannot expand into Capability, SDK, structured CLI, MCP,
-  `SimulationReport`, proofing, migrations, plugins, new content, or a new save version.
+- Do not push/move `main`, create a release, merge branches, or begin V2-2
+  implementation or planning changes.
+- Do not implement Capability, SDK, structured CLI, MCP, dynamic plugins, migrations,
+  V2-3 capability resolution, or new content.
+- Do not access private novels, canon, derived content, images, saves, or reports.
+- The only permitted next action is an explicit human V2-2 authorization and starting-
+  baseline decision.

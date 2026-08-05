@@ -2800,3 +2800,49 @@
 - Supersedes: DEC-0099 only for gate status and next-task routing. It does not rewrite
   prior findings, acceptance evidence, product boundaries, rights constraints, or Git
   safety requirements.
+
+## DEC-0101: Harden and publish the V2-1 public runtime boundary
+
+- Date: 2026-08-05
+- Status: Published V2-1 product candidate; V2-2 remains separately gated.
+- Context: A read-only security scope review of the previously published handoff head
+  `d5135451f5f765ee98c2507a29e2f17e3bb59d47` found that public Web event channels
+  could re-expose campaign authority state and unavailable dialogue options already
+  omitted by `GameView`. It also found unbounded content/save JSON reads whose UTF-8,
+  integer, or recursion failures could escape typed application rejection, plus a test
+  constraint that excluded the fixed pytest release. Because these repairs changed
+  runtime/public-contract bytes, the earlier TECH and PRODUCT decisions could not be
+  transferred to the new candidate.
+- Decision: Adopt one internal bounded UTF-8 JSON reader with per-file limits of
+  8 MiB, depth 64, 200,000 nodes, 1,000,000 characters per string, and 64 decimal
+  integer digits. Content loading maps its typed failures to `ContentValidationError`;
+  save loading maps them to `SaveLoadError`, so `GameSession` returns a transactional
+  `PERSISTENCE_ERROR`. Rebuild dialogue-event options from the final same-turn
+  `GameView` and omit raw campaign effect outcomes from public events, including the
+  compatibility Web event channel. Require `pytest>=9.0.3,<10`, make unittest subtest
+  labels xdist-serializable, and verify the new module in Windows delivery. Preserve
+  `World` authority, save v9/v7/v8 compatibility, Schemas, content versions, and all
+  V2-1 scope exclusions.
+- Evidence: Controller focused serial and xdist matrices each passed 435 tests with
+  6 conditional skips and 308 subtests. The corrected full unittest run passed 1418
+  tests with 11 skips; serial and xdist pytest each passed 1407 tests with 11 skips and
+  554 subtests. Ruff, Pyright, compileall, public-Demo validation, pip consistency,
+  repository-history safety, fsck, and diff checks passed. Fresh non-implementing TECH
+  acceptance returned empty P0-P3 and `GO`; fresh non-implementing SECURITY acceptance
+  returned empty P0-P3 and `GO` after 290 focused tests, 208 subtests, exact/over JSON
+  boundary probes, whole-response leakage checks, and transaction-invariance checks.
+  The product owner explicitly granted `PRODUCT PASS` for exact candidate
+  `c8ee518ef39f938ece374cbd3f7c9bca06de2408` on 2026-08-05. The candidate was then
+  fast-forward pushed only to `workstream/v2-1-game-session`; GitHub Actions tests
+  `30967325238` and quality `30967325246` completed successfully. Live `main` remained
+  `564530d87aea17da26544b7793701e0dca0fe57d`.
+- Consequences: V2-1 is complete and published on the workstream branch at accepted
+  product bytes `c8ee518`. The following handoff seal is documentation-only and does
+  not create a new product candidate. There is no `main` movement, merge, release, or
+  V2-2 work. The sole next gate is explicit product-owner authorization to begin V2-2
+  and select its accepted starting branch/baseline. Private material remains outside
+  the public repository.
+- Supersedes: DEC-0100 only for the current accepted product SHA, SECURITY gate,
+  publication state, and next-task routing. It preserves DEC-0100 as historical
+  evidence and does not rewrite prior findings, rights constraints, or milestone
+  boundaries.
