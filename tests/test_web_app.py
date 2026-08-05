@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -221,6 +222,25 @@ class PlayerSessionTests(unittest.TestCase):
         advanced = self.action("choose_dialogue", index=1)
         self.assertTrue(advanced["ok"])
         self.assertIsNotNone(advanced["snapshot"]["dialogue"])
+
+    def test_dialogue_response_omits_options_absent_from_game_view(self) -> None:
+        self.action("move", direction="east")
+        self.action("talk", target="character_elder_chen")
+        self.action("choose_dialogue", index=4)
+        self.action("choose_dialogue", index=2)
+        self.action("talk", target="character_elder_chen")
+
+        result = self.action("choose_dialogue", index=4)
+
+        event_options = result["events"][0]["data"]["options"]
+        view_options = result["view"]["dialogue"]["options"]
+        self.assertEqual(
+            [option["option_id"] for option in event_options],
+            [option["id"] for option in view_options],
+        )
+        rendered = json.dumps(result, ensure_ascii=False, sort_keys=True)
+        self.assertIn("opt_back3", rendered)
+        self.assertNotIn("opt_bye4", rendered)
 
     def test_dialogue_legacy_event_preserves_null_fields(self) -> None:
         self.action("move", direction="east")

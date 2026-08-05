@@ -12,6 +12,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from lore2mud._bounded_json import DEFAULT_JSON_READ_LIMITS
 from lore2mud.cli import main
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -182,6 +183,35 @@ class ValidateEncodingErrorTests(unittest.TestCase):
             output = stderr.getvalue()
             self.assertIn("[ERROR] 内容包校验失败:", output)
             self.assertIn("UTF-8", output)
+
+    def test_json_resource_limits_exit_one_with_validation_diagnostics(self) -> None:
+        limits = DEFAULT_JSON_READ_LIMITS
+        cases = (
+            (
+                "huge_integer",
+                b'{"value":' + b"9" * (limits.max_integer_digits + 1) + b"}",
+            ),
+            (
+                "deep",
+                b"[" * (limits.max_depth + 1)
+                + b"0"
+                + b"]" * (limits.max_depth + 1),
+            ),
+            ("many_nodes", b"[" + b"0," * limits.max_nodes + b"0]"),
+            ("oversized", b" " * (limits.max_bytes + 1)),
+        )
+        for label, payload in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as temp_dir:
+                pack_path = Path(temp_dir) / "hostile_pack"
+                shutil.copytree(DEMO_PATH, pack_path)
+                (pack_path / "pack.json").write_bytes(payload)
+                stderr = io.StringIO()
+
+                with mock.patch("sys.stderr", stderr):
+                    exit_code = main(["validate", "--content", str(pack_path)])
+
+                self.assertEqual(exit_code, 1)
+                self.assertIn("[ERROR] 内容包校验失败:", stderr.getvalue())
 
 
 class ValidateOSErrorTests(unittest.TestCase):

@@ -6,6 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from lore2mud._bounded_json import DEFAULT_JSON_READ_LIMITS
 from lore2mud.content.loader import (
     ContentValidationError,
     load_content_pack,
@@ -107,6 +108,44 @@ class ContentLoaderTests(unittest.TestCase):
             with self.assertRaises(ContentValidationError) as caught:
                 load_content_pack(pack_path)
             self.assertIn("未知字段", str(caught.exception))
+
+    def test_untrusted_json_resource_limits_are_typed_validation_errors(self) -> None:
+        limits = DEFAULT_JSON_READ_LIMITS
+        cases = (
+            ("invalid_utf8", b"\x80\x81\xff\xfe", "UTF-8"),
+            (
+                "huge_integer",
+                b'{"value":' + b"9" * (limits.max_integer_digits + 1) + b"}",
+                "有效 JSON",
+            ),
+            (
+                "deep",
+                b"[" * (limits.max_depth + 1)
+                + b"0"
+                + b"]" * (limits.max_depth + 1),
+                "复杂度",
+            ),
+            (
+                "many_nodes",
+                b"[" + b"0," * limits.max_nodes + b"0]",
+                "复杂度",
+            ),
+            (
+                "oversized",
+                b" " * (limits.max_bytes + 1),
+                "字节限制",
+            ),
+        )
+        for label, payload, expected in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as temp_dir:
+                pack_path = Path(temp_dir) / "hostile_pack"
+                shutil.copytree(DEMO_PATH, pack_path)
+                (pack_path / "pack.json").write_bytes(payload)
+
+                with self.assertRaises(ContentValidationError) as caught:
+                    load_content_pack(pack_path)
+
+                self.assertIn(expected, str(caught.exception))
 
     def test_droppable_must_be_boolean(self) -> None:
         for value in (None, 0, "false", []):

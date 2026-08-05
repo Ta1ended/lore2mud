@@ -98,8 +98,8 @@ class ShopContentTests(unittest.TestCase):
             lambda shops: shops[0]["catalog"][0].update(buy_price=2, sell_price=3),
             lambda shops: shops[0]["catalog"][0].update(item_id="item_chen_token"),
         )
-        for mutate_shops in mutations:
-            with self.subTest(mutation=mutate_shops):
+        for case, mutate_shops in enumerate(mutations, 1):
+            with self.subTest(case=case):
                 self._with_pack(
                     lambda root, mutate_shops=mutate_shops: (
                         (lambda shops: (

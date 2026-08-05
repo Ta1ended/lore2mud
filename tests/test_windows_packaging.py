@@ -88,6 +88,7 @@ class WindowsPackagingTests(unittest.TestCase):
         self.assertIn("lore2mud/cli.py", app_names)
         self.assertTrue(
             {
+                "lore2mud/_bounded_json.py",
                 "lore2mud/application/__init__.py",
                 "lore2mud/application/contracts.py",
                 "lore2mud/application/projection.py",

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import FrozenInstanceError, asdict, dataclass, is_dataclass
+import hashlib
 import json
 from pathlib import Path
 import tempfile
@@ -11,6 +12,7 @@ import unittest
 from unittest.mock import patch
 
 import lore2mud.application.contracts as contracts
+from lore2mud._bounded_json import DEFAULT_JSON_READ_LIMITS
 from lore2mud.application import (
     AttackIntent,
     DeterminismContext,
@@ -275,6 +277,56 @@ class GameSessionContractTests(unittest.TestCase):
         assert load_result.rejection is not None
         self.assertEqual(load_result.rejection.message, "读取存档失败。")
         self.assertNotIn("forced load failure", load_result.rejection.message)
+
+    def test_hostile_save_json_rejection_preserves_session_and_file_state(self) -> None:
+        limits = DEFAULT_JSON_READ_LIMITS
+        cases = (
+            ("invalid_utf8", b"\x80\x81\xff\xfe"),
+            (
+                "huge_integer",
+                b'{"value":' + b"9" * (limits.max_integer_digits + 1) + b"}",
+            ),
+            (
+                "deep",
+                b"[" * (limits.max_depth + 1)
+                + b"0"
+                + b"]" * (limits.max_depth + 1),
+            ),
+            ("many_nodes", b"[" + b"0," * limits.max_nodes + b"0]"),
+            ("oversized", b" " * (limits.max_bytes + 1)),
+        )
+        with tempfile.TemporaryDirectory() as temp_dir:
+            service = SaveLoadService(self.pack, Path(temp_dir))
+            session = GameSession.from_content_pack(
+                self.pack,
+                service,
+                determinism=DeterminismContext(seed=101, clock=303),
+            )
+            accepted = session.submit(MoveIntent("east"))
+            self.assertEqual(accepted.status, TurnStatus.ACCEPTED)
+            hostile_path = service.slot_path("hostile")
+
+            for label, payload in cases:
+                with self.subTest(label=label):
+                    hostile_path.write_bytes(payload)
+                    before_digest = hashlib.sha256(payload).digest()
+                    before_stat = hostile_path.stat()
+
+                    result = self._assert_rejected_unchanged(
+                        session,
+                        LoadIntent("hostile"),
+                        RejectionCode.PERSISTENCE_ERROR,
+                    )
+
+                    assert result.rejection is not None
+                    self.assertEqual(result.rejection.message, "读取存档失败。")
+                    self.assertEqual(
+                        hashlib.sha256(hostile_path.read_bytes()).digest(),
+                        before_digest,
+                    )
+                    after_stat = hostile_path.stat()
+                    self.assertEqual(after_stat.st_size, before_stat.st_size)
+                    self.assertEqual(after_stat.st_mtime_ns, before_stat.st_mtime_ns)
 
     def test_exception_message_formatting_is_rolled_back_before_rejection_view(
         self,

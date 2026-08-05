@@ -1085,7 +1085,7 @@ class CommandIntegrationTests(unittest.TestCase):
         self.assertIn("对话结束", result.text)
         self.assertIn("item_chen_token", [s.item_id for s in self.world.player.inventory.stacks])
 
-    def test_repeat_reward_option_is_absent_from_cli_actionable_menu(self) -> None:
+    def test_repeat_reward_option_is_absent_from_cli_view_and_event(self) -> None:
         self.cmd.execute("talk character_elder_chen")
         self.cmd.execute("4")
         self.cmd.execute("2")
@@ -1106,7 +1106,7 @@ class CommandIntegrationTests(unittest.TestCase):
         assert isinstance(payload, DialogueEventData)
         self.assertEqual(
             [option.option_id for option in payload.options],
-            ["opt_back3", "opt_bye4"],
+            ["opt_back3"],
         )
         self.assertIn("  1. （换个话题）", result.text)
         self.assertNotIn("  2. 多谢提醒，告辞。", result.text)

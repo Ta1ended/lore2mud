@@ -709,7 +709,7 @@ class CliTests(unittest.TestCase):
 
     def test_direct_output_aliases_are_rejected_before_reading(self) -> None:
         for input_path in (REGISTRY_PATH, PLAN_PATH):
-            with self.subTest(input_path=input_path):
+            with self.subTest(input_name=input_path.name):
                 stderr = io.StringIO()
                 with contextlib.redirect_stderr(stderr):
                     self.assertEqual(main(self._args(input_path)), 1)

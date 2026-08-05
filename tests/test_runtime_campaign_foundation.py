@@ -259,7 +259,7 @@ class MagicCampaignRuntimeTests(unittest.TestCase):
         )
         self.assertEqual(self.world.available_interactables(), ())
 
-    def test_web_event_preserves_campaign_effect_outcomes(self) -> None:
+    def test_web_response_omits_hidden_campaign_effect_outcomes(self) -> None:
         pack = load_content_pack(MAGIC)
         with tempfile.TemporaryDirectory() as temp_dir:
             session = PlayerSession(pack, SaveLoadService(pack, Path(temp_dir)))
@@ -267,22 +267,19 @@ class MagicCampaignRuntimeTests(unittest.TestCase):
                 {"type": "campaign_action", "action_id": "action_open_ward"}
             )
 
-        effects = result["event"]["data"]["effect_outcomes"]
-        self.assertEqual(len(effects), 9)
-        self.assertEqual(
-            effects[0],
-            {
-                "kind": "set_narrative_state",
-                "target_id": "state_ward_open",
-                "before": False,
-                "after": True,
-            },
-        )
-        actor_effect = next(
-            effect for effect in effects if effect["kind"] == "move_actor"
-        )
-        self.assertEqual(actor_effect["before"]["presence"], "present")
-        self.assertEqual(actor_effect["after"]["presence"], "absent")
+        self.assertEqual(result["events"][0]["data"]["effect_outcomes"], [])
+        self.assertEqual(result["event"]["data"]["effect_outcomes"], [])
+        rendered = json.dumps(result, ensure_ascii=False, sort_keys=True)
+        for hidden in (
+            "state_ward_open",
+            "state_ward_power",
+            "state_ward_mode",
+            "character_clockmaker",
+            "stage_index",
+            "move_actor",
+        ):
+            with self.subTest(hidden=hidden):
+                self.assertNotIn(hidden, rendered)
 
     def test_application_preserves_declared_campaign_action_order(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:

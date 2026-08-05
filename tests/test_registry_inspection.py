@@ -586,7 +586,7 @@ class CliTests(unittest.TestCase):
 
     def test_output_direct_aliases_are_rejected_before_reading(self) -> None:
         for input_path in (REGISTRY_PATH, FIXTURE_DIR / "valid_plan.json"):
-            with self.subTest(input_path=input_path):
+            with self.subTest(input_name=input_path.name):
                 stderr = io.StringIO()
                 with contextlib.redirect_stderr(stderr):
                     self.assertEqual(main(self._args(input_path)), 1)

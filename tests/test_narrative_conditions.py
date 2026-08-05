@@ -116,8 +116,8 @@ class NarrativeStateContentTests(unittest.TestCase):
             lambda doc: doc.update(format_version=True),
             lambda doc: doc["states"].append(dict(doc["states"][0])),
         )
-        for mutate in cases:
-            with self.subTest(mutate=mutate):
+        for case, mutate in enumerate(cases, 1):
+            with self.subTest(case=case):
                 pack_copy = PackCopy()
                 try:
                     document = pack_copy.read("narrative_state.json")
@@ -394,8 +394,8 @@ class NarrativeStateSaveTests(unittest.TestCase):
             lambda state: state.update(state_signal_strength=4),
             lambda state: state.update(state_station_mode="missing"),
         )
-        for mutate in cases:
-            with self.subTest(mutate=mutate), tempfile.TemporaryDirectory() as temp_dir:
+        for case, mutate in enumerate(cases, 1):
+            with self.subTest(case=case), tempfile.TemporaryDirectory() as temp_dir:
                 service = SaveLoadService(pack, Path(temp_dir))
                 service.save(World.from_content_pack(pack))
                 data = json.loads(service.save_path.read_text("utf-8"))

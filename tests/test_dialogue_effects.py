@@ -168,8 +168,8 @@ class DialogueEffectsContentTests(unittest.TestCase):
                 ]
             ),
         )
-        for mutate_options in cases:
-            with self.subTest(mutate=mutate_options):
+        for case, mutate_options in enumerate(cases, 1):
+            with self.subTest(case=case):
                 self._mutate_dialogues(
                     lambda dialogues, mutate_options=mutate_options:
                     mutate_options(dialogues[0]["nodes"][0]["options"])

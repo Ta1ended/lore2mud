@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from dataclasses import dataclass, fields, is_dataclass
+from dataclasses import dataclass, fields, is_dataclass, replace
 from random import Random
 import re
 from threading import RLock
@@ -13,12 +13,8 @@ from lore2mud.application.contracts import (
     AcceptedQuestEvent,
     AttackIntent,
     BuyIntent,
-    CampaignActorStateEvent,
     CampaignActionEventData,
     CampaignActionIntent,
-    CampaignEffectEvent,
-    CampaignEffectValue,
-    CampaignSceneStateEvent,
     ChooseDialogueIntent,
     CombatEventData,
     DeterminismContext,
@@ -84,7 +80,6 @@ from lore2mud.engine.world import (
     AcceptQuestEffectOutcome,
     AttackOutcome,
     BuyOutcome,
-    CampaignEffectOutcome,
     CampaignActionOutcome,
     DialogueEndOutcome,
     DropOutcome,
@@ -350,6 +345,7 @@ class GameSession:
                 return TurnResult(TurnStatus.ACCEPTED, (), view)
 
             kind, payload = draft
+            payload = _player_safe_event_payload(payload, view)
             next_sequence = self._event_sequence + 1
             event = GameEvent(next_sequence, kind, payload)
             self._event_sequence = next_sequence
@@ -725,6 +721,24 @@ def _dialogue_event(outcome: TalkOutcome) -> DialogueEventData:
     )
 
 
+def _player_safe_event_payload(
+    payload: GameEventPayload,
+    view: GameView,
+) -> GameEventPayload:
+    if isinstance(payload, DialogueEventData):
+        dialogue = view.dialogue
+        if dialogue is None or dialogue.dialogue_id != payload.dialogue_id:
+            return replace(payload, options=())
+        return replace(
+            payload,
+            options=tuple(
+                DialogueOptionEvent(option.id, option.text)
+                for option in dialogue.options
+            ),
+        )
+    return payload
+
+
 def _dialogue_end_event(outcome: DialogueEndOutcome) -> DialogueEndEventData:
     return DialogueEndEventData(
         outcome.character_id,
@@ -762,65 +776,13 @@ def _sell_event(outcome: SellOutcome) -> TradeEventData:
 
 
 def _campaign_action_event(outcome: CampaignActionOutcome) -> CampaignActionEventData:
+    # Raw effect outcomes can contain authoritative state omitted from GameView.
     return CampaignActionEventData(
         outcome.action_id,
         outcome.label,
         outcome.result_text,
-        tuple(_campaign_effect_event(effect) for effect in outcome.effect_outcomes),
+        (),
     )
-
-
-def _campaign_effect_event(outcome: CampaignEffectOutcome) -> CampaignEffectEvent:
-    return CampaignEffectEvent(
-        kind=outcome.kind,
-        target_id=outcome.target_id,
-        before=_campaign_effect_value(outcome.before),
-        after=_campaign_effect_value(outcome.after),
-    )
-
-
-def _campaign_effect_value(value: object) -> CampaignEffectValue:
-    if value is None:
-        return None
-    if type(value) is str:
-        return value
-    if type(value) is int:
-        return value
-    if type(value) is bool:
-        return value
-    if not isinstance(value, dict):
-        raise AssertionError(f"未知 campaign effect value：{value!r}")
-
-    if set(value) == {"location_id", "presence", "enabled", "incapacitated"}:
-        location_id = value["location_id"]
-        presence = value["presence"]
-        enabled = value["enabled"]
-        incapacitated = value["incapacitated"]
-        if (
-            location_id is not None
-            and type(location_id) is not str
-            or type(presence) is not str
-            or type(enabled) is not bool
-            or type(incapacitated) is not bool
-        ):
-            raise AssertionError(f"无效 campaign actor state：{value!r}")
-        return CampaignActorStateEvent(
-            location_id=location_id,
-            presence=presence,
-            enabled=enabled,
-            incapacitated=incapacitated,
-        )
-
-    if set(value) == {"status", "stage_index"}:
-        status = value["status"]
-        stage_index = value["stage_index"]
-        if type(status) is not str or (
-            stage_index is not None and type(stage_index) is not int
-        ):
-            raise AssertionError(f"无效 campaign scene state：{value!r}")
-        return CampaignSceneStateEvent(status=status, stage_index=stage_index)
-
-    raise AssertionError(f"未知 campaign effect mapping：{value!r}")
 
 
 def _recovery_event(outcome: RecoverOutcome) -> RecoveryEventData:

@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
-import json
 import re
 from pathlib import Path
 from typing import Any
 
+from lore2mud._bounded_json import (
+    DEFAULT_JSON_READ_LIMITS,
+    BoundedJsonError,
+    JsonReadErrorCode,
+    read_bounded_json,
+)
 from lore2mud.content.models import (
     AcceptQuestEffect,
     ActorViewDefinition,
@@ -100,17 +105,27 @@ class ContentValidationError(ValueError):
 
 def _read_json(path: Path) -> Any:
     try:
-        return json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError:
-        raise ContentValidationError([f"缺少文件：{path.name}"]) from None
-    except UnicodeDecodeError:
-        raise ContentValidationError(
-            [f"{path.name} 不是有效 UTF-8 编码"]
-        ) from None
-    except json.JSONDecodeError as exc:
-        raise ContentValidationError(
-            [f"{path.name} 不是有效 JSON：第 {exc.lineno} 行 {exc.msg}"]
-        ) from None
+        return read_bounded_json(path, DEFAULT_JSON_READ_LIMITS)
+    except BoundedJsonError as exc:
+        if exc.code is JsonReadErrorCode.NOT_FOUND:
+            issue = f"缺少文件：{path.name}"
+        elif exc.code is JsonReadErrorCode.INVALID_UTF8:
+            issue = f"{path.name} 不是有效 UTF-8 编码"
+        elif exc.code is JsonReadErrorCode.TOO_LARGE:
+            issue = (
+                f"{path.name} 超过 "
+                f"{DEFAULT_JSON_READ_LIMITS.max_bytes} 字节限制"
+            )
+        elif exc.code is JsonReadErrorCode.TOO_COMPLEX:
+            issue = f"{path.name} 的 JSON 超出复杂度限制"
+        elif exc.code is JsonReadErrorCode.INVALID_JSON and exc.line is not None:
+            detail = exc.detail or "语法错误"
+            issue = f"{path.name} 不是有效 JSON：第 {exc.line} 行 {detail}"
+        elif exc.code is JsonReadErrorCode.INVALID_JSON:
+            issue = f"{path.name} 不是有效 JSON"
+        else:
+            issue = f"无法读取 {path.name}"
+        raise ContentValidationError([issue]) from None
 
 
 class _Validator:
