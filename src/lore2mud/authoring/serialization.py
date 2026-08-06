@@ -45,6 +45,13 @@ from lore2mud.authoring.contracts import (
     AdmissibleIntentDescriptor,
     AuthoringDiagnostic,
     AuthoringResult,
+    CapabilityAuthoringResult,
+    CapabilityPreview,
+    CapabilityProofingProjection,
+    CapabilitySimulationCheckpoint,
+    CapabilitySimulationReport,
+    CapabilitySimulationRequest,
+    CapabilitySimulationTurn,
     CanonicalContentFile,
     GameBlueprint,
     GameProject,
@@ -526,6 +533,20 @@ def simulation_request_to_document(value: SimulationRequest) -> dict[str, object
     }
 
 
+def capability_simulation_request_to_document(
+    value: CapabilitySimulationRequest,
+) -> dict[str, object]:
+    return {
+        "format_version": value.format_version,
+        "seed": value.seed,
+        "clock": value.clock,
+        "player_name": value.player_name,
+        "steps": [_capability_step_to_document(step) for step in value.steps],
+        "conditions": [_condition_to_document(item) for item in value.conditions],
+        "checkpoint_after_steps": list(value.checkpoint_after_steps),
+    }
+
+
 def simulation_report_to_document(
     report: SimulationReport, *, include_fingerprint: bool = True
 ) -> dict[str, object]:
@@ -565,6 +586,59 @@ def simulation_report_to_document(
     return document
 
 
+def capability_preview_to_document(
+    value: CapabilityPreview, *, include_fingerprint: bool = True
+) -> dict[str, object]:
+    document = {
+        "format_version": value.format_version,
+        "kind": value.kind,
+        "sealed": value.sealed,
+        "distributable": value.distributable,
+        "release_evidence": value.release_evidence,
+        "identity_scope": value.identity_scope,
+        "base_preview": preview_to_document(value.base_preview),
+        "resolved_plan": _capability_value_to_document(value.resolved_plan),
+        "plan_sha256": value.plan_sha256,
+        "initial_states": [
+            _capability_value_to_document(item) for item in value.initial_states
+        ],
+        "initial_state_sha256": value.initial_state_sha256,
+        "engine_version": value.engine_version,
+    }
+    if include_fingerprint:
+        document["fingerprint"] = value.fingerprint
+    return document
+
+
+def capability_simulation_report_to_document(
+    value: CapabilitySimulationReport, *, include_fingerprint: bool = True
+) -> dict[str, object]:
+    document = {
+        "format_version": value.format_version,
+        "project_id": value.project_id,
+        "base_report": simulation_report_to_document(value.base_report),
+        "request_sha256": value.request_sha256,
+        "capability_preview_fingerprint": value.capability_preview_fingerprint,
+        "plan_sha256": value.plan_sha256,
+        "initial_capability_state_sha256": value.initial_capability_state_sha256,
+        "final_capability_state_sha256": value.final_capability_state_sha256,
+        "turns": [_capability_turn_to_document(item) for item in value.turns],
+        "witness_trace": [
+            _capability_turn_to_document(item) for item in value.witness_trace
+        ],
+        "capability_event_sha256": value.capability_event_sha256,
+        "capability_view_sha256": value.capability_view_sha256,
+        "replay_verified": value.replay_verified,
+        "checkpoints": [
+            _capability_checkpoint_to_document(item) for item in value.checkpoints
+        ],
+        "identity_scope": value.identity_scope,
+    }
+    if include_fingerprint:
+        document["fingerprint"] = value.fingerprint
+    return document
+
+
 def proofing_to_document(value: ProofingProjection) -> dict[str, object]:
     return {
         "format_version": value.format_version,
@@ -589,7 +663,45 @@ def proofing_to_document(value: ProofingProjection) -> dict[str, object]:
     }
 
 
-def authoring_result_to_document(result: AuthoringResult[object]) -> dict[str, object]:
+def capability_proofing_to_document(
+    value: CapabilityProofingProjection,
+) -> dict[str, object]:
+    return {
+        "format_version": value.format_version,
+        "project_id": value.project_id,
+        "capability_preview_fingerprint": value.capability_preview_fingerprint,
+        "base_proofing": proofing_to_document(value.base_proofing),
+        "capability_views": [
+            _capability_value_to_document(item) for item in value.capability_views
+        ],
+        "fingerprint": value.fingerprint,
+        "diagnostics": [
+            diagnostic_to_document(item) for item in sort_diagnostics(value.diagnostics)
+        ],
+    }
+
+
+def capability_authoring_result_to_document(
+    result: CapabilityAuthoringResult[object],
+) -> dict[str, object]:
+    return {
+        "format_version": result.format_version,
+        "kind": result.kind,
+        "operation": result.operation,
+        "status": result.status.value,
+        "artifact": _capability_artifact_to_document(result.artifact),
+        "diagnostics": [
+            diagnostic_to_document(item) for item in sort_diagnostics(result.diagnostics)
+        ],
+        "exit_code": result.exit_code,
+    }
+
+
+def authoring_result_to_document(
+    result: AuthoringResult[object] | CapabilityAuthoringResult[object],
+) -> dict[str, object]:
+    if isinstance(result, CapabilityAuthoringResult):
+        return capability_authoring_result_to_document(result)
     return {
         "format_version": result.format_version,
         "operation": result.operation,
@@ -652,6 +764,16 @@ def _artifact_to_document(value: object) -> object:
     return typed_value_to_document(value)
 
 
+def _capability_artifact_to_document(value: object) -> object:
+    if isinstance(value, CapabilityPreview):
+        return capability_preview_to_document(value)
+    if isinstance(value, CapabilitySimulationReport):
+        return capability_simulation_report_to_document(value)
+    if isinstance(value, CapabilityProofingProjection):
+        return capability_proofing_to_document(value)
+    return _artifact_to_document(value)
+
+
 def _acceptance_scenario_to_document(value: AcceptanceScenario) -> dict[str, object]:
     return {
         "scenario_id": value.scenario_id,
@@ -689,6 +811,46 @@ def _checkpoint_to_document(value: SimulationCheckpoint) -> dict[str, object]:
         "loaded_view_sha256": value.loaded_view_sha256,
         "equivalent": value.equivalent,
     }
+
+
+def _capability_step_to_document(value: object) -> object:
+    if isinstance(value, GameIntent):
+        return game_intent_to_document(value)
+    return _capability_value_to_document(value)
+
+
+def _capability_turn_to_document(
+    value: CapabilitySimulationTurn,
+) -> dict[str, object]:
+    return {
+        "index": value.index,
+        "step": _capability_step_to_document(value.step),
+        "status": value.status,
+        "rejection_code": value.rejection_code,
+        "event_sha256": value.event_sha256,
+        "view_sha256": value.view_sha256,
+        "capability_state_sha256": value.capability_state_sha256,
+        "event_sequence_after": value.event_sequence_after,
+    }
+
+
+def _capability_checkpoint_to_document(
+    value: CapabilitySimulationCheckpoint,
+) -> dict[str, object]:
+    return {
+        "after_step": value.after_step,
+        "checkpoint_sha256": value.checkpoint_sha256,
+        "restored_state_sha256": value.restored_state_sha256,
+        "restored_view_sha256": value.restored_view_sha256,
+        "restored_event_sequence": value.restored_event_sequence,
+        "equivalent": value.equivalent,
+    }
+
+
+def _capability_value_to_document(value: object) -> object:
+    from lore2mud.capabilities.serialization import capability_value_to_document
+
+    return capability_value_to_document(value)
 
 
 def _descriptor_to_document(value: AdmissibleIntentDescriptor) -> dict[str, object]:
