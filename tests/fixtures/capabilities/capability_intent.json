@@ -1,0 +1,5 @@
+{
+  "action_id": "increment",
+  "capability_id": "reference_counter",
+  "parameters": {}
+}

@@ -1,0 +1,62 @@
+{
+  "base_proofing": {
+    "admissible_intents": [
+      {
+        "descriptor_id": "intent_0123456789abcdef01234567",
+        "fields": [
+          {
+            "name": "direction",
+            "value": "east"
+          }
+        ],
+        "intent": {
+          "direction": "east",
+          "type": "move"
+        }
+      }
+    ],
+    "diagnostics": [],
+    "edges": [],
+    "format_version": 1,
+    "nodes": [
+      {
+        "kind": "room",
+        "label": "Entry room",
+        "node_id": "node_room_entry"
+      }
+    ],
+    "preview_fingerprint": "1111111111111111111111111111111111111111111111111111111111111111",
+    "project_id": "public_fixture_project"
+  },
+  "capability_preview_fingerprint": "1111111111111111111111111111111111111111111111111111111111111111",
+  "capability_views": [
+    {
+      "admissible_intents": [
+        {
+          "action_id": "increment",
+          "capability_id": "reference_counter",
+          "parameters": {}
+        },
+        {
+          "action_id": "decrement",
+          "capability_id": "reference_counter",
+          "parameters": {}
+        },
+        {
+          "action_id": "read",
+          "capability_id": "reference_counter",
+          "parameters": {}
+        }
+      ],
+      "capability_id": "reference_counter",
+      "version": "1.0.0",
+      "view": {
+        "count": 1
+      }
+    }
+  ],
+  "diagnostics": [],
+  "fingerprint": "0145a615efbff86f8f58b647be366b07f98f0a8b397b48a1573b4b4ca8fab99e",
+  "format_version": 1,
+  "project_id": "public_fixture_project"
+}

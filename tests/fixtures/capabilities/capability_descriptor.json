@@ -1,0 +1,180 @@
+{
+  "actions": [
+    {
+      "action_id": "increment",
+      "effect_ids": [
+        "increment_count"
+      ],
+      "event_ids": [
+        "counter_incremented"
+      ],
+      "parameters_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "predicate_ids": []
+    },
+    {
+      "action_id": "decrement",
+      "effect_ids": [
+        "decrement_count"
+      ],
+      "event_ids": [
+        "counter_decremented"
+      ],
+      "parameters_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "predicate_ids": [
+        "can_decrement"
+      ]
+    },
+    {
+      "action_id": "read",
+      "effect_ids": [],
+      "event_ids": [],
+      "parameters_schema": {
+        "additionalProperties": false,
+        "properties": {},
+        "type": "object"
+      },
+      "predicate_ids": []
+    }
+  ],
+  "capability_id": "reference_counter",
+  "conflicts": [],
+  "dependencies": [],
+  "effects": [
+    {
+      "effect_id": "increment_count",
+      "payload_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "effect_id": "decrement_count",
+      "payload_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "type": "object"
+      }
+    }
+  ],
+  "events": [
+    {
+      "event_id": "counter_incremented",
+      "payload_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "new_count": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "new_count"
+        ],
+        "type": "object"
+      }
+    },
+    {
+      "event_id": "counter_decremented",
+      "payload_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "new_count": {
+            "minimum": 0,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "new_count"
+        ],
+        "type": "object"
+      }
+    }
+  ],
+  "format_version": 1,
+  "initial_state": {
+    "count": 0
+  },
+  "migrations": [],
+  "observers": [
+    {
+      "effect_ids": [],
+      "event_ids": [],
+      "event_types": [
+        "counter_incremented",
+        "counter_decremented"
+      ],
+      "observer_id": "counter_observer",
+      "predicate_ids": []
+    }
+  ],
+  "player_view_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "count": {
+        "minimum": 0,
+        "type": "integer"
+      }
+    },
+    "required": [
+      "count"
+    ],
+    "type": "object"
+  },
+  "predicates": [
+    {
+      "parameters_schema": {
+        "additionalProperties": false,
+        "properties": {
+          "amount": {
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "type": "object"
+      },
+      "predicate_id": "can_decrement"
+    }
+  ],
+  "safety_level": "L0",
+  "state_namespace": "lore2mud.reference_counter",
+  "state_schema": {
+    "additionalProperties": false,
+    "properties": {
+      "count": {
+        "maximum": 9223372036854775807,
+        "minimum": 0,
+        "type": "integer"
+      }
+    },
+    "required": [
+      "count"
+    ],
+    "type": "object"
+  },
+  "version": "1.0.0"
+}

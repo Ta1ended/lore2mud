@@ -1,0 +1,108 @@
+{
+  "base_preview": {
+    "blueprint_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "content_files": [
+      {
+        "document": {},
+        "name": "pack.json",
+        "sha256": "3083fa083c3f6d775113eedc95ff072121bcaa4c4fcc8e1d367c05e58393fc5f"
+      },
+      {
+        "document": {},
+        "name": "rooms.json",
+        "sha256": "3356fa428b9e5a686d9deb9c69160f5e8c2b59279e9311c7d1eb424f1b2014de"
+      },
+      {
+        "document": {},
+        "name": "items.json",
+        "sha256": "494bd807e48f72c3d0efd09995484d17aff9775ca716163ad8a25064a91772c3"
+      },
+      {
+        "document": {},
+        "name": "monsters.json",
+        "sha256": "5fee85e5f35e1cacdcefe2c25ab59e9c625d1ed85bc9ddbc2aad6161cf382f99"
+      },
+      {
+        "document": {},
+        "name": "characters.json",
+        "sha256": "8ed62491ec87dead792f9aa7cca202fc16fad8ec20ef03bf2b02e73b1803a216"
+      },
+      {
+        "document": {},
+        "name": "quests.json",
+        "sha256": "8fac8b397dec03ded39f823cd0ee2363831e9b498595516e77ad14e1883acbed"
+      },
+      {
+        "document": {},
+        "name": "dialogues.json",
+        "sha256": "764740e536b37f549cb7b0b6011761e928763f1cf095817f431fd86e54c0185a"
+      },
+      {
+        "document": {},
+        "name": "shops.json",
+        "sha256": "fc0ae49b2a562999155b401f619625666ed93f74c465df5409770d87db090631"
+      }
+    ],
+    "distributable": false,
+    "engine_version": "0.0.0",
+    "fingerprint": "b02575ea65594e6b05f1a4d23d56908e72ba6688869761331fc4474c3e782263",
+    "format_version": 1,
+    "identity_scope": "preview_reproducibility_only",
+    "kind": "preview",
+    "preview_id": "preview_public",
+    "profile_id": "lore2mud.v1.compatibility.fixed",
+    "project_id": "public_fixture_project",
+    "project_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "release_evidence": false,
+    "sealed": false
+  },
+  "distributable": false,
+  "engine_version": "0.0.0",
+  "fingerprint": "73906ee5afe2818f61a8251a6a4e7f8c9541d3400c39e6ee0e0eecc3558453b9",
+  "format_version": 1,
+  "identity_scope": "capability_preview_reproducibility_only",
+  "initial_state_sha256": "ece0170aeae3c068c558b639bbd29404fedbf080392d2ff69b06daa7d9626c0a",
+  "initial_states": [
+    {
+      "capability_id": "reference_counter",
+      "namespace": "lore2mud.reference_counter",
+      "state": {
+        "count": 0
+      },
+      "version": "1.0.0"
+    }
+  ],
+  "kind": "capability_preview",
+  "plan_sha256": "67d7b4f3c5a3a3ba9fc7298437e73d2cf53e9b8fd1bc142c4bbcc0c732790f8f",
+  "release_evidence": false,
+  "resolved_plan": {
+    "capabilities": [
+      {
+        "capability_id": "reference_counter",
+        "descriptor_sha256": "4d97a4f69bdfdb79338295e36f9763bcef5b20160b4e5a936d50472a78b1acba",
+        "safety_level": "L0",
+        "state_namespace": "lore2mud.reference_counter",
+        "version": "1.0.0"
+      }
+    ],
+    "catalog_sha256": "f2c94918099d3395d687fc4f1c9cdc5100064a99280dd3cf0ee9849aabad5467",
+    "dependency_edges": [],
+    "fingerprint": "ac8484f7add9e6410890a52db02c4dc013427f2911077cd2fa77eef9de8b608d",
+    "format_version": 1,
+    "initial_states": [
+      {
+        "capability_id": "reference_counter",
+        "namespace": "lore2mud.reference_counter",
+        "state": {
+          "count": 0
+        },
+        "version": "1.0.0"
+      }
+    ],
+    "migrations": [],
+    "requirement_ids": [
+      "reference_counter"
+    ]
+  },
+  "sealed": false
+}

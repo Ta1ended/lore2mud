@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/capability_event_data.schema.json",
+  "title": "Lore2MUD CapabilityEventData v1",
+  "description": "The frozen public shape of one deterministic capability event emitted by a validated capability effect.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["capability_id", "event_id", "payload"],
+  "properties": {
+    "capability_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "event_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "payload": {
+      "type": "object",
+      "maxProperties": 4096
+    }
+  }
+}

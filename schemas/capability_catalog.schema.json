@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/capability_catalog.schema.json",
+  "title": "Lore2MUD CapabilityCatalog v1",
+  "description": "The frozen public shape of the engine-shipped static capability catalog document. The engine-side implementation registry binds runtime code and is intentionally not part of this public document.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["format_version", "descriptors", "fingerprint"],
+  "properties": {
+    "format_version": {"const": 1},
+    "descriptors": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "https://github.com/lore2mud/lore2mud/schemas/capability_descriptor.schema.json"
+      }
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

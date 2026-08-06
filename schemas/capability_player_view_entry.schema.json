@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/capability_player_view_entry.schema.json",
+  "title": "Lore2MUD CapabilityPlayerViewEntry v1",
+  "description": "The frozen public shape of one player-safe capability view entry with its admissible capability intents.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["capability_id", "version", "view", "admissible_intents"],
+  "properties": {
+    "capability_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+    },
+    "view": {
+      "type": "object",
+      "maxProperties": 4096
+    },
+    "admissible_intents": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {
+        "$ref": "https://github.com/lore2mud/lore2mud/schemas/capability_intent.schema.json"
+      }
+    }
+  }
+}

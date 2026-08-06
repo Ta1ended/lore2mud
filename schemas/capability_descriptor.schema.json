@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/capability_descriptor.schema.json",
+  "title": "Lore2MUD CapabilityDescriptor v1",
+  "description": "The frozen public shape of one engine-shipped capability descriptor. Schema-valued fields hold bounded JSON Schema subset documents; the engine validates them separately with its own deterministic subset rules.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "capability_id",
+    "version",
+    "safety_level",
+    "state_namespace",
+    "initial_state",
+    "state_schema",
+    "actions",
+    "observers",
+    "predicates",
+    "effects",
+    "events",
+    "player_view_schema",
+    "dependencies",
+    "conflicts",
+    "migrations"
+  ],
+  "properties": {
+    "format_version": {"const": 1},
+    "capability_id": {"$ref": "#/$defs/stableId"},
+    "version": {"$ref": "#/$defs/semver"},
+    "safety_level": {"enum": ["L0", "L1", "L2", "L3"]},
+    "state_namespace": {"$ref": "#/$defs/namespace"},
+    "initial_state": {"$ref": "#/$defs/jsonObject"},
+    "state_schema": {"$ref": "#/$defs/jsonObject"},
+    "actions": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/action"}
+    },
+    "observers": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/observer"}
+    },
+    "predicates": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/predicate"}
+    },
+    "effects": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/effect"}
+    },
+    "events": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/event"}
+    },
+    "player_view_schema": {"$ref": "#/$defs/jsonObject"},
+    "dependencies": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {"$ref": "#/$defs/dependency"}
+    },
+    "conflicts": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {"$ref": "#/$defs/conflict"}
+    },
+    "migrations": {
+      "type": "array",
+      "maxItems": 64,
+      "items": {"$ref": "#/$defs/migration"}
+    }
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "semver": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+    },
+    "versionRequirement": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^(?:(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?|(?:>=|>)(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?,(?:<=|<)(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?)$"
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}(?:\\.[a-z][a-z0-9_]{0,63})*$"
+    },
+    "jsonObject": {
+      "type": "object",
+      "maxProperties": 4096
+    },
+    "action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "action_id",
+        "parameters_schema",
+        "predicate_ids",
+        "effect_ids",
+        "event_ids"
+      ],
+      "properties": {
+        "action_id": {"$ref": "#/$defs/stableId"},
+        "parameters_schema": {"$ref": "#/$defs/jsonObject"},
+        "predicate_ids": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "effect_ids": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "event_ids": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/stableId"}
+        }
+      }
+    },
+    "observer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observer_id",
+        "event_types",
+        "predicate_ids",
+        "effect_ids",
+        "event_ids"
+      ],
+      "properties": {
+        "observer_id": {"$ref": "#/$defs/stableId"},
+        "event_types": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "predicate_ids": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "effect_ids": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/stableId"}
+        },
+        "event_ids": {
+          "type": "array",
+          "maxItems": 64,
+          "items": {"$ref": "#/$defs/stableId"}
+        }
+      }
+    },
+    "predicate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["predicate_id", "parameters_schema"],
+      "properties": {
+        "predicate_id": {"$ref": "#/$defs/stableId"},
+        "parameters_schema": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/jsonObject"}
+          ]
+        }
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["effect_id", "payload_schema"],
+      "properties": {
+        "effect_id": {"$ref": "#/$defs/stableId"},
+        "payload_schema": {"$ref": "#/$defs/jsonObject"}
+      }
+    },
+    "event": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["event_id", "payload_schema"],
+      "properties": {
+        "event_id": {"$ref": "#/$defs/stableId"},
+        "payload_schema": {"$ref": "#/$defs/jsonObject"}
+      }
+    },
+    "dependency": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability_id", "requirement"],
+      "properties": {
+        "capability_id": {"$ref": "#/$defs/stableId"},
+        "requirement": {"$ref": "#/$defs/versionRequirement"}
+      }
+    },
+    "conflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability_id", "requirement"],
+      "properties": {
+        "capability_id": {"$ref": "#/$defs/stableId"},
+        "requirement": {
+          "oneOf": [
+            {"type": "null"},
+            {"$ref": "#/$defs/versionRequirement"}
+          ]
+        }
+      }
+    },
+    "migration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["migration_id", "from_version", "to_version"],
+      "properties": {
+        "migration_id": {"$ref": "#/$defs/stableId"},
+        "from_version": {"$ref": "#/$defs/semver"},
+        "to_version": {"$ref": "#/$defs/semver"}
+      }
+    }
+  }
+}

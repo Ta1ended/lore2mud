@@ -1,0 +1,138 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/resolved_capability_plan.schema.json",
+  "title": "Lore2MUD ResolvedCapabilityPlan v1",
+  "description": "The frozen public shape of a deterministic dependency-first capability resolution plan produced from an engine-shipped catalog.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "requirement_ids",
+    "capabilities",
+    "dependency_edges",
+    "migrations",
+    "initial_states",
+    "catalog_sha256",
+    "fingerprint"
+  ],
+  "properties": {
+    "format_version": {"const": 1},
+    "requirement_ids": {
+      "type": "array",
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/stableId"}
+    },
+    "capabilities": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {"$ref": "#/$defs/resolvedCapability"}
+    },
+    "dependency_edges": {
+      "type": "array",
+      "maxItems": 8192,
+      "items": {"$ref": "#/$defs/dependencyEdge"}
+    },
+    "migrations": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {"$ref": "#/$defs/migrationStep"}
+    },
+    "initial_states": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {"$ref": "#/$defs/stateEntry"}
+    },
+    "catalog_sha256": {"$ref": "#/$defs/sha256"},
+    "fingerprint": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "semver": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$"
+    },
+    "versionRequirement": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^(?:(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?|(?:>=|>)(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?,(?:<=|<)(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)(?:-((?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?)$"
+    },
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}(?:\\.[a-z][a-z0-9_]{0,63})*$"
+    },
+    "jsonObject": {
+      "type": "object",
+      "maxProperties": 4096
+    },
+    "resolvedCapability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capability_id",
+        "version",
+        "safety_level",
+        "state_namespace",
+        "descriptor_sha256"
+      ],
+      "properties": {
+        "capability_id": {"$ref": "#/$defs/stableId"},
+        "version": {"$ref": "#/$defs/semver"},
+        "safety_level": {"enum": ["L0", "L1", "L2", "L3"]},
+        "state_namespace": {"$ref": "#/$defs/namespace"},
+        "descriptor_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "dependencyEdge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dependent_capability_id",
+        "dependency_capability_id",
+        "requirement"
+      ],
+      "properties": {
+        "dependent_capability_id": {"$ref": "#/$defs/stableId"},
+        "dependency_capability_id": {"$ref": "#/$defs/stableId"},
+        "requirement": {"$ref": "#/$defs/versionRequirement"}
+      }
+    },
+    "migrationStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "capability_id",
+        "from_version",
+        "to_version",
+        "migration_id"
+      ],
+      "properties": {
+        "capability_id": {"$ref": "#/$defs/stableId"},
+        "from_version": {"$ref": "#/$defs/semver"},
+        "to_version": {"$ref": "#/$defs/semver"},
+        "migration_id": {"$ref": "#/$defs/stableId"}
+      }
+    },
+    "stateEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["capability_id", "version", "namespace", "state"],
+      "properties": {
+        "capability_id": {"$ref": "#/$defs/stableId"},
+        "version": {"$ref": "#/$defs/semver"},
+        "namespace": {"$ref": "#/$defs/namespace"},
+        "state": {"$ref": "#/$defs/jsonObject"}
+      }
+    }
+  }
+}

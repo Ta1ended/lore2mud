@@ -1,0 +1,29 @@
+{
+  "capabilities": [
+    {
+      "capability_id": "reference_counter",
+      "descriptor_sha256": "4d97a4f69bdfdb79338295e36f9763bcef5b20160b4e5a936d50472a78b1acba",
+      "safety_level": "L0",
+      "state_namespace": "lore2mud.reference_counter",
+      "version": "1.0.0"
+    }
+  ],
+  "catalog_sha256": "f2c94918099d3395d687fc4f1c9cdc5100064a99280dd3cf0ee9849aabad5467",
+  "dependency_edges": [],
+  "fingerprint": "ac8484f7add9e6410890a52db02c4dc013427f2911077cd2fa77eef9de8b608d",
+  "format_version": 1,
+  "initial_states": [
+    {
+      "capability_id": "reference_counter",
+      "namespace": "lore2mud.reference_counter",
+      "state": {
+        "count": 0
+      },
+      "version": "1.0.0"
+    }
+  ],
+  "migrations": [],
+  "requirement_ids": [
+    "reference_counter"
+  ]
+}

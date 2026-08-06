@@ -1,0 +1,21 @@
+{
+  "checkpoint_after_steps": [
+    2
+  ],
+  "clock": 11,
+  "conditions": [],
+  "format_version": 1,
+  "player_name": "Simulator",
+  "seed": 7,
+  "steps": [
+    {
+      "direction": "east",
+      "type": "move"
+    },
+    {
+      "action_id": "increment",
+      "capability_id": "reference_counter",
+      "parameters": {}
+    }
+  ]
+}

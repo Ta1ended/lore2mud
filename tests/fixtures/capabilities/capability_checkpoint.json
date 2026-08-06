@@ -1,0 +1,54 @@
+{
+  "clock": 11,
+  "event_sequence": 2,
+  "fingerprint": "12497f88d29daba1b8f171f69af2f72eef82372170a08f7950d00c83211983a8",
+  "format_version": 1,
+  "plan": {
+    "capabilities": [
+      {
+        "capability_id": "reference_counter",
+        "descriptor_sha256": "4d97a4f69bdfdb79338295e36f9763bcef5b20160b4e5a936d50472a78b1acba",
+        "safety_level": "L0",
+        "state_namespace": "lore2mud.reference_counter",
+        "version": "1.0.0"
+      }
+    ],
+    "catalog_sha256": "f2c94918099d3395d687fc4f1c9cdc5100064a99280dd3cf0ee9849aabad5467",
+    "dependency_edges": [],
+    "fingerprint": "ac8484f7add9e6410890a52db02c4dc013427f2911077cd2fa77eef9de8b608d",
+    "format_version": 1,
+    "initial_states": [
+      {
+        "capability_id": "reference_counter",
+        "namespace": "lore2mud.reference_counter",
+        "state": {
+          "count": 0
+        },
+        "version": "1.0.0"
+      }
+    ],
+    "migrations": [],
+    "requirement_ids": [
+      "reference_counter"
+    ]
+  },
+  "plan_sha256": "67d7b4f3c5a3a3ba9fc7298437e73d2cf53e9b8fd1bc142c4bbcc0c732790f8f",
+  "save_document": {
+    "player_name": "Simulator",
+    "room_id": "room_entry"
+  },
+  "save_sha256": "b80a14ed857efa41548f500f0be3f1e0f5a38869ad7bc3dabd89a70b2c1ac09d",
+  "seed": 7,
+  "state_sha256": "ece0170aeae3c068c558b639bbd29404fedbf080392d2ff69b06daa7d9626c0a",
+  "states": [
+    {
+      "capability_id": "reference_counter",
+      "namespace": "lore2mud.reference_counter",
+      "state": {
+        "count": 0
+      },
+      "version": "1.0.0"
+    }
+  ],
+  "view_sha256": "7b2652e71fb224bd0ee1a2a62b131782d1b78604ef51c9b08f1dc01e4e6bf67b"
+}

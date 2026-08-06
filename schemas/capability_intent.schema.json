@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/capability_intent.schema.json",
+  "title": "Lore2MUD CapabilityIntent v1",
+  "description": "The frozen public shape of one typed capability action request addressed to a named capability in a resolved plan.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["capability_id", "action_id", "parameters"],
+  "properties": {
+    "capability_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "action_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "parameters": {
+      "type": "object",
+      "maxProperties": 4096
+    }
+  }
+}

@@ -1,0 +1,70 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/capability_checkpoint.schema.json",
+  "title": "Lore2MUD CapabilityCheckpoint v1",
+  "description": "The frozen public shape of one deterministic capability runtime checkpoint binding the resolved plan, save document, namespaced states, and determinism inputs.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "plan",
+    "plan_sha256",
+    "save_document",
+    "save_sha256",
+    "states",
+    "state_sha256",
+    "seed",
+    "clock",
+    "event_sequence",
+    "view_sha256",
+    "fingerprint"
+  ],
+  "properties": {
+    "format_version": {"const": 1},
+    "plan": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/resolved_capability_plan.schema.json"
+    },
+    "plan_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "save_document": {
+      "type": "object",
+      "maxProperties": 4096
+    },
+    "save_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "states": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "https://github.com/lore2mud/lore2mud/schemas/resolved_capability_plan.schema.json#/$defs/stateEntry"
+      }
+    },
+    "state_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "seed": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json#/$defs/int64"
+    },
+    "clock": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json#/$defs/int64"
+    },
+    "event_sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 9223372036854775807
+    },
+    "view_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

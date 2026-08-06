@@ -1,0 +1,24 @@
+{
+  "admissible_intents": [
+    {
+      "action_id": "increment",
+      "capability_id": "reference_counter",
+      "parameters": {}
+    },
+    {
+      "action_id": "decrement",
+      "capability_id": "reference_counter",
+      "parameters": {}
+    },
+    {
+      "action_id": "read",
+      "capability_id": "reference_counter",
+      "parameters": {}
+    }
+  ],
+  "capability_id": "reference_counter",
+  "version": "1.0.0",
+  "view": {
+    "count": 1
+  }
+}

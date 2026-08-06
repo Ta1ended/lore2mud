@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/capability_simulation_report.schema.json",
+  "title": "Lore2MUD CapabilitySimulationReport v1",
+  "description": "The frozen public shape of capability simulation evidence: an unchanged base report plus capability turns, event/view hashes, and checkpoint equivalence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "project_id",
+    "base_report",
+    "request_sha256",
+    "capability_preview_fingerprint",
+    "plan_sha256",
+    "initial_capability_state_sha256",
+    "final_capability_state_sha256",
+    "turns",
+    "witness_trace",
+    "capability_event_sha256",
+    "capability_view_sha256",
+    "replay_verified",
+    "checkpoints",
+    "fingerprint",
+    "identity_scope"
+  ],
+  "properties": {
+    "format_version": {"const": 1},
+    "project_id": {"$ref": "#/$defs/stableId"},
+    "base_report": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_report.schema.json"
+    },
+    "request_sha256": {"$ref": "#/$defs/sha256"},
+    "capability_preview_fingerprint": {"$ref": "#/$defs/sha256"},
+    "plan_sha256": {"$ref": "#/$defs/sha256"},
+    "initial_capability_state_sha256": {"$ref": "#/$defs/sha256"},
+    "final_capability_state_sha256": {"$ref": "#/$defs/sha256"},
+    "turns": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {"$ref": "#/$defs/capabilityTurn"}
+    },
+    "witness_trace": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {"$ref": "#/$defs/capabilityTurn"}
+    },
+    "capability_event_sha256": {"$ref": "#/$defs/sha256"},
+    "capability_view_sha256": {"$ref": "#/$defs/sha256"},
+    "replay_verified": {"type": "boolean"},
+    "checkpoints": {
+      "type": "array",
+      "maxItems": 1025,
+      "items": {"$ref": "#/$defs/capabilityCheckpoint"}
+    },
+    "fingerprint": {"$ref": "#/$defs/sha256"},
+    "identity_scope": {"const": "capability_simulation_reproducibility_only"}
+  },
+  "$defs": {
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "capabilityTurn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "step",
+        "status",
+        "rejection_code",
+        "event_sha256",
+        "view_sha256",
+        "capability_state_sha256",
+        "event_sequence_after"
+      ],
+      "properties": {
+        "index": {"type": "integer", "minimum": 0, "maximum": 1024},
+        "step": {
+          "oneOf": [
+            {
+              "$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json#/$defs/gameIntent"
+            },
+            {
+              "$ref": "https://github.com/lore2mud/lore2mud/schemas/capability_intent.schema.json"
+            }
+          ]
+        },
+        "status": {"enum": ["accepted", "rejected"]},
+        "rejection_code": {
+          "type": ["string", "null"],
+          "enum": [
+            "malformed_intent",
+            "inadmissible_intent",
+            "capability_intent_invalid",
+            "capability_intent_inadmissible",
+            "persistence_error",
+            null
+          ]
+        },
+        "event_sha256": {"$ref": "#/$defs/sha256"},
+        "view_sha256": {"$ref": "#/$defs/sha256"},
+        "capability_state_sha256": {"$ref": "#/$defs/sha256"},
+        "event_sequence_after": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "accepted"}}},
+          "then": {"properties": {"rejection_code": {"const": null}}},
+          "else": {"properties": {"rejection_code": {"type": "string"}}}
+        }
+      ]
+    },
+    "capabilityCheckpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "after_step",
+        "checkpoint_sha256",
+        "restored_state_sha256",
+        "restored_view_sha256",
+        "restored_event_sequence",
+        "equivalent"
+      ],
+      "properties": {
+        "after_step": {"type": "integer", "minimum": 0, "maximum": 1024},
+        "checkpoint_sha256": {"$ref": "#/$defs/sha256"},
+        "restored_state_sha256": {"$ref": "#/$defs/sha256"},
+        "restored_view_sha256": {"$ref": "#/$defs/sha256"},
+        "restored_event_sequence": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9223372036854775807
+        },
+        "equivalent": {"type": "boolean"}
+      }
+    }
+  }
+}

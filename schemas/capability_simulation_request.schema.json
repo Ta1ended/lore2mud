@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/capability_simulation_request.schema.json",
+  "title": "Lore2MUD CapabilitySimulationRequest v1",
+  "description": "The frozen public shape of a capability simulation request. Steps are a closed union of the unchanged legacy GameIntent documents and capability intents.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "seed",
+    "clock",
+    "player_name",
+    "steps",
+    "conditions",
+    "checkpoint_after_steps"
+  ],
+  "properties": {
+    "format_version": {"const": 1},
+    "seed": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json#/$defs/int64"
+    },
+    "clock": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json#/$defs/int64"
+    },
+    "player_name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 128,
+      "pattern": "\\S"
+    },
+    "steps": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json#/$defs/gameIntent"
+          },
+          {
+            "$ref": "https://github.com/lore2mud/lore2mud/schemas/capability_intent.schema.json"
+          }
+        ]
+      }
+    },
+    "conditions": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {
+        "$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json#/$defs/condition"
+      }
+    },
+    "checkpoint_after_steps": {
+      "type": "array",
+      "maxItems": 1025,
+      "uniqueItems": true,
+      "items": {"type": "integer", "minimum": 0, "maximum": 1024}
+    }
+  }
+}

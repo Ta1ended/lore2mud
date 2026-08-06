@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/capability_preview.schema.json",
+  "title": "Lore2MUD CapabilityPreview v1",
+  "description": "The frozen public shape of a capability-enabled authoring preview: an unchanged base preview plus the exact resolved capability plan and namespaced initial state evidence.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "kind",
+    "sealed",
+    "distributable",
+    "release_evidence",
+    "identity_scope",
+    "base_preview",
+    "resolved_plan",
+    "plan_sha256",
+    "initial_states",
+    "initial_state_sha256",
+    "engine_version",
+    "fingerprint"
+  ],
+  "properties": {
+    "format_version": {"const": 1},
+    "kind": {"const": "capability_preview"},
+    "sealed": {"const": false},
+    "distributable": {"const": false},
+    "release_evidence": {"const": false},
+    "identity_scope": {"const": "capability_preview_reproducibility_only"},
+    "base_preview": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/preview_build.schema.json"
+    },
+    "resolved_plan": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/resolved_capability_plan.schema.json"
+    },
+    "plan_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "initial_states": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "https://github.com/lore2mud/lore2mud/schemas/resolved_capability_plan.schema.json#/$defs/stateEntry"
+      }
+    },
+    "initial_state_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "engine_version": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64
+    },
+    "fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    }
+  }
+}

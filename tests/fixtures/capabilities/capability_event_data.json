@@ -1,0 +1,7 @@
+{
+  "capability_id": "reference_counter",
+  "event_id": "counter_incremented",
+  "payload": {
+    "new_count": 1
+  }
+}

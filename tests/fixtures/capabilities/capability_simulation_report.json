@@ -1,0 +1,134 @@
+{
+  "base_report": {
+    "blueprint_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "checkpoints": [],
+    "clock": 11,
+    "condition_results": [],
+    "engine_version": "0.0.0",
+    "final_state_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "final_view_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "fingerprint": "1111111111111111111111111111111111111111111111111111111111111111",
+    "format_version": 1,
+    "identity_scope": "simulation_reproducibility_only",
+    "initial_state_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "initial_view_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "outcome": "undetermined",
+    "player_name": "Simulator",
+    "preview_fingerprint": "1111111111111111111111111111111111111111111111111111111111111111",
+    "project_id": "public_fixture_project",
+    "project_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "replay_verified": true,
+    "request_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "seed": 7,
+    "turns": [
+      {
+        "event_types": [
+          "move"
+        ],
+        "index": 1,
+        "intent": {
+          "direction": "east",
+          "type": "move"
+        },
+        "rejection_code": null,
+        "status": "accepted",
+        "view_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    ],
+    "witness_trace": [
+      {
+        "event_types": [
+          "move"
+        ],
+        "index": 1,
+        "intent": {
+          "direction": "east",
+          "type": "move"
+        },
+        "rejection_code": null,
+        "status": "accepted",
+        "view_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+      }
+    ]
+  },
+  "capability_event_sha256": "20af3fc3c15a2b583229c5a1ddbadbb087110051096903a60c97061a2ce17541",
+  "capability_preview_fingerprint": "1111111111111111111111111111111111111111111111111111111111111111",
+  "capability_view_sha256": "5637027a311d6fe8f86cbef3e4521f18d445451b0a18a346ca1c9bd1e6bac8a9",
+  "checkpoints": [
+    {
+      "after_step": 2,
+      "checkpoint_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "equivalent": true,
+      "restored_event_sequence": 2,
+      "restored_state_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "restored_view_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "final_capability_state_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "fingerprint": "bcc57785ed490ddd2c6695cca6f309307972c55022d6ba00bae7f759fc9b987e",
+  "format_version": 1,
+  "identity_scope": "capability_simulation_reproducibility_only",
+  "initial_capability_state_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+  "plan_sha256": "67d7b4f3c5a3a3ba9fc7298437e73d2cf53e9b8fd1bc142c4bbcc0c732790f8f",
+  "project_id": "public_fixture_project",
+  "replay_verified": true,
+  "request_sha256": "7ae5fa5bfd70cf2d82663af8ea99c9998b670b00df986c3d50b1649f885087b8",
+  "turns": [
+    {
+      "capability_state_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "event_sequence_after": 1,
+      "event_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "index": 0,
+      "rejection_code": null,
+      "status": "accepted",
+      "step": {
+        "direction": "east",
+        "type": "move"
+      },
+      "view_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "capability_state_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "event_sequence_after": 2,
+      "event_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "index": 1,
+      "rejection_code": null,
+      "status": "accepted",
+      "step": {
+        "action_id": "increment",
+        "capability_id": "reference_counter",
+        "parameters": {}
+      },
+      "view_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ],
+  "witness_trace": [
+    {
+      "capability_state_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "event_sequence_after": 1,
+      "event_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "index": 0,
+      "rejection_code": null,
+      "status": "accepted",
+      "step": {
+        "direction": "east",
+        "type": "move"
+      },
+      "view_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    },
+    {
+      "capability_state_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "event_sequence_after": 2,
+      "event_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "index": 1,
+      "rejection_code": null,
+      "status": "accepted",
+      "step": {
+        "action_id": "increment",
+        "capability_id": "reference_counter",
+        "parameters": {}
+      },
+      "view_sha256": "1111111111111111111111111111111111111111111111111111111111111111"
+    }
+  ]
+}
