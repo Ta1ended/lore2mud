@@ -9,6 +9,8 @@ from typing import Self
 
 
 INT64_MAX = 2**63 - 1
+MAX_VERSION_TEXT_LENGTH = 4096
+MAX_IDENTIFIER_LENGTH = 256
 _IDENTIFIER_RE = re.compile(r"^[0-9A-Za-z-]+$")
 _CORE_NUMBER_RE = re.compile(r"^(?:0|[1-9][0-9]*)$")
 
@@ -20,13 +22,21 @@ class SemanticVersionError(ValueError):
 def _parse_bounded_number(value: str, *, location: str) -> int:
     if _CORE_NUMBER_RE.fullmatch(value) is None:
         raise SemanticVersionError(f"{location} must be a canonical non-negative integer")
-    number = int(value)
+    try:
+        number = int(value)
+    except ValueError:
+        raise SemanticVersionError(f"{location} exceeds signed 64-bit range") from None
     if number > INT64_MAX:
         raise SemanticVersionError(f"{location} exceeds signed 64-bit range")
     return number
 
 
-def _parse_identifiers(value: str, *, location: str) -> tuple[str, ...]:
+def _parse_identifiers(
+    value: str,
+    *,
+    location: str,
+    reject_numeric_leading_zero: bool,
+) -> tuple[str, ...]:
     identifiers = tuple(value.split("."))
     if not identifiers or any(not identifier for identifier in identifiers):
         raise SemanticVersionError(f"{location} identifiers must be non-empty")
@@ -35,8 +45,17 @@ def _parse_identifiers(value: str, *, location: str) -> tuple[str, ...]:
             raise SemanticVersionError(
                 f"{location} identifiers must use ASCII letters, digits, or hyphen"
             )
-        if identifier.isdigit():
-            _parse_bounded_number(identifier, location=f"{location} identifier")
+        if len(identifier) > MAX_IDENTIFIER_LENGTH:
+            raise SemanticVersionError(f"{location} identifier exceeds bounded length")
+        if (
+            reject_numeric_leading_zero
+            and identifier.isdigit()
+            and len(identifier) > 1
+            and identifier.startswith("0")
+        ):
+            raise SemanticVersionError(
+                f"{location} numeric identifiers must not contain leading zeroes"
+            )
     return identifiers
 
 
@@ -64,7 +83,9 @@ def compare_precedence(left: SemanticVersion, right: SemanticVersion) -> int:
         left_numeric = left_identifier.isdigit()
         right_numeric = right_identifier.isdigit()
         if left_numeric and right_numeric:
-            return -1 if int(left_identifier) < int(right_identifier) else 1
+            if len(left_identifier) != len(right_identifier):
+                return -1 if len(left_identifier) < len(right_identifier) else 1
+            return -1 if left_identifier < right_identifier else 1
         if left_numeric:
             return -1
         if right_numeric:
@@ -101,13 +122,22 @@ class SemanticVersion:
                 if type(identifier) is not str:
                     raise SemanticVersionError(f"{name} identifiers must be strings")
             if identifiers:
-                parsed = _parse_identifiers(".".join(identifiers), location=name)
+                parsed = _parse_identifiers(
+                    ".".join(identifiers),
+                    location=name,
+                    reject_numeric_leading_zero=name == "prerelease",
+                )
                 if parsed != identifiers:
                     raise SemanticVersionError(f"{name} identifiers are not canonical")
 
     @classmethod
     def parse(cls, value: str) -> Self:
-        if type(value) is not str or not value or not value.isascii():
+        if (
+            type(value) is not str
+            or not value
+            or len(value) > MAX_VERSION_TEXT_LENGTH
+            or not value.isascii()
+        ):
             raise SemanticVersionError("semantic version must be a non-empty ASCII string")
         if value != value.strip():
             raise SemanticVersionError("semantic version must not contain surrounding whitespace")
@@ -123,11 +153,23 @@ class SemanticVersion:
             raise SemanticVersionError("semantic version core must contain major.minor.patch")
 
         prerelease = (
-            _parse_identifiers(prerelease_text, location="prerelease")
+            _parse_identifiers(
+                prerelease_text,
+                location="prerelease",
+                reject_numeric_leading_zero=True,
+            )
             if prerelease_separator
             else ()
         )
-        build = _parse_identifiers(build_text, location="build") if separator else ()
+        build = (
+            _parse_identifiers(
+                build_text,
+                location="build",
+                reject_numeric_leading_zero=False,
+            )
+            if separator
+            else ()
+        )
         parsed = cls(
             major=_parse_bounded_number(core_parts[0], location="major"),
             minor=_parse_bounded_number(core_parts[1], location="minor"),

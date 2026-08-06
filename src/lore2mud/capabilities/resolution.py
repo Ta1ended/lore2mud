@@ -337,7 +337,7 @@ def _validate_complete_solution(
             target = selected.get(dependency.capability_id)
             if target is None or not dependency.requirement.matches(
                 target.version,
-                include_prerelease=dependency.requirement.allows_prerelease,
+                include_prerelease=True,
             ):
                 diagnostics.append(
                     CapabilityDiagnostic(
@@ -394,8 +394,8 @@ def _namespace_diagnostics(
             right_namespace = right.state_namespace
             if (
                 left_namespace == right_namespace
-                or left_namespace.startswith(right_namespace + ".")
-                or right_namespace.startswith(left_namespace + ".")
+                or left_namespace.startswith(right_namespace)
+                or right_namespace.startswith(left_namespace)
             ):
                 diagnostics.append(
                     CapabilityDiagnostic(

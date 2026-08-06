@@ -49,8 +49,19 @@ _SCHEMA_KEYS = {
 _SCHEMA_TYPES = {"object", "array", "string", "integer", "boolean", "null"}
 
 
-def _normalize_json(value: object, *, path: str = "$", depth: int = 0) -> object:
+def _normalize_json(
+    value: object,
+    *,
+    path: str = "$",
+    depth: int = 0,
+    _node_count: list[int] | None = None,
+) -> object:
     limits = DEFAULT_JSON_READ_LIMITS
+    if _node_count is None:
+        _node_count = [0]
+    _node_count[0] += 1
+    if _node_count[0] > limits.max_nodes:
+        raise CapabilitySerializationError("capability JSON exceeds maximum node count")
     if depth > limits.max_depth:
         raise CapabilitySerializationError("capability JSON exceeds maximum depth")
     if value is None or type(value) in {bool, int}:
@@ -73,13 +84,21 @@ def _normalize_json(value: object, *, path: str = "$", depth: int = 0) -> object
         if len(values) > limits.max_nodes:
             raise CapabilitySerializationError(f"{path} array exceeds maximum length")
         return [
-            _normalize_json(item, path=f"{path}/{index}", depth=depth + 1)
+            _normalize_json(
+                item,
+                path=f"{path}/{index}",
+                depth=depth + 1,
+                _node_count=_node_count,
+            )
             for index, item in enumerate(values)
         ]
     if type(value) is dict:
         mapping = cast(dict[object, object], value)
         if len(mapping) * 2 > limits.max_nodes:
             raise CapabilitySerializationError(f"{path} object exceeds maximum size")
+        _node_count[0] += len(mapping)
+        if _node_count[0] > limits.max_nodes:
+            raise CapabilitySerializationError("capability JSON exceeds maximum node count")
         normalized: dict[str, object] = {}
         for key, item in mapping.items():
             if type(key) is not str:
@@ -88,6 +107,7 @@ def _normalize_json(value: object, *, path: str = "$", depth: int = 0) -> object
                 item,
                 path=f"{path}/{_pointer_escape(cast(str, key))}",
                 depth=depth + 1,
+                _node_count=_node_count,
             )
         return normalized
     raise CapabilitySerializationError(

@@ -142,6 +142,7 @@ class SemanticVersionTests(unittest.TestCase):
         two = SemanticVersion.parse("1.0.0+two")
         self.assertEqual(compare_precedence(one, two), 0)
         self.assertNotEqual(one, two)
+        self.assertEqual(str(SemanticVersion.parse("1.0.0+001")), "1.0.0+001")
 
     def test_semver_rejects_noncanonical_and_unbounded_tokens(self) -> None:
         invalid = (
@@ -150,8 +151,6 @@ class SemanticVersionTests(unittest.TestCase):
             "1.0.00",
             f"{INT64_MAX + 1}.0.0",
             "1.0.0-01",
-            f"1.0.0-{INT64_MAX + 1}",
-            "1.0.0+01",
             "1.0.0-",
             "1.0.0+",
             "1.0.0-alpha..one",

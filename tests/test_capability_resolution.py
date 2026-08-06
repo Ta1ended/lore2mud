@@ -227,6 +227,24 @@ class CapabilityResolutionTests(unittest.TestCase):
         selected = {item.capability_id: str(item.version) for item in result.plan.capabilities}
         self.assertEqual(selected["preview"], "1.0.0")
 
+    def test_one_explicit_dependency_can_enable_a_compatible_prerelease_intersection(self) -> None:
+        preview = descriptor("preview", "2.0.0-alpha.1")
+        app = descriptor(
+            "app",
+            "1.0.0",
+            dependencies=(dependency("preview", "2.0.0-alpha.1"),),
+        )
+        guard = descriptor(
+            "guard",
+            "1.0.0",
+            dependencies=(dependency("preview", ">=1.0.0,<3.0.0"),),
+        )
+        result = resolve_capabilities(catalog(guard, preview, app), ("app", "guard"))
+        self.assertTrue(result.ok, result.diagnostics)
+        assert result.plan is not None
+        selected = {item.capability_id: str(item.version) for item in result.plan.capabilities}
+        self.assertEqual(selected["preview"], "2.0.0-alpha.1")
+
     def test_unknown_and_unsatisfied_requirements_have_stable_diagnostics(self) -> None:
         known = descriptor("known", "1.0.0")
         unknown = resolve_capabilities(catalog(known), ("missing",))
@@ -279,7 +297,7 @@ class CapabilityResolutionTests(unittest.TestCase):
         )
 
         namespace_a = descriptor("namespace_a", "1.0.0", namespace="shared")
-        namespace_b = descriptor("namespace_b", "1.0.0", namespace="shared.child")
+        namespace_b = descriptor("namespace_b", "1.0.0", namespace="shared_extra")
         namespace = resolve_capabilities(
             catalog(namespace_a, namespace_b),
             ("namespace_b", "namespace_a"),
@@ -335,6 +353,45 @@ class CapabilityResolutionTests(unittest.TestCase):
         self.assertIn(
             CapabilityDiagnosticCode.CAPABILITY_MIGRATION_UNAVAILABLE,
             {diagnostic.code for diagnostic in unavailable.diagnostics},
+        )
+
+    def test_multistep_migration_path_is_deterministic(self) -> None:
+        version_one_value = SemanticVersion.parse("1.0.0")
+        version_two_value = SemanticVersion.parse("2.0.0")
+        version_three_value = SemanticVersion.parse("3.0.0")
+        version_one = descriptor("counter", "1.0.0")
+        version_two = descriptor(
+            "counter",
+            "2.0.0",
+            migrations=(
+                CapabilityMigrationDescriptor(
+                    "counter_v1_to_v2",
+                    version_one_value,
+                    version_two_value,
+                ),
+            ),
+        )
+        version_three = descriptor(
+            "counter",
+            "3.0.0",
+            migrations=(
+                CapabilityMigrationDescriptor(
+                    "counter_v2_to_v3",
+                    version_two_value,
+                    version_three_value,
+                ),
+            ),
+        )
+        result = resolve_capabilities(
+            catalog(version_two, version_one, version_three),
+            ("counter",),
+            current_versions=(CapabilityStateVersion("counter", version_one_value),),
+        )
+        self.assertTrue(result.ok, result.diagnostics)
+        assert result.plan is not None
+        self.assertEqual(
+            tuple(step.migration_id for step in result.plan.migrations),
+            ("counter_v1_to_v2", "counter_v2_to_v3"),
         )
 
     def test_plan_fingerprint_omits_its_own_field(self) -> None:

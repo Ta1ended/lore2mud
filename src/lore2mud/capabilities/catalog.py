@@ -15,10 +15,15 @@ from lore2mud.capabilities.contracts import (
     CapabilityExecutionContext,
     CapabilityIntent,
     CapabilityPlayerViewEntry,
+    CapabilitySafetyLevel,
     CapabilityStateEntry,
     CapabilityTurnObservation,
 )
-from lore2mud.capabilities.semver import SemanticVersion, compare_precedence
+from lore2mud.capabilities.semver import (
+    SemanticVersion,
+    VersionRequirement,
+    compare_precedence,
+)
 from lore2mud.capabilities.serialization import (
     CapabilitySchemaError,
     CapabilitySerializationError,
@@ -295,10 +300,15 @@ def validate_capability_descriptor(
         diagnostics.append(_descriptor_diagnostic("capability_id must be a stable ID", capability_id))
     if not isinstance(descriptor.version, SemanticVersion):
         diagnostics.append(_descriptor_diagnostic("descriptor version must be SemanticVersion", capability_id))
-    if _NAMESPACE_RE.fullmatch(descriptor.state_namespace) is None:
+    if (
+        type(descriptor.state_namespace) is not str
+        or _NAMESPACE_RE.fullmatch(descriptor.state_namespace) is None
+    ):
         diagnostics.append(
             _descriptor_diagnostic("state_namespace must use stable dotted segments", capability_id)
         )
+    if not isinstance(descriptor.safety_level, CapabilitySafetyLevel):
+        diagnostics.append(_descriptor_diagnostic("safety_level is invalid", capability_id))
 
     collections = (
         ("actions", descriptor.actions),
@@ -397,18 +407,29 @@ def validate_capability_descriptor(
     if len(set(dependency_ids)) != len(dependency_ids):
         diagnostics.append(_descriptor_diagnostic("duplicate dependency IDs", capability_id))
     for dependency in descriptor.dependencies:
-        if not is_stable_id(dependency.capability_id) or dependency.capability_id == capability_id:
+        if (
+            not is_stable_id(dependency.capability_id)
+            or dependency.capability_id == capability_id
+            or not isinstance(dependency.requirement, VersionRequirement)
+        ):
             diagnostics.append(_descriptor_diagnostic("dependency ID is invalid", capability_id))
     conflict_ids = tuple(item.capability_id for item in descriptor.conflicts)
     if len(set(conflict_ids)) != len(conflict_ids):
         diagnostics.append(_descriptor_diagnostic("duplicate conflict IDs", capability_id))
     for conflict in descriptor.conflicts:
-        if not is_stable_id(conflict.capability_id) or conflict.capability_id == capability_id:
+        if (
+            not is_stable_id(conflict.capability_id)
+            or conflict.capability_id == capability_id
+            or (
+                conflict.requirement is not None
+                and not isinstance(conflict.requirement, VersionRequirement)
+            )
+        ):
             diagnostics.append(_descriptor_diagnostic("conflict ID is invalid", capability_id))
     for migration in descriptor.migrations:
         if compare_precedence(migration.from_version, migration.to_version) >= 0:
             diagnostics.append(_descriptor_diagnostic("migration versions must increase", capability_id))
-        if compare_precedence(migration.to_version, descriptor.version) != 0:
+        if migration.to_version != descriptor.version:
             diagnostics.append(
                 _descriptor_diagnostic(
                     "migration target must equal the declaring descriptor version",
@@ -568,4 +589,3 @@ def _compare_bindings(
     right: CapabilityImplementationBinding,
 ) -> int:
     return _compare_descriptors(left.descriptor, right.descriptor)
-
