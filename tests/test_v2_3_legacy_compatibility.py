@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from hashlib import sha256
 from pathlib import Path
 import tempfile
@@ -108,7 +109,40 @@ def _typed_project_inputs() -> dict[str, tuple[object, ...]]:
     }
 
 
+@dataclass(frozen=True, slots=True)
+class _OptionalCapabilitiesDocument:
+    label: str
+    legacy_optional: str | None
+    capabilities: tuple[object, ...] | None
+
+
 class V23LegacyCompatibilityTests(unittest.TestCase):
+    def test_canonical_typed_serializer_omits_only_absent_capabilities(self) -> None:
+        self.assertEqual(
+            typed_value_to_document(
+                _OptionalCapabilitiesDocument(
+                    label="legacy",
+                    legacy_optional=None,
+                    capabilities=None,
+                )
+            ),
+            {"label": "legacy", "legacy_optional": None},
+        )
+        self.assertEqual(
+            typed_value_to_document(
+                _OptionalCapabilitiesDocument(
+                    label="capability",
+                    legacy_optional=None,
+                    capabilities=(),
+                )
+            ),
+            {
+                "label": "capability",
+                "legacy_optional": None,
+                "capabilities": [],
+            },
+        )
+
     def test_empty_requirements_keep_v2_2_artifacts_and_result_envelopes(self) -> None:
         sdk = AgentAuthoringSDK()
         blueprint = load_blueprint(FIXTURES / "blueprint.json")

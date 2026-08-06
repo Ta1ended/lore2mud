@@ -626,10 +626,13 @@ def typed_value_to_document(value: object) -> object:
             for key, item in mapping.items()
         }
     if is_dataclass(value) and not isinstance(value, type):
-        return {
-            field.name: typed_value_to_document(getattr(value, field.name))
-            for field in fields(value)
-        }
+        document: dict[str, object] = {}
+        for field in fields(value):
+            item = getattr(value, field.name)
+            if field.name == "capabilities" and item is None:
+                continue
+            document[field.name] = typed_value_to_document(item)
+        return document
     raise TypeError(f"unsupported typed value: {type(value).__name__}")
 
 
