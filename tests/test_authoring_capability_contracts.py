@@ -3,12 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import FrozenInstanceError, fields
-from typing import Any, cast
+from typing import cast
 import unittest
-from unittest import mock
 
 from lore2mud.application import MoveIntent
-from lore2mud.authoring import serialization
 from lore2mud.authoring.contracts import (
     CAPABILITY_PREVIEW_IDENTITY_SCOPE,
     CAPABILITY_REPORT_IDENTITY_SCOPE,
@@ -32,6 +30,16 @@ from lore2mud.authoring.serialization import (
     capability_simulation_report_to_document,
     capability_simulation_request_to_document,
 )
+from lore2mud.capabilities.contracts import (
+    CapabilityIntent,
+    CapabilityPlayerViewEntry,
+    CapabilitySafetyLevel,
+    CapabilityStateEntry,
+    ResolvedCapability,
+    ResolvedCapabilityPlan,
+)
+from lore2mud.capabilities.semver import SemanticVersion
+from lore2mud.capabilities.serialization import canonical_json_object
 
 
 SHA256 = "1" * 64
@@ -210,10 +218,42 @@ class AuthoringCapabilityContractTests(unittest.TestCase):
     def test_wrapper_serializers_use_the_core_hook_and_preserve_base_artifacts(
         self,
     ) -> None:
-        plan = cast(Any, {"kind": "plan"})
-        state = cast(Any, {"kind": "state"})
-        capability_step = cast(Any, {"kind": "capability_intent"})
-        capability_view = cast(Any, {"kind": "capability_view"})
+        version = SemanticVersion.parse("1.0.0")
+        state = CapabilityStateEntry(
+            capability_id="reference_counter",
+            version=version,
+            namespace="reference_counter",
+            state=canonical_json_object({"count": 0}),
+        )
+        plan = ResolvedCapabilityPlan(
+            format_version=1,
+            requirement_ids=("reference_counter",),
+            capabilities=(
+                ResolvedCapability(
+                    capability_id="reference_counter",
+                    version=version,
+                    safety_level=CapabilitySafetyLevel.L1,
+                    state_namespace="reference_counter",
+                    descriptor_sha256=SHA256,
+                ),
+            ),
+            dependency_edges=(),
+            migrations=(),
+            initial_states=(state,),
+            catalog_sha256=SHA256,
+            fingerprint=SHA256,
+        )
+        capability_step = CapabilityIntent(
+            capability_id="reference_counter",
+            action_id="increment",
+            parameters=canonical_json_object({"amount": 2}),
+        )
+        capability_view = CapabilityPlayerViewEntry(
+            capability_id="reference_counter",
+            version=version,
+            view=canonical_json_object({"count": 2}),
+            admissible_intents=(capability_step,),
+        )
         request = CapabilitySimulationRequest(
             format_version=1,
             seed=7,
@@ -296,29 +336,43 @@ class AuthoringCapabilityContractTests(unittest.TestCase):
             exit_code=0,
         )
 
-        with mock.patch.object(
-            serialization,
-            "_capability_value_to_document",
-            side_effect=lambda value: value,
-        ) as core_hook:
-            request_document = capability_simulation_request_to_document(request)
-            preview_document = capability_preview_to_document(preview)
-            preview_without_fingerprint = capability_preview_to_document(
-                preview, include_fingerprint=False
-            )
-            report_document = capability_simulation_report_to_document(report)
-            proofing_document = capability_proofing_to_document(proofing)
-            result_document = authoring_result_to_document(result)
+        request_document = capability_simulation_request_to_document(request)
+        preview_document = capability_preview_to_document(preview)
+        preview_without_fingerprint = capability_preview_to_document(
+            preview, include_fingerprint=False
+        )
+        report_document = capability_simulation_report_to_document(report)
+        proofing_document = capability_proofing_to_document(proofing)
+        result_document = authoring_result_to_document(result)
 
         self.assertEqual(
             request_document["steps"],
             [
                 {"type": "move", "direction": "east"},
-                {"kind": "capability_intent"},
+                {
+                    "capability_id": "reference_counter",
+                    "action_id": "increment",
+                    "parameters": {"amount": 2},
+                },
             ],
         )
-        self.assertEqual(preview_document["resolved_plan"], {"kind": "plan"})
-        self.assertEqual(preview_document["initial_states"], [{"kind": "state"}])
+        resolved_plan_document = cast(
+            dict[str, object], preview_document["resolved_plan"]
+        )
+        self.assertEqual(
+            resolved_plan_document["requirement_ids"], ["reference_counter"]
+        )
+        self.assertEqual(
+            preview_document["initial_states"],
+            [
+                {
+                    "capability_id": "reference_counter",
+                    "version": "1.0.0",
+                    "namespace": "reference_counter",
+                    "state": {"count": 0},
+                }
+            ],
+        )
         base_preview_document = cast(
             dict[str, object], preview_document["base_preview"]
         )
@@ -329,7 +383,11 @@ class AuthoringCapabilityContractTests(unittest.TestCase):
         )
         self.assertEqual(
             turn_documents[1]["step"],
-            {"kind": "capability_intent"},
+            {
+                "capability_id": "reference_counter",
+                "action_id": "increment",
+                "parameters": {"amount": 2},
+            },
         )
         base_report_document = cast(
             dict[str, object], report_document["base_report"]
@@ -340,11 +398,24 @@ class AuthoringCapabilityContractTests(unittest.TestCase):
         )
         self.assertEqual(
             proofing_document["capability_views"],
-            [{"kind": "capability_view"}],
+            [
+                {
+                    "capability_id": "reference_counter",
+                    "version": "1.0.0",
+                    "view": {"count": 2},
+                    "admissible_intents": [
+                        {
+                            "capability_id": "reference_counter",
+                            "action_id": "increment",
+                            "parameters": {"amount": 2},
+                        }
+                    ],
+                }
+            ],
         )
         self.assertEqual(result_document["kind"], "capability_authoring_result")
         self.assertEqual(result_document["artifact"], preview_document)
-        self.assertGreaterEqual(core_hook.call_count, 8)
+        self.assertNotIn("canonical_bytes", str(result_document))
 
 
 if __name__ == "__main__":
