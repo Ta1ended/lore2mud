@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
+from dataclasses import dataclass
+import json
 import tempfile
 import unittest
 from pathlib import Path
 
+from lore2mud.application import MoveIntent, TakeIntent
 from lore2mud.content.loader import load_content_pack
 from lore2mud.engine.save import SaveLoadService
 from lore2mud.web.app import PlayerSession
@@ -13,6 +17,47 @@ from lore2mud.web.app import PlayerSession
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEMO_PATH = PROJECT_ROOT / "examples" / "original_demo"
+
+
+@dataclass(frozen=True, slots=True)
+class _ExtendedMoveIntent(MoveIntent):
+    plugin_payload: object = None
+
+
+class _MutatingString(str):
+    _mutation: Callable[[], None]
+
+    def __new__(
+        cls,
+        value: str,
+        mutation: Callable[[], None],
+    ) -> _MutatingString:
+        instance = str.__new__(cls, value)
+        instance._mutation = mutation
+        return instance
+
+    def strip(self, chars: str | None = None) -> str:
+        self._mutation()
+        return super().strip(chars)
+
+
+class _MutatingInt(int):
+    _mutation: Callable[[], None]
+
+    def __new__(
+        cls,
+        value: int,
+        mutation: Callable[[], None],
+    ) -> _MutatingInt:
+        instance = int.__new__(cls, value)
+        instance._mutation = mutation
+        return instance
+
+    def __lt__(self, other: object) -> bool:
+        self._mutation()
+        if type(other) is not int:
+            return False
+        return int(self) < other
 
 
 class PlayerSessionTests(unittest.TestCase):
@@ -37,7 +82,20 @@ class PlayerSessionTests(unittest.TestCase):
         self.assertEqual(snapshot["room"]["id"], "room_ember_wharf")
         self.assertEqual(snapshot["room"]["exits"][0]["direction"], "east")
         self.assertFalse(snapshot["room"]["exits"][0]["locked"])
+        self.assertIsNone(snapshot["room"]["exits"][0]["required_item_id"])
+        self.assertIsNone(snapshot["room"]["exits"][0]["required_item_name"])
         self.assertEqual(len(snapshot["room"]["items"]), 4)
+        self.assertEqual(
+            [item["id"] for item in snapshot["room"]["items"]],
+            [
+                "item_spark_lantern",
+                "item_linglu_pill",
+                "item_crystal_blade",
+                "item_bronze_scale_mail",
+            ],
+        )
+        self.assertIsNone(snapshot["room"]["items"][0]["heal_amount"])
+        self.assertIsNone(snapshot["room"]["items"][0]["slot"])
         self.assertEqual(len(snapshot["quests"]), 3)
         self.assertIsNone(snapshot["dialogue"])
         self.assertIsNone(snapshot["shop"])
@@ -66,6 +124,90 @@ class PlayerSessionTests(unittest.TestCase):
         self.assertEqual(result["event"]["type"], "error")
         self.assertEqual(result["snapshot"], before)
 
+    def test_web_intent_serialization_rejects_extensions_and_primitive_subclasses(
+        self,
+    ) -> None:
+        invoked: list[str] = []
+        cases = (
+            _ExtendedMoveIntent("east", {"kind": "extension"}),
+            MoveIntent(_MutatingString("east", lambda: invoked.append("str"))),
+            TakeIntent(
+                "item_linglu_pill",
+                _MutatingInt(1, lambda: invoked.append("int")),
+            ),
+        )
+        for intent in cases:
+            with self.subTest(intent=type(intent).__name__):
+                with self.assertRaisesRegex(TypeError, "invalid GameIntent"):
+                    PlayerSession._intent_json(intent)
+        self.assertEqual(invoked, [])
+
+    def test_web_parser_rejects_primitive_subclasses_before_behavior_runs(self) -> None:
+        before = self.session.snapshot()
+        invoked: list[str] = []
+        cases = (
+            {
+                "type": "move",
+                "direction": _MutatingString(
+                    "east",
+                    lambda: invoked.append("str"),
+                ),
+            },
+            {
+                "type": "take",
+                "target": "item_linglu_pill",
+                "quantity": _MutatingInt(1, lambda: invoked.append("int")),
+            },
+        )
+        for action in cases:
+            with self.subTest(action_type=action["type"]):
+                result = self.session.dispatch(action)
+                self.assertFalse(result["ok"])
+                self.assertEqual(result["status"], "rejected")
+                self.assertEqual(result["events"], [])
+                self.assertEqual(result["snapshot"], before)
+
+        self.assertEqual(invoked, [])
+
+    def test_persistence_rejection_omits_private_save_path(self) -> None:
+        result = self.action("load", slot="missing")
+        rendered = str(result)
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "rejected")
+        self.assertEqual(
+            result["diagnostics"],
+            [{"code": "persistence_error", "message": "存档文件不存在。"}],
+        )
+        self.assertEqual(result["event"]["message"], "存档文件不存在。")
+        self.assertNotIn(str(Path(self.temp_dir.name).resolve()), rendered)
+
+    def test_move_legacy_event_preserves_complete_v1_room_payload(self) -> None:
+        result = self.action("move", direction="east")
+        room = result["event"]["data"]["room"]
+
+        self.assertEqual(
+            set(room),
+            {"id", "name", "description", "exits", "item_stacks", "monster_ids"},
+        )
+        self.assertEqual(room["id"], "room_glassgrass_path")
+        self.assertEqual(
+            room["exits"]["west"],
+            {
+                "target_room_id": "room_ember_wharf",
+                "required_item_id": "item_chen_token",
+            },
+        )
+        self.assertEqual(
+            room["exits"]["east"],
+            {
+                "target_room_id": "room_silent_observatory",
+                "required_item_id": None,
+            },
+        )
+        self.assertEqual(room["item_stacks"], [])
+        self.assertEqual(room["monster_ids"], [])
+
     def test_dialogue_snapshot_and_effects_use_typed_world_results(self) -> None:
         self.action("move", direction="east")
         started = self.action("talk", target="character_elder_chen")
@@ -80,6 +222,45 @@ class PlayerSessionTests(unittest.TestCase):
         advanced = self.action("choose_dialogue", index=1)
         self.assertTrue(advanced["ok"])
         self.assertIsNotNone(advanced["snapshot"]["dialogue"])
+
+    def test_dialogue_response_omits_options_absent_from_game_view(self) -> None:
+        self.action("move", direction="east")
+        self.action("talk", target="character_elder_chen")
+        self.action("choose_dialogue", index=4)
+        self.action("choose_dialogue", index=2)
+        self.action("talk", target="character_elder_chen")
+
+        result = self.action("choose_dialogue", index=4)
+
+        event_options = result["events"][0]["data"]["options"]
+        view_options = result["view"]["dialogue"]["options"]
+        self.assertEqual(
+            [option["option_id"] for option in event_options],
+            [option["id"] for option in view_options],
+        )
+        rendered = json.dumps(result, ensure_ascii=False, sort_keys=True)
+        self.assertIn("opt_back3", rendered)
+        self.assertNotIn("opt_bye4", rendered)
+
+    def test_dialogue_legacy_event_preserves_null_fields(self) -> None:
+        self.action("move", direction="east")
+        self.action("talk", target="character_elder_chen")
+        self.action("choose_dialogue", index=4)
+
+        ended = self.action("choose_dialogue", index=2)
+        data = ended["event"]["data"]
+        flag_effect = next(
+            effect
+            for effect in data["effect_outcomes"]
+            if effect.get("flag_id") == "flag_chen_warned_ash_mite"
+        )
+
+        self.assertIn("node_id", data)
+        self.assertIsNone(data["node_id"])
+        self.assertIn("node_text", data)
+        self.assertIsNone(data["node_text"])
+        self.assertIn("old_value", flag_effect)
+        self.assertIsNone(flag_effect["old_value"])
 
     def test_shop_snapshot_and_transactions_are_structured(self) -> None:
         self.action("move", direction="east")

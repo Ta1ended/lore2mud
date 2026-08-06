@@ -30,10 +30,15 @@ verification. Implement only after the product owner has authorized the slice.
 
 ## Models And Roles
 
-- Every implementation, architecture, and acceptance task or subagent must explicitly
-  use `gpt-5.6-sol` with reasoning `xhigh` or higher.
-- Never silently downgrade. If the model or reasoning floor is unavailable, stop
-  before delegation or editing and report the blocker.
+- The controller selects an available model and reasoning level for each responsibility
+  domain according to complexity, stability, and risk. No repository-wide model floor
+  is required.
+- Record the model choice when the tool exposes it, the assigned responsibility,
+  produced artifacts, verification, and any rework. Model output is never correctness
+  evidence by itself.
+- Prefer the most reliable available reasoning for shared contracts, persistence,
+  transactionality, security boundaries, and independent acceptance. Reassign work
+  that remains incomplete, contradictory, out of scope, or unverifiable.
 - Codex roles are product, architect, engine lead, implementation, controller, and
   independent acceptance. Keep approval responsibility independent even when one
   task performs several delivery roles.
@@ -55,10 +60,12 @@ verification. Implement only after the product owner has authorized the slice.
 
 ## Architecture
 
-- Current V1 authority is `World`; CLI and Web submit actions and must not invent
-  alternate game rules.
-- V2 targets an Authoring Plane and deterministic Runtime Plane. Treat all V2 contract
-  names as future interfaces until code and tests implement them.
+- Current V1 gameplay authority is `World`. The V2-1 local candidate implements the
+  shared transport-neutral application boundary in `src/lore2mud/application/`; CLI
+  and Web parse/render around it and must not invent alternate game rules.
+- V2 targets an Authoring Plane and deterministic Runtime Plane. Treat V2-1 runtime
+  contracts as implemented only where current code and acceptance evidence say so;
+  later V2 contract names remain future interfaces.
 - `World` remains a compatibility facade. New capabilities must move toward declared
   state namespaces, predicates, effects, views, and migrations rather than expanding
   the facade indefinitely.

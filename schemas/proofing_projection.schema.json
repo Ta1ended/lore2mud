@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/proofing_projection.schema.json",
+  "title": "Lore2MUD ProofingProjection v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "project_id",
+    "preview_fingerprint",
+    "nodes",
+    "edges",
+    "admissible_intents",
+    "diagnostics"
+  ],
+  "properties": {
+    "format_version": {"const": 1},
+    "project_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "preview_fingerprint": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "nodes": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {"$ref": "#/$defs/node"}
+    },
+    "edges": {
+      "type": "array",
+      "maxItems": 8192,
+      "items": {"$ref": "#/$defs/edge"}
+    },
+    "admissible_intents": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {
+        "$ref": "https://github.com/lore2mud/lore2mud/schemas/admissible_intent_descriptor.schema.json"
+      }
+    },
+    "diagnostics": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {
+        "$ref": "https://github.com/lore2mud/lore2mud/schemas/authoring_diagnostic.schema.json"
+      }
+    }
+  },
+  "$defs": {
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["node_id", "kind", "label"],
+      "properties": {
+        "node_id": {"$ref": "#/$defs/boundedText"},
+        "kind": {"$ref": "#/$defs/boundedText"},
+        "label": {"$ref": "#/$defs/boundedText"}
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "target_id", "kind"],
+      "properties": {
+        "source_id": {"$ref": "#/$defs/boundedText"},
+        "target_id": {"$ref": "#/$defs/boundedText"},
+        "kind": {"$ref": "#/$defs/boundedText"}
+      }
+    },
+    "boundedText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096
+    }
+  }
+}

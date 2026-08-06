@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/admissible_intent_descriptor.schema.json",
+  "title": "Lore2MUD AdmissibleIntentDescriptor v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["descriptor_id", "intent", "fields"],
+  "properties": {
+    "descriptor_id": {
+      "type": "string",
+      "pattern": "^intent_[0-9a-f]{24}$"
+    },
+    "intent": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json#/$defs/gameIntent"
+    },
+    "fields": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "value"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32
+          },
+          "value": {"type": ["string", "integer", "boolean", "null"]}
+        }
+      }
+    }
+  }
+}

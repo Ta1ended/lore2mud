@@ -464,8 +464,8 @@ class StaticPackageResourceTests(unittest.TestCase):
 
         self.assertIn('id="recovery-panel"', index)
         self.assertIn('id="recover-button"', index)
-        self.assertIn('sendAction({type: "recover"})', script)
-        self.assertIn("ui.recoveryPanel.hidden = snapshot.player.alive", script)
+        self.assertIn("sendAction(snapshot.player.recover)", script)
+        self.assertIn("ui.recoveryPanel.hidden = !snapshot.player.recover", script)
         self.assertIn(".room-heading > div { min-width: 0; }", styles)
         self.assertIn(".room-heading .eyebrow { overflow-wrap: anywhere; }", styles)
         self.assertIn(".room-heading { flex-wrap: wrap; gap: 10px; }", styles)

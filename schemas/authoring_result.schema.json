@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/authoring_result.schema.json",
+  "title": "AuthoringResult v1",
+  "description": "The canonical shared result envelope returned by the Python SDK and structured CLI.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "operation",
+    "status",
+    "artifact",
+    "diagnostics",
+    "exit_code"
+  ],
+  "properties": {
+    "format_version": { "const": 1 },
+    "operation": {
+      "enum": [
+        "create_project",
+        "validate_blueprint",
+        "validate_project",
+        "build_preview",
+        "simulate",
+        "replay",
+        "proof"
+      ]
+    },
+    "status": { "enum": ["success", "rejected"] },
+    "artifact": {
+      "oneOf": [
+        { "type": "null" },
+        {
+          "$ref": "https://github.com/lore2mud/lore2mud/schemas/game_blueprint.schema.json"
+        },
+        {
+          "$ref": "https://github.com/lore2mud/lore2mud/schemas/game_project.schema.json"
+        },
+        {
+          "$ref": "https://github.com/lore2mud/lore2mud/schemas/preview_build.schema.json"
+        },
+        {
+          "$ref": "https://github.com/lore2mud/lore2mud/schemas/simulation_report.schema.json"
+        },
+        {
+          "$ref": "https://github.com/lore2mud/lore2mud/schemas/proofing_projection.schema.json"
+        }
+      ]
+    },
+    "diagnostics": {
+      "type": "array",
+      "maxItems": 4096,
+      "items": {
+        "$ref": "https://github.com/lore2mud/lore2mud/schemas/authoring_diagnostic.schema.json"
+      }
+    },
+    "exit_code": { "enum": [0, 1] }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "const": "success" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "artifact": { "not": { "type": "null" } },
+          "diagnostics": { "maxItems": 0 },
+          "exit_code": { "const": 0 }
+        }
+      },
+      "else": {
+        "properties": {
+          "artifact": { "type": "null" },
+          "diagnostics": { "minItems": 1 },
+          "exit_code": { "const": 1 }
+        }
+      }
+    }
+  ]
+}

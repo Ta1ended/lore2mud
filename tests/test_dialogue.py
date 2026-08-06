@@ -8,6 +8,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from lore2mud.application.contracts import DialogueEventData
 from lore2mud.content.loader import ContentValidationError, load_content_pack
 from lore2mud.content.models import GrantItemEffect
 from lore2mud.engine.commands import CommandProcessor
@@ -1083,6 +1084,32 @@ class CommandIntegrationTests(unittest.TestCase):
         self.assertIn("你获得了 旧铜牌。", result.text)
         self.assertIn("对话结束", result.text)
         self.assertIn("item_chen_token", [s.item_id for s in self.world.player.inventory.stacks])
+
+    def test_repeat_reward_option_is_absent_from_cli_view_and_event(self) -> None:
+        self.cmd.execute("talk character_elder_chen")
+        self.cmd.execute("4")
+        self.cmd.execute("2")
+
+        self.cmd.execute("talk character_elder_chen")
+        result = self.cmd.execute("4")
+
+        self.assertIsNotNone(result.turn_result)
+        assert result.turn_result is not None
+        self.assertIsNotNone(result.turn_result.view.dialogue)
+        assert result.turn_result.view.dialogue is not None
+        self.assertEqual(
+            [option.id for option in result.turn_result.view.dialogue.options],
+            ["opt_back3"],
+        )
+        payload = result.turn_result.events[0].payload
+        self.assertIsInstance(payload, DialogueEventData)
+        assert isinstance(payload, DialogueEventData)
+        self.assertEqual(
+            [option.option_id for option in payload.options],
+            ["opt_back3"],
+        )
+        self.assertIn("  1. （换个话题）", result.text)
+        self.assertNotIn("  2. 多谢提醒，告辞。", result.text)
 
     def test_bye_in_dialogue(self) -> None:
         self.cmd.execute("talk character_elder_chen")

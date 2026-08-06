@@ -83,13 +83,13 @@ class WorkspaceValidationTests(unittest.TestCase):
         self.assertEqual(forge_workspace_to_document(workspace), self._document())
 
     def test_root_version_id_and_unknown_fields_are_strict(self) -> None:
-        for mutation in (
+        for case, mutation in enumerate((
             lambda value: value.update(extra=True),
             lambda value: value.update(format_version=True),
             lambda value: value.update(format_version=2),
             lambda value: value.update(workspace_id="Forge Demo"),
-        ):
-            with self.subTest(mutation=mutation):
+        ), 1):
+            with self.subTest(case=case):
                 document = self._document()
                 mutation(document)
                 with self.assertRaises(ForgeValidationError):

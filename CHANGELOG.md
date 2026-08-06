@@ -4,6 +4,29 @@
 
 ### Changed
 
+- Completed and published V2-1 on remote `workstream/v2-1-game-session` at exact
+  product candidate `c8ee518ef39f938ece374cbd3f7c9bca06de2408`. Fresh independent
+  TECH and SECURITY acceptance both returned `GO` with no P0-P3 findings, the product
+  owner explicitly granted `PRODUCT PASS` on 2026-08-05, and candidate GitHub Actions
+  tests `30967325238` plus quality `30967325246` succeeded. The post-push handoff seal
+  changes documentation only; `main` remains unmoved, with no release or V2-2 work
+  (DEC-0101).
+- Hardened the transport-neutral V2-1 application boundary while retaining
+  authoritative `World`, the compatible `CommandProcessor(world, save_service)`
+  surface, and Web `PlayerSession` name. Contract rejection restores the existing
+  `World` object graph, canonical save state, RNG, determinism context, event sequence,
+  and save-visible metadata. Untrusted content/save JSON now has explicit byte, depth,
+  node, string, and integer limits with typed error normalization. Public dialogue
+  event options are rebuilt from the final `GameView`, and public campaign events omit
+  raw authoritative effect outcomes from both new and compatibility Web channels.
+  pytest is constrained to `>=9.0.3,<10`, serial/xdist subtest labels are transportable,
+  and Windows zipapp coverage includes the new bounded-reader module. Save v9, v7/v8
+  read gates, content/schema versions, runtime campaign, and the public original Demo
+  remain compatible (DEC-0092 through DEC-0101).
+- Replaced the stale repository-wide fixed model/reasoning floor with controller model
+  selection by responsibility and risk, explicit recording when exposed, evidence-
+  based verification, rework/reassignment for unreliable output, and unchanged fresh
+  independent acceptance requirements (DEC-0092).
 - Made the public `README.md` and the two human-facing handoffs bilingual with Chinese
   first and English second. The README now mirrors the product boundary, current V1,
   V2 targets, quick start, repository map, public/private boundary, authoring tools,
@@ -110,6 +133,67 @@
 
 ### Added
 
+- Added the local V2-2 Agent Authoring Interface candidate over accepted V2-1 head
+  `eb972903a0b959f09a647a1727a6ed66f2d098f7`. New frozen contracts and Draft 2020-12
+  Schemas cover `GameBlueprint v1`, `GameProject v1`, `AuthoringDiagnostic v1`,
+  non-distributable fixed-profile previews, `SimulationRequest v1`,
+  `SimulationReport v1`, bounded admissible-intent descriptors, read-only proofing,
+  and the shared `AuthoringResult v1` envelope. `AgentAuthoringSDK` and `author`
+  structured CLI commands call one application service. Public V1 content is bounded
+  and canonically captured before loader validation; in-memory typed content and direct
+  Python document graphs use bounded normalization; malformed nested values, cyclic
+  containers, and unsupported non-JSON typed scalars become stable rejection envelopes;
+  and typed blueprints, projects,
+  simulation requests, and reports share the CLI's byte/depth/node/string/integer limits
+  and stable `authoring_input_*` failures. Blueprint default seed/clock values are signed
+  64-bit in both Schema and loader, request resource checks retain precedence over typed
+  project normalization, and project validation precedes bounded capability diagnostics.
+  Simulations use only
+  fresh `GameSession` values and typed intents, with witness replay, state/view hashes,
+  and save/load checkpoint evidence. Independent review found stale `CODE_MAP` counts,
+  typed-SDK rejection/diagnostic-bound and cyclic-document P2s, typed-request
+  resource-limit/order P2s, a typed blueprint/project/report bounded-parity P2, and an
+  unsupported typed-scalar exception P2; all are corrected in the current local
+  candidate. Its repair-focused matrix is 81 tests plus 61 subtests; full unittest
+  passes 1,483 tests with 11 conditional skips, while serial and xdist pytest each pass
+  1,472 tests with 11 conditional skips and 619
+  subtests. No dependency, V1 content/save version, `World`,
+  `pipeline/forge.py`, release, `main`, V2-3, or private-material boundary changes.
+  Fresh non-implementing Reviewer 13 accepted exact product candidate
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60` with P0-P3 empty and TECH `GO` after
+  independently reproducing the final typed-scalar repair and rerunning focused, full,
+  static, safety, and Git gates. The product owner then explicitly granted PRODUCT PASS
+  for that exact product SHA and authorized a normal push of the V2-2 workstream branch;
+  product bytes remain frozen and SECURITY PASS remains separate. The first workstream
+  publication exposed one POSIX-only test-harness failure before the product CLI could
+  start: a lone surrogate could not be encoded into Linux subprocess argv. Verification-
+  only commit `2dc9475e12087fcca97e15c85c5a4b56220d00de` keeps normal subprocess coverage,
+  transports only non-UTF-8-safe argv through ASCII JSON into a child interpreter, and
+  invokes the same `lore2mud.cli.main()` path. Fresh Reviewer 14 returned P0-P3 empty and
+  `GO`; all product, Schema, packaging, workflow, dependency, and runtime bytes remain
+  identical to the PRODUCT PASS candidate. The security gate authority then explicitly
+  returned `SECURITY PASS` for exact product SHA
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`; this decision adds no product bytes and
+  grants no documentation-seal push, `main` integration, release, or V2-3 authority
+  (DEC-0102 through DEC-0112). Refreshed the bilingual GitHub README around the current
+  V1 runtime, accepted V2-1/V2-2 workstreams, quick-start paths, deterministic authoring
+  flow, and the explicit preview/package/release boundary. The product owner then
+  explicitly authorized a normal non-force publication of this documentation-only
+  security/README seal to the existing V2-2 workstream; `main`, release, and V2-3 remain
+  outside scope (DEC-0113).
+- Added the public V2-1 `lore2mud.application` package: frozen typed `GameIntent`,
+  `GameEvent`, `GameView`, `TurnResult`, determinism and rejection contracts;
+  `GameSession` turn coordination with rollback and ordered event sequencing; and a
+  detached player-safe projection with concrete V1 affordances. New tests prove
+  contract immutability, rejection invariance, accepted nonlethal combat, hidden-state
+  omission, real CLI/Web turn equivalence, save-byte equivalence, runtime campaign
+  parity, hostile primitive-subclass rejection, and Windows candidate inclusion.
+  Controller verification passed 66 focused transport/dialogue tests, 1410 unittest
+  tests with 11 skips, serial and xdist pytest at 1399 passed / 11 skipped,
+  Ruff, Pyright, compileall, original-demo validation, repository history safety,
+  fsck, and diff checks; the first xdist startup's pre-collection temp-root permission
+  failure was closed by an explicit repository-external temp rerun (DEC-0092 through
+  DEC-0096).
 - Added the public runtime campaign foundation through optional strict
   `campaign.json` v1. World-authoritative projections cover conditional locations,
   exits, actors, dialogue text, scenes, interactables, actions, objectives,

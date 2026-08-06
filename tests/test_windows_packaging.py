@@ -43,6 +43,85 @@ class WindowsPackagingTests(unittest.TestCase):
     def tearDown(self) -> None:
         self.temp.cleanup()
 
+    def _extract_candidate(self, artifact: Path, name: str) -> Path:
+        destination = self.root / name
+        destination.mkdir()
+        with zipfile.ZipFile(artifact) as candidate:
+            candidate.extractall(destination)
+        return destination
+
+    def _run_packaged_author_smoke(
+        self,
+        command_prefix: list[str],
+        candidate_root: Path,
+    ) -> None:
+        project = candidate_root / "author-project.json"
+        report = candidate_root / "author-report.json"
+        proof = candidate_root / "author-proof.json"
+        environment = os.environ.copy()
+        environment.pop("PYTHONPATH", None)
+        commands = (
+            (
+                [
+                    *command_prefix,
+                    "author",
+                    "create-project",
+                    "--project-id",
+                    "packaged_author_project",
+                    "--blueprint",
+                    str(ROOT / "tests/fixtures/authoring/blueprint.json"),
+                    "--content",
+                    str(candidate_root / "original_demo"),
+                    "--output",
+                    str(project),
+                ],
+                project,
+                "create_project",
+            ),
+            (
+                [
+                    *command_prefix,
+                    "author",
+                    "simulate",
+                    "--project",
+                    str(project),
+                    "--request",
+                    str(ROOT / "tests/fixtures/authoring/simulation_request.json"),
+                    "--output",
+                    str(report),
+                ],
+                report,
+                "simulate",
+            ),
+            (
+                [
+                    *command_prefix,
+                    "author",
+                    "proof",
+                    "--project",
+                    str(project),
+                    "--output",
+                    str(proof),
+                ],
+                proof,
+                "proof",
+            ),
+        )
+        for command, output, operation in commands:
+            completed = subprocess.run(
+                command,
+                cwd=candidate_root,
+                env=environment,
+                capture_output=True,
+                check=False,
+            )
+            with self.subTest(operation=operation):
+                self.assertEqual(completed.returncode, 0, completed.stderr.decode("utf-8"))
+                result = json.loads(completed.stdout.decode("utf-8"))
+                self.assertEqual(result["operation"], operation)
+                self.assertEqual(result["status"], "success")
+                self.assertTrue(output.is_file())
+
     def test_build_is_byte_reproducible(self) -> None:
         second = BUILD.build(
             self.root / "second",
@@ -88,12 +167,34 @@ class WindowsPackagingTests(unittest.TestCase):
         self.assertIn("lore2mud/cli.py", app_names)
         self.assertTrue(
             {
+                "lore2mud/_bounded_json.py",
+                "lore2mud/application/__init__.py",
+                "lore2mud/application/contracts.py",
+                "lore2mud/application/projection.py",
+                "lore2mud/application/session.py",
+                "lore2mud/authoring/__init__.py",
+                "lore2mud/authoring/contracts.py",
+                "lore2mud/authoring/preview.py",
+                "lore2mud/authoring/project.py",
+                "lore2mud/authoring/proofing.py",
+                "lore2mud/authoring/sdk.py",
+                "lore2mud/authoring/serialization.py",
+                "lore2mud/authoring/service.py",
+                "lore2mud/authoring/simulation.py",
+                "lore2mud/authoring/structured_cli.py",
                 "lore2mud/narrative/__init__.py",
                 "lore2mud/narrative/conditions.py",
                 "lore2mud/narrative/models.py",
             }.issubset(app_names)
         )
         self.assertNotIn("pipeline/__init__.py", app_names)
+
+    def test_zipapp_runs_real_structured_authoring_workflow(self) -> None:
+        candidate_root = self._extract_candidate(self.artifact, "zipapp-author")
+        self._run_packaged_author_smoke(
+            [sys.executable, str(candidate_root / "lore2mud.pyz")],
+            candidate_root,
+        )
 
     def test_zipapp_preserves_web_resource_types(self) -> None:
         source_root = self.root / "resource-source"
@@ -369,6 +470,11 @@ class WindowsPackagingTests(unittest.TestCase):
 
         completed = VERIFY.cold_start(artifact)
         self.assertEqual(completed.returncode, 0)
+        candidate_root = self._extract_candidate(artifact, "pyinstaller-author")
+        self._run_packaged_author_smoke(
+            [str(candidate_root / "runtime" / "lore2mud.exe")],
+            candidate_root,
+        )
 
 
 if __name__ == "__main__":

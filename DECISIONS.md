@@ -2399,3 +2399,915 @@
   boundary, repository flows, and verification matrix.
 - Supersedes: DEC-0089 only where it previously left `README.md` outside the default
   bilingual set; the bilingual handoff policy remains unchanged.
+
+## DEC-0091: Refine milestone ownership with adopted reference patterns
+
+- Date: 2026-08-04
+- Status: Planning direction authorized; revised local planning candidate verified.
+- Context: The product owner supplied a synthesized set of patterns from comparable
+  projects and authorized a planning-only update. The current V2 direction already
+  contained most safety boundaries, but the short roadmap did not assign diagnostics,
+  preview simulation, capability resolution, sealing, workbench hashing, and narrative
+  constraints precisely enough to prevent later scope leakage. Review also found a
+  lifecycle ambiguity: V2-2 must build and simulate before V2-4, while `GamePackage v2`
+  was described only as sealed.
+- Decision: Keep V2-1 limited to the transport-neutral runtime boundary with the fixed
+  flow `CLI/Web parsing -> GameIntent -> GameSession -> TurnResult -> transport
+  rendering`. Contract-rejected intents emit no transition events and preserve all
+  authoritative session state, while accepted actions may retain deterministic
+  unsuccessful in-world outcomes from existing `World` rules. Assign machine-readable
+  authoring diagnostics, isolated unsealed preview builds, simulation evidence,
+  SDK/structured-CLI parity, bounded player-safe admissible-intent descriptors, and
+  read-only proofing to V2-2. V2-2 may record capability requirement IDs but cannot
+  resolve them. Before V2-3, V2-2 preview builds use only one engine-defined V1
+  compatibility profile; any declared V2 capability requirement blocks preview build
+  and simulation with a stable diagnostic. Assign engine-shipped catalog resolution,
+  exact versions, namespaces, dependencies/conflicts, safety levels, and explicit
+  migration contracts to V2-3.
+  Assign canonical sealed `GamePackage v2` and evidence-manifest identity, end-to-end
+  adaptation traces, stable story/scene/resume anchors, and explicit anchor migrations
+  to V2-4. V2-2 owns only deterministic preview/report fingerprints; V2-5 enforces the
+  V2-4 identity boundary for workbench metadata and parity, reusing the V2-2
+  SDK/application services instead of creating alternate rules.
+- Narrative and trust rule: Deterministic branching and progressive disclosure are
+  allowed only within owner-approved `GameBlueprint` constraints. Capabilities,
+  runtime logic, and model output cannot invent source facts, broaden rights or
+  adaptation scope, expose private material, or bypass approved disclosure
+  constraints. Only deterministic source-controlled engine code mutates authoritative
+  runtime state; authoring and proofing use artifacts or isolated session copies.
+- Rejected alternatives: This roadmap does not authorize migration to Evennia,
+  Ranvier, CoffeeMud, or another MUD framework; database-first authority; an event-bus
+  or event-sourced V2-1 rewrite; package-provided/generated executable code; dynamic
+  plugins; runtime model adjudication; a workbench-only compiler/runtime; multiplayer
+  scope; or treating preview/report/UI metadata as sealed package identity.
+- Privacy and identity: Public diagnostics, simulation reports, proofing exports,
+  player views, and sealed metadata omit raw private excerpts, absolute private paths,
+  private source hashes, and identifiers that reveal private content. V2-2 report
+  fingerprints are reproducibility evidence only. V2-4 owns canonical semantic package
+  and evidence-manifest identity. V2-5 workspace layout and presentation metadata remain
+  outside both identities and cannot introduce a second hashing contract.
+- Evidence: Live `main` and `origin/main` were verified at
+  `564530d87aea17da26544b7793701e0dca0fe57d` before the isolated planning workstream.
+  `PRODUCT.md`, `docs/v2/architecture.md`, `docs/v2/roadmap.md`,
+  `docs/v2/reference_patterns.md`, and bilingual `NEXT_TASK.md` encode the refined
+  lifecycle and milestone boundaries without implementing a V2 API. Local planning
+  verification passed on 2026-08-04: strict UTF-8/no-BOM/final-newline checks, relative
+  links, bilingual single-action parity, unique milestone ownership, exact changed-path
+  scope, `git diff --check`, repository history safety, `git fsck --full --no-dangling`,
+  protected implementation-tree identity, the preserved `uv.lock` boundary, and a
+  public-plan leakage scan. An initial independent read-only review returned `REVISE`
+  for two P2 planning contradictions: unresolved capability requirements in V2-2
+  previews and joint ownership of semantic identity. This revision assigns a fixed V1
+  compatibility profile to V2-2 and splits identity ownership across V2-2 fingerprints,
+  V2-4 package/evidence identities, and V2-5 enforcement. The focused P2 correction
+  checks, relative-link validation, protected-path audit, repository history safety, and
+  Git integrity checks then passed again. No implementation test was run or claimed.
+- Consequences: V2-1 remains the single routed next implementation task and does not
+  gain Capability, SDK, structured CLI, diagnostics, simulation-report, migration,
+  sealing, workbench, MCP, new content/save version, or private-material scope.
+  Publication remains separately gated by a fresh independent TECH review and
+  product-owner review. No implementation, push, `main` movement, release, or V2-2
+  start is authorized.
+- Supersedes: DEC-0087 only where it assigned the static capability catalog to V2-2 or
+  left milestone ownership ambiguous. It does not supersede the accepted product
+  direction, safety boundaries, PLAT-1, DEC-0088's V2-1 routing, or later bilingual
+  maintenance decisions.
+
+## DEC-0092: Implement the V2-1 public runtime boundary without moving World authority
+
+- Date: 2026-08-04
+- Status: Local implementation candidate; controller verification and exact-commit
+  independent TECH decision are required before advancement.
+- Context: Live public `main` was verified at
+  `564530d87aea17da26544b7793701e0dca0fe57d` with successful GitHub Actions tests
+  `30846680303` and quality `30846680343`. The accepted planning candidate
+  `1d4b26d9127d4229893911cf260cf3c2f4b0ce3a` refined V2-1 as the narrow flow
+  `CLI/Web parsing -> GameIntent -> GameSession -> TurnResult -> transport rendering`.
+  V1 previously split application behavior across `CommandProcessor`, Web
+  `PlayerSession`, and direct `World` calls.
+- Decision: Add `src/lore2mud/application/` with frozen typed intent, event, view,
+  determinism, rejection, and turn-result values; one locked `GameSession` around the
+  authoritative compatibility `World`; and one detached player-safe projection.
+  Contract rejection restores canonical persistable state, RNG position, immutable
+  clock input, event sequence, and original `World` identity before returning no
+  transition event. CLI and Web keep parsing/rendering and compatibility names, but
+  submit typed requests through the shared session. Concrete player affordances are
+  projected from isolated V1 rule probes; no public general admissible-intent catalog
+  is introduced. Save/content/schema versions and `World` gameplay systems remain
+  unchanged.
+- Decision: Replace the repository-wide fixed `gpt-5.6-sol`/`xhigh` floor with
+  controller-selected available models and reasoning levels based on responsibility,
+  complexity, stability, and risk. Record selections when exposed, verify every
+  output through code/tests/Git evidence, prefer reliable reasoning for high-risk
+  shared boundaries, and reassign unverifiable work. Independent acceptance remains
+  fresh, read-only, exact-target, findings-first, and separate from implementation.
+- Evidence: Product/Specification and Architect/Engine Lead completed read-only scope
+  and compatibility reviews. Focused contract, cross-transport, CLI, Web, save,
+  dialogue, gameplay, runtime-campaign, and Windows packaging regressions pass after
+  closing stale client-test and zipapp-index coverage. Full verification passed 1402
+  unittest tests with 11 conditional skips, serial pytest at 1391 passed / 11 skipped,
+  and xdist pytest at 1391 passed / 11 skipped. The first xdist startup hit a
+  pre-collection `WinError 5` in the user pytest temp root; an explicit
+  repository-external TEMP/TMP and `--basetemp` rerun passed. Ruff, Pyright,
+  compileall, original-demo validation, history safety, fsck, and working/staged diff
+  checks passed. This controller evidence does not grant TECH GO.
+- Consequences: `World` remains authoritative; `GameEvent` is a result fact rather than
+  an event bus or second state authority. V2-1 does not gain Capability, SDK,
+  structured CLI, MCP, `SimulationReport`, proofing, migration, plugin, new Demo,
+  new content/save version, or private-material scope. Shared `main` stays unmoved and
+  there is no push or release. After a fresh independent TECH GO on the exact final
+  candidate, the only next owner gate is PRODUCT PASS; TECH GO does not imply it.
+- Supersedes: DEC-0087 and DEC-0088 only where they imposed a fixed model/reasoning
+  floor, and DEC-0088/DEC-0091 handoff text only where it said V2-1 was not started.
+  It does not supersede the accepted product direction, PLAT-1, public/private and
+  rights boundaries, Git gates, or later milestone ownership.
+
+## DEC-0093: Reject executable primitive subclasses before the V2-1 snapshot boundary
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; a fresh exact-commit independent TECH
+  decision is still required before advancement.
+- Context: Two independent read-only reviews of the local V2-1 candidate returned
+  `REVISE`. The first found undeclared Intent subclasses, public persistence-path
+  leakage, and stale transport-flow documentation. After those findings were fixed,
+  the second demonstrated that exact Intent objects could still contain `str` or `int`
+  subclasses whose overridden operations mutated authoritative state during validation,
+  before `GameSession.submit()` captured its rollback snapshot. It also found that the
+  verification counts recorded by DEC-0092 and the current handoff were stale.
+- Decision: Validate every public V2-1 request as an exact declared Intent with exact
+  `DeterminismContext`, `str`, `int`, and Enum leaf types before invoking any value
+  method or operator. Reuse that validator for Web Intent serialization, reject Web
+  primitive/container subclasses during parsing, and reject non-exact CLI command
+  strings before `strip()` or `shlex` processing. These checks are contract rejection,
+  so they emit no transition event and leave canonical World bytes, identity, RNG,
+  clock, event sequence, and save-visible metadata unchanged.
+- Evidence: Malicious `str` and `int` regression values attempt state mutation from
+  overridden `strip()` and comparison operations across `GameSession`, CLI, Web
+  parsing, and Web serialization; all are rejected before their behavior runs. The
+  focused application/CLI/Web matrix passed 47 tests. Full verification passed 1408
+  unittest tests with 11 conditional skips, serial pytest at 1397 passed / 11 skipped,
+  and xdist pytest at 1397 passed / 11 skipped with explicit repository-external
+  TEMP/TMP and `--basetemp`. Ruff, Pyright, compileall, original-demo validation,
+  history safety, fsck, and the working diff check passed. This evidence does not grant
+  TECH GO.
+- Consequences: DEC-0092 remains the historical implementation decision, but its
+  pre-repair test counts and validation detail are superseded by this record. No
+  dependency, Schema, content/save version, `World` authority, client responsibility,
+  private-data boundary, publish state, or V2-2 scope changes. Shared `main` remains
+  unmoved, with no push or release.
+- Supersedes: DEC-0092 only for the corrected validation boundary and current test
+  evidence. It does not rewrite the earlier review history or supersede any product,
+  public/private, rights, Git, acceptance, or milestone gate.
+
+## DEC-0094: Complete rejection rollback after exception diagnostic normalization
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; a new exact-commit independent TECH
+  decision is required before advancement.
+- Context: Fresh independent read-only acceptance of exact target
+  `cebb1af7c0c794d441ae05fc888cf1af2ff5876d` returned `REVISE`. A side-effectful
+  `SaveLoadError.__str__()` or `WorldRuleError.__str__()` ran after the existing
+  `_restore()` call, so a rejected turn could return zero events and a pre-mutation
+  `GameView` while leaving the authoritative World changed. The same review found that
+  `docs/architecture.md` still described direct `CommandProcessor -> World` routing and
+  that four current-candidate line counts in `CODE_MAP.md` were stale.
+- Decision: Normalize rule and persistence rejection messages inside `try` blocks,
+  execute the final World/RNG/event-sequence restore in `finally`, and only then project
+  the rejection view and construct `TurnResult`. If exception formatting itself raises,
+  restoration still completes before the unexpected error is re-raised. Add regression
+  coverage for side-effectful rule and persistence exception formatting. Update the V1
+  architecture narrative to the shipped V2-1 flow and refresh current source line counts.
+- Evidence: The new regression first reproduced canonical World byte drift and a coin
+  change from 20 to 97 on the rejected save path, then passed after the ordering fix;
+  the equivalent `WorldRuleError` path also passes. The focused application/CLI/Web
+  matrix passes 48 tests. Full verification passes 1409 unittest tests with 11
+  conditional skips, serial pytest at 1398 passed / 11 skipped, and xdist pytest at
+  1398 passed / 11 skipped with explicit repository-external TEMP/TMP and `--basetemp`.
+  Ruff, Pyright, compileall, original-demo validation, history safety, fsck, and diff
+  checks pass. This controller evidence does not grant TECH GO.
+- Consequences: Rejected turns now restore after every operation that can invoke an
+  exception object's behavior, and returned views match restored authority. No
+  dependency, Schema, content/save version, `World` authority, client responsibility,
+  private-data boundary, publish state, or V2-2 scope changes. Shared `main` remains
+  unmoved, with no push or release.
+- Supersedes: DEC-0093 only for the completed exception-formatting rollback boundary,
+  refreshed documentation evidence, and current verification counts. It does not
+  rewrite prior review history or supersede product, public/private, rights, Git,
+  acceptance, or milestone gates.
+
+## DEC-0095: Render current CLI dialogue actions from the player-safe view
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; another fresh exact-commit independent
+  TECH decision is required before advancement.
+- Context: Fresh independent reacceptance of exact target
+  `5d59f0ca83f64fe7a89f65feb3b6d9ed4b943ab9` returned `REVISE` for one P2. The
+  application projection correctly omitted dialogue choices whose effects were no
+  longer admissible, but `CommandProcessor._render_talk()` numbered every option from
+  `DialogueEventData`. After the public Demo's one-time Elder Chen reward was claimed,
+  Web/GameView exposed only `opt_back3` while CLI still displayed `opt_bye4`; selecting
+  it immediately produced a rule rejection.
+- Decision: Keep dialogue events as ordered transition facts, but render the CLI's
+  current dialogue text and numbered actionable choices from
+  `TurnResult.view.dialogue`. Preserve projected option indices so CLI selection maps
+  to the same typed `ChooseDialogueIntent` as Web, without duplicating effect or quest
+  rules in the client. When dialogue has ended, retain the event's completion text.
+- Evidence: A public original-Demo regression claims `opt_bye4`, re-enters
+  `node_observatory`, confirms that the event still records both condition-visible
+  options, confirms that `GameView` contains only `opt_back3`, and verifies that CLI
+  output omits the unavailable second choice. The focused application/CLI/Web/dialogue
+  matrix passes 66 tests. Full verification passes 1410 unittest tests with 11
+  conditional skips, serial pytest at 1399 passed / 11 skipped, and xdist pytest at
+  1399 passed / 11 skipped with repository-external TEMP/TMP and `--basetemp`. Ruff,
+  Pyright, compileall, original-demo validation, history safety, fsck, and diff checks
+  pass. This evidence does not grant TECH GO.
+- Consequences: CLI and Web now render the same actionable dialogue surface from the
+  shared player-safe projection. `GameEvent` remains non-authoritative and is not used
+  as a second action catalog. No dependency, Schema, content/save version, `World`
+  authority, private-data boundary, publish state, or V2-2 scope changes. Shared `main`
+  remains unmoved, with no push or release.
+- Supersedes: DEC-0094 only for current CLI dialogue rendering and verification counts.
+  It does not rewrite prior review history or supersede product, public/private,
+  rights, Git, acceptance, or milestone gates.
+
+## DEC-0096: Restore determinism-context identity and values on rejected turns
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; a fresh exact-commit independent TECH
+  decision is required before advancement.
+- Context: Fresh independent reacceptance of exact target
+  `5c3cb1715252f3e3455f3ec7d77c71c7715c8a78` returned `REVISE` for one P1. The
+  rejection snapshot restored World, RNG, and event sequence, but did not restore the
+  frozen `DeterminismContext`. A side-effectful `SaveLoadError.__str__()` used
+  `object.__setattr__()` to change `clock` from 31 to 999; the turn returned rejected
+  with no events and unchanged World/view while the public determinism context drifted.
+- Decision: Snapshot the original `DeterminismContext` object plus exact `seed` and
+  `clock` values with every authoritative turn snapshot. Every restore path writes the
+  original values back onto that same frozen object with `object.__setattr__()` and
+  reattaches the original identity before returning or re-raising. Extend the malicious
+  rule/persistence exception-formatting regression to mutate World, seed, and clock and
+  assert context identity plus value invariance.
+- Evidence: The focused application/CLI/Web/dialogue matrix passes 66 tests. Full
+  verification passes 1410 unittest tests with 11 conditional skips, serial pytest at
+  1399 passed / 11 skipped, and xdist pytest at 1399 passed / 11 skipped with explicit
+  repository-external TEMP/TMP and `--basetemp`. Ruff, Pyright, compileall,
+  original-demo validation, history safety, fsck, and diff checks pass. This controller
+  evidence does not grant TECH GO.
+- Consequences: Contract rejection now preserves canonical World state, World identity,
+  RNG position, determinism-context identity and values, event sequence, save-visible
+  metadata, and returned-view consistency even under side-effectful exception
+  formatting. No dependency, Schema, content/save version, `World` authority,
+  private-data boundary, publish state, or V2-2 scope changes. Shared `main` remains
+  unmoved, with no push or release.
+- Supersedes: DEC-0095 only for the completed determinism rollback boundary and current
+  implementation evidence. It does not rewrite prior review history or supersede
+  product, public/private, rights, Git, acceptance, or milestone gates.
+
+## DEC-0097: Preserve V1 Web snapshot shape and authored entity order
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; a fresh exact-commit independent TECH
+  decision is required before advancement.
+- Context: Fresh independent reacceptance of exact target
+  `6e7d0ea9360910c14522ba41f77c5925da8ea7d3` returned `REVISE` for one P2 and one P3.
+  The compatibility Web `snapshot` reused the player-safe serializer, which correctly
+  omitted unavailable V2 actions but also removed V1 fields whose values were `null`.
+  Separately, `GameView` sorted room items by stable ID, changing the public Demo's
+  authored CLI/Web presentation order.
+- Decision: Keep the new player-safe `view` omission rule unchanged, then explicitly
+  restore only the V1 nullable compatibility keys in `snapshot`: exit requirement
+  identifiers/names, item healing/equipment fields, equipment slots, dialogue/shop,
+  and journal status. Preserve authored room item, monster, and character order in the
+  shared projection; this order is deterministic content input and remains identical
+  across CLI and Web. Add exact public-Demo regressions for the legacy keys and item
+  order in both transports.
+- Evidence: The finding-specific command/Web/application/transport matrix passes 33
+  tests. Full verification passes 1410 unittest tests with 11 conditional skips,
+  serial pytest at 1399 passed / 11 skipped, and xdist pytest at 1399 passed / 11
+  skipped with explicit repository-external TEMP/TMP and `--basetemp`. The first
+  resumed unittest attempt lacked an explicit worktree `PYTHONPATH`, loaded stale
+  modules from the primary checkout's editable install, and failed; the corrected
+  worktree-bound rerun supplies the valid evidence. Ruff, Pyright, compileall,
+  original-demo validation, history safety, fsck, and diff checks pass. This controller
+  evidence does not grant TECH GO.
+- Consequences: Existing Web consumers can continue testing legacy field presence,
+  and V1 CLI/Web presentation retains content-authored order. New unavailable actions
+  remain absent rather than appearing as `null`. No dependency, Schema, content/save
+  version, `World` authority, private-data boundary, publish state, or V2-2 scope
+  changes. Shared `main` remains unmoved, with no push or release.
+- Supersedes: DEC-0096 only for the two completed compatibility repairs and current
+  verification evidence. It does not rewrite prior review history or supersede
+  product, public/private, rights, Git, acceptance, or milestone gates.
+
+## DEC-0098: Preserve complete V1 event payloads and campaign action order
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; a fresh exact-commit independent TECH
+  decision is required before advancement.
+- Context: Fresh independent reacceptance of exact target
+  `731459742cdbda9a32bc87956cb0a15e033d5100` returned `REVISE` for one P2 and one P3.
+  The Web adapter preserved the legacy top-level `event` but compressed move room data,
+  omitted runtime-campaign effect outcomes, and removed explicit nulls from dialogue
+  event data. Separately, the application projection re-sorted authoritative campaign
+  actions by ID instead of retaining each interactable's declared `action_ids` order.
+  The target commit also carried a future 2026-08-05 timestamp relative to the
+  2026-08-04 controller date.
+- Decision: Extend the immutable typed event contract with a complete move-room fact,
+  typed campaign effect values, and ordered effect outcomes. The Web compatibility
+  renderer reconstructs the old `event.data` shape with explicit nulls from those
+  facts, while the new event JSON stays typed. Consume
+  `World.available_campaign_actions()` in its authoritative order without a second ID
+  sort. Add exact move/dialogue/campaign JSON and CLI/Web/GameView ordering regressions.
+  Amend the local repair commit with 2026-08-04 author and committer dates so the
+  reviewed target has no future audit timestamp.
+- Evidence: The finding-specific Web/application/runtime-campaign/transport matrix
+  passes 49 tests. Full verification passes 1414 unittest tests with 11 conditional
+  skips, serial pytest at 1403 passed / 11 skipped, and xdist pytest at 1403 passed /
+  11 skipped with explicit repository-external TEMP/TMP and `--basetemp`. Ruff,
+  Pyright, compileall, original-demo validation, history safety, fsck, and diff checks
+  pass. This controller evidence does not grant TECH GO.
+- Consequences: Legacy Web consumers again receive the complete V1 move, dialogue, and
+  campaign event payloads; `GameEvent` remains an immutable ordered fact rather than a
+  raw outcome or event bus. Campaign actions retain content-authored order in
+  GameView, CLI, and Web. No dependency, Schema, content/save version, `World`
+  authority, private-data boundary, publish state, or V2-2 scope changes. Shared
+  `main` remains unmoved, with no push or release.
+- Supersedes: DEC-0097 only for the completed event-payload and campaign-order repairs,
+  corrected local audit timestamp, and current verification evidence. It does not
+  rewrite prior review history or supersede product, public/private, rights, Git,
+  acceptance, or milestone gates.
+
+## DEC-0099: Restore rejected turns on the existing World object graph
+
+- Date: 2026-08-04
+- Status: Local acceptance-repair candidate; a fresh exact-commit independent TECH
+  decision is required before advancement.
+- Context: Fresh independent reacceptance of exact target
+  `d11f6ed0b445436d0ed61f5eebad9f1921709d7d` by a read-only
+  `gpt-5.6-sol`/`xhigh` task returned `REVISE` for one P2. Rejection rollback restored
+  the top-level `World` identity and canonical bytes by assigning deep-copied fields,
+  but callers holding pre-turn `player`, inventory, room, collection, or item-stack
+  aliases could still observe illegal rejected-turn mutations on detached old objects.
+- Decision: Capture the pre-turn `World` with the deepcopy identity mapping, retain the
+  corresponding original references, and recursively restore existing dataclass,
+  dict, list, and set objects in place. Root and nested fields are rebound to their
+  original references while container contents and mutable values are restored from
+  the isolated backup. Add a persistence-failure regression that mutates player coins,
+  inventory capacity, flags, a room item stack, and its containing list, then asserts
+  identity and value invariance through every retained alias.
+- Evidence: The exact alias regression module passes 11 tests; the application, CLI,
+  Web, command, and runtime-campaign cross-matrix passes 55 tests. Full verification
+  passes 1414 unittest tests with 11 conditional skips, serial pytest at 1403 passed /
+  11 skipped, and xdist pytest at 1403 passed / 11 skipped with explicit repository-
+  external TEMP/TMP and `--basetemp`. Ruff, Pyright, compileall, and original-demo
+  validation pass. Repository history safety, fsck, diff checks, and a fresh exact-
+  commit independent decision remain required after the coherent repair commit. This
+  controller evidence does not grant TECH GO.
+- Consequences: Contract rejection now preserves the observable identity and values of
+  the existing compatibility `World` object graph as well as canonical state, RNG,
+  clock, determinism context, event sequence, and save-visible metadata. No dependency,
+  Schema, content/save version, `World` authority, client responsibility, private-data
+  boundary, publish state, or V2-2 scope changes. Shared `main` remains unmoved, with
+  no push or release.
+- Supersedes: DEC-0098 only for the completed nested-alias rollback repair and current
+  verification evidence. It does not rewrite prior review history or supersede product,
+  public/private, rights, Git, acceptance, or milestone gates.
+
+## DEC-0100: Seal V2-1 TECH GO and PRODUCT PASS locally
+
+- Date: 2026-08-04
+- Status: Local product seal; publication remains separately gated.
+- Context: Fresh independent read-only acceptance of exact product candidate
+  `d642a9d5e3ab9d9628d0f5cb8fa04a38d74de8d5` returned `GO` with no P0-P3 findings.
+  The product owner then explicitly granted `PRODUCT PASS` on 2026-08-04. The accepted
+  product bytes remain those of `d642a9d`; this follow-up changes handoff and decision
+  documentation only.
+- Decision: Record both gates against the exact product candidate and freeze V2-1
+  locally. Route the sole next gate to separate explicit push/publication authorization.
+  PRODUCT PASS does not authorize push, `main` movement, SECURITY PASS, release, or
+  V2-2, and a documentation seal must not be presented as a newly accepted product
+  candidate.
+- Evidence: Independent acceptance reproduced and closed the nested-alias rollback
+  defect, passed 270 focused tests plus the named compatibility probes, 1414 unittest
+  tests with 11 skips, serial and xdist pytest at 1403 passed / 11 skipped, all static,
+  validation, safety, fsck, diff, CLI, Web, save-v9, and v7/v8 read gates, and ended on
+  a clean exact target. The human product owner supplied the required PRODUCT PASS in
+  the controller task after that report.
+- Consequences: V2-1 is technically and product accepted at `d642a9d` but remains local.
+  A later publication controller must recheck live remote ancestry and Actions, receive
+  explicit push authorization, and push only the workstream branch. No private-data,
+  dependency, Schema, content/save version, runtime authority, or V2-2 scope changes.
+- Supersedes: DEC-0099 only for gate status and next-task routing. It does not rewrite
+  prior findings, acceptance evidence, product boundaries, rights constraints, or Git
+  safety requirements.
+
+## DEC-0101: Harden and publish the V2-1 public runtime boundary
+
+- Date: 2026-08-05
+- Status: Published V2-1 product candidate; V2-2 remains separately gated.
+- Context: A read-only security scope review of the previously published handoff head
+  `d5135451f5f765ee98c2507a29e2f17e3bb59d47` found that public Web event channels
+  could re-expose campaign authority state and unavailable dialogue options already
+  omitted by `GameView`. It also found unbounded content/save JSON reads whose UTF-8,
+  integer, or recursion failures could escape typed application rejection, plus a test
+  constraint that excluded the fixed pytest release. Because these repairs changed
+  runtime/public-contract bytes, the earlier TECH and PRODUCT decisions could not be
+  transferred to the new candidate.
+- Decision: Adopt one internal bounded UTF-8 JSON reader with per-file limits of
+  8 MiB, depth 64, 200,000 nodes, 1,000,000 characters per string, and 64 decimal
+  integer digits. Content loading maps its typed failures to `ContentValidationError`;
+  save loading maps them to `SaveLoadError`, so `GameSession` returns a transactional
+  `PERSISTENCE_ERROR`. Rebuild dialogue-event options from the final same-turn
+  `GameView` and omit raw campaign effect outcomes from public events, including the
+  compatibility Web event channel. Require `pytest>=9.0.3,<10`, make unittest subtest
+  labels xdist-serializable, and verify the new module in Windows delivery. Preserve
+  `World` authority, save v9/v7/v8 compatibility, Schemas, content versions, and all
+  V2-1 scope exclusions.
+- Evidence: Controller focused serial and xdist matrices each passed 435 tests with
+  6 conditional skips and 308 subtests. The corrected full unittest run passed 1418
+  tests with 11 skips; serial and xdist pytest each passed 1407 tests with 11 skips and
+  554 subtests. Ruff, Pyright, compileall, public-Demo validation, pip consistency,
+  repository-history safety, fsck, and diff checks passed. Fresh non-implementing TECH
+  acceptance returned empty P0-P3 and `GO`; fresh non-implementing SECURITY acceptance
+  returned empty P0-P3 and `GO` after 290 focused tests, 208 subtests, exact/over JSON
+  boundary probes, whole-response leakage checks, and transaction-invariance checks.
+  The product owner explicitly granted `PRODUCT PASS` for exact candidate
+  `c8ee518ef39f938ece374cbd3f7c9bca06de2408` on 2026-08-05. The candidate was then
+  fast-forward pushed only to `workstream/v2-1-game-session`; GitHub Actions tests
+  `30967325238` and quality `30967325246` completed successfully. Live `main` remained
+  `564530d87aea17da26544b7793701e0dca0fe57d`.
+- Consequences: V2-1 is complete and published on the workstream branch at accepted
+  product bytes `c8ee518`. The following handoff seal is documentation-only and does
+  not create a new product candidate. There is no `main` movement, merge, release, or
+  V2-2 work. The sole next gate is explicit product-owner authorization to begin V2-2
+  and select its accepted starting branch/baseline. Private material remains outside
+  the public repository.
+- Supersedes: DEC-0100 only for the current accepted product SHA, SECURITY gate,
+  publication state, and next-task routing. It preserves DEC-0100 as historical
+  evidence and does not rewrite prior findings, rights constraints, or milestone
+  boundaries.
+
+## DEC-0102: Implement V2-2 as one fixed-profile authoring and evidence service
+
+- Date: 2026-08-05
+- Status: Local V2-2 product candidate; fresh exact-commit independent TECH
+  acceptance is pending.
+- Context: The product owner authorized V2-2 implementation in an isolated worktree
+  without push, `main` movement, merge, release, or V2-3 scope. Live GitHub `main`
+  remained `564530d87aea17da26544b7793701e0dca0fe57d`; it did not contain the accepted
+  V2-1 documentation head, so the candidate branch starts from exact green head
+  `eb972903a0b959f09a647a1727a6ed66f2d098f7`, whose accepted V2-1 product ancestor is
+  `c8ee518ef39f938ece374cbd3f7c9bca06de2408`. DEC-0091 assigns deterministic
+  preview/report fingerprints and player-safe authoring evidence to V2-2 while
+  reserving capability resolution for V2-3, package/evidence identity for V2-4, and
+  workbench behavior for V2-5.
+- Decision: Add one `src/lore2mud/authoring/` boundary for frozen blueprint, project,
+  diagnostic, preview, simulation, descriptor, proofing, and result contracts;
+  canonical serialization; bounded project capture; a shared `AuthoringService`;
+  `AgentAuthoringSDK`; and structured `author` CLI commands. Projects may record only
+  syntactically valid capability requirement IDs. Any non-empty set returns stable
+  `capability_requirement_unsupported_v2_2` diagnostics before preview construction or
+  simulation. The only profile is the engine-defined
+  `lore2mud.v1.compatibility.fixed` profile, and preview/report loaders require the
+  current engine version.
+- Decision: Preview bytes are explicitly unsealed, non-distributable, and not release
+  evidence. Their fingerprints and report fingerprints prove reproducibility only;
+  they are not `GamePackage v2`, package identity, evidence-manifest identity, or a
+  publication gate. Workspace/proofing metadata is serialized with the editable
+  project but excluded from the build lock, semantic project bytes, preview identity,
+  and simulation report identity.
+- Decision: Capture each allowlisted V1 content document with the shared bounded JSON
+  limits before the legacy loader receives an immutable temporary snapshot. Run every
+  simulation, replay, state hash, and checkpoint in fresh temporary content/save
+  roots through `GameSession`, typed `GameIntent`, and `SaveLoadService`; never accept
+  a caller's active session or mutate `World` directly. Proofing reads only a detached
+  player-safe `GameView`, exports only known public trace endpoints, and rejects hard
+  node, edge, text, or descriptor limits without truncation.
+- Evidence: The focused contract, privacy, preview, simulation, proofing, SDK/CLI,
+  real subprocess parity, and Windows packaging matrix passed 68 tests plus 43
+  subtests; the real PyInstaller author workflow passed one test plus three subtests.
+  Full unittest passed 1470 tests with 11 conditional skips. Serial and xdist pytest
+  each passed 1459 tests with 11 conditional skips and 601 subtests. Ruff, Pyright,
+  compileall, public-Demo validation, pip consistency, history safety, fsck, and
+  whitespace checks passed. The exact post-commit baseline range check remains part of
+  candidate freezing. This controller evidence does not grant TECH GO.
+- Consequences: V2-2 adds no dependency, capability catalog, semver, namespace,
+  dependency/conflict resolver, migration, package seal, evidence manifest, workbench,
+  MCP surface, alternate compiler/runtime, content/save version, runtime campaign
+  change, or `World` decomposition. `CampaignSpec v1` remains authoring IR and is not
+  a preview input. The sole next gate is a fresh non-implementing read-only TECH
+  decision on the exact coherent candidate. A `GO` still requires a documentation-only
+  seal and then human PRODUCT PASS; it does not authorize push, `main`, release,
+  publication, SECURITY PASS, or V2-3.
+- Supersedes: DEC-0101 only for the completed authorization-to-start-V2-2 routing. It
+  preserves the accepted V2-1 product/publication record and every private-data,
+  rights, Git, product, security, and later-milestone boundary.
+
+## DEC-0103: Normalize untrusted typed SDK inputs before V2-2 authoring work
+
+- Date: 2026-08-05
+- Status: Local V2-2 acceptance-repair candidate; a fresh exact-commit independent
+  TECH decision is required.
+- Context: Fresh read-only acceptance of exact candidate
+  `b33c0886c4f8b4bae658edef194fe24877d78344` returned `REVISE` with one P2. A caller
+  could manually construct a frozen `GameProject` or `SimulationReport` whose nested
+  values were not valid contract data. Project serialization then parsed embedded
+  content bytes or accessed nested fields before domain validation, so SDK operations
+  could raise raw `JSONDecodeError` or `AttributeError` instead of returning an
+  `AuthoringResult`. The capability gate also ran before typed-project validation, so
+  4,097 invalid requirement IDs produced 4,097 diagnostics despite the result Schema's
+  4,096-item bound. The structured CLI document path remained bounded and structured.
+- Decision: Reuse the shared bounded UTF-8 JSON limits for in-memory canonical content
+  bytes. Normalize exact typed blueprint, project, simulation-request, and report values
+  through their document loaders before preview, simulation, replay, or proofing work;
+  translate decode, recursion, shape, and nested-type failures into stable domain
+  rejection diagnostics. Validate a project before deriving capability diagnostics,
+  cap the diagnostic projection at 4,096 entries, and never materialize preview runtime
+  state for an invalid project or unsupported capability set.
+- Evidence: Direct SDK regressions now return one serializable rejection envelope for
+  malformed embedded JSON, over-limit embedded bytes, invalid nested blueprint/request/
+  report values, and all project-consuming operations. A 4,097-requirement typed value
+  is rejected as `preview_project_invalid` before capability diagnostics. The corrected
+  focused authoring and Windows packaging matrix passed 72 tests plus 43 subtests.
+  Full unittest passed 1474 tests with 11 conditional skips. Serial and xdist pytest
+  each passed 1463 tests with 11 conditional skips and 601 subtests. Ruff and standard
+  Pyright, compileall, public-Demo validation, and dependency consistency passed. The
+  repository-history safety, fsck, and working-tree diff checks also passed. The exact
+  post-commit range check remains a candidate-freezing gate rather than TECH approval.
+- Consequences: The SDK and structured CLI retain one implementation and stable result
+  model; no alternate compiler/runtime, dependency, V1 content/save version, runtime
+  campaign, `World`, capability-resolution, package-sealing, workbench, or later-V2
+  scope is introduced. During repair, live GitHub `main` advanced from `564530d` to the
+  green README-only commit `bf3f8b93d40a04b21107bc9b7c9f828a7f000539`; it remains
+  divergent from and does not contain `eb972903`, so the exact V2-2 baseline and scope
+  do not change. The only next gate is fresh read-only TECH acceptance of the new exact
+  coherent candidate.
+- Supersedes: DEC-0102 only for the typed-input rejection order, current verification
+  counts, prior exact candidate, and pending-review handoff. It preserves the V2-2
+  product contract, non-goals, public/private boundary, and all separate product,
+  security, publication, Git, and later-milestone gates.
+
+## DEC-0104: Bound cyclic in-memory authoring documents before SDK validation
+
+- Date: 2026-08-05
+- Status: Local V2-2 acceptance-repair candidate; a fresh exact-commit independent
+  TECH decision is required.
+- Context: Fresh read-only acceptance of exact candidate
+  `845c04cc4a3ad3134b7cc39b025cda91ae389a25` independently closed the DEC-0103 P2 but
+  returned `REVISE` with one new P2. `validate_unicode_scalars()` iterated direct Python
+  list, tuple, and dict values without cycle detection or traversal limits. A dict or
+  list containing itself therefore kept the public SDK `validate_blueprint_document()`
+  and `validate_project_document()` entry points busy instead of returning the promised
+  bounded `AuthoringResult`. The structured CLI JSON-byte path was unaffected.
+- Decision: Traverse direct in-memory authoring documents iteratively under the shared
+  depth-64, 200,000-node, and 1,000,000-character string limits. Track container
+  identities on the active traversal path so cycles reject while repeated references
+  to a shared acyclic value remain valid for later domain validation. Map traversal
+  failures through the existing stable single `blueprint_invalid` or `project_invalid`
+  result envelopes; add no public diagnostic code or alternate validation policy.
+- Evidence: Regressions cover self-referential dict and list values across both SDK
+  document entry points, require one serializable diagnostic, and validate each result
+  against `AuthoringResult v1`. Direct probes now terminate in microseconds rather than
+  watchdog timeouts. The corrected focused authoring and Windows packaging matrix
+  passed 73 tests plus 47 subtests. Full unittest passed 1475 tests with 11 conditional
+  skips; serial and xdist pytest each passed 1464 tests with 11 conditional skips and
+  605 subtests. Ruff, standard Pyright, compileall, public-Demo validation, dependency
+  consistency, history safety, fsck, and working-tree diff checks passed. The exact
+  post-commit baseline range check remains a candidate-freezing gate, not TECH approval.
+- Consequences: Direct SDK documents now share a bounded termination guarantee with the
+  rest of the authoring boundary. No dependency, Schema, content/save version, runtime
+  campaign, `World`, preview identity, simulation behavior, capability resolution,
+  package sealing, workbench, or later-V2 scope changes. The only next gate is fresh
+  read-only TECH acceptance of the amended single exact candidate.
+- Supersedes: DEC-0103 only for in-memory document traversal, current verification
+  counts, exact prior candidate, and pending-review routing. It preserves DEC-0103's
+  typed normalization order and every V2-2 scope, privacy, compatibility, product,
+  security, publication, Git, and later-milestone boundary.
+
+## DEC-0105: Apply shared bounded JSON rules to typed simulation requests
+
+- Date: 2026-08-05
+- Status: Local V2-2 acceptance-repair candidate; a fresh exact-commit independent
+  TECH decision is required.
+- Context: Fresh read-only acceptance of exact candidate
+  `1ea39acc195581461c56ad56ee98dcaa1ab0ce77` independently closed the earlier typed-
+  input and cyclic-document findings but returned `REVISE` with one P2. A directly
+  constructed `SimulationRequest` exceeding the shared string, byte, depth, or node
+  limits raised `AuthoringDocumentTraversalError` from the Python SDK, while the same
+  over-8-MiB request through the structured CLI returned a Schema-valid
+  `authoring_input_too_large` rejection. No preview or session state was mutated.
+- Decision: Preflight typed in-memory values iteratively for cycles, depth, and node
+  count, stream their canonical JSON encoding under the shared 8-MiB byte cap, and
+  round-trip the bytes through the existing bounded reader so string and integer rules
+  cannot diverge. Normalize bounded-reader failures at the simulation boundary to one
+  serialization-stage `authoring_input_<stable-code>` diagnostic before preview or
+  isolated session construction. Keep the existing Unicode rejection and domain
+  request validation contracts unchanged.
+- Evidence: Regressions cover a 1,000,001-character string, an encoded request over
+  8 MiB, depth and node limits plus one, and a 65-digit integer. They require one
+  Schema-valid SDK rejection with `too_complex`, `too_large`, or `invalid_json` as
+  appropriate, and prove exact SDK/CLI equivalence for the over-8-MiB request. The
+  corrected focused authoring and Windows packaging matrix passed 75 tests plus 52
+  subtests. Full unittest passed 1477 tests with 11 conditional skips; serial and xdist
+  pytest each passed 1466 tests with 11 conditional skips and 610 subtests. Ruff,
+  standard Pyright, compileall, public-Demo validation, dependency consistency,
+  history safety, fsck, and whitespace checks passed. The exact post-commit baseline
+  range check remains a candidate-freezing gate, not TECH approval.
+- Consequences: The Python SDK and structured CLI now share the same bounded typed-
+  request rejection semantics without a second parser or runtime. No dependency,
+  Schema, content/save version, runtime campaign, `World`, preview/report identity,
+  capability resolution, package sealing, workbench, or later-V2 scope changes. The
+  only next gate is fresh read-only TECH acceptance of the amended single exact
+  candidate.
+- Supersedes: DEC-0104 only for typed simulation-request resource normalization,
+  verification counts, exact prior candidate, and pending-review routing. It preserves
+  DEC-0104's cycle guarantee and every V2-2 scope, privacy, compatibility, product,
+  security, publication, Git, and later-milestone boundary.
+
+## DEC-0106: Reject typed simulation resource failures before preview work
+
+- Date: 2026-08-05
+- Status: Local V2-2 acceptance-repair candidate; a fresh exact-commit independent
+  TECH decision is required.
+- Context: Fresh read-only acceptance of exact candidate
+  `e7054d7c14a6e77f92874becdad6a9e451b72705` verified the DEC-0105 diagnostic and SDK/CLI
+  byte equivalence but found one P2 in the rejection order. `simulate_project()` built a
+  preview before validating an over-limit typed request, and `simulate_preview()` loaded
+  and materialized the preview before the same validation. A capability-blocked project
+  could therefore mask the required resource diagnostic. An independent spy observed
+  `build_preview=1`, preview materialization twice, and `session=0` for an over-8-MiB
+  request.
+- Decision: Reuse the existing typed-request canonical normalization helper as a
+  resource-only preflight before project preview construction and before preview loading.
+  Resource failures (cycle/depth/node/byte/string/integer/Unicode) return the existing
+  single serialization-stage `authoring_input_*` envelope and take precedence over
+  capability diagnostics. Shape and domain validation remain in the existing post-preview
+  request validation path, so unrelated semantic ordering does not change.
+- Evidence: Regression spies cover SDK `simulate()` and direct `simulate_preview()` and
+  assert zero `build_preview`, preview-load/materializer, and `GameSession` calls for all
+  five resource-limit cases; a capability-blocked project returns
+  `authoring_input_too_complex` before the capability diagnostic. The corrected focused
+  authoring and Windows packaging matrix passed 75 tests plus 52 subtests; simulation and
+  end-to-end matrices passed 18 tests plus 17 subtests. Full unittest passed 1477 tests
+  with 11 conditional skips; serial and xdist pytest each passed 1466 tests with 11
+  conditional skips and 610 subtests. Ruff, standard Pyright, compileall, public-Demo
+  validation, dependency consistency, history safety, fsck, and working-tree/baseline
+  whitespace checks passed. The exact post-commit range check remains a candidate-
+  freezing step, not TECH approval.
+- Consequences: Over-limit typed requests cannot construct or load preview state and
+  cannot be hidden by capability rejection, while valid requests retain the same
+  deterministic simulation/report behavior. No dependency, Schema, content/save version,
+  runtime campaign, `World`, preview/report identity, capability catalog, package seal,
+  workbench, or later-V2 scope changes.
+- Supersedes: DEC-0105 only for resource-rejection ordering, current verification counts,
+  exact prior candidate, and pending-review routing. It preserves DEC-0105's bounded
+  normalization semantics and every V2-2 scope, privacy, compatibility, product, security,
+  publication, Git, and later-milestone boundary.
+
+## DEC-0107: Apply bounded canonical parity to typed authoring artifacts
+
+- Date: 2026-08-05
+- Status: Locally verified V2-2 acceptance-repair candidate; a fresh exact-commit
+  independent TECH decision is required.
+- Context: Fresh read-only acceptance of exact candidate
+  `cb974cb9ae2f4736e52f1f519e4aa8947c54be07` independently verified the DEC-0106
+  request-resource ordering repair but returned `REVISE` with one P2 and one P3. A
+  directly constructed `GameBlueprint` with a 65-digit default seed passed the typed SDK
+  project constructor, while the equivalent structured-CLI JSON was rejected as
+  `authoring_input_invalid_json`. The resulting typed project could then validate,
+  preview, simulate, replay, and proof despite containing a value that could not cross
+  the bounded CLI transport. The changelog also stopped its decision range at DEC-0105
+  and therefore omitted the DEC-0106 repair.
+- Decision: Normalize every exact typed `GameBlueprint`, `GameProject`, and
+  `SimulationReport` through canonical JSON and the shared bounded reader before its
+  domain loader. Map bounded-reader failures at the shared service boundary to one
+  serialization-stage `authoring_input_<stable-code>` rejection with public artifact ID
+  `blueprint`, `project`, or `report`. Define Blueprint default seed and clock as signed
+  64-bit integers in both Schema and loader. In `simulate_project()`, retain DEC-0106's
+  request-resource preflight first, then normalize the project before any preview work.
+  Preserve DEC-0104's direct cyclic-document `blueprint_invalid`/`project_invalid`
+  contract and all existing domain diagnostics.
+- Evidence: The repair-focused authoring and Windows packaging matrix passes 80 tests
+  plus 61 subtests. Real subprocess regressions prove SDK/CLI-equivalent canonical
+  rejection bytes for a 65-digit typed blueprint, all five project-consuming operations,
+  and a 65-digit typed report. Signed-64 boundary regressions cover Schema and loader.
+  Spies prove a project resource rejection precedes preview construction and that a
+  request resource rejection still precedes project validation. Full unittest passes
+  1,482 tests with 11 conditional skips; serial and xdist pytest each pass 1,471 tests
+  with 11 conditional skips and 619 subtests. Ruff, standard Pyright, compileall, public-
+  Demo validation, dependency consistency, history safety, fsck, and working-tree
+  whitespace checks pass. The exact post-commit range check remains candidate-freezing
+  evidence, not TECH approval.
+- Consequences: Typed SDK values can no longer create or consume authoring artifacts that
+  the structured CLI cannot read under the shared resource contract. No dependency,
+  content/save version, runtime campaign, `World`, preview/report identity, capability
+  resolution, package seal, workbench, or later-V2 scope changes. The only next gate is
+  to amend the single exact candidate, complete its exact-range check, and submit it to
+  a fresh non-implementing read-only TECH acceptance task.
+- Supersedes: DEC-0106 only for typed blueprint/project/report resource parity, Blueprint
+  integer bounds, current verification counts, exact prior candidate, and pending-review
+  routing. It preserves DEC-0106 request-first ordering and every V2-2 scope, privacy,
+  compatibility, product, security, publication, Git, and later-milestone boundary.
+
+## DEC-0108: Normalize unsupported typed scalars into bounded rejections
+
+- Date: 2026-08-05
+- Status: Locally verified V2-2 acceptance-repair candidate; a fresh exact-commit
+  independent TECH decision is required.
+- Context: Fresh read-only acceptance of exact candidate
+  `e1f3a806b987209f7ed9435384739c9e6865d513` independently verified the DEC-0107
+  bounded canonical parity repair and all broad gates, but returned `REVISE` with one
+  P2. A directly constructed typed `GameProject` containing `bytes` in workspace
+  metadata, or a typed `SimulationReport` containing `bytes` as `player_name`, escaped
+  raw `TypeError` from `JSONEncoder.iterencode()` through SDK validate, preview,
+  simulate, replay, and proof paths instead of returning a stable `AuthoringResult`.
+- Decision: Treat JSON encoder `TypeError` during the shared bounded canonical round
+  trip as `BoundedJsonError(INVALID_JSON)`. Existing service boundaries then return the
+  existing serialization-stage `authoring_input_invalid_json` rejection with public
+  artifact ID `project` or `report`. Add an exact regression covering all five typed
+  project operations and typed-report replay, including canonical result serialization.
+  Do not add a diagnostic code, Schema revision, alternate serializer, or runtime path.
+- Evidence: The exact Reviewer 12 reproduction now returns six stable bounded rejection
+  envelopes. The repaired authoring and Windows packaging matrix passes 81 tests plus
+  61 subtests. Full unittest passes 1,483 tests with 11 conditional skips; serial and
+  xdist pytest each pass 1,472 tests with 11 conditional skips and 619 subtests. Ruff,
+  standard Pyright, compileall, public-Demo validation, dependency consistency, history
+  safety, fsck, and working-tree whitespace checks pass. The primary checkout's
+  untracked `uv.lock` remains 14,471 bytes with its authorized SHA-256. The exact
+  post-commit range check remains candidate-freezing evidence, not TECH approval.
+- Consequences: Unsupported typed Python scalars can no longer escape public SDK
+  operations as raw encoder exceptions. Existing resource precedence, domain
+  diagnostics, canonical bytes, fingerprints, Schemas, content/save compatibility,
+  `World`, and later-V2 boundaries do not change. The only next gate is to amend the
+  single exact candidate and submit it to fresh non-implementing Reviewer 13.
+- Supersedes: DEC-0107 only for unsupported typed scalar normalization, current
+  verification counts, exact prior candidate, and pending-review routing. It preserves
+  DEC-0107 bounded canonical parity, DEC-0106 request-first ordering, and every V2-2
+  scope, privacy, compatibility, product, security, publication, Git, and later-
+  milestone boundary.
+
+## DEC-0109: Seal V2-2 independent TECH GO locally
+
+- Date: 2026-08-05
+- Status: V2-2 independent TECH GO recorded; human PRODUCT PASS remains pending.
+- Context: Fresh, non-implementing Reviewer 13 performed strict read-only acceptance of
+  exact product candidate `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`, tree
+  `f7c12fda17257f7a6b539bbbfce97da18452a961`, whose exact parent is accepted V2-1
+  documentation head `eb972903a0b959f09a647a1727a6ed66f2d098f7`. The review returned
+  P0/P1/P2/P3 all empty and final verdict `GO`, independently reproducing closure of
+  DEC-0108's unsupported typed-scalar P2.
+- Decision: Freeze the exact V2-2 product bytes at `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`.
+  Create one documentation-only seal updating `DECISIONS.md`, `CHANGELOG.md`,
+  `PROJECT_STATE.md`, and `NEXT_TASK.md`; do not rerun full TECH acceptance because the
+  accepted product bytes do not change. Route the sole next gate to the human product
+  owner for explicit `PRODUCT PASS` on the exact product candidate.
+- Evidence: Reviewer 13 confirmed exact SHA/branch/tree/parent, one-commit ancestry, and
+  a clean worktree. Its independent adversarial probe returned one canonical
+  serialization-stage `authoring_input_invalid_json` for every malformed typed project
+  or report path with zero preview/materialization/`GameSession`/replay/proofing calls.
+  Independent focused authoring and Windows tests passed 81 tests; full unittest passed
+  1,483 with 11 conditional skips; full pytest passed 1,472 plus 619 subtests with the
+  same 11 conditional skips. Ruff, Pyright, compileall, public-Demo validation, history
+  safety, fsck, diff checks, and final clean status passed. Controller xdist independently
+  passed the same 1,472/11/619 matrix. The 11 skips are two POSIX-only and nine Windows
+  symlink-privilege cases, not passes.
+- Consequences: V2-2 has TECH `GO` only. There is no PRODUCT PASS, SECURITY PASS,
+  publication, push, merge, `main` movement, release, distribution authorization, or
+  V2-3 authorization. The preview/report fingerprints remain reproducibility evidence,
+  not package/evidence identity or a release seal.
+- Supersedes: DEC-0108 only for pending independent acceptance and next-gate routing.
+  DEC-0108's implementation, verification, scope, privacy, compatibility, publication,
+  Git, and later-milestone boundaries remain in force.
+
+## DEC-0110: Record V2-2 PRODUCT PASS and authorize workstream publication
+
+- Date: 2026-08-05
+- Status: V2-2 TECH GO and PRODUCT PASS complete; authorized workstream push in scope;
+  SECURITY PASS remains pending.
+- Context: After reviewing the completed V2-2 handoff, the product owner explicitly
+  replied `PRODUCT PASS` and requested a remote push. The product decision applies to
+  exact product candidate `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`, not to the
+  documentation-seal commit, preview/report fingerprints, or any future package or
+  evidence identity.
+- Decision: Record the human PRODUCT PASS and authorize a normal non-force push of the
+  current `workstream/v2-2-agent-authoring` branch to
+  `origin/workstream/v2-2-agent-authoring`. This authorization does not permit moving or
+  merging `main`, release creation, SECURITY PASS, V2-3 work, or publication of private
+  material. Preserve the frozen product bytes and include only documentation seals after
+  the accepted product commit.
+- Evidence: Pre-push live `git ls-remote` found remote `main` at
+  `bf3f8b93d40a04b21107bc9b7c9f828a7f000539`, V2-1 workstream at
+  `eb972903a0b959f09a647a1727a6ed66f2d098f7`, and no existing remote V2-2 workstream.
+  The local branch was clean at documentation seal
+  `1006d969ebd2d97fb97dff7ac09bd8d7cb53e39c`; the accepted product commit remained its
+  ancestor, and the primary checkout's untracked `uv.lock` retained its authorized byte
+  length and SHA-256.
+- Consequences: The remote operation creates the V2-2 workstream without force-pushing
+  or altering `main`. The sole next quality gate is an independently authorized
+  SECURITY PASS for the exact product candidate. Publication to the workstream does not
+  itself grant release, distribution, main integration, or later-milestone authority.
+- Supersedes: DEC-0109 only for PRODUCT PASS status, workstream-push authorization, and
+  next-gate routing. DEC-0109's exact TECH verdict and all product-byte, privacy,
+  compatibility, security, release, Git, and later-milestone boundaries remain in force.
+
+## DEC-0111: Repair the post-publication POSIX CLI test transport without changing product bytes
+
+- Date: 2026-08-05
+- Status: Verification-only repair independently accepted; V2-2 product SHA, TECH GO,
+  and PRODUCT PASS unchanged; normal workstream fast-forward remains authorized;
+  SECURITY PASS remains pending.
+- Context: The first normal publication created remote
+  `workstream/v2-2-agent-authoring` at documentation head
+  `8eb549ead9118caf6677bf03e6bd837bed11c62c` without moving `main`. GitHub Actions tests
+  `31043215852` and quality `31043215795` then failed on every Ubuntu Python job because
+  `tests/test_authoring_end_to_end.py` passed a lone UTF-16 surrogate directly through
+  POSIX subprocess argv. Python raised `UnicodeEncodeError` before the product CLI,
+  parser, or shared authoring service started. Static analysis and the Windows candidate
+  job succeeded.
+- Decision: Keep exact PRODUCT PASS candidate
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60` frozen. For ordinary arguments, retain the
+  real `python -m lore2mud author` subprocess. Only when a test argument cannot be UTF-8
+  encoded, serialize the exact argv as ASCII JSON and rehydrate it inside an independent
+  Python child process before calling the same `lore2mud.cli.main(argv)` entry point.
+  Treat commit `2dc9475e12087fcca97e15c85c5a4b56220d00de` as a verification-only candidate,
+  not a new product candidate or product decision.
+- Evidence: Controller verification passed the exact surrogate regression, the 81-test
+  plus 61-subtest authoring/Windows matrix, full unittest at 1,483 with 11 conditional
+  skips, and serial/xdist pytest at 1,472 passed, 11 skipped, and 619 subtests. Ruff,
+  Pyright, compileall, public-Demo validation, `pip check`, history safety, fsck, and diff
+  checks passed. A product-path comparison against `ec60cb0` found no changes. Fresh,
+  non-implementing Reviewer 14 independently confirmed exact SHA/parent/clean status,
+  one changed test file, the ordinary and surrogate subprocess paths, canonical SDK/CLI
+  rejection equivalence, 81 focused tests plus 61 subtests, static/Git gates, P0-P3 all
+  empty, and final verdict `GO`.
+- Consequences: A documentation-only seal may record this verdict, after which the
+  controller may normally fast-forward only
+  `origin/workstream/v2-2-agent-authoring` and must verify exact-head tests and quality
+  Actions before closing publication. No new PRODUCT PASS is required because product
+  bytes did not change. No force push, `main` movement/merge, release, SECURITY PASS,
+  private-material access, or V2-3 work is authorized.
+- Supersedes: DEC-0110 only for its statement that every post-product commit must be
+  documentation-only; the narrow verification-harness repair above is the sole
+  exception. DEC-0110's exact product decision, publication scope, privacy, security,
+  release, Git, and later-milestone boundaries remain in force.
+
+## DEC-0112: Record V2-2 SECURITY PASS locally
+
+- Date: 2026-08-05
+- Status: V2-2 TECH GO, PRODUCT PASS, and SECURITY PASS complete for the exact product
+  candidate; publication of this documentation-only security seal remains unauthorized.
+- Context: After the accepted product and verification-only repair were published to
+  `origin/workstream/v2-2-agent-authoring` at
+  `2ae85937cf284147a9a415cf350ef79e1695121b`, the security gate authority explicitly
+  replied `SECURITY PASS`. The decision applies to exact product candidate
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60`, not to a documentation head, preview or
+  report fingerprint, package/evidence identity, or future release artifact.
+- Decision: Record the explicit SECURITY PASS without changing product, test, Schema,
+  workflow, dependency, packaging, or runtime bytes. Do not infer or invent a separate
+  P0-P3 report, additional security test run, release approval, `main` integration,
+  distribution approval, or V2-3 authorization from the one-line gate decision. Refresh
+  `README.md` in the same documentation-only seal so the GitHub front page describes the
+  current V1 runtime and accepted V2-1/V2-2 workstreams without claiming release or
+  `main` integration.
+- Evidence: Exact product candidate `ec60cb0` already has fresh independent TECH `GO`
+  from Reviewer 13 and human PRODUCT PASS. Verification-only candidate `2dc9475e` has
+  fresh Reviewer 14 `GO`. Final published documentation head `2ae85937` passed GitHub
+  Actions tests `31046078308` and quality `31046078333`, both bound to that exact SHA;
+  live post-publication verification kept remote `main` at `bf3f8b93`. The security gate
+  authority's explicit `SECURITY PASS` is the security decision evidence.
+- Consequences: V2-2 is locally complete across TECH, PRODUCT, and SECURITY gates, while
+  product bytes remain frozen at `ec60cb0`. The sole next gate is explicit authorization
+  to normally fast-forward the documentation-only SECURITY PASS seal to the matching
+  remote workstream. Until then, do not push this seal, move or merge `main`, release,
+  distribute previews/reports, or begin V2-3.
+- Supersedes: DEC-0111 only for pending SECURITY status and next-gate routing. DEC-0111's
+  exact product/verification evidence and all privacy, compatibility, Git, publication,
+  release, and later-milestone boundaries remain in force.
+
+## DEC-0113: Authorize publication of the V2-2 security and README documentation seal
+
+- Date: 2026-08-05
+- Status: Normal workstream publication authorized; `main`, release, and V2-3 remain
+  unauthorized.
+- Context: After the local documentation-only seal recorded SECURITY PASS and refreshed
+  the bilingual GitHub README, the product owner explicitly requested that the controller
+  push it. The authorization applies only to the existing
+  `origin/workstream/v2-2-agent-authoring` ref.
+- Decision: Amend the still-unpublished documentation seal to record this authorization,
+  then normally fast-forward the matching remote workstream without force. Recheck live
+  remote refs before the push and verify exact-head GitHub Actions tests and quality after
+  publication. Do not move or merge `main`, create a release, publish preview/report
+  artifacts, or begin V2-3.
+- Evidence: The pre-publication live check found remote `main` at
+  `bf3f8b93d40a04b21107bc9b7c9f828a7f000539`, remote V2-2 workstream at
+  `2ae85937cf284147a9a415cf350ef79e1695121b`, and the local documentation seal one commit
+  ahead. Its changed paths are exactly `README.md`, `CHANGELOG.md`, `DECISIONS.md`,
+  `PROJECT_STATE.md`, and `NEXT_TASK.md`; product and test paths are byte-identical to the
+  published head. The primary checkout's untracked `uv.lock` retains 14,471 bytes and its
+  authorized SHA-256.
+- Consequences: After a successful fast-forward and green exact-head Actions, stop. The
+  sole next gate becomes explicit human authorization to begin V2-3. That future gate
+  does not itself authorize `main` integration, release, or distribution.
+- Supersedes: DEC-0112 only for documentation-seal publication authority and next-gate
+  routing. DEC-0112's exact SECURITY PASS, product freeze, evidence limits, privacy,
+  release, Git, and later-milestone boundaries remain in force.

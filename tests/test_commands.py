@@ -22,7 +22,10 @@ class CommandScenarioTests(unittest.TestCase):
         result = self.commands.execute("look")
         self.assertIn("余烬渡台", result.text)
         self.assertIn("room_ember_wharf", result.text)
-        self.assertIn("微火提灯", result.text)
+        self.assertIn(
+            "物品：微火提灯、灵露丸 ×3、晶刃、铜鳞甲",
+            result.text,
+        )
         self.assertIn("east", result.text)
 
     def test_go_moves_only_through_existing_exit(self) -> None:

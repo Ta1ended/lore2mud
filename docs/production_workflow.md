@@ -20,9 +20,9 @@ Before edits, report:
 - compatibility, product, rights, and security risks;
 - focused and full verification plan.
 
-If the required `gpt-5.6-sol` model at `xhigh` or higher is unavailable for an
-implementation, architecture, or acceptance task/subagent, stop and report. Never
-silently downgrade.
+The controller selects available models and reasoning levels by responsibility,
+complexity, stability, and risk. Record the selection when exposed, verify outputs
+through code/tests/Git evidence, and reassign incomplete or unverifiable work.
 
 ## Deliver A Workstream
 
@@ -102,8 +102,8 @@ reproduced in the declared environment.
   package validation.
 - `CampaignSpec` remains authoring IR; it is not a `GamePackage`.
 - SDK and structured CLI are the first Agent surfaces. MCP is a later adapter.
-- `World` stays a compatibility facade while `GameSession` becomes the shared CLI/Web
-  application boundary.
+- `World` stays the compatibility authority while the V2-1 `GameSession` application
+  boundary coordinates shared CLI/Web turns.
 - Capability packages are static data selected from an engine catalog. Dynamic code
   and plugin execution are forbidden initially.
 - Preserve V1 public content and supported save compatibility unless a separately

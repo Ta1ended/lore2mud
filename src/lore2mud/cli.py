@@ -8,6 +8,8 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
+from lore2mud.application.session import GameSession
+from lore2mud.authoring.structured_cli import add_author_parser
 from lore2mud.content.loader import (
     ContentValidationError,
     load_content_pack,
@@ -15,7 +17,6 @@ from lore2mud.content.loader import (
 )
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.save import SaveLoadService
-from lore2mud.engine.world import World
 
 
 def _configure_output_encoding() -> None:
@@ -28,10 +29,10 @@ def _configure_output_encoding() -> None:
             reconfigure(encoding="utf-8")
 
 
-def run_game(world: World, save_service: SaveLoadService) -> int:
+def run_game(session: GameSession) -> int:
     """Start the interactive game loop."""
-    processor = CommandProcessor(world, save_service=save_service)
-    print(f"欢迎来到 {world.pack_name}。输入 help 查看指令。")
+    processor = CommandProcessor.from_session(session)
+    print(f"欢迎来到 {session.world.pack_name}。输入 help 查看指令。")
     print(processor.execute("look").text)
 
     while True:
@@ -58,9 +59,13 @@ def _cmd_play(args: argparse.Namespace) -> int:
     except (OSError, ContentValidationError) as exc:
         raise SystemExit(2, f"内容包加载失败：{exc}\n") from None
 
-    world = World.from_content_pack(pack, player_name=args.player_name)
     save_service = SaveLoadService(pack, args.save_dir)
-    return run_game(world, save_service)
+    session = GameSession.from_content_pack(
+        pack,
+        save_service,
+        player_name=args.player_name,
+    )
+    return run_game(session)
 
 
 def _cmd_validate(args: argparse.Namespace) -> int:
@@ -101,7 +106,7 @@ def _cmd_web(args: argparse.Namespace) -> int:
 
 # -- Parser ------------------------------------------------------------------
 
-_COMMANDS = frozenset({"play", "validate", "web"})
+_COMMANDS = frozenset({"play", "validate", "web", "author"})
 
 
 def _port_number(value: str) -> int:
@@ -152,7 +157,7 @@ def _inject_legacy_subcommand(argv: list[str]) -> list[str]:
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    """Build the CLI parser with play, validate, and web subcommands."""
+    """Build the legacy player and structured authoring command parser."""
     parser = argparse.ArgumentParser(
         prog="lore2mud",
         description="本地单人文字 MUD 引擎。",
@@ -232,6 +237,9 @@ def _build_parser() -> argparse.ArgumentParser:
         help="监听端口（默认：8765）",
     )
     web_parser.set_defaults(func=_cmd_web)
+
+    # -- structured authoring command family --
+    add_author_parser(subparsers)
 
     return parser
 

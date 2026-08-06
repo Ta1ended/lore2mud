@@ -11,6 +11,12 @@ import re
 import tempfile
 from pathlib import Path
 
+from lore2mud._bounded_json import (
+    DEFAULT_JSON_READ_LIMITS,
+    BoundedJsonError,
+    JsonReadErrorCode,
+    read_bounded_json,
+)
 from lore2mud.content.models import ContentPack
 from lore2mud.engine.models import (
     Character,
@@ -1081,14 +1087,24 @@ class SaveLoadService:
             raise SaveLoadError(f"存档文件不存在：{save_path}")
 
         try:
-            raw_text = save_path.read_text(encoding="utf-8")
-        except OSError as exc:
-            raise SaveLoadError(f"读取存档失败：{exc}") from exc
-
-        try:
-            data = json.loads(raw_text)
-        except json.JSONDecodeError as exc:
-            raise SaveLoadError(f"存档文件不是有效 JSON：{exc}") from exc
+            data = read_bounded_json(save_path, DEFAULT_JSON_READ_LIMITS)
+        except BoundedJsonError as exc:
+            if exc.code is JsonReadErrorCode.INVALID_UTF8:
+                message = "存档文件不是有效 UTF-8 编码"
+            elif exc.code is JsonReadErrorCode.TOO_LARGE:
+                message = (
+                    "存档文件超过 "
+                    f"{DEFAULT_JSON_READ_LIMITS.max_bytes} 字节限制"
+                )
+            elif exc.code is JsonReadErrorCode.TOO_COMPLEX:
+                message = "存档 JSON 超出复杂度限制"
+            elif exc.code is JsonReadErrorCode.INVALID_JSON:
+                message = "存档文件不是有效 JSON"
+            elif exc.code is JsonReadErrorCode.NOT_FOUND:
+                message = f"存档文件不存在：{save_path}"
+            else:
+                message = "读取存档失败"
+            raise SaveLoadError(message) from None
 
         if not isinstance(data, dict):
             raise SaveLoadError("存档顶层必须是 JSON 对象")

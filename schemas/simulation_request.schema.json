@@ -1,0 +1,260 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/simulation_request.schema.json",
+  "title": "Lore2MUD SimulationRequest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "seed",
+    "clock",
+    "player_name",
+    "intents",
+    "conditions",
+    "checkpoint_after_steps"
+  ],
+  "properties": {
+    "format_version": {"const": 1},
+    "seed": {"$ref": "#/$defs/int64"},
+    "clock": {"$ref": "#/$defs/int64"},
+    "player_name": {"type": "string", "minLength": 1, "maxLength": 128, "pattern": "\\S"},
+    "intents": {
+      "type": "array",
+      "maxItems": 1024,
+      "items": {"$ref": "#/$defs/gameIntent"}
+    },
+    "conditions": {
+      "type": "array",
+      "maxItems": 256,
+      "items": {"$ref": "#/$defs/condition"}
+    },
+    "checkpoint_after_steps": {
+      "type": "array",
+      "maxItems": 1025,
+      "uniqueItems": true,
+      "items": {"type": "integer", "minimum": 0, "maximum": 1024}
+    }
+  },
+  "$defs": {
+    "int64": {
+      "type": "integer",
+      "minimum": -9223372036854775808,
+      "maximum": 9223372036854775807
+    },
+    "stableId": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$"
+    },
+    "boundedText": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "\\S"
+    },
+    "condition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["condition_id", "outcome", "kind", "expected"],
+      "properties": {
+        "condition_id": {"$ref": "#/$defs/stableId"},
+        "outcome": {"enum": ["win", "loss"]},
+        "kind": {
+          "enum": [
+            "player_alive",
+            "room_id",
+            "quest_completed",
+            "objective_status",
+            "knowledge_status"
+          ]
+        },
+        "expected": {"type": ["string", "boolean"]}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {"enum": ["player_alive", "quest_completed"]}
+            }
+          },
+          "then": {"properties": {"expected": {"type": "boolean"}}}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "room_id"}}},
+          "then": {"properties": {"expected": {"$ref": "#/$defs/stableId"}}}
+        },
+        {
+          "if": {"properties": {"kind": {"const": "objective_status"}}},
+          "then": {
+            "properties": {
+              "expected": {
+                "enum": ["inactive", "active", "in_progress", "completed", "failed"]
+              }
+            }
+          }
+        },
+        {
+          "if": {"properties": {"kind": {"const": "knowledge_status"}}},
+          "then": {
+            "properties": {
+              "expected": {
+                "enum": ["unknown", "heard", "suspected", "confirmed", "retracted", "corrected"]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "gameIntent": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "kind"],
+          "properties": {
+            "type": {"const": "view"},
+            "kind": {
+              "enum": [
+                "look",
+                "inventory",
+                "campaign_actions",
+                "objectives",
+                "knowledge",
+                "journal",
+                "quests",
+                "status",
+                "shop"
+              ]
+            }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "target", "target_kind"],
+          "properties": {
+            "type": {"const": "examine"},
+            "target": {"$ref": "#/$defs/boundedText"},
+            "target_kind": {"type": ["string", "null"], "enum": ["item", "monster", "character", null]}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "direction"],
+          "properties": {
+            "type": {"const": "move"},
+            "direction": {"type": "string", "minLength": 1, "maxLength": 32, "pattern": "\\S"}
+          }
+        },
+        {
+          "$ref": "#/$defs/quantityIntent",
+          "properties": {"type": {"const": "take"}}
+        },
+        {
+          "$ref": "#/$defs/quantityIntent",
+          "properties": {"type": {"const": "drop"}}
+        },
+        {
+          "$ref": "#/$defs/quantityIntent",
+          "properties": {"type": {"const": "use"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "target"],
+          "properties": {
+            "type": {"const": "equip"},
+            "target": {"$ref": "#/$defs/boundedText"}
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "slot"],
+          "properties": {
+            "type": {"const": "unequip"},
+            "slot": {"enum": ["hand", "body"]}
+          }
+        },
+        {
+          "$ref": "#/$defs/targetIntent",
+          "properties": {"type": {"const": "attack"}}
+        },
+        {
+          "$ref": "#/$defs/targetIntent",
+          "properties": {"type": {"const": "talk"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "index"],
+          "properties": {
+            "type": {"const": "choose_dialogue"},
+            "index": {"type": "integer", "minimum": 1}
+          }
+        },
+        {"$ref": "#/$defs/emptyIntent", "properties": {"type": {"const": "end_dialogue"}}},
+        {
+          "$ref": "#/$defs/quantityIntent",
+          "properties": {"type": {"const": "buy"}}
+        },
+        {
+          "$ref": "#/$defs/quantityIntent",
+          "properties": {"type": {"const": "sell"}}
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["type", "action_id"],
+          "properties": {
+            "type": {"const": "campaign_action"},
+            "action_id": {"$ref": "#/$defs/stableId"}
+          }
+        },
+        {"$ref": "#/$defs/emptyIntent", "properties": {"type": {"const": "recover"}}},
+        {
+          "$ref": "#/$defs/persistenceIntent",
+          "properties": {"type": {"const": "save"}}
+        },
+        {
+          "$ref": "#/$defs/persistenceIntent",
+          "properties": {"type": {"const": "load"}}
+        }
+      ]
+    },
+    "quantityIntent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "target", "quantity"],
+      "properties": {
+        "type": {"type": "string"},
+        "target": {"$ref": "#/$defs/boundedText"},
+        "quantity": {"type": "integer", "minimum": 1}
+      }
+    },
+    "targetIntent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "target"],
+      "properties": {
+        "type": {"type": "string"},
+        "target": {"$ref": "#/$defs/boundedText"}
+      }
+    },
+    "emptyIntent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {"type": {"type": "string"}}
+    },
+    "persistenceIntent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "slot"],
+      "properties": {
+        "type": {"type": "string"},
+        "slot": {"type": ["string", "null"], "minLength": 1, "maxLength": 32, "pattern": "\\S"}
+      }
+    }
+  }
+}

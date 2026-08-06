@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/authoring_diagnostic.schema.json",
+  "title": "AuthoringDiagnostic v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "stage",
+    "code",
+    "severity",
+    "artifact_id",
+    "json_pointer",
+    "source_span",
+    "message",
+    "remediation"
+  ],
+  "properties": {
+    "format_version": { "const": 1 },
+    "stage": {
+      "enum": ["blueprint", "project", "preview", "simulation", "proofing", "serialization"]
+    },
+    "code": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,127}$"
+    },
+    "severity": { "enum": ["info", "warning", "error"] },
+    "artifact_id": { "$ref": "#/$defs/non_blank" },
+    "json_pointer": { "type": "string", "pattern": "^(|/.*)$" },
+    "source_span": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "#/$defs/source_span" }
+      ]
+    },
+    "message": { "$ref": "#/$defs/non_blank" },
+    "remediation": { "$ref": "#/$defs/non_blank" }
+  },
+  "$defs": {
+    "non_blank": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4096,
+      "pattern": "\\S"
+    },
+    "source_span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_artifact_id",
+        "start_line",
+        "start_column",
+        "end_line",
+        "end_column"
+      ],
+      "properties": {
+        "source_artifact_id": { "$ref": "#/$defs/non_blank" },
+        "start_line": { "type": "integer", "minimum": 1 },
+        "start_column": { "type": "integer", "minimum": 1 },
+        "end_line": { "type": "integer", "minimum": 1 },
+        "end_column": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

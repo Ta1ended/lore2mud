@@ -7,23 +7,59 @@ import shlex
 from dataclasses import dataclass
 from typing import Protocol
 
-from lore2mud.content.models import (
-    CollectItemQuestDefinition,
-    MonsterDefeatedQuestDefinition,
-    ReachRoomQuestDefinition,
+from lore2mud.application.contracts import (
+    AcceptedQuestEvent,
+    AttackIntent,
+    BuyIntent,
+    CampaignActionEventData,
+    CampaignActionIntent,
+    CharacterFocusView,
+    ChooseDialogueIntent,
+    CombatEventData,
+    DialogueEndEventData,
+    DialogueEventData,
+    DialogueView,
+    DropIntent,
+    EndDialogueIntent,
+    EquipIntent,
+    EquipmentEventData,
+    EquipmentSlot,
+    ExamineIntent,
+    ExamineTargetKind,
+    ExitView,
+    FlagChangeEvent,
+    GameIntent,
+    GameView,
+    GrantedExperienceEvent,
+    GrantedItemEvent,
+    ItemFocusView,
+    ItemTransferEventData,
+    LoadIntent,
+    MonsterFocusView,
+    MoveEventData,
+    MoveIntent,
+    PersistenceEventData,
+    QuestCompletionEvent,
+    QuestKind,
+    QuestTargetView,
+    RecoverIntent,
+    RecoveryEventData,
+    RejectionCode,
+    SaveIntent,
+    SellIntent,
+    TakeIntent,
+    TalkIntent,
+    TradeEventData,
+    TurnResult,
+    TurnStatus,
+    UnequipIntent,
+    UseEventData,
+    UseIntent,
+    ViewIntent,
+    ViewKind,
 )
-from lore2mud.engine.world import (
-    AcceptQuestEffectOutcome,
-    ExamineCharacterOutcome,
-    ExamineItemOutcome,
-    ExamineMonsterOutcome,
-    GrantExperienceEffectOutcome,
-    GrantItemEffectOutcome,
-    QuestOutcome,
-    SetFlagEffectOutcome,
-    World,
-    WorldRuleError,
-)
+from lore2mud.application.session import GameSession
+from lore2mud.engine.world import World
 
 
 class _SaveService(Protocol):
@@ -108,6 +144,7 @@ def _parse_quantity(
 class CommandResult:
     text: str
     should_quit: bool = False
+    turn_result: TurnResult | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -300,196 +337,228 @@ HELP_TEXT = _render_help_index()
 class CommandProcessor:
     def __init__(
         self,
-        world: World,
+        world: World | None = None,
         save_service: _SaveService | None = None,
+        *,
+        session: GameSession | None = None,
     ) -> None:
-        self.world = world
-        self._save_service = save_service
+        if session is None:
+            if world is None:
+                raise TypeError("world or session is required")
+            self._session = GameSession(world, save_service)
+        else:
+            if world is not None or save_service is not None:
+                raise TypeError("session cannot be combined with world or save_service")
+            self._session = session
+        self._last_turn_result: TurnResult | None = None
+
+    @classmethod
+    def from_session(cls, session: GameSession) -> "CommandProcessor":
+        return cls(session=session)
+
+    @property
+    def world(self) -> World:
+        """Return the current compatibility World for existing integrations."""
+        return self._session.world
+
+    @property
+    def session(self) -> GameSession:
+        return self._session
+
+    @property
+    def last_turn_result(self) -> TurnResult | None:
+        return self._last_turn_result
 
     def execute(self, raw_command: str) -> CommandResult:
+        self._last_turn_result = None
+        if type(raw_command) is not str:
+            return self._error("命令必须是字符串。")
         try:
             parts = shlex.split(raw_command.strip())
         except ValueError as exc:
-            return CommandResult(f"无法解析指令：{exc}")
+            return self._error(f"无法解析指令：{exc}")
         if not parts:
-            return CommandResult("请输入指令；使用 help 查看帮助。")
+            return self._error("请输入指令；使用 help 查看帮助。")
 
         command = parts[0].casefold()
         arguments = parts[1:]
-        try:
-            # Preserve DEC-0020 ordering: death gates before dialogue routing
-            # and before unknown-command feedback. The allowlist is derived
-            # from the same registry that owns routes and help.
-            if not self.world.player.is_alive:
-                if command not in _DEAD_ALLOWED:
-                    from lore2mud.engine.world import _DEAD_ERROR
-                    return CommandResult(_DEAD_ERROR)
+        view = self._session.view()
 
-            if len(parts) == 1 and _BARE_SELECTION.fullmatch(parts[0]):
-                if self.world.active_dialogue is not None:
-                    return self._select_option(int(parts[0]))
-                return CommandResult(
-                    f"未知指令：{parts[0]}。使用 help 查看帮助。"
-                )
+        # Preserve DEC-0020 ordering: death gates before dialogue routing
+        # and before unknown-command feedback.
+        if not view.player.alive and command not in _DEAD_ALLOWED:
+            from lore2mud.engine.world import _DEAD_ERROR
 
-            if command == "bye" and self.world.active_dialogue is None:
-                return CommandResult(
-                    f"未知指令：{parts[0]}。使用 help 查看帮助。"
-                )
+            return self._error(_DEAD_ERROR, RejectionCode.INADMISSIBLE_INTENT)
 
-            spec = _COMMAND_BY_TOKEN.get(command)
-            if spec is None or spec.handler_name is None:
-                return CommandResult(f"未知指令：{parts[0]}。使用 help 查看帮助。")
-            handler = getattr(self, spec.handler_name)
-            return handler(arguments)
-        except WorldRuleError as exc:
-            return CommandResult(str(exc))
+        if len(parts) == 1 and _BARE_SELECTION.fullmatch(parts[0]):
+            if view.dialogue is not None:
+                return self._select_option(int(parts[0]))
+            return self._error(f"未知指令：{parts[0]}。使用 help 查看帮助。")
+
+        if command == "bye" and view.dialogue is None:
+            return self._error(f"未知指令：{parts[0]}。使用 help 查看帮助。")
+
+        spec = _COMMAND_BY_TOKEN.get(command)
+        if spec is None or spec.handler_name is None:
+            return self._error(f"未知指令：{parts[0]}。使用 help 查看帮助。")
+        handler = getattr(self, spec.handler_name)
+        return handler(arguments)
+
+    def _submit(self, intent: GameIntent) -> TurnResult:
+        result = self._session.submit(intent)
+        self._last_turn_result = result
+        return result
+
+    def _error(
+        self,
+        text: str,
+        code: RejectionCode = RejectionCode.MALFORMED_INTENT,
+    ) -> CommandResult:
+        result = self._session.reject(code, text)
+        self._last_turn_result = result
+        return CommandResult(text, turn_result=result)
+
+    @staticmethod
+    def _rejected(result: TurnResult, *, prefix: str = "") -> CommandResult:
+        assert result.status is TurnStatus.REJECTED
+        assert result.rejection is not None
+        return CommandResult(
+            f"{prefix}{result.rejection.message}",
+            turn_result=result,
+        )
 
     def _command_look(self, arguments: list[str]) -> CommandResult:
         if arguments:
-            return CommandResult("用法：look")
-        return CommandResult(self._look())
+            return self._error("用法：look")
+        result = self._submit(ViewIntent(ViewKind.LOOK))
+        return CommandResult(self._look(result.view), turn_result=result)
 
-    def _look(self) -> str:
-        room = self.world.current_room
-        lines = [f"{room.name} [{room.id}]", self.world.location_description()]
-        available_exits = self.world.available_exits()
+    @staticmethod
+    def _look(view: GameView) -> str:
+        room = view.room
+        lines = [f"{room.name} [{room.id}]", room.description]
         exits = "、".join(
-            self._render_exit(direction)
-            for direction in sorted(available_exits)
-        ) if available_exits else "无"
+            CommandProcessor._render_exit(exit_view) for exit_view in room.exits
+        ) if room.exits else "无"
         lines.append(f"出口：{exits}")
 
-        if room.item_stacks:
+        if room.items:
             items = "、".join(
-                f"{self.world.items[s.item_id].name} ×{s.quantity}"
-                if s.quantity > 1
-                else f"{self.world.items[s.item_id].name}"
-                for s in room.item_stacks
+                f"{item.name} ×{item.quantity}" if item.quantity > 1 else item.name
+                for item in room.items
             )
             lines.append(f"物品：{items}")
-        if room.monster_ids:
+
+        if room.monsters:
             monsters = "、".join(
-                f"{self.world.monsters[monster_id].name} ({monster_id})"
-                for monster_id in room.monster_ids
+                f"{monster.name} ({monster.id})" for monster in room.monsters
             )
             lines.append(f"怪物：{monsters}")
 
-        room_characters = self.world.available_characters()
-        if room_characters:
-            chars = "、".join(
-                f"{c.name} ({c.id})" for c in room_characters
+        if room.characters:
+            characters = "、".join(
+                f"{character.name} ({character.id})"
+                for character in room.characters
             )
-            lines.append(f"角色：{chars}")
+            lines.append(f"角色：{characters}")
 
-        shop = self.world._shop_in_current_room()
-        if shop is not None:
-            lines.append(f"商店：{shop.name} ({shop.id})")
+        if view.shop is not None:
+            lines.append(f"商店：{view.shop.name} ({view.shop.id})")
 
-        scenes = self.world.available_scenes()
-        if scenes:
+        if view.campaign.scenes:
             lines.append(
-                "场景：" + "、".join(f"{scene.name} ({scene.id})" for scene in scenes)
+                "场景："
+                + "、".join(
+                    f"{scene.name} ({scene.id})" for scene in view.campaign.scenes
+                )
             )
-        interactables = self.world.available_interactables()
-        if interactables:
+        if view.campaign.interactables:
             lines.append(
                 "交互："
                 + "、".join(
                     f"{interactable.name} ({interactable.id})"
-                    for interactable in interactables
+                    for interactable in view.campaign.interactables
                 )
             )
 
-        hints = self._active_quest_hints()
-        if hints:
-            lines.append(hints)
-
+        lines.extend(room.quest_hints)
         return "\n".join(lines)
 
-    def _render_exit(self, direction: str) -> str:
-        """Render one exit's read-only gate status for ``look``."""
-        exit_def = self.world.available_exits()[direction]
-        required_item_id = exit_def.required_item_id
-        if required_item_id is None:
-            return direction
-
-        item = self.world.items[required_item_id]
-        possession = (
-            "已持有"
-            if self.world.player.inventory.has_item(required_item_id)
-            else "未持有"
+    @staticmethod
+    def _render_exit(exit_view: ExitView) -> str:
+        if exit_view.required_item_id is None:
+            return exit_view.direction
+        possession = "未持有" if exit_view.locked else "已持有"
+        return (
+            f"{exit_view.direction}（需要：{exit_view.required_item_name} "
+            f"({exit_view.required_item_id})，{possession}）"
         )
-        return f"{direction}（需要：{item.name} ({required_item_id})，{possession}）"
-
-    def _active_quest_hints(self) -> str:
-        """Return a hint line for incomplete quests triggered in this room."""
-        room_id = self.world.player.room_id
-        hints: list[str] = []
-        for quest_id in sorted(self.world.quest_states):
-            qs = self.world.quest_states[quest_id]
-            if qs.completed:
-                continue
-            qdef = self.world.quest_defs.get(qs.quest_id)
-            if qdef is None:
-                continue
-            if qdef.trigger_room_id == room_id:
-                hints.append(
-                    f"任务提示：{qdef.name} — {qdef.description}"
-                )
-        return "\n".join(hints)
 
     def _go(self, arguments: list[str]) -> CommandResult:
         if len(arguments) != 1 or not arguments[0].strip():
-            return CommandResult("用法：go <方向>")
-        outcome = self.world.move_with_outcome(arguments[0])
-        lines = [f"你来到 {outcome.room.name}。"]
-        lines.extend(self._render_quest_outcomes(outcome.quest_outcomes))
-        lines.append(self._look())
-        return CommandResult("\n".join(lines))
+            return self._error("用法：go <方向>")
+        result = self._submit(MoveIntent(arguments[0]))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, MoveEventData)
+        lines = [f"你来到 {payload.room_name}。"]
+        lines.extend(self._render_quest_outcomes(payload.quest_outcomes))
+        lines.append(self._look(result.view))
+        return CommandResult("\n".join(lines), turn_result=result)
 
     def _take(self, arguments: list[str]) -> CommandResult:
         query, quantity, error = _parse_quantity(
             arguments, "take <物品ID或名称> [数量]"
         )
         if error:
-            return CommandResult(error)
-        outcome = self.world.take(query, quantity)
-        if outcome.quantity > 1:
-            lines = [f"你拾取了 {outcome.item_name} ×{outcome.quantity}。"]
+            return self._error(error)
+        result = self._submit(TakeIntent(query, quantity))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, ItemTransferEventData)
+        if payload.quantity > 1:
+            lines = [f"你拾取了 {payload.item_name} ×{payload.quantity}。"]
         else:
-            lines = [f"你拾取了 {outcome.item_name}。"]
-        lines.extend(self._render_quest_outcomes(outcome.quest_outcomes))
-        return CommandResult("\n".join(lines))
+            lines = [f"你拾取了 {payload.item_name}。"]
+        lines.extend(self._render_quest_outcomes(payload.quest_outcomes))
+        return CommandResult("\n".join(lines), turn_result=result)
 
     def _drop(self, arguments: list[str]) -> CommandResult:
         query, quantity, error = _parse_quantity(
             arguments, "drop <物品ID或名称> [数量]"
         )
         if error:
-            return CommandResult(error)
-        outcome = self.world.drop(query, quantity)
-        if outcome.quantity > 1:
-            return CommandResult(
-                f"你放下了 {outcome.item_name} ×{outcome.quantity}。"
-            )
-        return CommandResult(f"你放下了 {outcome.item_name}。")
+            return self._error(error)
+        result = self._submit(DropIntent(query, quantity))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, ItemTransferEventData)
+        item_text = (
+            f"{payload.item_name} ×{payload.quantity}"
+            if payload.quantity > 1
+            else payload.item_name
+        )
+        return CommandResult(f"你放下了 {item_text}。", turn_result=result)
 
     def _examine(self, arguments: list[str]) -> CommandResult:
         usage = f"用法：{_COMMAND_BY_TOKEN['examine'].syntax}"
         if not arguments:
-            return CommandResult(self._look())
+            return self._command_look([])
 
         selector = arguments[0].casefold()
         if selector in {"room", "here"}:
             if len(arguments) != 1:
-                return CommandResult(usage)
-            return CommandResult(self._look())
+                return self._error(usage)
+            return self._command_look([])
 
-        target_type = None
+        target_kind = None
         query_arguments = arguments
         if selector in {"item", "monster", "character"}:
-            target_type = selector
+            target_kind = ExamineTargetKind(selector)
             query_arguments = arguments[1:]
             if not query_arguments or not " ".join(query_arguments).strip():
                 labels = {
@@ -497,402 +566,449 @@ class CommandProcessor:
                     "monster": "怪物ID或名称",
                     "character": "角色ID或名称",
                 }
-                return CommandResult(
+                return self._error(
                     f"用法：examine {selector} <{labels[selector]}>"
                 )
 
         query = " ".join(query_arguments).strip()
         if not query:
-            return CommandResult(usage)
-        outcome = self.world.examine(query, target_type)  # type: ignore[arg-type]
-        return CommandResult(self._render_examine(outcome))
+            return self._error(usage)
+        result = self._submit(ExamineIntent(query, target_kind))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        return CommandResult(self._render_focus(result.view), turn_result=result)
 
     @staticmethod
-    def _render_examine(outcome: object) -> str:
-        if isinstance(outcome, ExamineItemOutcome):
+    def _render_focus(view: GameView) -> str:
+        focus = view.focus
+        if isinstance(focus, ItemFocusView):
+            return f"{focus.name} [{focus.id}]\n{focus.description}"
+        if isinstance(focus, MonsterFocusView):
             return (
-                f"{outcome.item_name} [{outcome.item_id}]\n"
-                f"{outcome.description}"
+                f"{focus.name} [{focus.id}]\n"
+                f"{focus.description}\n"
+                f"生命：{focus.hp}/{focus.max_hp}"
             )
-        if isinstance(outcome, ExamineMonsterOutcome):
-            return (
-                f"{outcome.monster_name} [{outcome.monster_id}]\n"
-                f"{outcome.description}\n"
-                f"生命：{outcome.hp}/{outcome.max_hp}"
-            )
-        if isinstance(outcome, ExamineCharacterOutcome):
-            return (
-                f"{outcome.character_name} [{outcome.character_id}]\n"
-                f"{outcome.description}"
-            )
-        raise AssertionError(f"未知 examine 结果：{outcome!r}")
+        if isinstance(focus, CharacterFocusView):
+            return f"{focus.name} [{focus.id}]\n{focus.description}"
+        raise AssertionError("accepted examine result did not include focus")
 
     def _inspect(self, arguments: list[str]) -> CommandResult:
         query = " ".join(arguments).strip()
         if not query:
-            return CommandResult("用法：inspect <物品ID或名称>")
-        outcome = self.world.inspect_item(query)
-        return CommandResult(
-            f"{outcome.item_name} [{outcome.item_id}]\n{outcome.description}"
-        )
+            return self._error("用法：inspect <物品ID或名称>")
+        result = self._submit(ExamineIntent(query, ExamineTargetKind.ITEM))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        return CommandResult(self._render_focus(result.view), turn_result=result)
 
     def _use(self, arguments: list[str]) -> CommandResult:
         query, quantity, error = _parse_quantity(
             arguments, "use <物品ID或名称> [数量]"
         )
         if error:
-            return CommandResult(error)
-        outcome = self.world.use(query, quantity)
-        if outcome.quantity > 1:
-            return CommandResult(
-                f"你使用了 {outcome.quantity} 个 {outcome.item_name}，"
-                f"恢复了 {outcome.healed_amount} 点生命。"
+            return self._error(error)
+        result = self._submit(UseIntent(query, quantity))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, UseEventData)
+        if payload.quantity > 1:
+            text = (
+                f"你使用了 {payload.quantity} 个 {payload.item_name}，"
+                f"恢复了 {payload.healed_amount} 点生命。"
             )
-        return CommandResult(
-            f"你使用了 {outcome.item_name}，恢复了 {outcome.healed_amount} 点生命。"
-        )
+        else:
+            text = (
+                f"你使用了 {payload.item_name}，"
+                f"恢复了 {payload.healed_amount} 点生命。"
+            )
+        return CommandResult(text, turn_result=result)
 
     def _equip(self, arguments: list[str]) -> CommandResult:
         query = " ".join(arguments).strip()
         if not query:
-            return CommandResult("用法：equip <物品ID或名称>")
-        outcome = self.world.equip(query)
-        return CommandResult(f"你装备了 {outcome.item_name}。")
+            return self._error("用法：equip <物品ID或名称>")
+        result = self._submit(EquipIntent(query))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, EquipmentEventData)
+        return CommandResult(f"你装备了 {payload.item_name}。", turn_result=result)
 
     def _unequip(self, arguments: list[str]) -> CommandResult:
         if not arguments:
-            slot = "hand"
-        elif len(arguments) == 1:
-            slot = arguments[0].casefold()
-            if slot not in ("hand", "body"):
-                return CommandResult("用法：unequip [hand|body]")
+            slot = EquipmentSlot.HAND
+        elif len(arguments) == 1 and arguments[0].casefold() in {"hand", "body"}:
+            slot = EquipmentSlot(arguments[0].casefold())
         else:
-            return CommandResult("用法：unequip [hand|body]")
-        outcome = self.world.unequip(slot)
-        return CommandResult(f"你卸下了 {outcome.item_name}。")
+            return self._error("用法：unequip [hand|body]")
+        result = self._submit(UnequipIntent(slot))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, EquipmentEventData)
+        return CommandResult(f"你卸下了 {payload.item_name}。", turn_result=result)
 
-    def _inventory(self) -> str:
-        stacks = self.world.player.inventory.stacks
-        if not stacks:
+    @staticmethod
+    def _inventory(view: GameView) -> str:
+        if not view.inventory:
             return "背包是空的。"
         lines = ["背包："]
-        for s in stacks:
-            item = self.world.items[s.item_id]
-            if s.quantity > 1:
-                lines.append(f"- {item.name} ({s.item_id}) ×{s.quantity}")
+        for item in view.inventory:
+            if item.quantity > 1:
+                lines.append(f"- {item.name} ({item.id}) ×{item.quantity}")
             else:
-                lines.append(f"- {item.name} ({s.item_id})")
+                lines.append(f"- {item.name} ({item.id})")
         return "\n".join(lines)
 
     def _command_inventory(self, arguments: list[str]) -> CommandResult:
         if arguments:
-            return CommandResult("用法：inventory")
-        return CommandResult(self._inventory())
+            return self._error("用法：inventory")
+        result = self._submit(ViewIntent(ViewKind.INVENTORY))
+        return CommandResult(self._inventory(result.view), turn_result=result)
 
     def _campaign_actions(self, arguments: list[str]) -> CommandResult:
         if arguments:
-            return CommandResult("用法：actions")
-        actions = self.world.available_campaign_actions()
+            return self._error("用法：actions")
+        result = self._submit(ViewIntent(ViewKind.CAMPAIGN_ACTIONS))
+        actions = result.view.campaign.actions
         if not actions:
-            return CommandResult("当前没有可用的场景动作。")
-        campaign = self.world.campaign
-        assert campaign is not None
-        lines: list[str] = []
-        for projected in actions:
-            interactable = campaign.interactables[projected.interactable_id]
-            lines.append(
-                f"- {projected.action.label} ({projected.action.id})"
-                f" @ {interactable.name} ({interactable.id})"
-            )
-        return CommandResult("\n".join(lines))
+            return CommandResult("当前没有可用的场景动作。", turn_result=result)
+        interactables = {
+            value.id: value for value in result.view.campaign.interactables
+        }
+        return CommandResult(
+            "\n".join(
+                f"- {action.label} ({action.id})"
+                f" @ {interactables[action.interactable_id].name} "
+                f"({action.interactable_id})"
+                for action in actions
+            ),
+            turn_result=result,
+        )
 
     def _act(self, arguments: list[str]) -> CommandResult:
         if len(arguments) != 1 or not arguments[0].strip():
-            return CommandResult("用法：act <动作ID>")
-        outcome = self.world.execute_campaign_action(arguments[0])
-        return CommandResult(outcome.result_text)
+            return self._error("用法：act <动作ID>")
+        result = self._submit(CampaignActionIntent(arguments[0]))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, CampaignActionEventData)
+        return CommandResult(payload.result_text, turn_result=result)
 
     def _objectives(self, arguments: list[str]) -> CommandResult:
         if arguments:
-            return CommandResult("用法：objectives")
-        entries = [
-            entry
-            for entry in self.world.available_log_entries()
-            if entry.category == "objective"
-        ]
+            return self._error("用法：objectives")
+        result = self._submit(ViewIntent(ViewKind.OBJECTIVES))
+        entries = result.view.campaign.objectives
         if not entries:
-            return CommandResult("尚无可见目标。")
+            return CommandResult("尚无可见目标。", turn_result=result)
         return CommandResult(
             "\n".join(
-                f"[{entry.status}] {entry.title}\n  {entry.text}" for entry in entries
-            )
+                f"[{entry.status.value if entry.status is not None else ''}] "
+                f"{entry.title}\n  {entry.text}"
+                for entry in entries
+            ),
+            turn_result=result,
         )
 
     def _knowledge(self, arguments: list[str]) -> CommandResult:
         if arguments:
-            return CommandResult("用法：knowledge")
-        entries = [
-            entry
-            for entry in self.world.available_log_entries()
-            if entry.category == "knowledge"
-        ]
+            return self._error("用法：knowledge")
+        result = self._submit(ViewIntent(ViewKind.KNOWLEDGE))
+        entries = result.view.campaign.knowledge
         if not entries:
-            return CommandResult("尚无已知条目。")
+            return CommandResult("尚无已知条目。", turn_result=result)
         return CommandResult(
             "\n".join(
-                f"[{entry.status}] {entry.title}\n  {entry.text}" for entry in entries
-            )
+                f"[{entry.status.value if entry.status is not None else ''}] "
+                f"{entry.title}\n  {entry.text}"
+                for entry in entries
+            ),
+            turn_result=result,
         )
 
     def _journal(self, arguments: list[str]) -> CommandResult:
         if arguments:
-            return CommandResult("用法：journal")
-        entries = self.world.available_log_entries()
+            return self._error("用法：journal")
+        result = self._submit(ViewIntent(ViewKind.JOURNAL))
+        entries = result.view.campaign.journal
         if not entries:
-            return CommandResult("叙事日志为空。")
+            return CommandResult("叙事日志为空。", turn_result=result)
         return CommandResult(
             "\n".join(
-                f"[{entry.category}] {entry.title}"
-                + (f" ({entry.status})" if entry.status else "")
+                f"[{entry.category.value}] {entry.title}"
+                + (f" ({entry.status.value})" if entry.status else "")
                 + f"\n  {entry.text}"
                 for entry in entries
-            )
+            ),
+            turn_result=result,
         )
 
-    def _quests(self) -> str:
-        if not self.world.quest_states:
+    @staticmethod
+    def _quests(view: GameView) -> str:
+        if not view.quests:
             return "当前没有已接取的任务。"
         lines: list[str] = []
-        for quest_id in sorted(self.world.quest_states):
-            qs = self.world.quest_states[quest_id]
-            qdef = self.world.quest_defs.get(qs.quest_id)
-            if qdef is None:
-                continue
-            status = "已完成" if qs.completed else "进行中"
-            lines.append(f"[{status}] {qdef.name}")
-            lines.append(f"  目标：{self._quest_target_text(qdef)}")
-            if qs.completed:
-                lines.append(f"  奖励：{qdef.reward_experience} 经验（已领取）")
-            else:
-                lines.append(f"  奖励：{qdef.reward_experience} 经验")
+        for quest in view.quests:
+            status = "已完成" if quest.completed else "进行中"
+            lines.append(f"[{status}] {quest.name}")
+            lines.append(
+                f"  目标：{CommandProcessor._quest_target_text(quest.target)}"
+            )
+            reward = f"  奖励：{quest.reward_experience} 经验"
+            if quest.completed:
+                reward += "（已领取）"
+            lines.append(reward)
         return "\n".join(lines)
 
     def _command_quests(self, arguments: list[str]) -> CommandResult:
         if arguments:
-            return CommandResult("用法：quests")
-        return CommandResult(self._quests())
+            return self._error("用法：quests")
+        result = self._submit(ViewIntent(ViewKind.QUESTS))
+        return CommandResult(self._quests(result.view), turn_result=result)
 
-    def _quest_target_text(self, qdef: object) -> str:
-        if isinstance(qdef, MonsterDefeatedQuestDefinition):
-            return f"击败 {self.world.monsters[qdef.target_monster_id].name}"
-        if isinstance(qdef, ReachRoomQuestDefinition):
-            return f"到达 {self.world.rooms[qdef.target_room_id].name}"
-        if isinstance(qdef, CollectItemQuestDefinition):
-            item = self.world.items[qdef.target_item_id]
-            stack = self.world.player.inventory.find_stack(qdef.target_item_id)
-            current = stack.quantity if stack is not None else 0
-            return (
-                f"收集 {item.name} ×{qdef.required_quantity}"
-                f"（当前 {current}/{qdef.required_quantity}）"
-            )
-        raise AssertionError(f"未知任务定义：{qdef!r}")
+    @staticmethod
+    def _quest_target_text(target: QuestTargetView) -> str:
+        kind = target.kind
+        name = target.name
+        if kind is QuestKind.MONSTER_DEFEATED:
+            return f"击败 {name}"
+        if kind is QuestKind.REACH_ROOM:
+            return f"到达 {name}"
+        if kind is QuestKind.COLLECT_ITEM:
+            required = target.required
+            current = target.current
+            return f"收集 {name} ×{required}（当前 {current}/{required}）"
+        raise AssertionError(f"未知任务目标：{target!r}")
 
-    def _status(self) -> str:
-        player = self.world.player
-        ea = self.world.effective_attack
-        ed = self.world.effective_defense
-        atk_bonus = ea - player.attack
-        def_bonus = ed - player.defense
-        attack_str = (
-            f"{ea}（{player.attack} 基础 + {atk_bonus}）" if atk_bonus else str(ea)
+    @staticmethod
+    def _status(view: GameView) -> str:
+        player = view.player
+        attack_bonus = player.attack - player.base_attack
+        defense_bonus = player.defense - player.base_defense
+        attack_text = (
+            f"{player.attack}（{player.base_attack} 基础 + {attack_bonus}）"
+            if attack_bonus
+            else str(player.attack)
         )
-        defense_str = (
-            f"{ed}（{player.defense} 基础 + {def_bonus}）" if def_bonus else str(ed)
+        defense_text = (
+            f"{player.defense}（{player.base_defense} 基础 + {defense_bonus}）"
+            if defense_bonus
+            else str(player.defense)
         )
         flags_text = "、".join(
-            f"{flag_id}={'true' if value else 'false'}"
-            for flag_id, value in sorted(self.world.flags.items())
+            f"{flag.id}={'true' if flag.value else 'false'}"
+            for flag in view.flags
         ) or "无"
         return (
             f"{player.name} [{player.id}]\n"
             f"等级：{player.level}  经验：{player.experience}/"
-            f"{player.level * 10}\n"
+            f"{player.experience_to_next_level}\n"
             f"生命：{player.hp}/{player.max_hp}  "
-            f"攻击：{attack_str}  防御：{defense_str}\n"
+            f"攻击：{attack_text}  防御：{defense_text}\n"
             f"金币：{player.coins}\n"
             f"flags：{flags_text}"
         )
 
     def _command_status(self, arguments: list[str]) -> CommandResult:
         if arguments:
-            return CommandResult("用法：status")
-        return CommandResult(self._status())
+            return self._error("用法：status")
+        result = self._submit(ViewIntent(ViewKind.STATUS))
+        return CommandResult(self._status(result.view), turn_result=result)
 
     def _shop(self, arguments: list[str]) -> CommandResult:
         if arguments:
-            return CommandResult("用法：shop")
-        outcome = self.world.shop()
-        lines = [
-            f"{outcome.shop_name} [{outcome.shop_id}]",
-            f"金币：{outcome.coins}",
-        ]
-        for listing in outcome.catalog:
-            item = self.world.items[listing.item_id]
+            return self._error("用法：shop")
+        result = self._submit(ViewIntent(ViewKind.SHOP))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        shop = result.view.shop
+        assert shop is not None
+        lines = [f"{shop.name} [{shop.id}]", f"金币：{result.view.player.coins}"]
+        for listing in shop.catalog:
             lines.append(
-                f"- {item.name} ({item.id}) 买入：{listing.buy_price} "
-                f"金币，卖出：{listing.sell_price} 金币"
+                f"- {listing.item_name} ({listing.item_id}) "
+                f"买入：{listing.buy_price} 金币，"
+                f"卖出：{listing.sell_price} 金币"
             )
-        return CommandResult("\n".join(lines))
+        return CommandResult("\n".join(lines), turn_result=result)
 
     def _buy(self, arguments: list[str]) -> CommandResult:
         query, quantity, error = _parse_quantity(
             arguments, "buy <物品ID或名称> [数量]"
         )
         if error:
-            return CommandResult(error)
-        outcome = self.world.buy(query, quantity)
+            return self._error(error)
+        result = self._submit(BuyIntent(query, quantity))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, TradeEventData)
         item_text = (
-            f"{outcome.item_name} ×{outcome.quantity}"
-            if outcome.quantity > 1
-            else outcome.item_name
+            f"{payload.item_name} ×{payload.quantity}"
+            if payload.quantity > 1
+            else payload.item_name
         )
         lines = [
-            f"你购买了 {item_text}，花费 {outcome.total_price} 金币。"
-            f"余额：{outcome.coins}。"
+            f"你购买了 {item_text}，花费 {payload.total_price} 金币。"
+            f"余额：{payload.coins}。"
         ]
-        lines.extend(self._render_quest_outcomes(outcome.quest_outcomes))
-        return CommandResult("\n".join(lines))
+        lines.extend(self._render_quest_outcomes(payload.quest_outcomes))
+        return CommandResult("\n".join(lines), turn_result=result)
 
     def _sell(self, arguments: list[str]) -> CommandResult:
         query, quantity, error = _parse_quantity(
             arguments, "sell <物品ID或名称> [数量]"
         )
         if error:
-            return CommandResult(error)
-        outcome = self.world.sell(query, quantity)
+            return self._error(error)
+        result = self._submit(SellIntent(query, quantity))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, TradeEventData)
         item_text = (
-            f"{outcome.item_name} ×{outcome.quantity}"
-            if outcome.quantity > 1
-            else outcome.item_name
+            f"{payload.item_name} ×{payload.quantity}"
+            if payload.quantity > 1
+            else payload.item_name
         )
         return CommandResult(
-            f"你出售了 {item_text}，获得 {outcome.total_price} 金币。"
-            f"余额：{outcome.coins}。"
+            f"你出售了 {item_text}，获得 {payload.total_price} 金币。"
+            f"余额：{payload.coins}。",
+            turn_result=result,
         )
 
     def _attack(self, arguments: list[str]) -> CommandResult:
         query = " ".join(arguments).strip()
         if not query:
-            return CommandResult("用法：attack <怪物ID或名称>")
-        outcome = self.world.attack(query)
-        combat = outcome.combat
+            return self._error("用法：attack <怪物ID或名称>")
+        result = self._submit(AttackIntent(query))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, CombatEventData)
         lines = [
-            f"你对 {combat.monster_name} 造成 {combat.damage_to_monster} 点伤害。"
+            f"你对 {payload.monster_name} 造成 "
+            f"{payload.damage_to_monster} 点伤害。"
         ]
-        if combat.monster_defeated:
+        if payload.monster_defeated:
             lines.append(
-                f"{combat.monster_name} 被击败，你获得 "
-                f"{combat.experience_reward} 点经验。"
+                f"{payload.monster_name} 被击败，你获得 "
+                f"{payload.experience_reward} 点经验。"
             )
-            if outcome.loot_item is not None:
-                li = outcome.loot_item
-                if li.quantity > 1:
-                    lines.append(
-                        f"{li.item_name} ×{li.quantity} "
-                        f"掉落在当前房间。"
-                    )
-                else:
-                    lines.append(
-                        f"{li.item_name} 掉落在当前房间。"
-                    )
+            if payload.loot_item is not None:
+                loot = payload.loot_item
+                item_text = (
+                    f"{loot.item_name} ×{loot.quantity}"
+                    if loot.quantity > 1
+                    else loot.item_name
+                )
+                lines.append(f"{item_text} 掉落在当前房间。")
         else:
             lines.append(
-                f"{combat.monster_name} 反击，造成 "
-                f"{combat.damage_to_player} 点伤害。"
+                f"{payload.monster_name} 反击，造成 "
+                f"{payload.damage_to_player} 点伤害。"
             )
-        for gain in outcome.combat_level_gains:
+        for gain in payload.combat_level_gains:
             lines.append(f"你升到了 {gain.new_level} 级！")
-        lines.extend(self._render_quest_outcomes(outcome.quest_outcomes))
-        if combat.player_defeated:
+        lines.extend(self._render_quest_outcomes(payload.quest_outcomes))
+        if payload.player_defeated:
             lines.append(
                 "你倒下了。使用 recover 回到起始房间并恢复，"
                 "或使用 load 读取存档。"
             )
-        return CommandResult("\n".join(lines))
+        return CommandResult("\n".join(lines), turn_result=result)
 
     def _talk(self, arguments: list[str]) -> CommandResult:
         query = " ".join(arguments).strip()
         if not query:
-            return CommandResult("用法：talk <角色ID或名称>")
-        outcome = self.world.start_dialogue(query)
-        return CommandResult(self._render_talk(outcome))
+            return self._error("用法：talk <角色ID或名称>")
+        result = self._submit(TalkIntent(query))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, DialogueEventData)
+        return CommandResult(
+            self._render_talk(payload, result.view.dialogue),
+            turn_result=result,
+        )
 
     def _select_option(self, index: int) -> CommandResult:
-        outcome = self.world.select_option(index)
-        return CommandResult(self._render_talk(outcome))
+        result = self._submit(ChooseDialogueIntent(index))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, DialogueEventData)
+        return CommandResult(
+            self._render_talk(payload, result.view.dialogue),
+            turn_result=result,
+        )
 
     def _bye(self, arguments: list[str]) -> CommandResult:
         if arguments:
-            return CommandResult("用法：bye")
-        outcome = self.world.end_dialogue()
+            return self._error("用法：bye")
+        result = self._submit(EndDialogueIntent())
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, DialogueEndEventData)
         return CommandResult(
-            f"你与{outcome.character_name}的对话结束了。"
+            f"你与{payload.character_name}的对话结束了。",
+            turn_result=result,
         )
 
     @staticmethod
-    def _render_talk(outcome: object) -> str:
+    def _render_talk(
+        outcome: DialogueEventData,
+        dialogue: DialogueView | None,
+    ) -> str:
         lines: list[str] = []
-        for effect_outcome in getattr(outcome, "effect_outcomes", ()):
-            if isinstance(effect_outcome, GrantItemEffectOutcome):
-                if effect_outcome.quantity > 1:
-                    lines.append(
-                        f"你获得了 {effect_outcome.item_name} "
-                        f"×{effect_outcome.quantity}。"
-                    )
-                else:
-                    lines.append(f"你获得了 {effect_outcome.item_name}。")
+        for effect in outcome.effect_outcomes:
+            if isinstance(effect, GrantedItemEvent):
+                item_text = (
+                    f"{effect.item_name} ×{effect.quantity}"
+                    if effect.quantity > 1
+                    else effect.item_name
+                )
+                lines.append(f"你获得了 {item_text}。")
                 lines.extend(
                     CommandProcessor._render_quest_outcomes(
-                        effect_outcome.quest_outcomes
+                        effect.quest_outcomes
                     )
                 )
-            elif isinstance(effect_outcome, GrantExperienceEffectOutcome):
-                lines.append(f"你获得了 {effect_outcome.amount} 点经验。")
-                for gain in effect_outcome.level_gains:
+            elif isinstance(effect, GrantedExperienceEvent):
+                lines.append(f"你获得了 {effect.amount} 点经验。")
+                for gain in effect.level_gains:
                     lines.append(f"你升到了 {gain.new_level} 级！")
-            elif isinstance(effect_outcome, AcceptQuestEffectOutcome):
-                lines.append(f"你接取了任务：{effect_outcome.quest_name}。")
+            elif isinstance(effect, AcceptedQuestEvent):
+                lines.append(f"你接取了任务：{effect.quest_name}。")
                 lines.extend(
                     CommandProcessor._render_quest_outcomes(
-                        effect_outcome.quest_outcomes
+                        effect.quest_outcomes
                     )
                 )
-            elif isinstance(effect_outcome, SetFlagEffectOutcome):
-                value = "true" if effect_outcome.new_value else "false"
-                if effect_outcome.changed:
-                    lines.append(
-                        f"标记 {effect_outcome.flag_id} 已设为 {value}。"
-                    )
+            elif isinstance(effect, FlagChangeEvent):
+                value = "true" if effect.new_value else "false"
+                if effect.changed:
+                    lines.append(f"标记 {effect.flag_id} 已设为 {value}。")
                 else:
-                    lines.append(
-                        f"标记 {effect_outcome.flag_id} 保持 {value}。"
-                    )
-        node_text = getattr(outcome, "node_text", None)
-        if node_text is not None:
-            char_name = getattr(outcome, "character_name", "")
-            lines.append(f"[{char_name}] {node_text}")
-        options = getattr(outcome, "options", ())
-        if options:
-            for i, opt in enumerate(options, 1):
-                lines.append(f"  {i}. {opt.text}")
-        ended = getattr(outcome, "ended", False)
-        if ended:
+                    lines.append(f"标记 {effect.flag_id} 保持 {value}。")
+        if dialogue is not None:
+            lines.append(f"[{dialogue.character_name}] {dialogue.text}")
+            for option in dialogue.options:
+                lines.append(f"  {option.index}. {option.text}")
+        elif outcome.node_text is not None:
+            lines.append(f"[{outcome.character_name}] {outcome.node_text}")
+        if outcome.ended:
             lines.append("对话结束了。")
         return "\n".join(lines)
 
     @staticmethod
     def _render_quest_outcomes(
-        outcomes: tuple[QuestOutcome, ...],
+        outcomes: tuple[QuestCompletionEvent, ...],
     ) -> list[str]:
         lines: list[str] = []
         for outcome in outcomes:
@@ -906,42 +1022,42 @@ class CommandProcessor:
 
     def _save(self, arguments: list[str]) -> CommandResult:
         if len(arguments) > 1:
-            return CommandResult("用法：save [槽位]")
-        if self._save_service is None:
-            return CommandResult("存档服务不可用。")
-        from lore2mud.engine.save import SaveLoadError
-
-        try:
-            slot = arguments[0] if arguments else None
-            msg = self._save_service.save(self.world, slot)
-            return CommandResult(msg)
-        except SaveLoadError as exc:
-            return CommandResult(f"存档失败：{exc}")
+            return self._error("用法：save [槽位]")
+        slot = arguments[0] if arguments else None
+        result = self._submit(SaveIntent(slot))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result, prefix="存档失败：")
+        payload = result.events[0].payload
+        assert isinstance(payload, PersistenceEventData)
+        destination = (
+            "default" if payload.slot == "default" else f"{payload.slot}.json"
+        )
+        return CommandResult(f"存档成功：{destination}", turn_result=result)
 
     def _load(self, arguments: list[str]) -> CommandResult:
         if len(arguments) > 1:
-            return CommandResult("用法：load [槽位]")
-        if self._save_service is None:
-            return CommandResult("存档服务不可用。")
-        from lore2mud.engine.save import SaveLoadError
-
-        try:
-            slot = arguments[0] if arguments else None
-            new_world = self._save_service.load(slot)
-            self.world = new_world
-            return CommandResult(
-                f"读档成功。\n{self._look()}"
-            )
-        except SaveLoadError as exc:
-            return CommandResult(f"读档失败：{exc}")
+            return self._error("用法：load [槽位]")
+        slot = arguments[0] if arguments else None
+        result = self._submit(LoadIntent(slot))
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result, prefix="读档失败：")
+        return CommandResult(
+            f"读档成功。\n{self._look(result.view)}",
+            turn_result=result,
+        )
 
     def _recover(self, arguments: list[str]) -> CommandResult:
         if arguments:
-            return CommandResult("用法：recover")
-        outcome = self.world.recover()
+            return self._error("用法：recover")
+        result = self._submit(RecoverIntent())
+        if result.status is TurnStatus.REJECTED:
+            return self._rejected(result)
+        payload = result.events[0].payload
+        assert isinstance(payload, RecoveryEventData)
         return CommandResult(
-            f"你已恢复，在 {outcome.room_name} 醒来。"
-            f"生命：{outcome.hp}/{outcome.max_hp}"
+            f"你已恢复，在 {payload.room_name} 醒来。"
+            f"生命：{payload.hp}/{payload.max_hp}",
+            turn_result=result,
         )
 
     def _help(self, arguments: list[str]) -> CommandResult:
