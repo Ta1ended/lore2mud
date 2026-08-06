@@ -16,7 +16,9 @@ from referencing import Registry, Resource
 
 from lore2mud._bounded_json import DEFAULT_JSON_READ_LIMITS
 from lore2mud.authoring import AgentAuthoringSDK
+from lore2mud.application import MoveIntent
 from lore2mud.authoring.contracts import (
+    CapabilitySimulationRequest,
     CreatorDecision,
     PublicInputDescriptor,
     TraceRecord,
@@ -26,6 +28,7 @@ from lore2mud.authoring.project import load_blueprint
 from lore2mud.authoring.serialization import (
     authoring_result_to_document,
     blueprint_to_document,
+    capability_simulation_request_to_document,
     canonical_json_bytes,
     fingerprint_document,
     project_bytes,
@@ -34,6 +37,8 @@ from lore2mud.authoring.serialization import (
     simulation_request_to_document,
 )
 from lore2mud.authoring.simulation import load_simulation_request
+from lore2mud.capabilities.contracts import CapabilityIntent
+from lore2mud.capabilities.serialization import canonical_json_object
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -131,12 +136,23 @@ class AuthoringEndToEndTests(unittest.TestCase):
         ]
         Draft202012Validator.check_schema(result_schema)
         cls.result_validator = Draft202012Validator(result_schema, registry=registry)
+        capability_result_schema = schemas[
+            "https://github.com/lore2mud/lore2mud/schemas/capability_authoring_result.schema.json"
+        ]
+        Draft202012Validator.check_schema(capability_result_schema)
+        cls.capability_result_validator = Draft202012Validator(
+            capability_result_schema,
+            registry=registry,
+        )
 
     def _assert_equivalent(self, direct_result, cli_result: object) -> None:
         direct_document = authoring_result_to_document(direct_result)
         self.assertEqual(cli_result, direct_document)
         self.assertEqual(canonical_json_bytes(cli_result), canonical_json_bytes(direct_document))
-        self.result_validator.validate(cli_result)
+        if isinstance(cli_result, dict) and cli_result.get("kind") == "capability_authoring_result":
+            self.capability_result_validator.validate(cli_result)
+        else:
+            self.result_validator.validate(cli_result)
 
     def test_real_sdk_and_subprocess_cli_workflow_are_byte_equivalent(self) -> None:
         sdk = AgentAuthoringSDK()
@@ -214,6 +230,116 @@ class AuthoringEndToEndTests(unittest.TestCase):
             )
 
             assert direct_report.artifact is not None
+            direct_replay = sdk.replay(direct_project.artifact, direct_report.artifact)
+            process, cli_replay = _run_cli(
+                "replay",
+                "--project",
+                str(project_path),
+                "--report",
+                str(report_path),
+                "--output",
+                str(replay_path),
+            )
+            self.assertEqual((process.returncode, process.stderr), (0, b""))
+            self._assert_equivalent(direct_replay, cli_replay)
+            self.assertEqual(replay_path.read_bytes(), report_path.read_bytes())
+
+            direct_proof = sdk.proof(direct_project.artifact)
+            process, cli_proof = _run_cli(
+                "proof",
+                "--project",
+                str(project_path),
+                "--output",
+                str(proof_path),
+            )
+            self.assertEqual((process.returncode, process.stderr), (0, b""))
+            self._assert_equivalent(direct_proof, cli_proof)
+            self.assertEqual(
+                proof_path.read_bytes(),
+                canonical_json_bytes(cli_proof["artifact"]),
+            )
+
+    def test_reference_capability_sdk_and_cli_workflow_are_byte_equivalent(self) -> None:
+        sdk = AgentAuthoringSDK()
+        blueprint = replace(
+            load_blueprint(BLUEPRINT),
+            capability_requirement_ids=("reference_counter",),
+        )
+        request = CapabilitySimulationRequest(
+            format_version=1,
+            seed=7,
+            clock=11,
+            player_name="Simulator",
+            steps=(
+                MoveIntent("east"),
+                CapabilityIntent(
+                    "reference_counter",
+                    "increment",
+                    canonical_json_object({"amount": 3}),
+                ),
+            ),
+            checkpoint_after_steps=(0, 1, 2),
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            artifacts = Path(directory)
+            blueprint_path = artifacts / "capability_blueprint.json"
+            project_path = artifacts / "project.json"
+            preview_path = artifacts / "preview.json"
+            request_path = artifacts / "request.json"
+            report_path = artifacts / "report.json"
+            replay_path = artifacts / "replay.json"
+            proof_path = artifacts / "proof.json"
+            blueprint_path.write_bytes(canonical_json_bytes(blueprint_to_document(blueprint)))
+            request_path.write_bytes(
+                canonical_json_bytes(capability_simulation_request_to_document(request))
+            )
+
+            direct_project = sdk.create_project(
+                project_id="capability_fixture_project",
+                blueprint=blueprint,
+                content_root=CONTENT,
+            )
+            process, cli_project = _run_cli(
+                "create-project",
+                "--project-id",
+                "capability_fixture_project",
+                "--blueprint",
+                str(blueprint_path),
+                "--content",
+                str(CONTENT),
+                "--output",
+                str(project_path),
+            )
+            self.assertEqual((process.returncode, process.stderr), (0, b""))
+            self._assert_equivalent(direct_project, cli_project)
+            assert direct_project.artifact is not None
+
+            direct_preview = sdk.build_preview(direct_project.artifact)
+            process, cli_preview = _run_cli(
+                "preview",
+                "--project",
+                str(project_path),
+                "--output",
+                str(preview_path),
+            )
+            self.assertEqual((process.returncode, process.stderr), (0, b""))
+            self._assert_equivalent(direct_preview, cli_preview)
+
+            direct_report = sdk.simulate(direct_project.artifact, request)
+            process, cli_report = _run_cli(
+                "simulate",
+                "--project",
+                str(project_path),
+                "--request",
+                str(request_path),
+                "--output",
+                str(report_path),
+            )
+            self.assertEqual((process.returncode, process.stderr), (0, b""))
+            self._assert_equivalent(direct_report, cli_report)
+            assert direct_report.artifact is not None
+
             direct_replay = sdk.replay(direct_project.artifact, direct_report.artifact)
             process, cli_replay = _run_cli(
                 "replay",
@@ -560,7 +686,7 @@ class AuthoringEndToEndTests(unittest.TestCase):
             "simulation_report_invalid",
         )
 
-    def test_capability_guard_is_identical_for_sdk_and_cli_before_simulation(self) -> None:
+    def test_unknown_capability_rejection_is_identical_for_sdk_and_cli(self) -> None:
         sdk = AgentAuthoringSDK()
         blocked_blueprint = replace(
             load_blueprint(BLUEPRINT),
@@ -605,7 +731,7 @@ class AuthoringEndToEndTests(unittest.TestCase):
             self._assert_equivalent(direct_preview, cli_preview)
             self.assertEqual(
                 cli_preview["diagnostics"][0]["code"],
-                "capability_requirement_unsupported_v2_2",
+                "capability_not_found",
             )
 
             direct_simulation = sdk.simulate(

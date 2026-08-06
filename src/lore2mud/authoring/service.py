@@ -1,4 +1,4 @@
-"""Shared application service used by the V2-2 SDK and structured CLI."""
+"""Shared application service used by the V2-2/V2-3 SDK and structured CLI."""
 
 from __future__ import annotations
 
@@ -11,12 +11,12 @@ from lore2mud.authoring.contracts import (
     AuthoringResult,
     AuthoringStage,
     AuthoringStatus,
+    CapabilitySimulationReport,
+    CapabilitySimulationRequest,
     CreatorDecision,
     DiagnosticSeverity,
     GameBlueprint,
     GameProject,
-    PreviewBuild,
-    ProofingProjection,
     PublicInputDescriptor,
     SimulationReport,
     SimulationRequest,
@@ -33,9 +33,10 @@ from lore2mud.authoring.project import (
     validate_blueprint,
     validate_project,
 )
-from lore2mud.authoring.preview import build_preview
-from lore2mud.authoring.proofing import build_proofing_projection
+from lore2mud.authoring.preview import PreviewResult, build_preview
+from lore2mud.authoring.proofing import ProofingResult, build_proofing_projection
 from lore2mud.authoring.simulation import (
+    SimulationResult,
     SimulationValidationError,
     replay_report,
     simulate_project,
@@ -230,7 +231,7 @@ class AuthoringService:
             )
         return _success("validate_project", validated)
 
-    def build_preview(self, project: GameProject) -> AuthoringResult[PreviewBuild]:
+    def build_preview(self, project: GameProject) -> PreviewResult:
         try:
             normalized = validate_project(project)
         except InvalidUnicodeScalarError:
@@ -246,13 +247,17 @@ class AuthoringService:
         return build_preview(normalized)
 
     def simulate(
-        self, project: GameProject, request: SimulationRequest
-    ) -> AuthoringResult[SimulationReport]:
+        self,
+        project: GameProject,
+        request: SimulationRequest | CapabilitySimulationRequest,
+    ) -> SimulationResult:
         return simulate_project(project, request)
 
     def replay(
-        self, project: GameProject, report: SimulationReport
-    ) -> AuthoringResult[SimulationReport]:
+        self,
+        project: GameProject,
+        report: SimulationReport | CapabilitySimulationReport,
+    ) -> SimulationResult:
         try:
             normalized_project = validate_project(project)
         except InvalidUnicodeScalarError:
@@ -280,7 +285,7 @@ class AuthoringService:
             return replay_report(normalized_project, report)
         return replay_report(normalized_project, normalized_report)
 
-    def proof(self, project: GameProject) -> AuthoringResult[ProofingProjection]:
+    def proof(self, project: GameProject) -> ProofingResult:
         try:
             normalized = validate_project(project)
         except InvalidUnicodeScalarError:

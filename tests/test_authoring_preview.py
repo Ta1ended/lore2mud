@@ -13,6 +13,7 @@ from lore2mud.authoring.contracts import (
     AcceptanceScenario,
     AdaptationBoundaries,
     ApprovalRecord,
+    CapabilityPreview,
     ConditionOutcome,
     GameBlueprint,
     PlayLength,
@@ -25,6 +26,7 @@ from lore2mud.authoring.preview import (
 )
 from lore2mud.authoring.project import create_game_project, validate_project
 from lore2mud.authoring.serialization import (
+    capability_preview_to_document,
     canonical_json_bytes,
     fingerprint_document,
     preview_to_document,
@@ -124,7 +126,7 @@ class PreviewBuildTests(unittest.TestCase):
         with self.assertRaisesRegex(PreviewValidationError, "engine_version"):
             load_preview_document(preview_to_document(changed))
 
-    def test_capability_requirement_rejects_after_validation_without_materialization(
+    def test_unknown_capability_requirement_rejects_after_validation_without_materialization(
         self,
     ) -> None:
         project = _project(capabilities=("v2_dynamic_story",))
@@ -145,9 +147,24 @@ class PreviewBuildTests(unittest.TestCase):
         self.assertIsNone(result.artifact)
         self.assertEqual(
             [diagnostic.code for diagnostic in result.diagnostics],
-            ["capability_requirement_unsupported_v2_2"],
+            ["capability_not_found"],
         )
-        self.assertEqual(result.diagnostics[0].stage.value, "preview")
+        self.assertEqual(result.diagnostics[0].stage.value, "project")
+
+    def test_reference_capability_builds_a_typed_capability_preview(self) -> None:
+        project = _project(capabilities=("reference_counter",))
+
+        result = build_preview(project)
+
+        self.assertTrue(result.ok)
+        preview = result.artifact
+        self.assertIsInstance(preview, CapabilityPreview)
+        assert isinstance(preview, CapabilityPreview)
+        self.assertEqual(preview.resolved_plan.requirement_ids, ("reference_counter",))
+        self.assertEqual(
+            load_preview_document(capability_preview_to_document(preview)),
+            preview,
+        )
 
 
 if __name__ == "__main__":

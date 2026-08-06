@@ -1,99 +1,101 @@
 # 下一任务 / Next Task
 
-更新日期：2026-08-05
+更新日期：2026-08-06
 
 ## 中文
 
-### 唯一下一门禁
+### 唯一下一任务
 
-**人类明确授权开始 V2-3。**
+**对本候选提交执行 fresh、read-only、未参与实现的 V2-3 TECH acceptance。**
 
 ### 当前依据
 
-- 产品候选 tree 为 `f7c12fda17257f7a6b539bbbfce97da18452a961`，父提交正是绿色
-  V2-1 文档头 `eb972903a0b959f09a647a1727a6ed66f2d098f7`。
-- 全新 Reviewer 13 对该精确候选给出 P0-P3 全空与 TECH `GO`。
-- 产品所有者已明确对同一产品 SHA 给出 PRODUCT PASS，并授权把当前
-  `workstream/v2-2-agent-authoring` 正常推送到同名远端分支。
-- 推送前实时 `git ls-remote` 显示远端 `main=bf3f8b93`、V2-1 workstream=`eb972903`，
-  且远端尚无 V2-2 workstream；因此授权操作只创建新分支，不覆盖或 force-push ref。
-- 首次推送在精确文档头 `8eb549e` 创建了远端 workstream，但 Ubuntu Actions 在产品 CLI
-  启动前暴露 POSIX surrogate argv 测试夹具问题。verification-only 提交 `2dc9475e` 只改
-  一个测试文件，产品路径相对 `ec60cb0` 零差异；全新 Reviewer 14 给出 P0-P3 全空与 `GO`。
-- 最终远端文档头 `2ae85937` 的 GitHub Actions tests `31046078308` 与 quality
-  `31046078333` 均绑定精确 SHA 并为 `completed/success`；远端 `main` 保持 `bf3f8b93`。
-- 安全门禁权限方已对精确产品 SHA 明确给出 `SECURITY PASS`。TECH、PRODUCT 与 SECURITY
-  决定均绑定产品 SHA，不绑定 documentation seal、preview/report fingerprint 或未来
-  package/evidence identity。
-- 产品所有者已明确授权把当前 SECURITY PASS 与 README documentation-only seal 正常
-  fast-forward 推送到同名远端 workstream。Controller 必须在推送后确认精确 head 的
-  GitHub Actions tests 与 quality 均为绿色，然后停止。
+- 分支：`workstream/v2-3-capability-modules`；验收精确目标为候选提交后的 `HEAD`，先用
+  `git rev-parse HEAD` 记录 SHA。
+- 授权基线：`c37969f6b6958e66474738f88a53b9d5c2f50d99`；本候选已完成 preview、
+  mixed simulation/replay/checkpoint、proofing、SDK/CLI/Web 通用集成。
+- Authoring/capability/Web 聚焦矩阵已通过：`169 passed, 480 subtests passed`（2026-08-06）。
+- 完整矩阵已通过：`unittest` `1565 OK (skipped=11)`；serial/xdist pytest 均为
+  `1554 passed, 11 skipped, 927 subtests passed`；Ruff、Pyright、compileall、Demo validate、
+  `pip check`、history safety、fsck、diff checks 和 Windows packaging smoke 均通过。
+- `git ls-remote` 超时，但 GitHub REST 已确认 live `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95`，
+  PR #1 是 head `c37969f6b6958e66474738f88a53b9d5c2f50d99` 的 draft；没有 remote write。
 
-### V2-3 授权边界
+### 验收步骤
 
-- V2-3 只能在新的明确人类授权后开始；TECH、PRODUCT、SECURITY 和本次文档推送均不自动
-  授予该权限。
-- V2-3 授权不自动允许移动/合并 `main`、release 或分发 preview/report；这些仍需分别授权。
-- 不访问私人小说、canon、派生内容、图片、存档或私人报告；只使用公开安全或合成材料。
-- 不把未封存 preview、SimulationReport 或 fingerprint 作为可分发 package、release
-  evidence 或安全证明。
-- 保留主工作区未跟踪 `uv.lock` 的 14,471 字节和 SHA-256
-  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`。
+1. 从精确候选 `HEAD` 读取代码、基线 diff、文档和验证证据；不编辑、不提交、不移动 refs、
+   不查询或写入远端、不访问私有材料。
+2. 独立复现足以支撑 findings 的边界、兼容、运行时与测试证据；以 findings-first 形式输出
+   P0-P3，最后只给 `GO` 或 `REVISE`。
+3. 若 `REVISE`，将可复现 findings 交回实现工作树；若 `GO`，仅创建 documentation-only handoff
+   seal，仍不得 push、合并 `main`、release 或进入 V2-4/V2-5。
 
-### 停止规则
+### 接受标准
 
-documentation-only seal 推送并确认 Actions 绿色后立即停止：不移动或合并 `main`，不
-release，不开始 V2-3，不发布 preview/report。等待新的明确 V2-3 授权。
+- 空 `capability_requirement_ids` 的 V2-2 object type、canonical bytes、fingerprints、SDK/CLI
+  envelopes 与 Web snapshots 保持 byte-for-byte 兼容。
+- `reference_counter` capability 的 preview、mixed simulation、events/views、checkpoint
+  restore、replay、proofing、SDK/CLI/Web generic transport 均有可复现证据。
+- 候选工作树干净；fresh TECH acceptance 给出 findings-first `GO` 或 `REVISE`。
+
+### 暂停与边界
+
+- 本候选提交后在独立 TECH 验收门槛暂停，不越过后续授权边界。
+- 不 push、不移动或合并 `main`、不 release、不分发 unsealed preview/report、不访问私人材料、
+  不进入 V2-4/V2-5。Goal 未完成，保持真实 `active`，不伪造 `blocked`/`complete`。
+
+### 后续队列
+
+1. 候选提交后的 fresh read-only TECH acceptance。
+2. 仅在 `GO` 后创建 documentation-only handoff seal。
+3. 等待独立 PRODUCT/SECURITY/发布授权；不自动推进 main 或 release。
 
 ## English
 
-### Single Next Gate
+### Single Next Task
 
-**Explicit human authorization to begin V2-3.**
+**Perform fresh, read-only, non-implementing V2-3 TECH acceptance on this candidate commit.**
 
 ### Current Basis
 
-- The product candidate tree is `f7c12fda17257f7a6b539bbbfce97da18452a961`, with
-  exact parent `eb972903a0b959f09a647a1727a6ed66f2d098f7`, the green V2-1 documentation
-  head.
-- Fresh Reviewer 13 returned P0-P3 empty and TECH `GO` for that exact candidate.
-- The product owner explicitly granted PRODUCT PASS for the same product SHA and
-  authorized a normal push of the current `workstream/v2-2-agent-authoring` branch to
-  the matching remote branch.
-- The pre-push live `git ls-remote` showed remote `main=bf3f8b93`, V2-1
-  workstream=`eb972903`, and no remote V2-2 workstream. The authorized operation therefore
-  creates a branch without overwriting or force-pushing a ref.
-- The first push created the remote workstream at exact documentation head `8eb549e`,
-  but Ubuntu Actions exposed a POSIX surrogate-argv test-harness issue before the product
-  CLI started. Verification-only commit `2dc9475e` changes one test file, leaves every
-  product path identical to `ec60cb0`, and received P0-P3 empty with `GO` from fresh
-  Reviewer 14.
-- Final remote documentation head `2ae85937` has GitHub Actions tests `31046078308` and
-  quality `31046078333` both bound to the exact SHA with `completed/success`; remote
-  `main` remained `bf3f8b93`.
-- The security gate authority explicitly returned `SECURITY PASS` for the exact product
-  SHA. TECH, PRODUCT, and SECURITY decisions bind to the product SHA, not the
-  documentation seal, preview/report fingerprints, or a future package/evidence identity.
-- The product owner explicitly authorized a normal fast-forward publication of the
-  current SECURITY PASS and README documentation-only seal to the matching remote
-  workstream. The controller must verify exact-head GitHub Actions tests and quality as
-  green after the push, then stop.
+- Branch: `workstream/v2-3-capability-modules`; the exact acceptance target is the candidate
+  commit's `HEAD`, recorded first with `git rev-parse HEAD`.
+- Authorized baseline: `c37969f6b6958e66474738f88a53b9d5c2f50d99`; this candidate includes
+  preview, mixed simulation/replay/checkpoint, proofing, and generic SDK/CLI/Web integration complete.
+- Focused capability/authoring/Web matrix passed `169 tests` and `480 subtests` on 2026-08-06.
+- The full matrix passed: `unittest` `1565 OK (skipped=11)`; serial/xdist pytest both
+  `1554 passed, 11 skipped, 927 subtests`; Ruff, Pyright, compileall, Demo validate, `pip check`,
+  history safety, fsck, diff checks, and Windows packaging smoke passed.
+- `git ls-remote` timed out, but GitHub REST confirmed live
+  `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95` and draft PR #1 head
+  `c37969f6b6958e66474738f88a53b9d5c2f50d99`; no remote write occurred.
 
-### V2-3 Authorization Boundary
+### Acceptance Steps
 
-- V2-3 may begin only after new explicit human authorization. TECH, PRODUCT, SECURITY,
-  and this documentation push do not grant that authority automatically.
-- V2-3 authorization would not automatically permit moving/merging `main`, release, or
-  preview/report distribution; those remain separately controlled.
-- Do not access private novels, canon, derived content, images, saves, or private
-  reports. Review remains public-safe or synthetic.
-- Do not present the unsealed preview, SimulationReport, or fingerprints as a
-  distributable package, release evidence, or security proof.
-- Preserve the primary checkout's untracked `uv.lock` at 14,471 bytes and SHA-256
-  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`.
+1. Inspect the exact candidate `HEAD`, baseline diff, documents, and verification evidence; do not edit,
+   commit, move refs, query or write remotes, or access private material.
+2. Independently reproduce evidence sufficient for any findings, then report P0-P3 findings first and
+   end with exactly `GO` or `REVISE`.
+3. Return reproducible `REVISE` findings to the implementation worktree. After `GO`, create only a
+   documentation-only handoff seal; do not push, merge `main`, release, or enter V2-4/V2-5.
 
-### Stop Rule
+### Acceptance Criteria
 
-Stop after publishing the documentation-only seal and verifying green Actions: do not
-move or merge `main`, release, begin V2-3, or publish previews/reports. Wait for new
-explicit V2-3 authorization.
+- Empty `capability_requirement_ids` keeps V2-2 object types, canonical bytes, fingerprints, SDK/CLI
+  envelopes, and Web snapshots byte-for-byte compatible.
+- `reference_counter` preview, mixed simulation, events/views, checkpoint restore, replay, proofing, and
+  generic SDK/CLI/Web transport have reproducible evidence.
+- The candidate tree is clean, and fresh TECH acceptance returns `GO` or `REVISE` after findings.
+
+### Pause and Boundaries
+
+- Pause at the fresh-TECH-acceptance gate after this candidate commit.
+- Do not push, move/merge `main`, release, distribute unsealed preview/report artifacts, access private
+  material, or enter V2-4/V2-5. The Goal is incomplete and remains truthfully `active`; do not fake
+  `blocked` or `complete`.
+
+### Queue
+
+1. Fresh read-only TECH acceptance for the candidate commit.
+2. Documentation-only handoff seal only after `GO`.
+3. Await separate PRODUCT/SECURITY/publication authorization; never infer main or release authority.

@@ -22,6 +22,7 @@ from lore2mud.authoring.contracts import (
     AcceptanceScenario,
     AdaptationBoundaries,
     ApprovalRecord,
+    CapabilityProofingProjection,
     ConditionOutcome,
     GameBlueprint,
     PlayLength,
@@ -38,6 +39,7 @@ from lore2mud.authoring.proofing import (
 from lore2mud.authoring.preview import build_preview
 from lore2mud.authoring.project import create_game_project
 from lore2mud.authoring.serialization import (
+    capability_proofing_to_document,
     canonical_json_bytes,
     game_intent_to_document,
     proofing_to_document,
@@ -49,7 +51,7 @@ ROOT = Path(__file__).resolve().parents[1]
 PUBLIC_CONTENT = ROOT / "examples" / "original_demo"
 
 
-def _blueprint() -> GameBlueprint:
+def _blueprint(*, capabilities: tuple[str, ...] = ()) -> GameBlueprint:
     return GameBlueprint(
         format_version=1,
         blueprint_id="proofing_blueprint",
@@ -67,7 +69,7 @@ def _blueprint() -> GameBlueprint:
         acceptance_scenarios=(
             AcceptanceScenario("reach_path", "Reach the public path", ConditionOutcome.WIN),
         ),
-        capability_requirement_ids=(),
+        capability_requirement_ids=capabilities,
         asset_requirements=(),
         provenance_requirements=("public_safe",),
         rights_assertions=("original_content",),
@@ -75,10 +77,10 @@ def _blueprint() -> GameBlueprint:
     )
 
 
-def _project():
+def _project(*, capabilities: tuple[str, ...] = ()):
     return create_game_project(
         project_id="proofing_project",
-        blueprint=_blueprint(),
+        blueprint=_blueprint(capabilities=capabilities),
         content_root=PUBLIC_CONTENT,
         public_inputs=(
             PublicInputDescriptor("public_outline", "application/json", "Public outline"),
@@ -195,6 +197,34 @@ class ProofingTests(unittest.TestCase):
                 for item in descriptors
             )
         )
+
+    def test_reference_capability_proofing_is_player_safe_and_schema_valid(self) -> None:
+        project = _project(capabilities=("reference_counter",))
+
+        first = build_proofing_projection(project)
+        second = build_proofing_projection(project)
+
+        self.assertTrue(first.ok)
+        self.assertEqual(first, second)
+        projection = first.artifact
+        self.assertIsInstance(projection, CapabilityProofingProjection)
+        assert isinstance(projection, CapabilityProofingProjection)
+        self.assertEqual(projection.project_id, project.project_id)
+        self.assertEqual(
+            [item.capability_id for item in projection.capability_views],
+            ["reference_counter"],
+        )
+        document = capability_proofing_to_document(projection)
+        self.assertEqual(document["capability_views"][0]["view"], {"count": 0})
+        payload = canonical_json_bytes(document)
+        self.assertNotIn(b"private_source_123", payload)
+        self.assertNotIn(b"ReferenceCounterImplementation", payload)
+
+        schemas, registry = _registry()
+        schema = schemas[
+            "https://github.com/lore2mud/lore2mud/schemas/capability_proofing_projection.schema.json"
+        ]
+        Draft202012Validator(schema, registry=registry).validate(document)
 
     def test_admissible_descriptor_limit_rejects_without_truncation(self) -> None:
         view = GameSession.from_content_pack(load_content_pack(PUBLIC_CONTENT)).view()

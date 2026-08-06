@@ -19,6 +19,7 @@ from lore2mud._bounded_json import (
 )
 from lore2mud.application.contracts import (
     DeterminismContext,
+    GameEvent,
     GameEventKind,
     GameIntent,
     GameView,
@@ -37,6 +38,8 @@ from lore2mud.authoring.contracts import (
     AuthoringResult,
     AuthoringStage,
     AuthoringStatus,
+    CapabilityAuthoringResult,
+    CapabilityPreview,
     CapabilitySimulationCheckpoint,
     CapabilitySimulationReport,
     CapabilitySimulationRequest,
@@ -55,8 +58,10 @@ from lore2mud.authoring.contracts import (
     SimulationTurn,
 )
 from lore2mud.authoring.preview import (
+    PreviewArtifact,
     PreviewValidationError,
     build_preview,
+    load_capability_preview_document,
     load_preview_document,
     materialized_preview_pack,
 )
@@ -69,6 +74,7 @@ from lore2mud.authoring.project import (
 from lore2mud.authoring.serialization import (
     AuthoringDocumentTraversalError,
     InvalidUnicodeScalarError,
+    capability_preview_to_document,
     capability_simulation_report_to_document,
     capability_simulation_request_to_document,
     fingerprint_document,
@@ -80,9 +86,18 @@ from lore2mud.authoring.serialization import (
     validate_unicode_scalars,
 )
 from lore2mud.capabilities.contracts import CapabilityIntent
-from lore2mud.capabilities.serialization import canonical_json_object
+from lore2mud.capabilities.persistence import (
+    create_capability_checkpoint,
+    restore_capability_checkpoint,
+)
+from lore2mud.capabilities.reference import engine_capability_catalog
+from lore2mud.capabilities.runtime import CapabilityRuntimeError, CapabilityRuntimeHost
+from lore2mud.capabilities.serialization import (
+    canonical_json_object,
+    fingerprint_capability_value,
+)
 from lore2mud.content.loader import ContentValidationError
-from lore2mud.engine.save import SaveLoadService
+from lore2mud.engine.save import SaveLoadError, SaveLoadService
 
 
 _STABLE_ID = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
@@ -116,12 +131,32 @@ class _TraceRun:
     turns: tuple[SimulationTurn, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class _CapabilityTraceRun:
+    initial_view: GameView
+    final_view: GameView
+    initial_state_sha256: str
+    final_state_sha256: str
+    turns: tuple[CapabilitySimulationTurn, ...]
+    events: tuple[GameEvent, ...]
+
+
+SimulationArtifact = SimulationReport | CapabilitySimulationReport
+SimulationResult = (
+    AuthoringResult[SimulationReport]
+    | CapabilityAuthoringResult[CapabilitySimulationReport]
+)
+
+
 def simulate_project(
-    project: GameProject, request: SimulationRequest
-) -> AuthoringResult[SimulationReport]:
-    """Build and simulate from a project so the capability gate is never bypassed."""
+    project: GameProject,
+    request: SimulationRequest | CapabilitySimulationRequest,
+) -> SimulationResult:
+    """Build and simulate from a project without bypassing capability resolution."""
     resource_rejection = _preflight_simulation_request_resources(request)
     if resource_rejection is not None:
+        if type(request) is CapabilitySimulationRequest:
+            return _capability_rejected("simulate", resource_rejection.diagnostics)
         return resource_rejection
     try:
         normalized_project = validate_project(project)
@@ -140,13 +175,93 @@ def simulate_project(
     else:
         preview_result = build_preview(normalized_project)
     if not preview_result.ok:
+        if isinstance(preview_result, CapabilityAuthoringResult):
+            return _capability_rejected("simulate", preview_result.diagnostics)
         return _rejected("simulate", preview_result.diagnostics)
     preview = preview_result.artifact
     assert preview is not None
-    return simulate_preview(preview, request)
+    if type(preview) is CapabilityPreview:
+        if type(request) is not CapabilitySimulationRequest:
+            return _capability_rejected(
+                "simulate",
+                (
+                    _diagnostic(
+                        preview.base_preview.project_id,
+                        "simulation_request_invalid",
+                        "/request",
+                        "A capability preview requires CapabilitySimulationRequest v1.",
+                        "Use the mixed steps request shape for a capability project.",
+                    ),
+                ),
+            )
+        return _simulate_capability_preview(preview, request)
+    assert isinstance(preview, PreviewBuild)
+    if type(request) is not SimulationRequest:
+        return _rejected(
+            "simulate",
+            (
+                _diagnostic(
+                    preview.project_id,
+                    "simulation_request_invalid",
+                    "/request",
+                    "The simulation request is invalid.",
+                    "Use SimulationRequest v1 for a project without capabilities.",
+                ),
+            ),
+        )
+    return _simulate_legacy_preview(preview, request)
 
 
 def simulate_preview(
+    preview: PreviewArtifact,
+    request: SimulationRequest | CapabilitySimulationRequest,
+) -> SimulationResult:
+    """Dispatch isolated simulation by the public preview and request lane."""
+    if type(preview) is CapabilityPreview:
+        if type(request) is not CapabilitySimulationRequest:
+            return _capability_rejected(
+                "simulate",
+                (
+                    _diagnostic(
+                        preview.base_preview.project_id,
+                        "simulation_request_invalid",
+                        "/request",
+                        "A capability preview requires CapabilitySimulationRequest v1.",
+                        "Use the mixed steps request shape for a capability project.",
+                    ),
+                ),
+            )
+        return _simulate_capability_preview(preview, request)
+    if type(preview) is not PreviewBuild:
+        return _rejected(
+            "simulate",
+            (
+                _diagnostic(
+                    "preview",
+                    "simulation_preview_invalid",
+                    "/preview",
+                    "The preview is invalid.",
+                    "Rebuild the preview from a valid public-safe project.",
+                ),
+            ),
+        )
+    if type(request) is not SimulationRequest:
+        return _rejected(
+            "simulate",
+            (
+                _diagnostic(
+                    preview.project_id,
+                    "simulation_request_invalid",
+                    "/request",
+                    "The simulation request is invalid.",
+                    "Use SimulationRequest v1 for a project without capabilities.",
+                ),
+            ),
+        )
+    return _simulate_legacy_preview(preview, request)
+
+
+def _simulate_legacy_preview(
     preview: PreviewBuild, request: SimulationRequest
 ) -> AuthoringResult[SimulationReport]:
     """Run request intents only in a fresh witness session and build replay evidence."""
@@ -157,6 +272,10 @@ def simulate_preview(
         validated_preview = load_preview_document(
             _preview_document(preview)
         )
+        if type(validated_preview) is not PreviewBuild:
+            raise SimulationValidationError(
+                ("preview is not a typed PreviewBuild v1",)
+            )
         validated_request = validate_simulation_request(request)
         if type(validated_request) is not SimulationRequest:
             raise SimulationValidationError(
@@ -295,7 +414,190 @@ def simulate_preview(
     )
 
 
+def _simulate_capability_preview(
+    preview: CapabilityPreview,
+    request: CapabilitySimulationRequest,
+) -> CapabilityAuthoringResult[CapabilitySimulationReport]:
+    """Run one mixed-intent capability witness in isolated sessions."""
+    resource_rejection = _preflight_simulation_request_resources(request)
+    if resource_rejection is not None:
+        return _capability_rejected("simulate", resource_rejection.diagnostics)
+    try:
+        validated_preview = load_capability_preview_document(
+            capability_preview_to_document(preview)
+        )
+        validated_request = validate_simulation_request(request)
+        if type(validated_request) is not CapabilitySimulationRequest:
+            raise SimulationValidationError(
+                ("request is not a typed CapabilitySimulationRequest v1",)
+            )
+        witness = _run_capability_trace(validated_preview, validated_request)
+        replay = _run_capability_trace(validated_preview, validated_request)
+        checkpoints = tuple(
+            _capability_checkpoint(validated_preview, validated_request, after_step)
+            for after_step in validated_request.checkpoint_after_steps
+        )
+        legacy_request = _legacy_request_from_capability_request(validated_request)
+        base_result = _simulate_legacy_preview(
+            validated_preview.base_preview,
+            legacy_request,
+        )
+        if not base_result.ok or base_result.artifact is None:
+            return _capability_rejected("simulate", base_result.diagnostics)
+        base_report = base_result.artifact
+    except _SimulationRequestNormalizationError as exc:
+        return _capability_rejected(
+            "simulate", _simulation_request_resource_rejection(exc.code).diagnostics
+        )
+    except InvalidUnicodeScalarError:
+        return _capability_rejected(
+            "simulate", _simulation_request_unicode_rejection().diagnostics
+        )
+    except SimulationValidationError:
+        return _capability_rejected(
+            "simulate",
+            (
+                _diagnostic(
+                    preview.base_preview.project_id,
+                    "simulation_request_invalid",
+                    "/",
+                    "The capability simulation request is invalid.",
+                    "Correct the bounded mixed request and retry.",
+                ),
+            ),
+        )
+    except (PreviewValidationError, ContentValidationError, OSError, BoundedJsonError):
+        return _capability_rejected(
+            "simulate",
+            (
+                _diagnostic(
+                    preview.base_preview.project_id,
+                    "simulation_preview_invalid",
+                    "/preview",
+                    "The capability preview could not be loaded in an isolated session.",
+                    "Rebuild the preview from a valid public-safe project.",
+                ),
+            ),
+        )
+    except (CapabilityRuntimeError, SaveLoadError, _SimulationExecutionError):
+        return _capability_rejected(
+            "simulate",
+            (
+                _diagnostic(
+                    preview.base_preview.project_id,
+                    "simulation_evidence_failed",
+                    "/",
+                    "The isolated capability simulation could not produce complete evidence.",
+                    "Correct the request or capability inputs and retry.",
+                ),
+            ),
+        )
+
+    capability_event_sha256 = _capability_event_hash(witness.events)
+    capability_view_sha256 = _capability_view_hash(witness.final_view)
+    replay_verified = (
+        witness.turns == replay.turns
+        and witness.initial_state_sha256 == replay.initial_state_sha256
+        and witness.final_state_sha256 == replay.final_state_sha256
+        and _capability_event_hash(witness.events) == _capability_event_hash(replay.events)
+        and _capability_view_hash(witness.initial_view)
+        == _capability_view_hash(replay.initial_view)
+        and capability_view_sha256 == _capability_view_hash(replay.final_view)
+        and base_report.replay_verified
+    )
+    report_without_fingerprint = CapabilitySimulationReport(
+        format_version=1,
+        project_id=validated_preview.base_preview.project_id,
+        base_report=base_report,
+        request_sha256=fingerprint_document(
+            capability_simulation_request_to_document(validated_request)
+        ),
+        capability_preview_fingerprint=validated_preview.fingerprint,
+        plan_sha256=validated_preview.plan_sha256,
+        initial_capability_state_sha256=witness.initial_state_sha256,
+        final_capability_state_sha256=witness.final_state_sha256,
+        turns=witness.turns,
+        witness_trace=witness.turns,
+        capability_event_sha256=capability_event_sha256,
+        capability_view_sha256=capability_view_sha256,
+        replay_verified=replay_verified,
+        checkpoints=checkpoints,
+        fingerprint="",
+    )
+    report = CapabilitySimulationReport(
+        format_version=report_without_fingerprint.format_version,
+        project_id=report_without_fingerprint.project_id,
+        base_report=report_without_fingerprint.base_report,
+        request_sha256=report_without_fingerprint.request_sha256,
+        capability_preview_fingerprint=report_without_fingerprint.capability_preview_fingerprint,
+        plan_sha256=report_without_fingerprint.plan_sha256,
+        initial_capability_state_sha256=report_without_fingerprint.initial_capability_state_sha256,
+        final_capability_state_sha256=report_without_fingerprint.final_capability_state_sha256,
+        turns=report_without_fingerprint.turns,
+        witness_trace=report_without_fingerprint.witness_trace,
+        capability_event_sha256=report_without_fingerprint.capability_event_sha256,
+        capability_view_sha256=report_without_fingerprint.capability_view_sha256,
+        replay_verified=report_without_fingerprint.replay_verified,
+        checkpoints=report_without_fingerprint.checkpoints,
+        fingerprint=fingerprint_document(
+            capability_simulation_report_to_document(
+                report_without_fingerprint,
+                include_fingerprint=False,
+            )
+        ),
+    )
+    return _capability_success("simulate", report)
+
+
 def replay_report(
+    project: GameProject,
+    report: SimulationReport | CapabilitySimulationReport,
+) -> SimulationResult:
+    """Replay either the legacy witness or the capability witness envelope."""
+    if type(report) is CapabilitySimulationReport:
+        preview_result = build_preview(project)
+        if not preview_result.ok or preview_result.artifact is None:
+            if isinstance(preview_result, CapabilityAuthoringResult):
+                return _capability_rejected("replay", preview_result.diagnostics)
+            return _rejected("replay", preview_result.diagnostics)
+        if type(preview_result.artifact) is not CapabilityPreview:
+            return _rejected(
+                "replay",
+                (
+                    _diagnostic(
+                        project.project_id,
+                        "simulation_report_project_mismatch",
+                        "/report/preview_fingerprint",
+                        "The capability report does not belong to a capability preview.",
+                        "Replay the report against the exact capability project.",
+                    ),
+                ),
+            )
+        return _replay_capability_preview(
+            project,
+            preview_result.artifact,
+            report,
+        )
+
+    assert isinstance(report, SimulationReport)
+    preview_result = build_preview(project)
+    if preview_result.ok and type(preview_result.artifact) is CapabilityPreview:
+        return _capability_rejected(
+            "replay",
+            (
+                _diagnostic(
+                    project.project_id,
+                    "simulation_report_invalid",
+                    "/report",
+                    "A capability project requires CapabilitySimulationReport v1.",
+                    "Replay the capability report emitted by the simulation service.",
+                ),
+            ),
+        )
+    return _replay_legacy_report(project, report)
+
+
+def _replay_legacy_report(
     project: GameProject, report: SimulationReport
 ) -> AuthoringResult[SimulationReport]:
     """Re-run a report witness in fresh sessions and require byte-equivalent evidence."""
@@ -304,6 +606,20 @@ def replay_report(
         return _rejected("replay", preview_result.diagnostics)
     preview = preview_result.artifact
     assert preview is not None
+    if type(preview) is not PreviewBuild:
+        return _rejected(
+            "replay",
+            (
+                _diagnostic(
+                    project.project_id,
+                    "simulation_report_invalid",
+                    "/report",
+                    "A capability project requires CapabilitySimulationReport v1.",
+                    "Replay the capability report emitted by the simulation service.",
+                ),
+            ),
+        )
+    assert isinstance(preview, PreviewBuild)
     try:
         validated_report = validate_simulation_report(report)
         if type(validated_report) is not SimulationReport:
@@ -351,7 +667,7 @@ def replay_report(
         conditions=tuple(result.condition for result in expected.condition_results),
         checkpoint_after_steps=tuple(item.after_step for item in expected.checkpoints),
     )
-    replayed = simulate_preview(preview, request)
+    replayed = _simulate_legacy_preview(preview, request)
     if not replayed.ok or replayed.artifact is None:
         return _rejected("replay", replayed.diagnostics)
     if simulation_report_to_document(replayed.artifact) != simulation_report_to_document(
@@ -377,6 +693,83 @@ def replay_report(
         diagnostics=(),
         exit_code=0,
     )
+
+
+def _replay_capability_preview(
+    project: GameProject,
+    preview: CapabilityPreview,
+    report: CapabilitySimulationReport,
+) -> CapabilityAuthoringResult[CapabilitySimulationReport]:
+    try:
+        expected = validate_simulation_report(report)
+        if type(expected) is not CapabilitySimulationReport:
+            raise SimulationValidationError(
+                ("report is not a typed CapabilitySimulationReport v1",)
+            )
+    except SimulationValidationError:
+        return _capability_rejected(
+            "replay",
+            (
+                _diagnostic(
+                    project.project_id,
+                    "simulation_report_invalid",
+                    "/report",
+                    "The capability simulation report is invalid.",
+                    "Provide an intact CapabilitySimulationReport v1.",
+                ),
+            ),
+        )
+
+    if (
+        expected.project_id != preview.base_preview.project_id
+        or expected.capability_preview_fingerprint != preview.fingerprint
+        or expected.plan_sha256 != preview.plan_sha256
+    ):
+        return _capability_rejected(
+            "replay",
+            (
+                _diagnostic(
+                    project.project_id,
+                    "simulation_report_project_mismatch",
+                    "/report/capability_preview_fingerprint",
+                    "The capability report does not belong to this project preview.",
+                    "Replay the report against the exact project that produced it.",
+                ),
+            ),
+        )
+
+    request = CapabilitySimulationRequest(
+        format_version=1,
+        seed=expected.base_report.seed,
+        clock=expected.base_report.clock,
+        player_name=expected.base_report.player_name,
+        steps=tuple(turn.step for turn in expected.witness_trace),
+        conditions=tuple(
+            condition.condition for condition in expected.base_report.condition_results
+        ),
+        checkpoint_after_steps=tuple(
+            checkpoint.after_step for checkpoint in expected.checkpoints
+        ),
+    )
+    replayed = _simulate_capability_preview(preview, request)
+    if not replayed.ok or replayed.artifact is None:
+        return _capability_rejected("replay", replayed.diagnostics)
+    if capability_simulation_report_to_document(replayed.artifact) != (
+        capability_simulation_report_to_document(expected)
+    ):
+        return _capability_rejected(
+            "replay",
+            (
+                _diagnostic(
+                    project.project_id,
+                    "simulation_replay_mismatch",
+                    "/report/witness_trace",
+                    "Fresh capability replay evidence differs from the supplied report.",
+                    "Regenerate the report from the exact preview and request inputs.",
+                ),
+            ),
+        )
+    return _capability_success("replay", replayed.artifact)
 
 
 def load_simulation_request(
@@ -895,6 +1288,141 @@ def load_capability_simulation_report_document(
     return report
 
 
+def _run_capability_trace(
+    preview: CapabilityPreview,
+    request: CapabilitySimulationRequest,
+) -> _CapabilityTraceRun:
+    with _isolated_capability_session(preview, request) as (session, _pack, _service):
+        initial_view = session.view()
+        initial_state_sha256 = _capability_state_hash(session)
+        final_view = initial_view
+        turns: list[CapabilitySimulationTurn] = []
+        events: list[GameEvent] = []
+        for index, step in enumerate(request.steps, 1):
+            result = session.submit(step)
+            final_view = result.view
+            events.extend(result.events)
+            turns.append(
+                CapabilitySimulationTurn(
+                    index=index,
+                    step=step,
+                    status=result.status.value,
+                    rejection_code=(
+                        None if result.rejection is None else result.rejection.code.value
+                    ),
+                    event_sha256=_capability_event_hash(result.events),
+                    view_sha256=_full_capability_view_hash(result.view),
+                    capability_state_sha256=_capability_state_hash(session),
+                    event_sequence_after=session.event_sequence,
+                )
+            )
+        return _CapabilityTraceRun(
+            initial_view=initial_view,
+            final_view=final_view,
+            initial_state_sha256=initial_state_sha256,
+            final_state_sha256=_capability_state_hash(session),
+            turns=tuple(turns),
+            events=tuple(events),
+        )
+
+
+def _capability_checkpoint(
+    preview: CapabilityPreview,
+    request: CapabilitySimulationRequest,
+    after_step: int,
+) -> CapabilitySimulationCheckpoint:
+    with _isolated_capability_session(preview, request) as (session, pack, _service):
+        _submit_capability_prefix(session, request, after_step)
+        checkpoint = create_capability_checkpoint(session, pack)
+        restore_capability_checkpoint(session, pack, checkpoint)
+        restored_state_sha256 = _capability_state_hash(session)
+        restored_view_sha256 = _full_capability_view_hash(session.view())
+        equivalent = (
+            checkpoint.state_sha256 == restored_state_sha256
+            and checkpoint.view_sha256 == restored_view_sha256
+            and checkpoint.event_sequence == session.event_sequence
+        )
+        return CapabilitySimulationCheckpoint(
+            after_step=after_step,
+            checkpoint_sha256=checkpoint.fingerprint,
+            restored_state_sha256=restored_state_sha256,
+            restored_view_sha256=restored_view_sha256,
+            restored_event_sequence=session.event_sequence,
+            equivalent=equivalent,
+        )
+
+
+@contextmanager
+def _isolated_capability_session(
+    preview: CapabilityPreview,
+    request: CapabilitySimulationRequest,
+):
+    with materialized_preview_pack(preview) as pack:
+        with tempfile.TemporaryDirectory(
+            prefix="lore2mud-v2-capability-simulation-save-"
+        ) as save_dir:
+            service = SaveLoadService(pack, Path(save_dir))
+            catalog = engine_capability_catalog()
+            host = CapabilityRuntimeHost(
+                preview.resolved_plan,
+                catalog.implementation_registry,
+                states=preview.initial_states,
+            )
+            context = DeterminismContext(seed=request.seed, clock=request.clock)
+            session = GameSession.from_content_pack(
+                pack,
+                service,
+                player_name=request.player_name,
+                determinism=context,
+                capability_host=host,
+            )
+            yield session, pack, service
+
+
+def _submit_capability_prefix(
+    session: GameSession,
+    request: CapabilitySimulationRequest,
+    length: int,
+) -> None:
+    for step in request.steps[:length]:
+        session.submit(step)
+
+
+def _legacy_request_from_capability_request(
+    request: CapabilitySimulationRequest,
+) -> SimulationRequest:
+    return SimulationRequest(
+        format_version=1,
+        seed=request.seed,
+        clock=request.clock,
+        player_name=request.player_name,
+        intents=tuple(step for step in request.steps if isinstance(step, GameIntent)),
+        conditions=request.conditions,
+        checkpoint_after_steps=(),
+    )
+
+
+def _capability_state_hash(session: GameSession) -> str:
+    host = session.capability_host
+    if not isinstance(host, CapabilityRuntimeHost):
+        raise _SimulationExecutionError("capability runtime host is unavailable")
+    return fingerprint_capability_value(host.states)
+
+
+def _capability_event_hash(events: tuple[GameEvent, ...]) -> str:
+    return fingerprint_capability_value(
+        tuple(event for event in events if event.kind is GameEventKind.CAPABILITY)
+    )
+
+
+def _capability_view_hash(view: GameView) -> str:
+    return fingerprint_capability_value(view.capabilities)
+
+
+def _full_capability_view_hash(view: GameView) -> str:
+    return fingerprint_capability_value(view)
+
+
 def _run_trace(preview: PreviewBuild, request: SimulationRequest) -> _TraceRun:
     with _isolated_session(preview, request) as (session, _service):
         initial_view = session.view()
@@ -1255,6 +1783,34 @@ def _rejected(
     operation: str, diagnostics: tuple[AuthoringDiagnostic, ...]
 ) -> AuthoringResult[SimulationReport]:
     return AuthoringResult(
+        format_version=1,
+        operation=operation,
+        status=AuthoringStatus.REJECTED,
+        artifact=None,
+        diagnostics=diagnostics,
+        exit_code=1,
+    )
+
+
+def _capability_success(
+    operation: str,
+    artifact: CapabilitySimulationReport,
+) -> CapabilityAuthoringResult[CapabilitySimulationReport]:
+    return CapabilityAuthoringResult(
+        format_version=1,
+        operation=operation,
+        status=AuthoringStatus.SUCCESS,
+        artifact=artifact,
+        diagnostics=(),
+        exit_code=0,
+    )
+
+
+def _capability_rejected(
+    operation: str,
+    diagnostics: tuple[AuthoringDiagnostic, ...],
+) -> CapabilityAuthoringResult[CapabilitySimulationReport]:
+    return CapabilityAuthoringResult(
         format_version=1,
         operation=operation,
         status=AuthoringStatus.REJECTED,

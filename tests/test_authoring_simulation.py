@@ -17,12 +17,15 @@ from lore2mud.application import (
     DeterminismContext,
     GameSession,
     LoadIntent,
+    MoveIntent,
     SaveIntent,
 )
 from lore2mud.authoring.contracts import (
     AcceptanceScenario,
     AdaptationBoundaries,
     ApprovalRecord,
+    CapabilitySimulationReport,
+    CapabilitySimulationRequest,
     ConditionOutcome,
     GameBlueprint,
     PlayLength,
@@ -33,6 +36,7 @@ from lore2mud.authoring.preview import build_preview
 from lore2mud.authoring.project import create_game_project
 from lore2mud.authoring.serialization import (
     authoring_result_to_document,
+    capability_simulation_report_to_document,
     canonical_json_bytes,
     fingerprint_document,
     preview_to_document,
@@ -50,6 +54,8 @@ from lore2mud.authoring.simulation import (
     simulate_project,
 )
 from lore2mud.content import load_content_pack
+from lore2mud.capabilities.contracts import CapabilityIntent
+from lore2mud.capabilities.serialization import canonical_json_object
 from lore2mud.engine.save import SaveLoadService
 
 
@@ -212,7 +218,7 @@ class SimulationTests(unittest.TestCase):
 
         self.assertNotIn("_serialize_world", inspect.getsource(simulation_module))
 
-    def test_capability_guard_precedes_request_validation(self) -> None:
+    def test_capability_resolution_precedes_request_validation(self) -> None:
         project = _project(capabilities=("v2_dynamic_story",))
         invalid_request = SimulationRequest(
             format_version=2,
@@ -225,9 +231,54 @@ class SimulationTests(unittest.TestCase):
         self.assertFalse(result.ok)
         self.assertEqual(
             [diagnostic.code for diagnostic in result.diagnostics],
-            ["capability_requirement_unsupported_v2_2"],
+            ["capability_not_found"],
         )
-        self.assertEqual(result.diagnostics[0].stage.value, "preview")
+        self.assertEqual(result.diagnostics[0].stage.value, "project")
+
+    def test_reference_capability_simulation_replay_and_checkpoints_are_equivalent(
+        self,
+    ) -> None:
+        project = _project(capabilities=("reference_counter",))
+        request = CapabilitySimulationRequest(
+            format_version=1,
+            seed=7,
+            clock=11,
+            player_name="Simulator",
+            steps=(
+                MoveIntent("east"),
+                CapabilityIntent(
+                    "reference_counter",
+                    "increment",
+                    canonical_json_object({"amount": 3}),
+                ),
+            ),
+            checkpoint_after_steps=(0, 1, 2),
+        )
+
+        result = simulate_project(project, request)
+
+        self.assertTrue(result.ok)
+        report = result.artifact
+        self.assertIsInstance(report, CapabilitySimulationReport)
+        assert isinstance(report, CapabilitySimulationReport)
+        self.assertEqual(
+            [turn.event_sequence_after for turn in report.turns],
+            [1, 2],
+        )
+        self.assertEqual(
+            [checkpoint.after_step for checkpoint in report.checkpoints],
+            [0, 1, 2],
+        )
+        self.assertTrue(all(checkpoint.equivalent for checkpoint in report.checkpoints))
+        self.assertEqual(
+            load_simulation_report_document(
+                capability_simulation_report_to_document(report)
+            ),
+            report,
+        )
+        replayed = replay_report(project, report)
+        self.assertTrue(replayed.ok)
+        self.assertEqual(replayed.artifact, report)
 
     def test_workspace_metadata_cannot_change_report_content_or_fingerprint(self) -> None:
         project = _project()

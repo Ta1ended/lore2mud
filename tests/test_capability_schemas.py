@@ -867,7 +867,7 @@ class CapabilitySchemaProtectionTests(unittest.TestCase):
                     result.returncode, 0, f"legacy schema changed on this branch: {name}"
                 )
 
-    def test_git_status_contains_only_owned_paths(self) -> None:
+    def test_git_status_does_not_modify_protected_runtime_core_paths(self) -> None:
         result = subprocess.run(
             ["git", "status", "--porcelain"],
             cwd=ROOT,
@@ -875,14 +875,17 @@ class CapabilitySchemaProtectionTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(result.returncode, 0)
-        owned_schemas = {f"schemas/{name}" for name in NEW_SCHEMA_FILES}
+        protected_paths = {
+            "src/lore2mud/engine/world.py",
+            "src/lore2mud/engine/save.py",
+            "pipeline/forge.py",
+        }
         for line in result.stdout.splitlines():
             path = line[3:].strip()
-            self.assertTrue(
-                path == "tests/test_capability_schemas.py"
-                or path.startswith("tests/fixtures/capabilities/")
-                or path in owned_schemas,
-                f"unowned worktree path: {path}",
+            self.assertNotIn(
+                path,
+                protected_paths,
+                f"V2-3 must not modify protected runtime core path: {path}",
             )
 
 

@@ -14,6 +14,9 @@ from lore2mud.capabilities.contracts import (
     CapabilityIntent,
     CapabilityPlayerViewEntry,
 )
+from lore2mud.capabilities.reference import engine_capability_catalog
+from lore2mud.capabilities.resolution import resolve_capabilities
+from lore2mud.capabilities.runtime import CapabilityRuntimeHost
 from lore2mud.capabilities.semver import SemanticVersion
 from lore2mud.capabilities.serialization import (
     canonical_json_object,
@@ -108,6 +111,35 @@ class PlayerSessionTests(unittest.TestCase):
         self.assertEqual(len(snapshot["quests"]), 3)
         self.assertIsNone(snapshot["dialogue"])
         self.assertIsNone(snapshot["shop"])
+
+    def test_optional_capability_host_uses_generic_snapshot_and_action_transport(self) -> None:
+        catalog = engine_capability_catalog()
+        resolution = resolve_capabilities(catalog, ("reference_counter",))
+        self.assertTrue(resolution.ok)
+        assert resolution.plan is not None
+        session = PlayerSession(
+            self.pack,
+            SaveLoadService(self.pack, Path(self.temp_dir.name)),
+            player_name="浏览器旅人",
+            capability_host=CapabilityRuntimeHost(
+                resolution.plan,
+                catalog.implementation_registry,
+            ),
+        )
+
+        initial = session.snapshot()
+        self.assertEqual(initial["capabilities"][0]["capability_id"], "reference_counter")
+        self.assertEqual(initial["capabilities"][0]["view"], {"count": 0})
+        result = session.dispatch(
+            {
+                "type": "capability",
+                "capability_id": "reference_counter",
+                "action_id": "increment",
+                "parameters": {"amount": 3},
+            }
+        )
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["snapshot"]["capabilities"][0]["view"], {"count": 3})
 
     def test_inventory_equipment_and_status_follow_world_actions(self) -> None:
         take = self.action("take", target="item_crystal_blade")

@@ -3311,3 +3311,26 @@
 - Supersedes: DEC-0112 only for documentation-seal publication authority and next-gate
   routing. DEC-0112's exact SECURITY PASS, product freeze, evidence limits, privacy,
   release, Git, and later-milestone boundaries remain in force.
+
+## DEC-0114: Pause V2-3 after the Authoring checkpoint
+
+- Date: 2026-08-06
+- Status: Accepted local checkpoint; no product, publication, or independent TECH verdict.
+- Context: The resumed `workstream/v2-3-capability-modules` tree was dirty at HEAD
+  `94f9617f7ca1303fc9190e0f200998595087eff6`, with the capability authoring lane incomplete.
+  The user requested that development pause at the next recoverable checkpoint.
+- Decision: Treat preview, mixed simulation/replay/checkpoint, proofing, SDK/structured-CLI,
+  and generic Web host integration as the completed Authoring checkpoint. Preserve the exact
+  V2-2 empty-requirement lane, keep the candidate uncommitted, and stop before the full gate
+  matrix, candidate commit, or independent acceptance. Record the single resume task in the
+  bilingual handoff files.
+- Evidence: The focused capability/authoring/Web matrix passed `169 tests` and `480 subtests`
+  on 2026-08-06; targeted Ruff/Pyright and `git diff --check` passed. Real public-safe
+  `reference_counter` SDK/CLI/Web and checkpoint/replay/proofing paths are covered by focused
+  tests. A fresh resume `git ls-remote` attempt timed out and is explicitly not treated as live
+  remote evidence.
+- Consequences: The worktree remains dirty and no candidate SHA exists. On resume, recheck live
+  refs/PR/Actions and protected paths, run the full validation matrix, create one coherent
+  candidate, and request fresh read-only TECH acceptance. No push, `main` movement, release,
+  private-material access, or V2-4/V2-5 work is authorized by this checkpoint.
+- Supersedes: None.

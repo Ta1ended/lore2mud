@@ -1,4 +1,4 @@
-"""Typed Python facade for the shared V2-2 authoring service."""
+"""Typed Python facade for the shared V2-2/V2-3 authoring service."""
 
 from __future__ import annotations
 
@@ -8,18 +8,21 @@ from typing import Protocol
 
 from lore2mud.authoring.contracts import (
     AuthoringResult,
+    CapabilitySimulationReport,
+    CapabilitySimulationRequest,
     CreatorDecision,
     GameBlueprint,
     GameProject,
-    PreviewBuild,
-    ProofingProjection,
     PublicInputDescriptor,
     SimulationReport,
     SimulationRequest,
     TraceRecord,
     WorkspaceMetadataEntry,
 )
+from lore2mud.authoring.preview import PreviewResult
+from lore2mud.authoring.proofing import ProofingResult
 from lore2mud.authoring.service import AuthoringService
+from lore2mud.authoring.simulation import SimulationResult
 
 
 class AuthoringServiceProtocol(Protocol):
@@ -51,19 +54,23 @@ class AuthoringServiceProtocol(Protocol):
 
     def build_preview(
         self, project: GameProject
-    ) -> AuthoringResult[PreviewBuild]: ...
+    ) -> PreviewResult: ...
 
     def simulate(
-        self, project: GameProject, request: SimulationRequest
-    ) -> AuthoringResult[SimulationReport]: ...
+        self,
+        project: GameProject,
+        request: SimulationRequest | CapabilitySimulationRequest,
+    ) -> SimulationResult: ...
 
     def replay(
-        self, project: GameProject, report: SimulationReport
-    ) -> AuthoringResult[SimulationReport]: ...
+        self,
+        project: GameProject,
+        report: SimulationReport | CapabilitySimulationReport,
+    ) -> SimulationResult: ...
 
     def proof(
         self, project: GameProject
-    ) -> AuthoringResult[ProofingProjection]: ...
+    ) -> ProofingResult: ...
 
 
 class AgentAuthoringSDK:
@@ -110,22 +117,26 @@ class AgentAuthoringSDK:
 
     def build_preview(
         self, project: GameProject
-    ) -> AuthoringResult[PreviewBuild]:
+    ) -> PreviewResult:
         return self._service.build_preview(project)
 
     def simulate(
-        self, project: GameProject, request: SimulationRequest
-    ) -> AuthoringResult[SimulationReport]:
+        self,
+        project: GameProject,
+        request: SimulationRequest | CapabilitySimulationRequest,
+    ) -> SimulationResult:
         return self._service.simulate(project, request)
 
     def replay(
-        self, project: GameProject, report: SimulationReport
-    ) -> AuthoringResult[SimulationReport]:
+        self,
+        project: GameProject,
+        report: SimulationReport | CapabilitySimulationReport,
+    ) -> SimulationResult:
         return self._service.replay(project, report)
 
     def proof(
         self, project: GameProject
-    ) -> AuthoringResult[ProofingProjection]:
+    ) -> ProofingResult:
         return self._service.proof(project)
 
 

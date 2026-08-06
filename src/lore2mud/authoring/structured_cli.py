@@ -1,4 +1,4 @@
-"""Structured JSON command adapter for the shared V2-2 authoring service."""
+"""Structured JSON command adapter for the shared V2-2/V2-3 service."""
 
 from __future__ import annotations
 
@@ -20,6 +20,7 @@ from lore2mud.authoring.contracts import (
     AuthoringResult,
     AuthoringStage,
     AuthoringStatus,
+    CapabilityAuthoringResult,
     CreatorDecision,
     DiagnosticSeverity,
     GameBlueprint,
@@ -41,6 +42,8 @@ from lore2mud.authoring.simulation import (
 
 _MAX_PROJECT_INPUT_ITEMS = 4_096
 _MAX_TRACE_RECORDS = 8_192
+
+CliAuthoringResult = AuthoringResult[object] | CapabilityAuthoringResult[object]
 
 
 def add_author_parser(
@@ -230,7 +233,7 @@ def _validate_project(args: argparse.Namespace) -> AuthoringResult[object]:
     )
 
 
-def _build_preview(args: argparse.Namespace) -> AuthoringResult[object]:
+def _build_preview(args: argparse.Namespace) -> CliAuthoringResult:
     sdk, project, rejected = _load_project(
         cast(Path, args.project),
         operation="build_preview",
@@ -238,10 +241,10 @@ def _build_preview(args: argparse.Namespace) -> AuthoringResult[object]:
     if rejected is not None:
         return rejected
     assert sdk is not None and project is not None
-    return cast(AuthoringResult[object], sdk.build_preview(project))
+    return cast(CliAuthoringResult, sdk.build_preview(project))
 
 
-def _simulate(args: argparse.Namespace) -> AuthoringResult[object]:
+def _simulate(args: argparse.Namespace) -> CliAuthoringResult:
     sdk, project, rejected = _load_project(
         cast(Path, args.project),
         operation="simulate",
@@ -267,10 +270,10 @@ def _simulate(args: argparse.Namespace) -> AuthoringResult[object]:
             "The simulation request is not a valid SimulationRequest v1 document.",
             "Correct the request fields and retry the simulation.",
         )
-    return cast(AuthoringResult[object], sdk.simulate(project, request))
+    return cast(CliAuthoringResult, sdk.simulate(project, request))
 
 
-def _replay(args: argparse.Namespace) -> AuthoringResult[object]:
+def _replay(args: argparse.Namespace) -> CliAuthoringResult:
     sdk, project, rejected = _load_project(
         cast(Path, args.project),
         operation="replay",
@@ -296,10 +299,10 @@ def _replay(args: argparse.Namespace) -> AuthoringResult[object]:
             "The replay input is not a valid SimulationReport v1 document.",
             "Provide an unchanged report emitted by the simulation service.",
         )
-    return cast(AuthoringResult[object], sdk.replay(project, report))
+    return cast(CliAuthoringResult, sdk.replay(project, report))
 
 
-def _proof(args: argparse.Namespace) -> AuthoringResult[object]:
+def _proof(args: argparse.Namespace) -> CliAuthoringResult:
     sdk, project, rejected = _load_project(
         cast(Path, args.project),
         operation="proof",
@@ -307,7 +310,7 @@ def _proof(args: argparse.Namespace) -> AuthoringResult[object]:
     if rejected is not None:
         return rejected
     assert sdk is not None and project is not None
-    return cast(AuthoringResult[object], sdk.proof(project))
+    return cast(CliAuthoringResult, sdk.proof(project))
 
 
 def _load_project(
@@ -409,7 +412,7 @@ def _input_validation_rejection(
 
 
 def _emit_result(
-    result: AuthoringResult[object],
+    result: CliAuthoringResult,
     *,
     output: Path | None,
     protected_inputs: tuple[Path, ...],

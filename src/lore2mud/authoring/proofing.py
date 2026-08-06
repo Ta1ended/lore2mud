@@ -1,4 +1,4 @@
-"""Read-only, player-safe V2-2 proofing projection."""
+"""Read-only, player-safe V2-2 and V2-3 proofing projections."""
 
 from __future__ import annotations
 
@@ -12,6 +12,9 @@ from lore2mud.authoring.contracts import (
     AuthoringResult,
     AuthoringStage,
     AuthoringStatus,
+    CapabilityAuthoringResult,
+    CapabilityPreview,
+    CapabilityProofingProjection,
     DiagnosticSeverity,
     GameProject,
     IntentFieldDescriptor,
@@ -26,10 +29,15 @@ from lore2mud.authoring.preview import (
     materialized_preview_pack,
 )
 from lore2mud.authoring.serialization import (
+    capability_proofing_to_document,
     canonical_json_bytes,
+    fingerprint_document,
     game_intent_to_document,
     sha256_bytes,
 )
+from lore2mud.capabilities.catalog import CapabilityCatalogError
+from lore2mud.capabilities.reference import engine_capability_catalog
+from lore2mud.capabilities.runtime import CapabilityRuntimeError, CapabilityRuntimeHost
 from lore2mud.content.loader import ContentValidationError
 
 
@@ -43,15 +51,26 @@ class ProofingProjectionTooLarge(ValueError):
     pass
 
 
+ProofingResult = (
+    AuthoringResult[ProofingProjection]
+    | CapabilityAuthoringResult[CapabilityProofingProjection]
+)
+
+
 def build_proofing_projection(
     project: GameProject,
-) -> AuthoringResult[ProofingProjection]:
+) -> ProofingResult:
     """Build a projection from public project data and one fresh safe initial view."""
     preview_result = build_preview(project)
     if not preview_result.ok:
+        if isinstance(preview_result, CapabilityAuthoringResult):
+            return _capability_rejected("proof", preview_result.diagnostics)
         return _rejected("proof", preview_result.diagnostics)
     preview = preview_result.artifact
     assert preview is not None
+    if type(preview) is CapabilityPreview:
+        return _build_capability_proofing_projection(project, preview)
+    assert type(preview) is PreviewBuild
     try:
         with materialized_preview_pack(preview) as pack:
             default = project.blueprint.default_determinism
@@ -101,6 +120,71 @@ def build_proofing_projection(
         diagnostics=(),
         exit_code=0,
     )
+
+
+def _build_capability_proofing_projection(
+    project: GameProject,
+    preview: CapabilityPreview,
+) -> CapabilityAuthoringResult[CapabilityProofingProjection]:
+    """Project only the capability entries already admitted into GameView."""
+    try:
+        with materialized_preview_pack(preview) as pack:
+            default = project.blueprint.default_determinism
+            catalog = engine_capability_catalog()
+            host = CapabilityRuntimeHost(
+                preview.resolved_plan,
+                catalog.implementation_registry,
+                states=preview.initial_states,
+            )
+            session = GameSession.from_content_pack(
+                pack,
+                player_name="Proofing Player",
+                determinism=DeterminismContext(default.seed, default.clock),
+                capability_host=host,
+            )
+            view = session.view()
+            base_proofing = projection_from_view(project, preview.base_preview, view)
+            capability_views = view.capabilities
+            if capability_views is None:
+                raise CapabilityRuntimeError("capability player view is unavailable")
+    except ProofingProjectionTooLarge:
+        return _capability_rejected(
+            "proof",
+            (_projection_too_large_diagnostic(project),),
+        )
+    except (
+        CapabilityCatalogError,
+        CapabilityRuntimeError,
+        PreviewValidationError,
+        ContentValidationError,
+        OSError,
+    ):
+        return _capability_rejected(
+            "proof",
+            (_capability_projection_invalid_diagnostic(project),),
+        )
+
+    without_fingerprint = CapabilityProofingProjection(
+        format_version=1,
+        project_id=project.project_id,
+        capability_preview_fingerprint=preview.fingerprint,
+        base_proofing=base_proofing,
+        capability_views=capability_views,
+        fingerprint="",
+        diagnostics=(),
+    )
+    projection = CapabilityProofingProjection(
+        format_version=without_fingerprint.format_version,
+        project_id=without_fingerprint.project_id,
+        capability_preview_fingerprint=without_fingerprint.capability_preview_fingerprint,
+        base_proofing=without_fingerprint.base_proofing,
+        capability_views=without_fingerprint.capability_views,
+        fingerprint=fingerprint_document(
+            capability_proofing_to_document(without_fingerprint)
+        ),
+        diagnostics=without_fingerprint.diagnostics,
+    )
+    return _capability_success("proof", projection)
 
 
 def projection_from_view(
@@ -302,4 +386,60 @@ def _rejected(
         artifact=None,
         diagnostics=diagnostics,
         exit_code=1,
+    )
+
+
+def _capability_success(
+    operation: str,
+    artifact: CapabilityProofingProjection,
+) -> CapabilityAuthoringResult[CapabilityProofingProjection]:
+    return CapabilityAuthoringResult(
+        format_version=1,
+        operation=operation,
+        status=AuthoringStatus.SUCCESS,
+        artifact=artifact,
+        diagnostics=(),
+        exit_code=0,
+    )
+
+
+def _capability_rejected(
+    operation: str,
+    diagnostics: tuple[AuthoringDiagnostic, ...],
+) -> CapabilityAuthoringResult[CapabilityProofingProjection]:
+    return CapabilityAuthoringResult(
+        format_version=1,
+        operation=operation,
+        status=AuthoringStatus.REJECTED,
+        artifact=None,
+        diagnostics=diagnostics,
+        exit_code=1,
+    )
+
+
+def _projection_too_large_diagnostic(project: GameProject) -> AuthoringDiagnostic:
+    return AuthoringDiagnostic(
+        stage=AuthoringStage.PROOFING,
+        code="proofing_projection_too_large",
+        severity=DiagnosticSeverity.ERROR,
+        artifact_id=project.project_id,
+        json_pointer="/",
+        source_span=None,
+        message="The bounded proofing projection limit was exceeded.",
+        remediation="Reduce public preview entities or admissible actions and retry.",
+    )
+
+
+def _capability_projection_invalid_diagnostic(
+    project: GameProject,
+) -> AuthoringDiagnostic:
+    return AuthoringDiagnostic(
+        stage=AuthoringStage.PROOFING,
+        code="proofing_preview_invalid",
+        severity=DiagnosticSeverity.ERROR,
+        artifact_id=project.project_id,
+        json_pointer="/content_files",
+        source_span=None,
+        message="The capability preview could not be projected in an isolated session.",
+        remediation="Rebuild the preview from valid public-safe capability inputs.",
     )

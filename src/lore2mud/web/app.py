@@ -55,6 +55,7 @@ from lore2mud.capabilities.serialization import (
     canonical_json_object,
     capability_value_to_document,
 )
+from lore2mud.capabilities.runtime import CapabilityRuntimeHost
 from lore2mud.content.models import ContentPack
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.save import SaveLoadService
@@ -117,12 +118,14 @@ class PlayerSession:
         *,
         player_name: str = "旅人",
         determinism: DeterminismContext | None = None,
+        capability_host: CapabilityRuntimeHost | None = None,
     ) -> None:
         self._session = GameSession.from_content_pack(
             pack,
             save_service,
             player_name=player_name,
             determinism=determinism,
+            capability_host=capability_host,
         )
         self._commands = CommandProcessor.from_session(self._session)
         self._last_turn_result: TurnResult | None = None

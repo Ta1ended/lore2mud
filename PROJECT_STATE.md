@@ -1,8 +1,113 @@
 # 项目状态 / Project State
 
-更新日期：2026-08-05
+更新日期：2026-08-06
 
-## 中文
+## 当前 V2-3 检查点
+
+### 目标
+
+在隔离分支完成 Lore2MUD V2-3 Capability Module Architecture：以 engine-shipped
+catalog/resolver 驱动 capability preview、隔离 runtime、checkpoint/replay 证据，并让
+Authoring、SDK、结构化 CLI 与 Web 共用通用边界；不改变 `World`、save core 或私有材料边界。
+
+### 当前状态
+
+- 工作树：`D:\MUD game kaifa\.codex-worktrees\v2-3-capability-modules-20260806`；分支
+  `workstream/v2-3-capability-modules`；候选提交创建后，以 `git rev-parse HEAD` 记录精确验收 SHA。
+- 授权基线：`c37969f6b6958e66474738f88a53b9d5c2f50d99`；候选包含 capability authoring/Web
+  适配、聚焦测试及四个 handoff 文件。
+- 完整 V2-3 验证矩阵已通过，单一候选提交已经建立；当前暂停于 fresh read-only TECH
+  acceptance 门槛。Goal 保持真实 `active`，因为该验收尚未完成。
+
+### 已完成
+
+- `src/lore2mud/capabilities/`：SemVer、catalog、resolver、reference capability、runtime
+  transaction 与 checkpoint persistence 已在此前 clean checkpoint 完成。
+- `src/lore2mud/authoring/preview.py`：空 requirements 保留 `PreviewBuild`，非空 requirements
+  返回解析后的 `CapabilityPreview` 并按当前 catalog 验证。
+- `src/lore2mud/authoring/simulation.py`：mixed intent、namespaced state/hash、event/view
+  evidence、checkpoint restore、replay 与 capability report 已接通；资源拒绝先于 project/preview。
+- `src/lore2mud/authoring/proofing.py`：capability host 只输出 `GameView` 中的 player-safe
+  capability views，并保留 base proofing projection。
+- `src/lore2mud/authoring/service.py`、`sdk.py`、`structured_cli.py` 与 `src/lore2mud/web/app.py`：
+  通用 wrapper 类型、SDK/CLI parity、可选 Web host 注入已接通；没有 capability-specific route。
+
+### 已验证
+
+- Authoring/capability/Web 聚焦矩阵：`169 passed, 480 subtests passed`（2026-08-06）。
+- 完整矩阵：`unittest` 为 `1565 OK (skipped=11)`；serial 与 xdist `pytest` 均为
+  `1554 passed, 11 skipped, 927 subtests passed`；Windows PyInstaller smoke 随 unittest 通过。
+- `ruff check .`、Pyright `0 errors, 0 warnings`、compileall、公开 Demo validate、`pip check`、
+  history safety、fsck 与 diff 检查均通过。全量 Pyright 曾发现 12 个 union-narrowing errors，
+  已以不改变运行行为的分派收紧修复并复跑完整矩阵。
+- 真实 `reference_counter` preview/simulate/replay/proof 以及 SDK/结构化 CLI 字节等价已覆盖；
+  Web optional-host generic snapshot/action 与 V2-2 legacy compatibility 也已覆盖。
+
+### 暂停与未完成
+
+- 候选提交已建立，fresh read-only TECH acceptance 尚未产生 verdict。
+- 当前暂停点：独立 TECH acceptance。不得 push、移动/合并 `main`、release 或进入 V2-4/V2-5。
+
+### 实时证据与风险
+
+- `git ls-remote` 仍会超时，不能把本地 `origin/*` 当实时证据；但本次 GitHub REST 已确认 live
+  `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95`，PR #1 仍为 draft 且 head 为
+  `c37969f6b6958e66474738f88a53b9d5c2f50d99`。未对远端执行任何写操作。
+- 候选提交后工作树必须干净；独立 TECH acceptance 必须在精确候选 SHA 上以 fresh read-only
+  任务执行，当前 Controller 结果不是 acceptance verdict。
+
+### 关键路径
+
+- `docs/v2/capability_modules.md`：V2-3 边界与数据流。
+- `src/lore2mud/capabilities/`：capability contracts/runtime/persistence。
+- `src/lore2mud/authoring/`：preview/simulation/proofing/service/SDK/CLI。
+- `src/lore2mud/web/app.py`：通用 Web transport 与可选 host 注入。
+- `tests/test_authoring_end_to_end.py`、`tests/test_v2_3_legacy_compatibility.py`：端到端与空 lane 证据。
+
+## Current V2-3 Checkpoint (English)
+
+### Objective
+
+Complete Lore2MUD V2-3 Capability Module Architecture on the isolated branch: use the
+engine-shipped catalog/resolver for capability previews, isolated runtime, checkpoint/replay
+evidence, and shared Authoring/SDK/structured-CLI/Web boundaries without changing `World`, save
+core, or private-material boundaries.
+
+### Current Status
+
+- Worktree: `D:\MUD game kaifa\.codex-worktrees\v2-3-capability-modules-20260806`; branch
+  `workstream/v2-3-capability-modules`; record the exact acceptance SHA with `git rev-parse HEAD`
+  after this candidate commit is created.
+- Authorized baseline: `c37969f6b6958e66474738f88a53b9d5c2f50d99`; the candidate contains the
+  capability authoring/Web adapters, focused tests, and four handoff files.
+- The full V2-3 validation matrix passed and a single candidate commit is established. Work is paused at
+  the fresh read-only TECH acceptance gate. The Goal remains truthfully `active` because that acceptance
+  is still pending.
+
+### Verified Checkpoint
+
+- Focused capability/authoring/Web matrix: `169 passed, 480 subtests passed` (2026-08-06).
+- Full matrix: `unittest` `1565 OK (skipped=11)`; serial and xdist pytest both
+  `1554 passed, 11 skipped, 927 subtests`; the Windows PyInstaller smoke passed with unittest.
+- `ruff check .`, Pyright `0 errors, 0 warnings`, compileall, public Demo validation, `pip check`,
+  history safety, fsck, and diff checks passed. A full Pyright run found 12 union-narrowing errors;
+  the dispatch-only repair preserves runtime behavior and passed the complete matrix again.
+- Real `reference_counter` preview/simulate/replay/proof, SDK/structured-CLI byte parity, generic Web
+  optional-host transport, and empty-requirement V2-2 compatibility are covered.
+
+### Resume Gate, Risks, and Boundaries
+
+- The full unittest/pytest/static/security/packaging matrix passed. A full Pyright run exposed 12
+  union-narrowing errors; the dispatch-only repair now passes Pyright and the complete matrix again.
+  The candidate is ready for fresh read-only TECH acceptance. Do not push, move/merge `main`, release,
+  or enter V2-4/V2-5.
+- `git ls-remote` still times out, so local `origin/*` is not live GitHub evidence. GitHub REST confirms
+  live `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95` and draft PR #1 head
+  `c37969f6b6958e66474738f88a53b9d5c2f50d99`; no remote write occurred.
+- The candidate tree must be clean after the commit; current Controller verification is not an independent
+  acceptance verdict.
+
+## 历史 V2-2 中文快照
 
 ### 目标
 
@@ -202,7 +307,7 @@ CLI 共用一个实现。
   force-push 任何 ref。
 - 唯一下一门禁：人类明确授权开始 V2-3。在获得授权前，不得开始下一里程碑。
 
-## English
+## Historical V2-2 English Snapshot
 
 ### Objective
 

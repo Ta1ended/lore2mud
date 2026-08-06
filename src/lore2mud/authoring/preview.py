@@ -1,4 +1,4 @@
-"""Fixed-profile, non-distributable V2-2 preview construction."""
+"""Deterministic V2-2 compatibility and V2-3 capability preview construction."""
 
 from __future__ import annotations
 
@@ -10,9 +10,12 @@ from typing import cast
 
 from lore2mud import __version__
 from lore2mud.authoring.contracts import (
+    CAPABILITY_PREVIEW_IDENTITY_SCOPE,
     PREVIEW_IDENTITY_SCOPE,
     V1_COMPATIBILITY_PROFILE_ID,
     AuthoringDiagnostic,
+    CapabilityAuthoringResult,
+    CapabilityPreview,
     AuthoringResult,
     AuthoringStage,
     AuthoringStatus,
@@ -26,16 +29,25 @@ from lore2mud.authoring.project import (
     ProjectValidationError,
     REQUIRED_V1_CONTENT_FILES,
     V1_CONTENT_FILE_ORDER,
-    capability_requirement_diagnostics,
     diagnostic_artifact_id,
     read_authoring_json,
     validate_project,
 )
 from lore2mud.authoring.serialization import (
+    capability_preview_to_document,
     canonical_json_bytes,
     fingerprint_document,
     preview_to_document,
     sha256_bytes,
+)
+from lore2mud.capabilities.catalog import CapabilityCatalogError
+from lore2mud.capabilities.contracts import CapabilityDiagnostic
+from lore2mud.capabilities.reference import engine_capability_catalog
+from lore2mud.capabilities.resolution import resolve_capabilities
+from lore2mud.capabilities.runtime import CapabilityRuntimeError, CapabilityRuntimeHost
+from lore2mud.capabilities.serialization import (
+    capability_value_to_document,
+    fingerprint_capability_value,
 )
 from lore2mud.content.loader import ContentPack, ContentValidationError, load_content_pack
 
@@ -48,8 +60,12 @@ class PreviewValidationError(ValueError):
         super().__init__("; ".join(self.issues))
 
 
-def build_preview(project: GameProject) -> AuthoringResult[PreviewBuild]:
-    """Build one deterministic fixed-profile preview without retaining runtime state."""
+PreviewArtifact = PreviewBuild | CapabilityPreview
+PreviewResult = AuthoringResult[PreviewBuild] | CapabilityAuthoringResult[CapabilityPreview]
+
+
+def build_preview(project: GameProject) -> PreviewResult:
+    """Build a V2-2 preview or a resolved V2-3 capability preview."""
     try:
         normalized = validate_project(project)
     except (BlueprintValidationError, ProjectValidationError):
@@ -66,12 +82,81 @@ def build_preview(project: GameProject) -> AuthoringResult[PreviewBuild]:
             ),
         )
 
-    capability_diagnostics = capability_requirement_diagnostics(normalized)
-    if capability_diagnostics:
-        return _rejected("build_preview", capability_diagnostics)
+    requirements = normalized.blueprint.capability_requirement_ids
+    if not requirements:
+        return _build_base_preview(normalized)
 
     try:
-        with _materialized_content_pack(normalized.content_files):
+        catalog = engine_capability_catalog()
+    except CapabilityCatalogError as exc:
+        return _capability_rejected(
+            "build_preview",
+            _capability_diagnostics(normalized, exc.diagnostics),
+        )
+
+    resolution = resolve_capabilities(catalog, requirements)
+    if not resolution.ok or resolution.plan is None:
+        return _capability_rejected(
+            "build_preview",
+            _capability_diagnostics(normalized, resolution.diagnostics),
+        )
+    plan = resolution.plan
+
+    # Validate the exact engine-owned binding and initial state before content
+    # materialization or any preview artifact is returned.
+    try:
+        CapabilityRuntimeHost(plan, catalog.implementation_registry)
+    except CapabilityRuntimeError:
+        return _capability_rejected(
+            "build_preview",
+            (
+                _diagnostic(
+                    normalized_id(normalized),
+                    "capability_state_invalid",
+                    "/blueprint/capability_requirement_ids",
+                    "The resolved capability state cannot be initialized safely.",
+                    "Correct the declared capability requirements and retry.",
+                ),
+            ),
+        )
+
+    base_result = _build_base_preview(normalized)
+    if not base_result.ok or base_result.artifact is None:
+        return _capability_rejected("build_preview", base_result.diagnostics)
+    base_preview = base_result.artifact
+
+    plan_sha256 = fingerprint_capability_value(plan)
+    initial_state_sha256 = fingerprint_capability_value(plan.initial_states)
+    without_fingerprint = CapabilityPreview(
+        format_version=1,
+        base_preview=base_preview,
+        resolved_plan=plan,
+        plan_sha256=plan_sha256,
+        initial_states=plan.initial_states,
+        initial_state_sha256=initial_state_sha256,
+        engine_version=__version__,
+        fingerprint="",
+    )
+    preview = CapabilityPreview(
+        format_version=without_fingerprint.format_version,
+        base_preview=without_fingerprint.base_preview,
+        resolved_plan=without_fingerprint.resolved_plan,
+        plan_sha256=without_fingerprint.plan_sha256,
+        initial_states=without_fingerprint.initial_states,
+        initial_state_sha256=without_fingerprint.initial_state_sha256,
+        engine_version=without_fingerprint.engine_version,
+        fingerprint=fingerprint_document(
+            capability_preview_to_document(without_fingerprint, include_fingerprint=False)
+        ),
+    )
+    return _capability_success("build_preview", preview)
+
+
+def _build_base_preview(project: GameProject) -> AuthoringResult[PreviewBuild]:
+    """Build the byte-stable V2-2 artifact after project validation."""
+
+    try:
+        with _materialized_content_pack(project.content_files):
             pass
     except (ContentValidationError, OSError):
         return _rejected(
@@ -87,15 +172,15 @@ def build_preview(project: GameProject) -> AuthoringResult[PreviewBuild]:
             ),
         )
 
-    project_sha256 = fingerprint_document(_project_semantic_document(normalized))
+    project_sha256 = fingerprint_document(_project_semantic_document(project))
     preview_without_fingerprint = PreviewBuild(
         format_version=1,
         preview_id=f"preview_{project_sha256[:24]}",
-        project_id=normalized.project_id,
-        blueprint_sha256=normalized.blueprint_sha256,
+        project_id=project.project_id,
+        blueprint_sha256=project.blueprint_sha256,
         project_sha256=project_sha256,
         engine_version=__version__,
-        content_files=normalized.content_files,
+        content_files=project.content_files,
         fingerprint="",
     )
     fingerprint = fingerprint_document(
@@ -121,12 +206,22 @@ def build_preview(project: GameProject) -> AuthoringResult[PreviewBuild]:
     )
 
 
-def load_preview(path: Path) -> PreviewBuild:
+def load_preview(path: Path) -> PreviewArtifact:
     """Read and validate a bounded preview JSON document."""
     return load_preview_document(read_authoring_json(path))
 
 
-def load_preview_document(document: object) -> PreviewBuild:
+def load_preview_document(document: object) -> PreviewArtifact:
+    """Dispatch a public preview document without altering V2-2 loading."""
+    if (
+        type(document) is dict
+        and cast(dict[object, object], document).get("kind") == "capability_preview"
+    ):
+        return load_capability_preview_document(document)
+    return _load_preview_build_document(document)
+
+
+def _load_preview_build_document(document: object) -> PreviewBuild:
     """Validate one preview document, including content and fingerprint integrity."""
     data = _object(document, "preview")
     _exact_keys(
@@ -186,11 +281,118 @@ def load_preview_document(document: object) -> PreviewBuild:
     return preview
 
 
+def load_capability_preview_document(document: object) -> CapabilityPreview:
+    """Validate a capability preview against the current engine-shipped catalog."""
+    data = _object(document, "capability_preview")
+    _exact_keys(
+        data,
+        {
+            "format_version",
+            "kind",
+            "sealed",
+            "distributable",
+            "release_evidence",
+            "identity_scope",
+            "base_preview",
+            "resolved_plan",
+            "plan_sha256",
+            "initial_states",
+            "initial_state_sha256",
+            "engine_version",
+            "fingerprint",
+        },
+        "capability_preview",
+    )
+    if _integer(data["format_version"], "capability_preview.format_version") != 1:
+        raise PreviewValidationError(("capability_preview.format_version must be 1",))
+    if data["kind"] != "capability_preview":
+        raise PreviewValidationError(("capability_preview.kind is invalid",))
+    for field in ("sealed", "distributable", "release_evidence"):
+        if data[field] is not False:
+            raise PreviewValidationError((f"capability_preview.{field} must be false",))
+    if data["identity_scope"] != CAPABILITY_PREVIEW_IDENTITY_SCOPE:
+        raise PreviewValidationError(("capability_preview.identity_scope is invalid",))
+    engine_version = _text(
+        data["engine_version"], "capability_preview.engine_version", maximum=64
+    )
+    if engine_version != __version__:
+        raise PreviewValidationError(("capability_preview.engine_version is not supported",))
+    base_preview = _load_preview_build_document(data["base_preview"])
+
+    plan_document = _object(data["resolved_plan"], "capability_preview.resolved_plan")
+    raw_requirements = plan_document.get("requirement_ids")
+    if type(raw_requirements) is not list:
+        raise PreviewValidationError(
+            ("capability_preview.resolved_plan.requirement_ids must be an array",)
+        )
+    requirements = tuple(
+        _stable_id(
+            requirement,
+            f"capability_preview.resolved_plan.requirement_ids[{index}]",
+        )
+        for index, requirement in enumerate(cast(list[object], raw_requirements))
+    )
+    if not requirements or len(requirements) != len(set(requirements)):
+        raise PreviewValidationError(("capability preview requirements are invalid",))
+    try:
+        catalog = engine_capability_catalog()
+    except CapabilityCatalogError as exc:
+        raise PreviewValidationError(("capability catalog is invalid",)) from exc
+    resolution = resolve_capabilities(catalog, requirements)
+    if not resolution.ok or resolution.plan is None:
+        raise PreviewValidationError(("capability preview plan is not resolved",))
+    plan = resolution.plan
+    if capability_value_to_document(plan) != plan_document:
+        raise PreviewValidationError(("capability preview plan does not match the catalog",))
+    if capability_value_to_document(plan.initial_states) != data["initial_states"]:
+        raise PreviewValidationError(("capability preview initial states are invalid",))
+    plan_sha256 = _sha256(data["plan_sha256"], "capability_preview.plan_sha256")
+    if plan_sha256 != fingerprint_capability_value(plan):
+        raise PreviewValidationError(("capability preview plan hash is invalid",))
+    initial_state_sha256 = _sha256(
+        data["initial_state_sha256"], "capability_preview.initial_state_sha256"
+    )
+    if initial_state_sha256 != fingerprint_capability_value(plan.initial_states):
+        raise PreviewValidationError(("capability preview state hash is invalid",))
+    try:
+        CapabilityRuntimeHost(plan, catalog.implementation_registry)
+    except CapabilityRuntimeError as exc:
+        raise PreviewValidationError(("capability preview runtime binding is invalid",)) from exc
+    preview = CapabilityPreview(
+        format_version=1,
+        base_preview=base_preview,
+        resolved_plan=plan,
+        plan_sha256=plan_sha256,
+        initial_states=plan.initial_states,
+        initial_state_sha256=initial_state_sha256,
+        engine_version=engine_version,
+        fingerprint=_sha256(data["fingerprint"], "capability_preview.fingerprint"),
+    )
+    expected = fingerprint_document(
+        capability_preview_to_document(preview, include_fingerprint=False)
+    )
+    if preview.fingerprint != expected:
+        raise PreviewValidationError(
+            ("capability preview fingerprint does not match canonical bytes",)
+        )
+    return preview
+
+
 @contextmanager
-def materialized_preview_pack(preview: PreviewBuild) -> Iterator[ContentPack]:
+def materialized_preview_pack(preview: PreviewArtifact) -> Iterator[ContentPack]:
     """Yield a fresh ContentPack loaded only from immutable preview bytes."""
-    validated = load_preview_document(preview_to_document(preview))
-    with _materialized_content_pack(validated.content_files) as pack:
+    if type(preview) is CapabilityPreview:
+        document = capability_preview_to_document(preview)
+    else:
+        assert isinstance(preview, PreviewBuild)
+        document = preview_to_document(preview)
+    validated = load_preview_document(document)
+    if type(validated) is CapabilityPreview:
+        base_preview = validated.base_preview
+    else:
+        assert isinstance(validated, PreviewBuild)
+        base_preview = validated
+    with _materialized_content_pack(base_preview.content_files) as pack:
         yield pack
 
 
@@ -245,6 +447,57 @@ def _rejected(
         artifact=None,
         diagnostics=diagnostics,
         exit_code=1,
+    )
+
+
+def _capability_success(
+    operation: str,
+    artifact: CapabilityPreview,
+) -> CapabilityAuthoringResult[CapabilityPreview]:
+    return CapabilityAuthoringResult(
+        format_version=1,
+        operation=operation,
+        status=AuthoringStatus.SUCCESS,
+        artifact=artifact,
+        diagnostics=(),
+        exit_code=0,
+    )
+
+
+def _capability_rejected(
+    operation: str,
+    diagnostics: tuple[AuthoringDiagnostic, ...],
+) -> CapabilityAuthoringResult[CapabilityPreview]:
+    return CapabilityAuthoringResult(
+        format_version=1,
+        operation=operation,
+        status=AuthoringStatus.REJECTED,
+        artifact=None,
+        diagnostics=diagnostics,
+        exit_code=1,
+    )
+
+
+def _capability_diagnostics(
+    project: GameProject,
+    diagnostics: tuple[CapabilityDiagnostic, ...],
+) -> tuple[AuthoringDiagnostic, ...]:
+    return tuple(
+        AuthoringDiagnostic(
+            stage=AuthoringStage.PROJECT,
+            code=value.code.value,
+            severity=DiagnosticSeverity.ERROR,
+            artifact_id=diagnostic_artifact_id(project.project_id),
+            json_pointer=(
+                f"/blueprint{value.json_pointer}"
+                if value.json_pointer.startswith("/")
+                else "/blueprint/capability_requirement_ids"
+            ),
+            source_span=None,
+            message=value.message,
+            remediation="Correct the declared capability requirements and retry.",
+        )
+        for value in diagnostics
     )
 
 

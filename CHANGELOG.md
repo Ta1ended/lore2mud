@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### Added
+
+- Implemented the V2-3 capability authoring lane across `src/lore2mud/authoring/` and
+  `src/lore2mud/web/app.py`: resolved `CapabilityPreview`, mixed `CapabilitySimulationReport`,
+  player-safe `CapabilityProofingProjection`, shared SDK/structured-CLI envelopes, and optional
+  generic Web capability-host construction. Empty requirements retain the V2-2 artifact lane.
+- Added real public-safe/synthetic regression coverage for `reference_counter` preview, simulation,
+  replay, checkpoint equivalence, proofing, SDK/CLI byte parity, generic Web transport, and legacy
+  compatibility.
+
+### Fixed
+
+- Moved simulation request resource rejection ahead of project validation and preview construction,
+  and normalized capability checkpoint `SaveLoadError` into a structured simulation diagnostic.
+- Re-scoped the capability schema worktree guard to protect `World`, save core, and `pipeline/forge.py`
+  while allowing the authorized V2-3 authoring/Web integration paths.
+
 ### Changed
 
 - Completed and published V2-1 on remote `workstream/v2-1-game-session` at exact
