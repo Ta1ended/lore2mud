@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError, replace
+from dataclasses import FrozenInstanceError, fields, replace
+import random
 import unittest
 
 from lore2mud.capabilities import (
@@ -9,6 +10,7 @@ from lore2mud.capabilities import (
     CapabilityActionDescriptor,
     CapabilityCatalog,
     CapabilityCatalogError,
+    CapabilityCheckpoint,
     CapabilityDescriptor,
     CapabilityDiagnosticCode,
     CapabilityEffectResult,
@@ -18,6 +20,7 @@ from lore2mud.capabilities import (
     CapabilityPlayerViewEntry,
     CapabilitySafetyLevel,
     CapabilityStateEntry,
+    ResolvedCapabilityPlan,
     SemanticVersion,
     SemanticVersionError,
     VersionRequirement,
@@ -27,6 +30,8 @@ from lore2mud.capabilities import (
     compare_precedence,
     parse_canonical_json_bytes,
     parse_canonical_json_object,
+    random_state_from_canonical_json,
+    random_state_to_canonical_json,
     sha256_bytes,
     validate_json_schema,
     validate_capability_descriptor,
@@ -246,6 +251,94 @@ class CapabilitySerializationTests(unittest.TestCase):
     def test_canonical_object_property_bound_matches_public_schema(self) -> None:
         with self.assertRaises(CapabilitySerializationError):
             canonical_json_object({f"field_{index}": index for index in range(4097)})
+
+    def test_random_state_round_trip_uses_canonical_hex_for_gauss_cache(self) -> None:
+        generator = random.Random(7)
+        generator.gauss(0.0, 1.0)
+        state = generator.getstate()
+
+        encoded = random_state_to_canonical_json(state)
+        document = parse_canonical_json_object(encoded)
+
+        self.assertEqual(document["algorithm"], "python_random_mt19937")
+        self.assertEqual(document["format_version"], 1)
+        self.assertEqual(document["version"], 3)
+        self.assertEqual(len(document["state"]), 625)  # type: ignore[arg-type]
+        self.assertEqual(document["gauss_next"], state[2].hex())
+        self.assertEqual(random_state_from_canonical_json(encoded), state)
+
+    def test_random_state_decoder_rejects_tampered_payloads(self) -> None:
+        document = parse_canonical_json_object(
+            random_state_to_canonical_json(random.Random(7).getstate())
+        )
+        state_values = list(document["state"])  # type: ignore[arg-type]
+        invalid_documents: list[dict[str, object]] = []
+
+        for field_name, value in (
+            ("algorithm", "other"),
+            ("format_version", 2),
+            ("version", 2),
+            ("gauss_next", "0x1p+0"),
+            ("gauss_next", "inf"),
+        ):
+            changed = dict(document)
+            changed[field_name] = value
+            invalid_documents.append(changed)
+
+        missing = dict(document)
+        del missing["algorithm"]
+        invalid_documents.append(missing)
+
+        extra = dict(document)
+        extra["implementation"] = "hidden"
+        invalid_documents.append(extra)
+
+        for index, value in ((0, -1), (0, 2**32), (624, -1), (624, 625)):
+            changed = dict(document)
+            changed_state = list(state_values)
+            changed_state[index] = value
+            changed["state"] = changed_state
+            invalid_documents.append(changed)
+
+        shortened = dict(document)
+        shortened["state"] = state_values[:-1]
+        invalid_documents.append(shortened)
+
+        for invalid in invalid_documents:
+            with self.subTest(invalid=invalid), self.assertRaises(CapabilitySerializationError):
+                random_state_from_canonical_json(canonical_json_object(invalid))
+
+    def test_checkpoint_appends_rng_state_with_compatibility_sentinel(self) -> None:
+        self.assertEqual(fields(CapabilityCheckpoint)[-1].name, "rng_state")
+        plan = ResolvedCapabilityPlan(
+            format_version=1,
+            requirement_ids=(),
+            capabilities=(),
+            dependency_edges=(),
+            migrations=(),
+            initial_states=(),
+            catalog_sha256="0" * 64,
+            fingerprint="1" * 64,
+        )
+        checkpoint = CapabilityCheckpoint(
+            format_version=1,
+            plan=plan,
+            plan_sha256="2" * 64,
+            save_document=EMPTY_OBJECT,
+            save_sha256="3" * 64,
+            states=(),
+            state_sha256="4" * 64,
+            seed=7,
+            clock=9,
+            event_sequence=11,
+            view_sha256="5" * 64,
+            fingerprint="6" * 64,
+        )
+
+        self.assertIsNone(checkpoint.rng_state)
+        document = capability_value_to_document(checkpoint)
+        self.assertEqual(tuple(document)[-1], "rng_state")  # type: ignore[arg-type]
+        self.assertIsNone(document["rng_state"])  # type: ignore[index]
 
 
 class CapabilityCatalogTests(unittest.TestCase):

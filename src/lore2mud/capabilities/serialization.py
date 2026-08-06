@@ -8,7 +8,7 @@ import hashlib
 import json
 import math
 import re
-from typing import Mapping, cast
+from typing import Mapping, TypeAlias, cast
 
 from lore2mud._bounded_json import DEFAULT_JSON_READ_LIMITS, parse_bounded_json
 from lore2mud.capabilities.contracts import CanonicalJsonObject
@@ -48,6 +48,15 @@ _SCHEMA_KEYS = {
 }
 _SCHEMA_TYPES = {"object", "array", "string", "integer", "boolean", "null"}
 _MAX_OBJECT_PROPERTIES = 4096
+_RANDOM_STATE_KEYS = frozenset(
+    {"algorithm", "format_version", "version", "state", "gauss_next"}
+)
+_RANDOM_STATE_WORD_COUNT = 624
+_UINT32_MAX = 2**32 - 1
+_MAX_FLOAT_HEX_CHARS = 32
+
+
+RandomState: TypeAlias = tuple[int, tuple[int, ...], float | None]
 
 
 def _normalize_json(
@@ -183,8 +192,93 @@ def parse_canonical_json_object(
     return parsed
 
 
+def random_state_to_canonical_json(state: object) -> CanonicalJsonObject:
+    """Encode one supported ``random.Random.getstate()`` value without JSON floats."""
+    version, internal_state, gauss_next = _validate_random_state_tuple(state)
+    return canonical_json_object(
+        {
+            "algorithm": "python_random_mt19937",
+            "format_version": 1,
+            "version": version,
+            "state": internal_state,
+            "gauss_next": None if gauss_next is None else gauss_next.hex(),
+        }
+    )
+
+
+def random_state_from_canonical_json(value: CanonicalJsonObject) -> RandomState:
+    """Decode and validate one canonical MT19937 checkpoint state."""
+    document = parse_canonical_json_object(value)
+    if frozenset(document) != _RANDOM_STATE_KEYS:
+        raise CapabilitySerializationError("random state object has unexpected fields")
+    if document["algorithm"] != "python_random_mt19937":
+        raise CapabilitySerializationError("random state algorithm is unsupported")
+    if type(document["format_version"]) is not int or document["format_version"] != 1:
+        raise CapabilitySerializationError("random state format_version must be 1")
+
+    gauss_value = document["gauss_next"]
+    gauss_next: float | None
+    if gauss_value is None:
+        gauss_next = None
+    elif type(gauss_value) is str:
+        gauss_text = cast(str, gauss_value)
+        if len(gauss_text) > _MAX_FLOAT_HEX_CHARS:
+            raise CapabilitySerializationError("random state gauss_next is not canonical")
+        try:
+            gauss_next = float.fromhex(gauss_text)
+        except (OverflowError, ValueError) as exc:
+            raise CapabilitySerializationError("random state gauss_next is invalid") from exc
+        if not math.isfinite(gauss_next) or gauss_next.hex() != gauss_text:
+            raise CapabilitySerializationError("random state gauss_next is not canonical")
+    else:
+        raise CapabilitySerializationError("random state gauss_next must be null or a string")
+
+    raw_state = document["state"]
+    if type(raw_state) is not list:
+        raise CapabilitySerializationError("random state words must be an array")
+    return _validate_random_state_tuple(
+        (document["version"], tuple(cast(list[object], raw_state)), gauss_next)
+    )
+
+
 def sha256_bytes(payload: bytes) -> str:
     return hashlib.sha256(payload).hexdigest()
+
+
+def _validate_random_state_tuple(state: object) -> RandomState:
+    if type(state) is not tuple:
+        raise CapabilitySerializationError("random state must be a tuple")
+    values = cast(tuple[object, ...], state)
+    if len(values) != 3:
+        raise CapabilitySerializationError("random state tuple must contain three values")
+
+    version, raw_internal_state, raw_gauss_next = values
+    if type(version) is not int or version != 3:
+        raise CapabilitySerializationError("random state version must be 3")
+    if type(raw_internal_state) is not tuple:
+        raise CapabilitySerializationError("random internal state must be a tuple")
+    internal_values = cast(tuple[object, ...], raw_internal_state)
+    if len(internal_values) != _RANDOM_STATE_WORD_COUNT + 1:
+        raise CapabilitySerializationError("random internal state must contain 625 integers")
+
+    normalized_words: list[int] = []
+    for word in internal_values[:_RANDOM_STATE_WORD_COUNT]:
+        if type(word) is not int or not 0 <= cast(int, word) <= _UINT32_MAX:
+            raise CapabilitySerializationError("random state words must be uint32 integers")
+        normalized_words.append(cast(int, word))
+    index = internal_values[-1]
+    if type(index) is not int or not 0 <= cast(int, index) <= _RANDOM_STATE_WORD_COUNT:
+        raise CapabilitySerializationError("random state index must be between 0 and 624")
+    normalized_words.append(cast(int, index))
+
+    gauss_next: float | None
+    if raw_gauss_next is None:
+        gauss_next = None
+    elif type(raw_gauss_next) is float and math.isfinite(cast(float, raw_gauss_next)):
+        gauss_next = cast(float, raw_gauss_next)
+    else:
+        raise CapabilitySerializationError("random state gauss_next must be null or finite")
+    return (cast(int, version), tuple(normalized_words), gauss_next)
 
 
 def fingerprint_capability_value(value: object) -> str:

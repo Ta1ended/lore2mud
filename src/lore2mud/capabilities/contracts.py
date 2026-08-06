@@ -257,3 +257,4 @@ class CapabilityCheckpoint:
     event_sequence: int
     view_sha256: str
     fingerprint: str
+    rng_state: CanonicalJsonObject | None = None
