@@ -122,4 +122,3 @@ __all__ = [
     "validate_json_schema",
     "validate_schema_contract",
 ]
-

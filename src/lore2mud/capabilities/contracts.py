@@ -257,4 +257,3 @@ class CapabilityCheckpoint:
     event_sequence: int
     view_sha256: str
     fingerprint: str
-
