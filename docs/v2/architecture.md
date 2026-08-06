@@ -1,7 +1,8 @@
 # Lore2MUD V2 Target Architecture
 
-_Status: V2-1 runtime contracts implemented in a local candidate; later V2 contracts
-remain architecture direction and no publication is implied_
+_Status: V2-2 contracts accepted across TECH, PRODUCT, and SECURITY gates; V2-3
+capability implementation explicitly authorized after planning-Goal review; V2-4 and
+later contracts remain architecture direction and no release is implied_
 
 ## Two Planes
 

@@ -1,14 +1,16 @@
 # Lore2MUD Current Code Map
 
-_Baseline: V2-2 local candidate based on accepted V2-1 documentation head
-`eb972903a0b959f09a647a1727a6ed66f2d098f7`, 2026-08-05. Independent TECH
-acceptance is pending._
+_Baseline: accepted V2-2 tree integrated by candidate
+`c37969f6b6958e66474738f88a53b9d5c2f50d99`, 2026-08-06. V2-3 implementation is
+explicitly authorized after planning-Goal review but has not started._
 
-This map describes the current isolated candidate. `World` remains the authoritative
-V1 gameplay implementation; the V2-1 application contracts remain below both player
-clients, and the V2-2 authoring service now builds only fixed-profile previews and
-isolated evidence over that same runtime. Package sealing, capability resolution,
-workbench UI, and MCP remain future work.
+This map describes the accepted V2-2 tree and the exact integration candidate currently
+under Draft PR review. `World` remains the authoritative V1 gameplay implementation;
+the V2-1 application contracts remain below both player clients, and the V2-2 authoring
+service builds fixed-profile previews and isolated evidence over that same runtime.
+V2-3 will add an engine-shipped static capability catalog and namespaced runtime through
+new `src/lore2mud/capabilities/` ownership. Package sealing, workbench UI, and MCP remain
+future work.
 
 ## Runtime Data Flow
 
@@ -177,6 +179,9 @@ Line counts are orientation for this candidate, not quality scores:
 - `src/lore2mud/application/` - V2-1 public runtime boundary.
 - `src/lore2mud/authoring/` - V2-2 contracts, service, preview, simulation, proofing,
   SDK, structured CLI, and canonical serialization.
+- `src/lore2mud/capabilities/` - planned V2-3 ownership for descriptor contracts,
+  SemVer, static catalog, deterministic resolution, namespaced runtime, and checkpoints;
+  the directory does not exist in the planning candidate.
 - `src/lore2mud/content/models.py` - `ContentPack` and frozen V1 definitions.
 - `src/lore2mud/content/loader.py` - public content validation authority.
 - `src/lore2mud/engine/world.py` - gameplay and mutable-state authority.

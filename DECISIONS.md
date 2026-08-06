@@ -3311,3 +3311,53 @@
 - Supersedes: DEC-0112 only for documentation-seal publication authority and next-gate
   routing. DEC-0112's exact SECURITY PASS, product freeze, evidence limits, privacy,
   release, Git, and later-milestone boundaries remain in force.
+
+## DEC-0114: Authorize the V2-3 capability milestone and a planning handoff PR
+
+- Date: 2026-08-06
+- Status: V2-3 isolated implementation authorized after Goal review; planning branch
+  publication and Draft PR creation authorized; `main`, release, and V2-4 remain
+  unauthorized.
+- Context: V2-2 product candidate
+  `ec60cb0169678ba8d7ef1256a2f2d7cad27d1b60` has independent TECH `GO`, human PRODUCT
+  PASS, and SECURITY PASS. Remote V2-2 documentation head
+  `bfec33a538d184c36822efeb11eff3dd6d8e7fc5` is integrated without byte changes by
+  candidate `c37969f6b6958e66474738f88a53b9d5c2f50d99`. GitHub PR #1 remains an open clean
+  Draft PR from `integration/v2-2-to-main` to `main`, with successful exact-head tests
+  and quality. The product owner explicitly authorized beginning V2-3 and requested a
+  reviewable Goal to transfer to a fresh Codex session.
+- Decision: Create `planning/v2-3-capability-system` from exact `c37969f`, change only
+  planning and handoff documents, publish the branch normally without force, and create
+  a stacked Draft PR targeting `integration/v2-2-to-main`. The planning PR records the
+  authorization, refreshes stale current-state routing, and adds the self-contained
+  `docs/v2/v2_3_goal.md`. After product-owner review, a fresh Codex Controller may start
+  `workstream/v2-3-capability-modules`: from live green `main` if it contains the exact
+  integration history, otherwise from exact green `c37969f` as a stacked workstream.
+  The new session must recheck live refs, PR #1, Actions, ancestry, and the preserved
+  `uv.lock` before editing.
+- Scope: V2-3 owns engine-shipped static capability descriptors and implementations,
+  strict SemVer and deterministic dependency resolution, namespace and safety policy,
+  capability-enabled unsealed previews, namespaced runtime state inside the existing
+  `GameSession` transaction, a public synthetic reference capability, isolated
+  checkpoint evidence, and shared SDK/structured-CLI behavior. Existing empty-
+  requirement V2-2 artifacts remain byte-compatible. V2-3 does not own package sealing,
+  release evidence, workbench UI, MCP, dynamic plugins, package-provided code, L2/L3
+  host I/O, save-v9 changes, V1 content-version changes, or `World` expansion.
+  It also adds no dependency and does not revise existing V2-1/V2-2 Schema versions or
+  artifact shapes; V2-3 uses additive contracts and wrappers.
+- Evidence: On 2026-08-06 live remote refs were `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95`
+  and `integration/v2-2-to-main=c37969f6b6958e66474738f88a53b9d5c2f50d99`.
+  `c37969f` has exact parents `ba729be` and `bfec33a`, tree
+  `d7ea31bd3cda9c84cdf5e1e47b2ddedb46771753`, and zero diff from its second parent.
+  PR #1 was live-verified as open, Draft, clean, and mergeable. The primary checkout
+  remained `main@564530d` with its untracked 14,471-byte `uv.lock` unchanged at the
+  authorized SHA-256.
+- Consequences: This decision authorizes V2-3 implementation only through the reviewed
+  Goal and an isolated workstream. It does not merge PR #1, move local or remote `main`,
+  authorize a V2-3 product push, grant PRODUCT or SECURITY PASS, create a release,
+  distribute preview/checkpoint/report artifacts, or begin V2-4/V2-5. The sole next gate
+  is product-owner review of the planning PR and Goal, followed by fresh-session V2-3
+  execution.
+- Supersedes: DEC-0113 only for the previous wait-for-V2-3-authorization routing.
+  DEC-0113 and earlier decisions remain authoritative for V2-2 product identity,
+  integration, privacy, publication, release, and Git boundaries.

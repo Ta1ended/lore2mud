@@ -1,7 +1,7 @@
 # Lore2MUD V2 Product Definition
 
-_Status: V2-0 direction accepted and published; V2-1 local implementation candidate,
-TECH/PRODUCT/publication gates separate, 2026-08-04_
+_Status: V2-2 accepted across TECH, PRODUCT, and SECURITY gates; integration Draft PR
+open; V2-3 isolated implementation explicitly authorized after Goal review, 2026-08-06_
 
 ## Product
 

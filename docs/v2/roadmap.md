@@ -126,6 +126,10 @@ capability requirements reject deterministically, and preview evidence is reprod
 `CapabilityDescriptor`, engine-shipped static catalog, state namespaces,
 predicates/effects/events/views, dependency resolution, and explicit migrations.
 
+_Status: explicitly authorized by the product owner on 2026-08-06. Implementation
+starts only after review of `docs/v2/v2_3_goal.md`; no V2-3 product code exists in the
+planning candidate._
+
 ### Adopted Patterns
 
 - Define stable ID, semantic version, safety level, owned state namespace, initial
