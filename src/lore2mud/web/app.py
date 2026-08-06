@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import fields, is_dataclass
 from enum import Enum
 import shlex
-from typing import TypeAlias
+from typing import TypeAlias, cast
 
 from lore2mud.application.contracts import (
     AttackIntent,
@@ -45,6 +45,16 @@ from lore2mud.application.contracts import (
     UseIntent,
 )
 from lore2mud.application.session import GameSession, validate_game_intent
+from lore2mud.capabilities.contracts import (
+    CanonicalJsonObject,
+    CapabilityEventData,
+    CapabilityIntent,
+    CapabilityPlayerViewEntry,
+)
+from lore2mud.capabilities.serialization import (
+    canonical_json_object,
+    capability_value_to_document,
+)
 from lore2mud.content.models import ContentPack
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.save import SaveLoadService
@@ -77,6 +87,10 @@ _ACTION_FIELDS: dict[str, tuple[frozenset[str], frozenset[str]]] = {
     "load": (frozenset(), frozenset({"slot"})),
     "recover": (frozenset(), frozenset()),
     "campaign_action": (frozenset({"action_id"}), frozenset()),
+    "capability": (
+        frozenset({"capability_id", "action_id", "parameters"}),
+        frozenset(),
+    ),
     "command": (frozenset({"command"}), frozenset()),
 }
 _READ_ONLY_COMMANDS = frozenset({
@@ -146,7 +160,7 @@ class PlayerSession:
                 legacy_data={},
             )
 
-        result = self._session.submit(intent)
+        result = self._session.submit(cast(GameIntent, intent))
         self._last_turn_result = result
         if result.status is TurnStatus.REJECTED:
             assert result.rejection is not None
@@ -261,7 +275,19 @@ class PlayerSession:
         self,
         action_type: str,
         action: dict[str, object],
-    ) -> GameIntent:
+    ) -> GameIntent | CapabilityIntent:
+        if action_type == "capability":
+            try:
+                parameters = canonical_json_object(action["parameters"])
+            except (TypeError, ValueError) as exc:
+                raise PlayerActionError(
+                    "action.parameters must be a bounded canonical JSON object."
+                ) from exc
+            return CapabilityIntent(
+                capability_id=self._text(action, "capability_id"),
+                action_id=self._text(action, "action_id"),
+                parameters=parameters,
+            )
         if action_type == "move":
             return MoveIntent(self._text(action, "direction", maximum=32))
         if action_type == "take":
@@ -355,6 +381,8 @@ class PlayerSession:
         if event is None:
             return {}
         payload = event.payload
+        if isinstance(payload, CapabilityEventData):
+            return cast(dict[str, JsonValue], PlayerSession._json_value(payload))
         if isinstance(payload, CombatEventData):
             return {
                 "combat": {
@@ -449,6 +477,8 @@ class PlayerSession:
             return f"在 {payload.room_name} 恢复。"
         if isinstance(payload, CampaignActionEventData):
             return payload.result_text
+        if isinstance(payload, CapabilityEventData):
+            return "Capability action accepted."
         if isinstance(payload, PersistenceEventData):
             return (
                 f"已保存到 {payload.slot}。"
@@ -516,6 +546,26 @@ class PlayerSession:
     def _json_value(value: object) -> JsonValue:
         if value is None or isinstance(value, (str, int, bool)):
             return value
+        if type(value) is CapabilityIntent:
+            return PlayerSession._intent_json(value)
+        if type(value) is CapabilityEventData:
+            return {
+                "capability_id": value.capability_id,
+                "event_id": value.event_id,
+                "payload": PlayerSession._json_value(value.payload),
+            }
+        if type(value) is CapabilityPlayerViewEntry:
+            return {
+                "capability_id": value.capability_id,
+                "version": str(value.version),
+                "view": PlayerSession._json_value(value.view),
+                "admissible_intents": [
+                    PlayerSession._intent_json(item)
+                    for item in value.admissible_intents
+                ],
+            }
+        if type(value) is CanonicalJsonObject:
+            return cast(JsonValue, capability_value_to_document(value))
         if isinstance(value, Enum):
             return value.value
         if isinstance(value, GameIntent):
@@ -541,6 +591,13 @@ class PlayerSession:
     def _legacy_json_value(value: object) -> JsonValue:
         if value is None:
             return None
+        if type(value) in {
+            CapabilityIntent,
+            CapabilityEventData,
+            CapabilityPlayerViewEntry,
+            CanonicalJsonObject,
+        }:
+            return PlayerSession._json_value(value)
         if isinstance(value, Enum):
             return value.value
         if isinstance(value, (str, int, bool)):
@@ -564,7 +621,17 @@ class PlayerSession:
         )
 
     @staticmethod
-    def _intent_json(intent: GameIntent) -> dict[str, JsonValue]:
+    def _intent_json(
+        intent: GameIntent | CapabilityIntent,
+    ) -> dict[str, JsonValue]:
+        if type(intent) is CapabilityIntent:
+            document = capability_value_to_document(intent)
+            if type(document) is not dict:
+                raise TypeError("invalid CapabilityIntent")
+            return {
+                "type": "capability",
+                **cast(dict[str, JsonValue], document),
+            }
         try:
             validate_game_intent(intent)
         except ValueError as exc:

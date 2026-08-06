@@ -10,6 +10,15 @@ import unittest
 from pathlib import Path
 
 from lore2mud.application import MoveIntent, TakeIntent
+from lore2mud.capabilities.contracts import (
+    CapabilityIntent,
+    CapabilityPlayerViewEntry,
+)
+from lore2mud.capabilities.semver import SemanticVersion
+from lore2mud.capabilities.serialization import (
+    canonical_json_object,
+    parse_canonical_json_object,
+)
 from lore2mud.content.loader import load_content_pack
 from lore2mud.engine.save import SaveLoadService
 from lore2mud.web.app import PlayerSession
@@ -350,6 +359,73 @@ class PlayerSessionTests(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertTrue(result["snapshot"]["player"]["alive"])
         self.assertEqual(result["snapshot"]["room"]["id"], "room_ember_wharf")
+
+    def test_generic_capability_action_round_trips_without_specific_routing(
+        self,
+    ) -> None:
+        action = {
+            "type": "capability",
+            "capability_id": "synthetic_counter",
+            "action_id": "increment",
+            "parameters": {"amount": 2},
+        }
+
+        action_type, validated = PlayerSession._validate_action(action)
+        intent = self.session._intent(action_type, validated)
+
+        self.assertIs(type(intent), CapabilityIntent)
+        assert isinstance(intent, CapabilityIntent)
+        self.assertEqual(intent.capability_id, "synthetic_counter")
+        self.assertEqual(intent.action_id, "increment")
+        self.assertEqual(parse_canonical_json_object(intent.parameters), {"amount": 2})
+        self.assertEqual(PlayerSession._intent_json(intent), action)
+
+    def test_capability_player_view_uses_generic_transport(self) -> None:
+        intent = CapabilityIntent(
+            capability_id="synthetic_counter",
+            action_id="reset",
+            parameters=canonical_json_object({}),
+        )
+        entry = CapabilityPlayerViewEntry(
+            capability_id="synthetic_counter",
+            version=SemanticVersion.parse("1.2.3"),
+            view=canonical_json_object({"count": 4}),
+            admissible_intents=(intent,),
+        )
+
+        self.assertEqual(
+            PlayerSession._json_value(entry),
+            {
+                "capability_id": "synthetic_counter",
+                "version": "1.2.3",
+                "view": {"count": 4},
+                "admissible_intents": [
+                    {
+                        "type": "capability",
+                        "capability_id": "synthetic_counter",
+                        "action_id": "reset",
+                        "parameters": {},
+                    }
+                ],
+            },
+        )
+
+    def test_malformed_capability_parameters_preserve_snapshot(self) -> None:
+        before = self.session.snapshot()
+
+        result = self.session.dispatch(
+            {
+                "type": "capability",
+                "capability_id": "synthetic_counter",
+                "action_id": "increment",
+                "parameters": [1],
+            }
+        )
+
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["status"], "rejected")
+        self.assertEqual(result["events"], [])
+        self.assertEqual(result["snapshot"], before)
 
 
 if __name__ == "__main__":
