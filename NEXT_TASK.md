@@ -1,99 +1,107 @@
 # 下一任务 / Next Task
 
-更新日期：2026-08-05
+更新日期：2026-08-06
 
 ## 中文
 
-### 唯一下一门禁
+### 唯一下一任务
 
-**人类明确授权开始 V2-3。**
+**产品负责人审核本 planning PR 后，由一个全新的 Codex 会话执行 `docs/v2/v2_3_goal.md`，实现 V2-3 Capability Module Architecture。**
 
-### 当前依据
+### 为什么现在做
 
-- 产品候选 tree 为 `f7c12fda17257f7a6b539bbbfce97da18452a961`，父提交正是绿色
-  V2-1 文档头 `eb972903a0b959f09a647a1727a6ed66f2d098f7`。
-- 全新 Reviewer 13 对该精确候选给出 P0-P3 全空与 TECH `GO`。
-- 产品所有者已明确对同一产品 SHA 给出 PRODUCT PASS，并授权把当前
-  `workstream/v2-2-agent-authoring` 正常推送到同名远端分支。
-- 推送前实时 `git ls-remote` 显示远端 `main=bf3f8b93`、V2-1 workstream=`eb972903`，
-  且远端尚无 V2-2 workstream；因此授权操作只创建新分支，不覆盖或 force-push ref。
-- 首次推送在精确文档头 `8eb549e` 创建了远端 workstream，但 Ubuntu Actions 在产品 CLI
-  启动前暴露 POSIX surrogate argv 测试夹具问题。verification-only 提交 `2dc9475e` 只改
-  一个测试文件，产品路径相对 `ec60cb0` 零差异；全新 Reviewer 14 给出 P0-P3 全空与 `GO`。
-- 最终远端文档头 `2ae85937` 的 GitHub Actions tests `31046078308` 与 quality
-  `31046078333` 均绑定精确 SHA 并为 `completed/success`；远端 `main` 保持 `bf3f8b93`。
-- 安全门禁权限方已对精确产品 SHA 明确给出 `SECURITY PASS`。TECH、PRODUCT 与 SECURITY
-  决定均绑定产品 SHA，不绑定 documentation seal、preview/report fingerprint 或未来
-  package/evidence identity。
-- 产品所有者已明确授权把当前 SECURITY PASS 与 README documentation-only seal 正常
-  fast-forward 推送到同名远端 workstream。Controller 必须在推送后确认精确 head 的
-  GitHub Actions tests 与 quality 均为绿色，然后停止。
+- V2-2 精确产品候选已完成 TECH、PRODUCT 和 SECURITY 门禁。
+- integration candidate `c37969f6b6958e66474738f88a53b9d5c2f50d99` 与 V2-2 tree 字节一致，PR #1 当前 clean、Draft、exact-head CI 绿色。
+- 产品负责人已于 2026-08-06 明确授权开始 V2-3 开发，但要求先审核本 Goal，再交给新的 Codex 会话。
 
-### V2-3 授权边界
+### 输入
 
-- V2-3 只能在新的明确人类授权后开始；TECH、PRODUCT、SECURITY 和本次文档推送均不自动
-  授予该权限。
-- V2-3 授权不自动允许移动/合并 `main`、release 或分发 preview/report；这些仍需分别授权。
-- 不访问私人小说、canon、派生内容、图片、存档或私人报告；只使用公开安全或合成材料。
-- 不把未封存 preview、SimulationReport 或 fingerprint 作为可分发 package、release
-  evidence 或安全证明。
-- 保留主工作区未跟踪 `uv.lock` 的 14,471 字节和 SHA-256
-  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`。
+- `docs/v2/v2_3_goal.md`
+- `AGENTS.md`
+- `PRODUCT.md`
+- `PROJECT_STATE.md`
+- `CODE_MAP.md`
+- `docs/v2/architecture.md`
+- `docs/v2/roadmap.md`
+- `docs/v2/reference_patterns.md`
+- `docs/v2/development_model.md`
+- V2-2 integration candidate `c37969f6b6958e66474738f88a53b9d5c2f50d99`
 
-### 停止规则
+### 步骤
 
-documentation-only seal 推送并确认 Actions 绿色后立即停止：不移动或合并 `main`，不
-release，不开始 V2-3，不发布 preview/report。等待新的明确 V2-3 授权。
+1. 产品负责人审核本 planning PR 的 baseline、合同、非目标、模块归属、验证矩阵和停止规则。
+2. 审核通过后，把 `docs/v2/v2_3_goal.md` 完整交给一个新的 Codex 会话。
+3. 新会话立即创建 Goal，重新核对 live `main`、PR #1、Actions、祖先和 `uv.lock`，再按 Goal 在隔离 worktree 中执行。
+4. 如果 `main` 已包含 `c37969f`，从实时绿色 `main` 开始；如果 PR #1 仍未合并但 exact `c37969f` 仍绿色，可从它创建 stacked V2-3 workstream，不得移动 `main`。
+5. 完成 V2-3 产品候选、完整验证和全新只读 independent TECH acceptance 后停止，等待人类 PRODUCT PASS。
+
+### 验收标准
+
+- 新会话使用自包含 Goal，不依赖当前聊天历史。
+- V2-3 只实现 engine-shipped static capability catalog、deterministic resolution、namespaced runtime、reference capability、checkpoint 和共享 SDK/CLI；不进入 V2-4/V2-5。
+- 空 capability requirement 路径保持 V2-2 canonical bytes、fingerprints 和兼容行为。
+- 最终候选获得 findings-first P0-P3 独立验收与唯一 `GO` 或 `REVISE` verdict。
+
+### 如果阻塞
+
+- 远端查询失败：报告 live evidence 不可用，不得使用本地 `origin/*` 代替。
+- PR #1、integration tree 或 Actions 漂移：停止并由 Controller 重新计算 baseline。
+- planning PR 未获产品负责人审核：不得启动 V2-3 实现。
+
+### 队列
+
+1. V2-3 PRODUCT PASS、SECURITY PASS 和 publication 均为产品候选完成后的独立门禁。
+2. `main` integration 和 release 需要单独授权。
+3. V2-4 仍未授权。
 
 ## English
 
-### Single Next Gate
+### Single Next Task
 
-**Explicit human authorization to begin V2-3.**
+**After product-owner review of this planning PR, a fresh Codex session executes `docs/v2/v2_3_goal.md` to implement the V2-3 Capability Module Architecture.**
 
-### Current Basis
+### Why Now
 
-- The product candidate tree is `f7c12fda17257f7a6b539bbbfce97da18452a961`, with
-  exact parent `eb972903a0b959f09a647a1727a6ed66f2d098f7`, the green V2-1 documentation
-  head.
-- Fresh Reviewer 13 returned P0-P3 empty and TECH `GO` for that exact candidate.
-- The product owner explicitly granted PRODUCT PASS for the same product SHA and
-  authorized a normal push of the current `workstream/v2-2-agent-authoring` branch to
-  the matching remote branch.
-- The pre-push live `git ls-remote` showed remote `main=bf3f8b93`, V2-1
-  workstream=`eb972903`, and no remote V2-2 workstream. The authorized operation therefore
-  creates a branch without overwriting or force-pushing a ref.
-- The first push created the remote workstream at exact documentation head `8eb549e`,
-  but Ubuntu Actions exposed a POSIX surrogate-argv test-harness issue before the product
-  CLI started. Verification-only commit `2dc9475e` changes one test file, leaves every
-  product path identical to `ec60cb0`, and received P0-P3 empty with `GO` from fresh
-  Reviewer 14.
-- Final remote documentation head `2ae85937` has GitHub Actions tests `31046078308` and
-  quality `31046078333` both bound to the exact SHA with `completed/success`; remote
-  `main` remained `bf3f8b93`.
-- The security gate authority explicitly returned `SECURITY PASS` for the exact product
-  SHA. TECH, PRODUCT, and SECURITY decisions bind to the product SHA, not the
-  documentation seal, preview/report fingerprints, or a future package/evidence identity.
-- The product owner explicitly authorized a normal fast-forward publication of the
-  current SECURITY PASS and README documentation-only seal to the matching remote
-  workstream. The controller must verify exact-head GitHub Actions tests and quality as
-  green after the push, then stop.
+- The exact V2-2 product candidate has completed TECH, PRODUCT, and SECURITY gates.
+- Integration candidate `c37969f6b6958e66474738f88a53b9d5c2f50d99` is byte-identical to the V2-2 tree; PR #1 is currently clean, Draft, and green on exact-head CI.
+- On 2026-08-06 the product owner explicitly authorized V2-3 development, while requiring review of this Goal before transfer to a fresh Codex session.
 
-### V2-3 Authorization Boundary
+### Inputs
 
-- V2-3 may begin only after new explicit human authorization. TECH, PRODUCT, SECURITY,
-  and this documentation push do not grant that authority automatically.
-- V2-3 authorization would not automatically permit moving/merging `main`, release, or
-  preview/report distribution; those remain separately controlled.
-- Do not access private novels, canon, derived content, images, saves, or private
-  reports. Review remains public-safe or synthetic.
-- Do not present the unsealed preview, SimulationReport, or fingerprints as a
-  distributable package, release evidence, or security proof.
-- Preserve the primary checkout's untracked `uv.lock` at 14,471 bytes and SHA-256
-  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`.
+- `docs/v2/v2_3_goal.md`
+- `AGENTS.md`
+- `PRODUCT.md`
+- `PROJECT_STATE.md`
+- `CODE_MAP.md`
+- `docs/v2/architecture.md`
+- `docs/v2/roadmap.md`
+- `docs/v2/reference_patterns.md`
+- `docs/v2/development_model.md`
+- V2-2 integration candidate `c37969f6b6958e66474738f88a53b9d5c2f50d99`
 
-### Stop Rule
+### Steps
 
-Stop after publishing the documentation-only seal and verifying green Actions: do not
-move or merge `main`, release, begin V2-3, or publish previews/reports. Wait for new
-explicit V2-3 authorization.
+1. The product owner reviews the planning PR baseline, contracts, non-goals, ownership, validation matrix, and stop rules.
+2. After approval, transfer the complete `docs/v2/v2_3_goal.md` to a fresh Codex session.
+3. The fresh session immediately creates a Goal, rechecks live `main`, PR #1, Actions, ancestry, and `uv.lock`, then executes in an isolated worktree.
+4. If `main` contains `c37969f`, start from live green `main`. If PR #1 remains unmerged but exact `c37969f` remains green, start a stacked V2-3 workstream from it without moving `main`.
+5. Stop after the V2-3 product candidate, full verification, and fresh read-only independent TECH acceptance; wait for human PRODUCT PASS.
+
+### Acceptance Criteria
+
+- The fresh session uses a self-contained Goal and does not depend on this chat history.
+- V2-3 implements only the engine-shipped static capability catalog, deterministic resolution, namespaced runtime, reference capability, checkpoint, and shared SDK/CLI; it does not enter V2-4 or V2-5.
+- The empty-capability path preserves V2-2 canonical bytes, fingerprints, and compatibility behavior.
+- The final candidate receives findings-first P0-P3 independent acceptance ending in exactly `GO` or `REVISE`.
+
+### If Blocked
+
+- Remote query failure: report live evidence unavailable and do not substitute local `origin/*`.
+- PR #1, integration tree, or Actions drift: stop and have the Controller recalculate the baseline.
+- Planning PR not yet approved by the product owner: do not start V2-3 implementation.
+
+### Queue
+
+1. V2-3 PRODUCT PASS, SECURITY PASS, and publication remain separate gates after the product candidate.
+2. `main` integration and release require separate authorization.
+3. V2-4 remains unauthorized.

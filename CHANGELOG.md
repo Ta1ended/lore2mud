@@ -4,6 +4,13 @@
 
 ### Changed
 
+- Recorded the product owner's explicit 2026-08-06 authorization to begin V2-3 after
+  review of a dedicated planning handoff. Added `docs/v2/v2_3_goal.md` as a
+  self-contained fresh-session Controller Goal, refreshed the bilingual current-state
+  and next-task routing, and documented a stacked planning PR over exact V2-2
+  integration candidate `c37969f6b6958e66474738f88a53b9d5c2f50d99`. This planning
+  change adds no V2-3 product code, capability catalog, Schema, dependency, runtime,
+  save, content, package, release, or `main` change (DEC-0114).
 - Completed and published V2-1 on remote `workstream/v2-1-game-session` at exact
   product candidate `c8ee518ef39f938ece374cbd3f7c9bca06de2408`. Fresh independent
   TECH and SECURITY acceptance both returned `GO` with no P0-P3 findings, the product
