@@ -4,15 +4,25 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import Generic, TypeVar
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 from lore2mud.application.contracts import DeterminismContext, GameIntent
+
+if TYPE_CHECKING:
+    from lore2mud.capabilities.contracts import (
+        CapabilityIntent,
+        CapabilityPlayerViewEntry,
+        CapabilityStateEntry,
+        ResolvedCapabilityPlan,
+    )
 
 
 V1_COMPATIBILITY_PROFILE_ID = "lore2mud.v1.compatibility.fixed"
 CAPABILITY_DIAGNOSTIC_CODE = "capability_requirement_unsupported_v2_2"
 PREVIEW_IDENTITY_SCOPE = "preview_reproducibility_only"
 REPORT_IDENTITY_SCOPE = "simulation_reproducibility_only"
+CAPABILITY_PREVIEW_IDENTITY_SCOPE = "capability_preview_reproducibility_only"
+CAPABILITY_REPORT_IDENTITY_SCOPE = "capability_simulation_reproducibility_only"
 
 
 class AuthoringStage(str, Enum):
@@ -285,6 +295,79 @@ class SimulationReport:
 
 
 @dataclass(frozen=True, slots=True)
+class CapabilitySimulationRequest:
+    format_version: int
+    seed: int
+    clock: int
+    player_name: str
+    steps: tuple[GameIntent | CapabilityIntent, ...]
+    conditions: tuple[SimulationCondition, ...] = ()
+    checkpoint_after_steps: tuple[int, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class CapabilityPreview:
+    format_version: int
+    base_preview: PreviewBuild
+    resolved_plan: "ResolvedCapabilityPlan"
+    plan_sha256: str
+    initial_states: tuple["CapabilityStateEntry", ...]
+    initial_state_sha256: str
+    engine_version: str
+    fingerprint: str
+    kind: str = "capability_preview"
+    sealed: bool = False
+    distributable: bool = False
+    release_evidence: bool = False
+    identity_scope: str = CAPABILITY_PREVIEW_IDENTITY_SCOPE
+
+
+@dataclass(frozen=True, slots=True)
+class CapabilitySimulationTurn:
+    index: int
+    step: GameIntent | CapabilityIntent
+    status: str
+    rejection_code: str | None
+    event_sha256: str
+    view_sha256: str
+    capability_state_sha256: str
+    event_sequence_after: int
+
+
+CapabilityWitnessStep = CapabilitySimulationTurn
+
+
+@dataclass(frozen=True, slots=True)
+class CapabilitySimulationCheckpoint:
+    after_step: int
+    checkpoint_sha256: str
+    restored_state_sha256: str
+    restored_view_sha256: str
+    restored_event_sequence: int
+    equivalent: bool
+
+
+@dataclass(frozen=True, slots=True)
+class CapabilitySimulationReport:
+    format_version: int
+    project_id: str
+    base_report: SimulationReport
+    request_sha256: str
+    capability_preview_fingerprint: str
+    plan_sha256: str
+    initial_capability_state_sha256: str
+    final_capability_state_sha256: str
+    turns: tuple[CapabilitySimulationTurn, ...]
+    witness_trace: tuple[CapabilityWitnessStep, ...]
+    capability_event_sha256: str
+    capability_view_sha256: str
+    replay_verified: bool
+    checkpoints: tuple[CapabilitySimulationCheckpoint, ...]
+    fingerprint: str
+    identity_scope: str = CAPABILITY_REPORT_IDENTITY_SCOPE
+
+
+@dataclass(frozen=True, slots=True)
 class ProofingNode:
     node_id: str
     kind: str
@@ -309,7 +392,19 @@ class ProofingProjection:
     diagnostics: tuple[AuthoringDiagnostic, ...] = ()
 
 
+@dataclass(frozen=True, slots=True)
+class CapabilityProofingProjection:
+    format_version: int
+    project_id: str
+    capability_preview_fingerprint: str
+    base_proofing: ProofingProjection
+    capability_views: tuple["CapabilityPlayerViewEntry", ...]
+    fingerprint: str
+    diagnostics: tuple[AuthoringDiagnostic, ...] = ()
+
+
 ArtifactT = TypeVar("ArtifactT")
+CapabilityArtifactT = TypeVar("CapabilityArtifactT")
 
 
 @dataclass(frozen=True, slots=True)
@@ -320,6 +415,21 @@ class AuthoringResult(Generic[ArtifactT]):
     artifact: ArtifactT | None
     diagnostics: tuple[AuthoringDiagnostic, ...]
     exit_code: int
+
+    @property
+    def ok(self) -> bool:
+        return self.status is AuthoringStatus.SUCCESS
+
+
+@dataclass(frozen=True, slots=True)
+class CapabilityAuthoringResult(Generic[CapabilityArtifactT]):
+    format_version: int
+    operation: str
+    status: AuthoringStatus
+    artifact: CapabilityArtifactT | None
+    diagnostics: tuple[AuthoringDiagnostic, ...]
+    exit_code: int
+    kind: str = "capability_authoring_result"
 
     @property
     def ok(self) -> bool:
