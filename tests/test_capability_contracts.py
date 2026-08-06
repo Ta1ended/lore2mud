@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 import unittest
 
 from lore2mud.capabilities import (
@@ -29,6 +29,7 @@ from lore2mud.capabilities import (
     parse_canonical_json_object,
     sha256_bytes,
     validate_json_schema,
+    validate_capability_descriptor,
 )
 from lore2mud.capabilities.serialization import (
     CapabilitySchemaError,
@@ -158,6 +159,7 @@ class SemanticVersionTests(unittest.TestCase):
             "v1.0.0",
             "1.0",
             " 1.0.0",
+            "1.0.0+" + "a" * 123,
         )
         for value in invalid:
             with self.subTest(value=value), self.assertRaises(SemanticVersionError):
@@ -180,6 +182,8 @@ class SemanticVersionTests(unittest.TestCase):
         for value in (">=1.0.0", "<2.0.0,>=1.0.0", ">=1.0.0, <2.0.0", "1.*"):
             with self.subTest(value=value), self.assertRaises(SemanticVersionError):
                 VersionRequirement.parse(value)
+        with self.assertRaises(SemanticVersionError):
+            VersionRequirement.parse("1.0.0+" + "a" * 250)
 
 
 class CapabilitySerializationTests(unittest.TestCase):
@@ -238,6 +242,10 @@ class CapabilitySerializationTests(unittest.TestCase):
             },
         )
         canonical_json_bytes(document)
+
+    def test_canonical_object_property_bound_matches_public_schema(self) -> None:
+        with self.assertRaises(CapabilitySerializationError):
+            canonical_json_object({f"field_{index}": index for index in range(4097)})
 
 
 class CapabilityCatalogTests(unittest.TestCase):
@@ -299,6 +307,25 @@ class CapabilityCatalogTests(unittest.TestCase):
         self.assertIn(
             CapabilityDiagnosticCode.CAPABILITY_STATE_INVALID,
             {diagnostic.code for diagnostic in caught.exception.diagnostics},
+        )
+
+    def test_descriptor_and_catalog_member_bounds_match_public_schema(self) -> None:
+        action = CapabilityActionDescriptor("increment", EMPTY_SCHEMA)
+        unbounded = replace(
+            descriptor("counter", "1.0.0"),
+            actions=(action,) * 257,
+        )
+        diagnostics = validate_capability_descriptor(unbounded)
+        self.assertTrue(any("actions exceeds descriptor bounds" in item.message for item in diagnostics))
+
+        bindings = tuple(
+            binding(descriptor(f"capability_{index}", "1.0.0"))
+            for index in range(257)
+        )
+        with self.assertRaises(CapabilityCatalogError) as caught:
+            CapabilityCatalog.from_bindings(bindings)
+        self.assertTrue(
+            any("catalog exceeds descriptor bounds" in item.message for item in caught.exception.diagnostics)
         )
 
 

@@ -40,6 +40,10 @@ _STABLE_ID_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 _NAMESPACE_RE = re.compile(
     r"^[a-z][a-z0-9_]{0,63}(?:\.[a-z][a-z0-9_]{0,63})*$"
 )
+_MAX_CATALOG_DESCRIPTORS = 256
+_MAX_DESCRIPTOR_MEMBERS = 256
+_MAX_DESCRIPTOR_RELATIONSHIPS = 64
+_MAX_DECLARED_REFERENCES = 64
 
 
 class CapabilityCatalogError(ValueError):
@@ -190,6 +194,10 @@ class CapabilityCatalog:
         ordered = tuple(sorted(self.descriptors, key=cmp_to_key(_compare_descriptors)))
         object.__setattr__(self, "descriptors", ordered)
         diagnostics: list[CapabilityDiagnostic] = []
+        if len(ordered) > _MAX_CATALOG_DESCRIPTORS:
+            diagnostics.append(
+                _descriptor_diagnostic("capability catalog exceeds descriptor bounds")
+            )
         seen: list[CapabilityDescriptor] = []
         for descriptor in ordered:
             diagnostics.extend(validate_capability_descriptor(descriptor))
@@ -311,18 +319,22 @@ def validate_capability_descriptor(
         diagnostics.append(_descriptor_diagnostic("safety_level is invalid", capability_id))
 
     collections = (
-        ("actions", descriptor.actions),
-        ("observers", descriptor.observers),
-        ("predicates", descriptor.predicates),
-        ("effects", descriptor.effects),
-        ("events", descriptor.events),
-        ("dependencies", descriptor.dependencies),
-        ("conflicts", descriptor.conflicts),
-        ("migrations", descriptor.migrations),
+        ("actions", descriptor.actions, _MAX_DESCRIPTOR_MEMBERS),
+        ("observers", descriptor.observers, _MAX_DESCRIPTOR_MEMBERS),
+        ("predicates", descriptor.predicates, _MAX_DESCRIPTOR_MEMBERS),
+        ("effects", descriptor.effects, _MAX_DESCRIPTOR_MEMBERS),
+        ("events", descriptor.events, _MAX_DESCRIPTOR_MEMBERS),
+        ("dependencies", descriptor.dependencies, _MAX_DESCRIPTOR_RELATIONSHIPS),
+        ("conflicts", descriptor.conflicts, _MAX_DESCRIPTOR_RELATIONSHIPS),
+        ("migrations", descriptor.migrations, _MAX_DESCRIPTOR_RELATIONSHIPS),
     )
-    for name, values in collections:
+    for name, values, maximum in collections:
         if type(values) is not tuple:
             diagnostics.append(_descriptor_diagnostic(f"{name} must be tuple-backed", capability_id))
+        elif len(values) > maximum:
+            diagnostics.append(
+                _descriptor_diagnostic(f"{name} exceeds descriptor bounds", capability_id)
+            )
 
     schema_values = (
         ("state_schema", descriptor.state_schema),
@@ -376,7 +388,11 @@ def validate_capability_descriptor(
             )
         )
     for observer in descriptor.observers:
-        if any(not is_stable_id(event_type) for event_type in observer.event_types):
+        if (
+            type(observer.event_types) is not tuple
+            or len(observer.event_types) > _MAX_DECLARED_REFERENCES
+            or any(not is_stable_id(event_type) for event_type in observer.event_types)
+        ):
             diagnostics.append(
                 _descriptor_diagnostic(
                     f"observer {observer.observer_id} has invalid event type",
@@ -553,7 +569,11 @@ def _validate_declared_references(
         ("effect", effect_ids),
         ("event", event_ids),
     ):
-        if type(identifiers) is not tuple or len(set(identifiers)) != len(identifiers):
+        if (
+            type(identifiers) is not tuple
+            or len(identifiers) > _MAX_DECLARED_REFERENCES
+            or len(set(identifiers)) != len(identifiers)
+        ):
             diagnostics.append(_descriptor_diagnostic(f"{owner} has invalid {kind} references", capability_id))
         elif not set(identifiers).issubset(known[kind]):
             diagnostics.append(_descriptor_diagnostic(f"{owner} references unknown {kind}", capability_id))

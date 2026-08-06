@@ -47,6 +47,7 @@ _SCHEMA_KEYS = {
     "description",
 }
 _SCHEMA_TYPES = {"object", "array", "string", "integer", "boolean", "null"}
+_MAX_OBJECT_PROPERTIES = 4096
 
 
 def _normalize_json(
@@ -157,6 +158,8 @@ def canonical_json_object(
     normalized = _normalize_json(document)
     if type(normalized) is not dict:
         raise CapabilitySerializationError("capability JSON value must be an object")
+    if len(normalized) > _MAX_OBJECT_PROPERTIES:
+        raise CapabilitySerializationError("capability JSON object has too many properties")
     if schema is not None:
         validate_json_schema(normalized, parse_canonical_json_object(schema))
     return CanonicalJsonObject(canonical_json_bytes(normalized))
@@ -173,6 +176,8 @@ def parse_canonical_json_object(
     if type(document) is not dict:
         raise CapabilitySerializationError("canonical capability value must be an object")
     parsed = cast(dict[str, object], document)
+    if len(parsed) > _MAX_OBJECT_PROPERTIES:
+        raise CapabilitySerializationError("canonical capability object has too many properties")
     if schema is not None:
         validate_json_schema(parsed, parse_canonical_json_object(schema))
     return parsed

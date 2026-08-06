@@ -9,7 +9,8 @@ from typing import Self
 
 
 INT64_MAX = 2**63 - 1
-MAX_VERSION_TEXT_LENGTH = 4096
+MAX_VERSION_TEXT_LENGTH = 128
+MAX_REQUIREMENT_TEXT_LENGTH = 256
 MAX_IDENTIFIER_LENGTH = 256
 _IDENTIFIER_RE = re.compile(r"^[0-9A-Za-z-]+$")
 _CORE_NUMBER_RE = re.compile(r"^(?:0|[1-9][0-9]*)$")
@@ -264,7 +265,12 @@ class VersionRequirement:
 
     @classmethod
     def parse(cls, value: str) -> Self:
-        if type(value) is not str or not value or not value.isascii():
+        if (
+            type(value) is not str
+            or not value
+            or len(value) > MAX_REQUIREMENT_TEXT_LENGTH
+            or not value.isascii()
+        ):
             raise SemanticVersionError("version requirement must be a non-empty ASCII string")
         if value != value.strip() or any(character.isspace() for character in value):
             raise SemanticVersionError("version requirement must use canonical spacing")
