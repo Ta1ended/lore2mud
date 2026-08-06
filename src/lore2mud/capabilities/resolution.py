@@ -26,7 +26,11 @@ from lore2mud.capabilities.contracts import (
     ResolvedCapabilityPlan,
 )
 from lore2mud.capabilities.semver import SemanticVersion, VersionRequirement, compare_precedence
-from lore2mud.capabilities.serialization import fingerprint_capability_value
+from lore2mud.capabilities.serialization import (
+    canonical_json_bytes,
+    capability_value_to_document,
+    sha256_bytes,
+)
 
 
 _MAX_ROOT_REQUIREMENTS = 4096
@@ -589,7 +593,11 @@ def _build_plan(
         catalog_sha256=catalog.fingerprint,
         fingerprint="",
     )
-    return replace(provisional, fingerprint=fingerprint_capability_value(provisional))
+    document = capability_value_to_document(provisional)
+    assert isinstance(document, dict)
+    del document["fingerprint"]
+    fingerprint = sha256_bytes(canonical_json_bytes(document))
+    return replace(provisional, fingerprint=fingerprint)
 
 
 def _maximal_solution(
@@ -655,4 +663,3 @@ def _deduplicate_diagnostics(
         )
         unique[key] = diagnostic
     return sort_capability_diagnostics(tuple(unique.values()))
-
