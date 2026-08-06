@@ -13,7 +13,9 @@ import copy
 import json
 import os
 from pathlib import Path
+import random
 import subprocess
+from typing import Any
 import unittest
 
 from jsonschema import Draft202012Validator, ValidationError
@@ -63,6 +65,7 @@ from lore2mud.capabilities import (
     VersionRequirement,
     canonical_json_bytes,
     capability_value_to_document,
+    random_state_to_canonical_json,
 )
 from lore2mud.capabilities.catalog import validate_capability_descriptor
 from lore2mud.capabilities.serialization import CapabilitySerializationError
@@ -130,7 +133,7 @@ FORBIDDEN_FIELDS = (
 )
 
 
-def _schema_registry() -> tuple[dict[str, object], Registry]:
+def _schema_registry() -> tuple[dict[str, Any], Registry]:
     schemas = {
         document["$id"]: document
         for path in (ROOT / "schemas").glob("*.schema.json")
@@ -148,7 +151,7 @@ def _canonical(document: object) -> CanonicalJsonObject:
     return CanonicalJsonObject(canonical_json_bytes(document))
 
 
-def _load_fixture(name: str) -> dict[str, object]:
+def _load_fixture(name: str) -> dict[str, Any]:
     return json.loads((FIXTURES / name).read_text("utf-8"))
 
 
@@ -441,6 +444,9 @@ class CapabilityTypedSerializationTests(unittest.TestCase):
                     event_sequence=2,
                     view_sha256=SHA256,
                     fingerprint=SHA256,
+                    rng_state=random_state_to_canonical_json(
+                        random.Random(7).getstate()
+                    ),
                 ),
             ),
         )
@@ -556,6 +562,7 @@ class CapabilityTypedSerializationTests(unittest.TestCase):
     def test_catalog_public_schema_rejects_engine_registry_fields(self) -> None:
         catalog = CapabilityCatalog(())
         document = capability_value_to_document(catalog)
+        assert isinstance(document, dict)
         self.assertIn("implementation_registry", document)
 
         with self.assertRaises(ValidationError):
@@ -702,6 +709,67 @@ class CapabilityNegativeTests(unittest.TestCase):
                         ).iter_errors(request)
                     )
                 )
+
+    def test_checkpoint_rng_state_is_required_and_matches_core_encoding(self) -> None:
+        validator = self._validator("capability_checkpoint.schema.json")
+        checkpoint = copy.deepcopy(_load_fixture("capability_checkpoint.json"))
+        expected = capability_value_to_document(
+            random_state_to_canonical_json(random.Random(7).getstate())
+        )
+
+        self.assertEqual(checkpoint["rng_state"], expected)
+        validator.validate(checkpoint)
+
+        missing = copy.deepcopy(checkpoint)
+        del missing["rng_state"]
+        null_sentinel = copy.deepcopy(checkpoint)
+        null_sentinel["rng_state"] = None
+        for document in (missing, null_sentinel):
+            with self.subTest(document=document):
+                self.assertTrue(list(validator.iter_errors(document)))
+
+    def test_checkpoint_rng_state_schema_rejects_identity_and_bounds_tampering(
+        self,
+    ) -> None:
+        validator = self._validator("capability_checkpoint.schema.json")
+        checkpoint = copy.deepcopy(_load_fixture("capability_checkpoint.json"))
+        rng_state = copy.deepcopy(checkpoint["rng_state"])
+        assert isinstance(rng_state, dict)
+        state = list(rng_state["state"])
+        invalid_states: list[Any] = []
+
+        for field_name, value in (
+            ("algorithm", "other"),
+            ("format_version", 2),
+            ("version", 2),
+            ("gauss_next", "0x1p+0"),
+            ("gauss_next", "inf"),
+        ):
+            changed = copy.deepcopy(rng_state)
+            changed[field_name] = value
+            invalid_states.append(changed)
+
+        for index, value in ((0, -1), (0, 2**32), (624, -1), (624, 625)):
+            changed = copy.deepcopy(rng_state)
+            changed_state = list(state)
+            changed_state[index] = value
+            changed["state"] = changed_state
+            invalid_states.append(changed)
+
+        for changed_state in (state[:-1], state + [0]):
+            changed = copy.deepcopy(rng_state)
+            changed["state"] = changed_state
+            invalid_states.append(changed)
+
+        extra = copy.deepcopy(rng_state)
+        extra["implementation"] = "hidden"
+        invalid_states.append(extra)
+
+        for invalid in invalid_states:
+            with self.subTest(invalid=invalid):
+                document = copy.deepcopy(checkpoint)
+                document["rng_state"] = invalid
+                self.assertTrue(list(validator.iter_errors(document)))
 
     def test_closed_step_union_rejects_unknown_and_ambiguous_steps(self) -> None:
         validator = self._validator("capability_simulation_request.schema.json")
