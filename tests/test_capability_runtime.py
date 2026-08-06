@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 from pathlib import Path
 import tempfile
@@ -36,6 +37,7 @@ from lore2mud.capabilities import (
     resolve_capabilities,
 )
 from lore2mud.capabilities.persistence import (
+    _checkpoint_fingerprint,
     create_capability_checkpoint,
     restore_capability_checkpoint,
 )
@@ -443,7 +445,10 @@ class CapabilityRuntimeTests(unittest.TestCase):
             )
         )
         session.submit(MoveIntent("east"))
+        session._rng.gauss(0.0, 1.0)  # noqa: SLF001 - exact checkpoint probe
+        source_rng_state = session._rng.getstate()  # noqa: SLF001
         checkpoint = create_capability_checkpoint(session, self.pack)
+        self.assertIsNotNone(checkpoint.rng_state)
 
         restored_host = CapabilityRuntimeHost(
             self._reference_plan(),
@@ -460,9 +465,15 @@ class CapabilityRuntimeTests(unittest.TestCase):
         self.assertEqual(restored_host.states, host.states)
         self.assertEqual(restored.view(), session.view())
         self.assertEqual(restored.event_sequence, session.event_sequence)
+        self.assertEqual(restored._rng.getstate(), source_rng_state)  # noqa: SLF001
         self.assertEqual(
             (restored.determinism.seed, restored.determinism.clock),
             (41, 73),
+        )
+        self.assertEqual(restored._rng.random(), session._rng.random())  # noqa: SLF001
+        self.assertEqual(
+            restored._rng.gauss(0.0, 1.0),  # noqa: SLF001
+            session._rng.gauss(0.0, 1.0),  # noqa: SLF001
         )
         next_intent = CapabilityIntent(
             REFERENCE_COUNTER_ID,
@@ -471,6 +482,70 @@ class CapabilityRuntimeTests(unittest.TestCase):
         )
         self.assertEqual(restored.submit(next_intent), session.submit(next_intent))
         self.assertEqual(restored_host.states, host.states)
+
+    def test_checkpoint_view_failure_restores_target_rng_and_session(self) -> None:
+        source, _ = self._reference_session(
+            determinism=DeterminismContext(seed=41, clock=73)
+        )
+        source.submit(
+            CapabilityIntent(
+                REFERENCE_COUNTER_ID,
+                "increment",
+                canonical_json_object({"amount": 4}),
+            )
+        )
+        source._rng.gauss(0.0, 1.0)  # noqa: SLF001 - exact checkpoint probe
+        checkpoint = create_capability_checkpoint(source, self.pack)
+        mismatched = replace(checkpoint, view_sha256="0" * 64)
+        mismatched = replace(
+            mismatched,
+            fingerprint=_checkpoint_fingerprint(mismatched),
+        )
+
+        target, target_host = self._reference_session(
+            determinism=DeterminismContext(seed=97, clock=101)
+        )
+        target.submit(MoveIntent("east"))
+        target._rng.gauss(0.0, 1.0)  # noqa: SLF001 - rollback probe
+        before_world = _world_bytes(target)
+        before_view = target.view()
+        before_states = target_host.states
+        before_context = target.determinism
+        before_context_values = (before_context.seed, before_context.clock)
+        before_rng = target._rng.getstate()  # noqa: SLF001
+        before_sequence = target.event_sequence
+
+        with self.assertRaisesRegex(SaveLoadError, "view hash"):
+            restore_capability_checkpoint(target, self.pack, mismatched)
+
+        self.assertEqual(_world_bytes(target), before_world)
+        self.assertEqual(target.view(), before_view)
+        self.assertEqual(target_host.states, before_states)
+        self.assertIs(target.determinism, before_context)
+        self.assertEqual(
+            (target.determinism.seed, target.determinism.clock),
+            before_context_values,
+        )
+        self.assertEqual(target._rng.getstate(), before_rng)  # noqa: SLF001
+        self.assertEqual(target.event_sequence, before_sequence)
+
+    def test_checkpoint_restore_rejects_missing_rng_state_unchanged(self) -> None:
+        source, _ = self._reference_session()
+        checkpoint = create_capability_checkpoint(source, self.pack)
+        missing_rng = replace(checkpoint, rng_state=None)
+        target, target_host = self._reference_session(
+            determinism=DeterminismContext(seed=97, clock=101)
+        )
+        before_world = _world_bytes(target)
+        before_states = target_host.states
+        before_rng = target._rng.getstate()  # noqa: SLF001
+
+        with self.assertRaisesRegex(SaveLoadError, "RNG state is missing"):
+            restore_capability_checkpoint(target, self.pack, missing_rng)
+
+        self.assertEqual(_world_bytes(target), before_world)
+        self.assertEqual(target_host.states, before_states)
+        self.assertEqual(target._rng.getstate(), before_rng)  # noqa: SLF001
 
     def _reference_plan(self):
         resolution = resolve_capabilities(

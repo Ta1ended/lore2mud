@@ -14,10 +14,13 @@ from lore2mud.capabilities.runtime import (
     CapabilityRuntimeHost,
 )
 from lore2mud.capabilities.serialization import (
+    CapabilitySerializationError,
     canonical_json_bytes,
     canonical_json_object,
     capability_value_to_document,
     fingerprint_capability_value,
+    random_state_from_canonical_json,
+    random_state_to_canonical_json,
     sha256_bytes,
 )
 from lore2mud.content.models import ContentPack
@@ -45,6 +48,12 @@ def create_capability_checkpoint(
                 raise SaveLoadError("capability checkpoint save failed") from exc
         save_document = canonical_json_object(raw_document)
         states = host.states
+        try:
+            rng_state = random_state_to_canonical_json(
+                session._rng.getstate()  # noqa: SLF001 - checkpoint owns determinism
+            )
+        except CapabilitySerializationError as exc:
+            raise SaveLoadError("capability checkpoint RNG state is invalid") from exc
         plan_sha256 = fingerprint_capability_value(plan)
         state_sha256 = fingerprint_capability_value(states)
         save_sha256 = sha256_bytes(save_document.canonical_bytes)
@@ -61,6 +70,7 @@ def create_capability_checkpoint(
             "clock": session.determinism.clock,
             "event_sequence": session.event_sequence,
             "view_sha256": view_sha256,
+            "rng_state": capability_value_to_document(rng_state),
         }
         fingerprint = sha256_bytes(canonical_json_bytes(without_fingerprint))
         return CapabilityCheckpoint(
@@ -76,6 +86,7 @@ def create_capability_checkpoint(
             event_sequence=session.event_sequence,
             view_sha256=view_sha256,
             fingerprint=fingerprint,
+            rng_state=rng_state,
         )
 
 
@@ -92,6 +103,12 @@ def restore_capability_checkpoint(
         raise SaveLoadError("capability checkpoint is invalid")
     if checkpoint.plan != host.plan:
         raise SaveLoadError("capability checkpoint plan does not match the session")
+    if checkpoint.rng_state is None:
+        raise SaveLoadError("capability checkpoint RNG state is missing")
+    try:
+        candidate_rng_state = random_state_from_canonical_json(checkpoint.rng_state)
+    except CapabilitySerializationError as exc:
+        raise SaveLoadError("capability checkpoint RNG state is invalid") from exc
     if checkpoint.plan_sha256 != fingerprint_capability_value(checkpoint.plan):
         raise SaveLoadError("capability checkpoint plan hash is invalid")
     if checkpoint.state_sha256 != fingerprint_capability_value(checkpoint.states):
@@ -123,7 +140,7 @@ def restore_capability_checkpoint(
             session._world = candidate_world  # noqa: SLF001
             object.__setattr__(session._determinism, "seed", checkpoint.seed)  # noqa: SLF001
             object.__setattr__(session._determinism, "clock", checkpoint.clock)  # noqa: SLF001
-            session._rng.seed(checkpoint.seed)  # noqa: SLF001
+            session._rng.setstate(candidate_rng_state)  # noqa: SLF001
             session._event_sequence = checkpoint.event_sequence  # noqa: SLF001
             if fingerprint_capability_value(session.view()) != checkpoint.view_sha256:
                 raise SaveLoadError("capability checkpoint view hash is invalid")
@@ -157,5 +174,6 @@ def _checkpoint_fingerprint(checkpoint: CapabilityCheckpoint) -> str:
         "clock": checkpoint.clock,
         "event_sequence": checkpoint.event_sequence,
         "view_sha256": checkpoint.view_sha256,
+        "rng_state": capability_value_to_document(checkpoint.rng_state),
     }
     return sha256_bytes(canonical_json_bytes(document))
