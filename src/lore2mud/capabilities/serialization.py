@@ -224,7 +224,10 @@ def _validate_schema_definition(schema: object, *, path: str) -> None:
     if type(schema) is not dict:
         raise CapabilitySchemaError(f"{path} must be an object")
     mapping = cast(dict[object, object], schema)
-    unknown = set(mapping).difference(_SCHEMA_KEYS)
+    if any(type(key) is not str for key in mapping):
+        raise CapabilitySchemaError(f"{path} keys must be strings")
+    string_mapping = cast(dict[str, object], mapping)
+    unknown = set(string_mapping).difference(_SCHEMA_KEYS)
     if unknown:
         raise CapabilitySchemaError(f"{path} uses unsupported keywords: {sorted(unknown)!r}")
 
@@ -265,7 +268,11 @@ def _validate_schema_definition(schema: object, *, path: str) -> None:
             raise CapabilitySchemaError(f"{path}.{minimum_name} cannot be negative")
         if maximum is not None and cast(int, maximum) < 0:
             raise CapabilitySchemaError(f"{path}.{maximum_name} cannot be negative")
-        if minimum is not None and maximum is not None and minimum > maximum:
+        if (
+            minimum is not None
+            and maximum is not None
+            and cast(int, minimum) > cast(int, maximum)
+        ):
             raise CapabilitySchemaError(f"{path} has inverted bounds")
 
     if "enum" in mapping:
@@ -387,4 +394,3 @@ def _validate_schema_value(value: object, schema: Mapping[str, object], *, path:
 
 def _pointer_escape(value: str) -> str:
     return value.replace("~", "~0").replace("/", "~1")
-
