@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from dataclasses import replace
 from typing import TypeVar
 
 from lore2mud.application.contracts import (
@@ -14,6 +15,7 @@ from lore2mud.application.contracts import (
     CharacterFocusView,
     CharacterView,
     ChooseDialogueIntent,
+    DeterminismContext,
     DialogueOptionView,
     DialogueView,
     DropIntent,
@@ -69,7 +71,15 @@ from lore2mud.engine.world import World, WorldRuleError
 _IntentT = TypeVar("_IntentT", bound=GameIntent)
 
 
-def project_game_view(world: World, *, focus: FocusView | None = None) -> GameView:
+def project_game_view(
+    world: World,
+    *,
+    focus: FocusView | None = None,
+    capability_host: object | None = None,
+    capability_prepared: object | None = None,
+    capability_determinism: DeterminismContext | None = None,
+    capability_event_sequence: int | None = None,
+) -> GameView:
     """Return a detached, immutable projection with no hidden runtime state."""
     player = world.player
     assert player.hp is not None
@@ -149,7 +159,7 @@ def project_game_view(world: World, *, focus: FocusView | None = None) -> GameVi
         for character in world.available_characters()
     )
 
-    return GameView(
+    view = GameView(
         pack=PackView(world.pack_id, world.pack_name, world.pack_version),
         player=PlayerView(
             id=player.id,
@@ -194,6 +204,24 @@ def project_game_view(world: World, *, focus: FocusView | None = None) -> GameVi
         ),
         focus=focus,
     )
+    if capability_host is None:
+        return view
+    project = getattr(capability_host, "project_view", None)
+    if project is None:
+        raise TypeError("capability host must provide project_view(view)")
+    project_kwargs: dict[str, object] = {}
+    if capability_determinism is not None:
+        project_kwargs["determinism"] = capability_determinism
+    if capability_event_sequence is not None:
+        project_kwargs["event_sequence"] = capability_event_sequence
+    capabilities = project(
+        view,
+        *(() if capability_prepared is None else (capability_prepared,)),
+        **project_kwargs,
+    )
+    if capabilities is None:
+        return view
+    return replace(view, capabilities=tuple(capabilities))
 
 
 def _available(world: World, intent: _IntentT) -> _IntentT | None:

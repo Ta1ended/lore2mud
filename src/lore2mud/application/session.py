@@ -6,8 +6,12 @@ from copy import deepcopy
 from dataclasses import dataclass, fields, is_dataclass, replace
 from random import Random
 import re
+from pathlib import Path
 from threading import RLock
-from typing import Literal, Protocol, TypeAlias
+from typing import TYPE_CHECKING, Literal, Protocol, TypeAlias, cast
+
+if TYPE_CHECKING:
+    from lore2mud.capabilities.runtime import CapabilityRuntimeHost
 
 from lore2mud.application.contracts import (
     AcceptedQuestEvent,
@@ -74,6 +78,7 @@ from lore2mud.application.projection import (
     monster_focus,
     project_game_view,
 )
+from lore2mud.capabilities.contracts import CapabilityEventData, CapabilityIntent
 from lore2mud.content.models import ContentPack
 from lore2mud.engine.save import SaveLoadError
 from lore2mud.engine.world import (
@@ -110,6 +115,33 @@ class SaveService(Protocol):
     def load(self, slot: str | None = None) -> World: ...
 
 
+class _CapabilityHost(Protocol):
+    def snapshot(self) -> object: ...
+
+    def restore(self, snapshot: object) -> None: ...
+
+    def prepare_turn(
+        self,
+        intent: GameIntent | CapabilityIntent,
+        *,
+        before_view: GameView,
+        after_view: GameView,
+        event: _EventDraft | None,
+        determinism: DeterminismContext,
+        event_sequence: int,
+    ) -> object: ...
+
+    def project_view(
+        self,
+        view: GameView,
+        prepared: object | None = None,
+    ) -> tuple[object, ...] | None: ...
+
+    def prepared_events(self, prepared: object) -> tuple[CapabilityEventData, ...]: ...
+
+    def commit(self, prepared: object) -> None: ...
+
+
 class _IntentValidationError(ValueError):
     pass
 
@@ -121,10 +153,36 @@ _STABLE_ID_PATTERN = re.compile(r"^[a-z][a-z0-9_]*$")
 _MISSING = object()
 
 
+def _is_capability_intent(value: object) -> bool:
+    return type(value) is CapabilityIntent
+
+
+def _capability_rejection_code(exc: Exception) -> RejectionCode | None:
+    value = getattr(exc, "rejection_code", None)
+    if value == RejectionCode.CAPABILITY_INTENT_INVALID.value:
+        return RejectionCode.CAPABILITY_INTENT_INVALID
+    if value == RejectionCode.CAPABILITY_INTENT_INADMISSIBLE.value:
+        return RejectionCode.CAPABILITY_INTENT_INADMISSIBLE
+    return None
+
+
+def _capability_rejection_message(code: RejectionCode) -> str:
+    if code is RejectionCode.CAPABILITY_INTENT_INADMISSIBLE:
+        return "Capability intent is not currently admissible."
+    return "Capability intent is invalid."
+
+
 @dataclass(frozen=True, slots=True)
 class _WorldSnapshot:
     backup: World
     references: tuple[tuple[object, object], ...]
+
+
+@dataclass(frozen=True, slots=True)
+class _SaveFileSnapshot:
+    path: Path
+    existed: bool
+    data: bytes
 
 
 def _capture_world(world: World) -> _WorldSnapshot:
@@ -208,6 +266,42 @@ def _restore_world(snapshot: _WorldSnapshot) -> None:
             original.update(values)
 
 
+def _capture_save_file(
+    service: SaveService | None,
+    slot: str | None,
+) -> _SaveFileSnapshot | None:
+    if service is None:
+        return None
+    try:
+        if slot is None:
+            path = getattr(service, "save_path", None)
+        else:
+            slot_path = getattr(service, "slot_path", None)
+            if not callable(slot_path):
+                return None
+            path = slot_path(slot)
+        if not isinstance(path, Path):
+            return None
+        if not path.is_file():
+            return _SaveFileSnapshot(path, False, b"")
+        return _SaveFileSnapshot(path, True, path.read_bytes())
+    except (OSError, SaveLoadError, TypeError, ValueError):
+        return None
+
+
+def _restore_save_file(snapshot: _SaveFileSnapshot | None) -> None:
+    if snapshot is None:
+        return
+    try:
+        if snapshot.existed:
+            snapshot.path.parent.mkdir(parents=True, exist_ok=True)
+            snapshot.path.write_bytes(snapshot.data)
+        elif snapshot.path.exists():
+            snapshot.path.unlink()
+    except OSError as exc:
+        raise SaveLoadError("save rollback failed") from exc
+
+
 class GameSession:
     """Own one World and coordinate one deterministic application turn at a time."""
 
@@ -217,6 +311,7 @@ class GameSession:
         save_service: SaveService | None = None,
         *,
         determinism: DeterminismContext | None = None,
+        capability_host: "CapabilityRuntimeHost | None" = None,
     ) -> None:
         context = DeterminismContext() if determinism is None else determinism
         self._validate_context(context)
@@ -225,6 +320,7 @@ class GameSession:
         self._determinism = context
         self._rng = Random(self._determinism.seed)
         self._event_sequence = 0
+        self._capability_host = capability_host
         self._lock = RLock()
 
     @classmethod
@@ -235,11 +331,13 @@ class GameSession:
         *,
         player_name: str = "旅人",
         determinism: DeterminismContext | None = None,
+        capability_host: "CapabilityRuntimeHost | None" = None,
     ) -> GameSession:
         return cls(
             World.from_content_pack(pack, player_name=player_name),
             save_service,
             determinism=determinism,
+            capability_host=capability_host,
         )
 
     @property
@@ -255,9 +353,18 @@ class GameSession:
     def event_sequence(self) -> int:
         return self._event_sequence
 
+    @property
+    def capability_host(self) -> "CapabilityRuntimeHost | None":
+        return self._capability_host
+
     def view(self) -> GameView:
         with self._lock:
-            return project_game_view(self._world)
+            return project_game_view(
+                self._world,
+                capability_host=self._capability_host,
+                capability_determinism=self._determinism,
+                capability_event_sequence=self._event_sequence,
+            )
 
     def reject(self, code: RejectionCode, message: str) -> TurnResult:
         """Create a transport-parse rejection without touching authority."""
@@ -265,21 +372,45 @@ class GameSession:
             return TurnResult(
                 status=TurnStatus.REJECTED,
                 events=(),
-                view=project_game_view(self._world),
+                view=project_game_view(
+                    self._world,
+                    capability_host=self._capability_host,
+                    capability_determinism=self._determinism,
+                    capability_event_sequence=self._event_sequence,
+                ),
                 rejection=RejectionDiagnostic(code, message),
             )
 
-    def submit(self, intent: GameIntent) -> TurnResult:
+    def submit(self, intent: GameIntent | CapabilityIntent) -> TurnResult:
         """Validate and execute exactly one intent against the authoritative World."""
         with self._lock:
-            try:
-                validate_game_intent(intent)
-            except _IntentValidationError as exc:
+            capability_intent = _is_capability_intent(intent)
+            if not capability_intent:
+                try:
+                    validate_game_intent(intent)
+                except _IntentValidationError as exc:
+                    return TurnResult(
+                        TurnStatus.REJECTED,
+                        (),
+                        project_game_view(
+                            self._world,
+                            capability_host=self._capability_host,
+                            capability_determinism=self._determinism,
+                            capability_event_sequence=self._event_sequence,
+                        ),
+                        RejectionDiagnostic(RejectionCode.MALFORMED_INTENT, str(exc)),
+                    )
+            elif self._capability_host is None:
                 return TurnResult(
                     TurnStatus.REJECTED,
                     (),
                     project_game_view(self._world),
-                    RejectionDiagnostic(RejectionCode.MALFORMED_INTENT, str(exc)),
+                    RejectionDiagnostic(
+                        RejectionCode.CAPABILITY_INTENT_INVALID,
+                        _capability_rejection_message(
+                            RejectionCode.CAPABILITY_INTENT_INVALID
+                        ),
+                    ),
                 )
 
             original_world = self._world
@@ -288,9 +419,71 @@ class GameSession:
             determinism = self._determinism
             determinism_state = (determinism.seed, determinism.clock)
             sequence = self._event_sequence
+            capability_snapshot: object = _MISSING
+            save_file_snapshot: _SaveFileSnapshot | None = None
             try:
-                draft, focus = self._execute(intent)
-                view = project_game_view(self._world, focus=focus)
+                if self._capability_host is not None:
+                    capability_snapshot = self._capability_host.snapshot()
+                before_view = project_game_view(
+                    original_world,
+                    capability_host=self._capability_host,
+                    capability_determinism=determinism,
+                    capability_event_sequence=sequence,
+                )
+                turn_world = original_world
+                if isinstance(intent, LoadIntent):
+                    turn_world = self._require_save_service().load(intent.slot)
+                if capability_intent:
+                    draft, focus = None, None
+                else:
+                    draft, focus = self._execute(
+                        cast(GameIntent, intent),
+                        world=turn_world,
+                    )
+                base_view = project_game_view(turn_world, focus=focus)
+                prepared: object = _MISSING
+                if self._capability_host is not None:
+                    prepared = self._capability_host.prepare_turn(
+                        intent,
+                        before_view=before_view,
+                        after_view=base_view,
+                        event=draft,
+                        determinism=determinism,
+                        event_sequence=sequence,
+                    )
+                    capability_events = self._capability_host.prepared_events(prepared)
+                    final_sequence = (
+                        sequence
+                        + (1 if draft is not None else 0)
+                        + len(capability_events)
+                    )
+                    view = project_game_view(
+                        turn_world,
+                        focus=focus,
+                        capability_host=self._capability_host,
+                        capability_prepared=prepared,
+                        capability_determinism=determinism,
+                        capability_event_sequence=final_sequence,
+                    )
+                else:
+                    view = base_view
+                    capability_events = ()
+                    final_sequence = sequence + (1 if draft is not None else 0)
+                events = self._build_events(draft, capability_events, view, sequence)
+
+                # Persistence is the final fallible operation. Everything after this
+                # point is an assignment into already validated prepared state.
+                if isinstance(intent, SaveIntent):
+                    service = self._require_save_service()
+                    save_file_snapshot = _capture_save_file(service, intent.slot)
+                    service.save(turn_world, intent.slot)
+
+                if isinstance(intent, LoadIntent):
+                    self._world = turn_world
+                if self._capability_host is not None:
+                    self._capability_host.commit(prepared)
+                self._event_sequence = final_sequence
+                return TurnResult(TurnStatus.ACCEPTED, events, view)
             except WorldRuleError as exc:
                 try:
                     message = str(exc)
@@ -302,16 +495,26 @@ class GameSession:
                         determinism,
                         determinism_state,
                         sequence,
+                        capability_snapshot,
+                        save_file_snapshot,
                     )
                 return TurnResult(
                     TurnStatus.REJECTED,
                     (),
-                    project_game_view(self._world),
+                    project_game_view(
+                        self._world,
+                        capability_host=self._capability_host,
+                        capability_determinism=self._determinism,
+                        capability_event_sequence=self._event_sequence,
+                    ),
                     RejectionDiagnostic(RejectionCode.INADMISSIBLE_INTENT, message),
                 )
             except SaveLoadError as exc:
                 try:
-                    message = _persistence_rejection_message(intent, exc)
+                    message = _persistence_rejection_message(
+                        cast(GameIntent, intent),
+                        exc,
+                    )
                 finally:
                     self._restore(
                         original_world,
@@ -320,17 +523,25 @@ class GameSession:
                         determinism,
                         determinism_state,
                         sequence,
+                        capability_snapshot,
+                        save_file_snapshot,
                     )
                 return TurnResult(
                     TurnStatus.REJECTED,
                     (),
-                    project_game_view(self._world),
+                    project_game_view(
+                        self._world,
+                        capability_host=self._capability_host,
+                        capability_determinism=self._determinism,
+                        capability_event_sequence=self._event_sequence,
+                    ),
                     RejectionDiagnostic(
                         RejectionCode.PERSISTENCE_ERROR,
                         message,
                     ),
                 )
-            except Exception:
+            except Exception as exc:
+                rejection_code = _capability_rejection_code(exc)
                 self._restore(
                     original_world,
                     snapshot,
@@ -338,24 +549,58 @@ class GameSession:
                     determinism,
                     determinism_state,
                     sequence,
+                    capability_snapshot,
+                    save_file_snapshot,
                 )
+                if rejection_code is not None:
+                    return TurnResult(
+                        TurnStatus.REJECTED,
+                        (),
+                        project_game_view(
+                            self._world,
+                            capability_host=self._capability_host,
+                            capability_determinism=self._determinism,
+                            capability_event_sequence=self._event_sequence,
+                        ),
+                        RejectionDiagnostic(
+                            rejection_code,
+                            _capability_rejection_message(rejection_code),
+                        ),
+                    )
                 raise
 
-            if draft is None:
-                return TurnResult(TurnStatus.ACCEPTED, (), view)
-
+    @staticmethod
+    def _build_events(
+        draft: _EventDraft | None,
+        capability_events: tuple[CapabilityEventData, ...],
+        view: GameView,
+        sequence: int,
+    ) -> tuple[GameEvent, ...]:
+        events: list[GameEvent] = []
+        next_sequence = sequence
+        if draft is not None:
             kind, payload = draft
             payload = _player_safe_event_payload(payload, view)
-            next_sequence = self._event_sequence + 1
-            event = GameEvent(next_sequence, kind, payload)
-            self._event_sequence = next_sequence
-            return TurnResult(TurnStatus.ACCEPTED, (event,), view)
+            next_sequence += 1
+            events.append(GameEvent(next_sequence, kind, payload))
+        for payload in capability_events:
+            next_sequence += 1
+            events.append(
+                GameEvent(
+                    next_sequence,
+                    GameEventKind.CAPABILITY,
+                    payload,
+                )
+            )
+        return tuple(events)
 
     def _execute(
         self,
         intent: GameIntent,
+        *,
+        world: World | None = None,
     ) -> tuple[_EventDraft | None, FocusView | None]:
-        world = self._world
+        world = self._world if world is None else world
         if isinstance(intent, ViewIntent):
             if intent.kind is ViewKind.SHOP:
                 world.shop()
@@ -433,15 +678,11 @@ class GameSession:
             outcome = world.recover()
             return (GameEventKind.RECOVER, _recovery_event(outcome)), None
         if isinstance(intent, SaveIntent):
-            service = self._require_save_service()
-            service.save(world, intent.slot)
             return (
                 GameEventKind.SAVE,
                 PersistenceEventData(intent.slot or "default"),
             ), None
         if isinstance(intent, LoadIntent):
-            service = self._require_save_service()
-            self._world = service.load(intent.slot)
             return (
                 GameEventKind.LOAD,
                 PersistenceEventData(intent.slot or "default"),
@@ -461,6 +702,8 @@ class GameSession:
         determinism: DeterminismContext,
         determinism_state: _DeterminismState,
         sequence: int,
+        capability_snapshot: object = _MISSING,
+        save_file_snapshot: _SaveFileSnapshot | None = None,
     ) -> None:
         _restore_world(snapshot)
         self._world = original_world
@@ -470,6 +713,12 @@ class GameSession:
         object.__setattr__(determinism, "clock", clock)
         self._determinism = determinism
         self._event_sequence = sequence
+        if (
+            self._capability_host is not None
+            and capability_snapshot is not _MISSING
+        ):
+            self._capability_host.restore(capability_snapshot)
+        _restore_save_file(save_file_snapshot)
 
     @staticmethod
     def _validate_context(context: DeterminismContext) -> None:

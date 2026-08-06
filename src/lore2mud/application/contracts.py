@@ -6,6 +6,11 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import TypeAlias
 
+from lore2mud.capabilities.contracts import (
+    CapabilityEventData,
+    CapabilityPlayerViewEntry,
+)
+
 
 class TurnStatus(str, Enum):
     ACCEPTED = "accepted"
@@ -16,6 +21,8 @@ class RejectionCode(str, Enum):
     MALFORMED_INTENT = "malformed_intent"
     INADMISSIBLE_INTENT = "inadmissible_intent"
     PERSISTENCE_ERROR = "persistence_error"
+    CAPABILITY_INTENT_INVALID = "capability_intent_invalid"
+    CAPABILITY_INTENT_INADMISSIBLE = "capability_intent_inadmissible"
 
 
 class ViewKind(str, Enum):
@@ -468,6 +475,7 @@ GameEventPayload: TypeAlias = (
     | CampaignActionEventData
     | RecoveryEventData
     | PersistenceEventData
+    | CapabilityEventData
 )
 
 
@@ -488,6 +496,7 @@ class GameEventKind(str, Enum):
     RECOVER = "recover"
     SAVE = "save"
     LOAD = "load"
+    CAPABILITY = "capability"
 
 
 @dataclass(frozen=True, slots=True)
@@ -740,6 +749,8 @@ class GameView:
     shop: ShopView | None
     flags: tuple[FlagView, ...]
     focus: FocusView | None = None
+    # Capability data is additive; the legacy lane keeps this explicitly absent.
+    capabilities: tuple[CapabilityPlayerViewEntry, ...] | None = None
 
 
 @dataclass(frozen=True, slots=True)
