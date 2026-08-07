@@ -3404,3 +3404,30 @@
   or release decision. The next task is to wait for explicit independent authorization; preserve the clean frozen tree.
 - 取代 / Supersedes: DEC-0115 only for its pending acceptance and state routing; DEC-0115's cardinality repair,
   verification evidence, privacy boundary, and Git/later-milestone limits remain in force.
+
+## DEC-0117: 记录 V2-3 文档封存发布与 main 合并 / Record V2-3 documentation-seal publication and main integration
+
+- 日期 / Date: 2026-08-07
+- 状态 / Status: V2-3 documentation seal published and merged to `main` under explicit user authorization;
+  PRODUCT PASS, SECURITY PASS, release, and distribution remain separate pending gates. / V2-3 documentation seal 已在
+  用户明确授权下发布并合并到 `main`；PRODUCT PASS、SECURITY PASS、release 与分发仍是独立的待决门禁。
+- 背景 / Context: The frozen V2-3 product candidate is `aa56770ccbefa77ab405ef5739dab769e6536592`, and the
+  documentation-only handoff seal is `26fe8428d39f366e068ba7986975322e72d0f355`. The product owner explicitly
+  authorized both a normal push and a `main` merge on 2026-08-07.
+- 决定 / Decision: Record the completed non-force fast-forward publication of the seal head to
+  `origin/workstream/v2-3-capability-modules` and `origin/main`. At publication completion both live refs pointed exactly
+  to `26fe8428d39f366e068ba7986975322e72d0f355`; this follow-up commit only records the fact in the handoff documents and
+  does not change product or test bytes. / 记录该封存头已无强制推送地正常快进发布到两个远端 ref；发布完成时两者均精确指向
+  `26fe8428d39f366e068ba7986975322e72d0f355`。本后续提交只记录事实，不改变产品或测试字节。
+- 证据 / Evidence: GitHub Actions for exact `26fe842` completed successfully: tests runs `31156995926` and
+  `31156931379`, quality runs `31156995982` and `31156931281`. Before publication, the final local xdist matrix was
+  `1564 passed, 2 skipped, 927 subtests passed`; the focused PyInstaller packaging matrix was `17 passed, 12 subtests
+  passed`, and manual Windows symbolic-link creation succeeded. The two full-suite skips are POSIX-only symlink tests;
+  they are not product failures.
+- 后果 / Consequences: V2-3 product bytes remain frozen at `aa56770`; the published documentation seal does not itself
+  grant PRODUCT PASS, SECURITY PASS, release, distribution, private-material access, or V2-4/V2-5 authorization. The next
+  routed gate is the independent PRODUCT/SECURITY decision plus any separately authorized release action. / V2-3 产品字节
+  继续冻结于 `aa56770`；本发布不授予 PRODUCT PASS、SECURITY PASS、release、分发、私有材料访问或 V2-4/V2-5 权限。下一门禁
+  是独立 PRODUCT/SECURITY 决定及另行授权的 release 动作。
+- 取代 / Supersedes: DEC-0116 only for publication and `main` state routing. DEC-0116's TECH `GO`, product-byte freeze,
+  privacy, compatibility, release, and later-milestone boundaries remain in force.

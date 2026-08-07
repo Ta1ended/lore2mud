@@ -35,6 +35,23 @@
   `aa56770ccbefa77ab405ef5739dab769e6536592`: the independent reviewer reproduced the 1,024/1,025 intent
   boundary, found P0-P3 empty, and returned `GO`. This documentation-only seal does not change product-candidate
   bytes and grants no PRODUCT PASS, SECURITY PASS, push, `main` movement, release, or later-milestone authority.
+- 记录产品负责人于 2026-08-07 对 V2-3 documentation seal `26fe8428d39f366e068ba7986975322e72d0f355` 的明确授权：
+  已正常快进推送 `origin/workstream/v2-3-capability-modules` 并将同一发布头合并到 `origin/main`；发布操作完成时两个
+  远端 ref 均精确指向该 SHA。该发布记录提交仍仅更新文档，不改变冻结的产品候选 `aa56770`，也不替代 PRODUCT PASS、
+  SECURITY PASS 或 release 门禁。
+- Recorded the product owner's explicit 2026-08-07 authorization for V2-3 documentation seal
+  `26fe8428d39f366e068ba7986975322e72d0f355`: it was normally fast-forwarded to
+  `origin/workstream/v2-3-capability-modules` and merged to `origin/main`; both remote refs pointed exactly to that SHA
+  when publication completed. This publication record remains documentation-only, leaves frozen product candidate
+  `aa56770` unchanged, and does not replace the separate PRODUCT PASS, SECURITY PASS, or release gates.
+- 发布前最终本地验证为 xdist pytest `1564 passed, 2 skipped, 927 subtests passed`；PyInstaller Windows packaging
+  focused matrix 为 `17 passed, 12 subtests passed`，手工 Windows symbolic-link 创建成功。GitHub Actions 对精确
+  `26fe842` 的 tests runs `31156995926`、`31156931379` 与 quality runs `31156995982`、`31156931281` 均为
+  `completed/success`；剩余两个全量 skip 为 POSIX-only symlink 测试。
+- Before publication, the final local verification was xdist pytest `1564 passed, 2 skipped, 927 subtests passed`;
+  the focused PyInstaller Windows packaging matrix passed `17` tests and `12` subtests, and manual Windows symbolic-link
+  creation succeeded. GitHub Actions for exact `26fe842` had tests runs `31156995926` and `31156931379` plus quality runs
+  `31156995982` and `31156931281`, all `completed/success`; the two remaining full-suite skips are POSIX-only symlink tests.
 - Completed and published V2-1 on remote `workstream/v2-1-game-session` at exact
   product candidate `c8ee518ef39f938ece374cbd3f7c9bca06de2408`. Fresh independent
   TECH and SECURITY acceptance both returned `GO` with no P0-P3 findings, the product

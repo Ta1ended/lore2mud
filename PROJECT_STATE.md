@@ -19,8 +19,12 @@ Authoring、SDK、结构化 CLI 与 Web 共用通用边界；不改变 `World`�
 - 授权基线：`c37969f6b6958e66474738f88a53b9d5c2f50d99`。替代候选在通用 capability runtime 中执行 1,024 项
   上限，并为 1,024/1,025 边界添加回归；拒绝路径保持 capability state 与 event sequence 不变。
 - 全新、未参与旧实现或旧验收的 read-only TECH reviewer 已对精确 `aa56770` 给出 P0-P3 全空的 `GO`。
-  本 documentation-only seal 完成 V2-3 TECH handoff；Goal 可在该 seal 提交后完成。PRODUCT PASS、SECURITY PASS、
-  push、`main` 移动、release 与后续里程碑仍未授权。
+  本 documentation-only seal 完成 V2-3 TECH handoff；Goal 可在该 seal 提交后完成。
+- 产品负责人于 2026-08-07 明确授权 push 与合并 `main`；documentation seal
+  `26fe8428d39f366e068ba7986975322e72d0f355` 已正常快进发布到
+  `origin/workstream/v2-3-capability-modules` 和 `origin/main`。发布操作完成时两个远端 ref 均精确指向该 SHA；本次
+  追加的记录仍只改变文档。
+- PRODUCT PASS、SECURITY PASS、release、preview/report 分发与后续里程碑仍是独立门禁，不能由 TECH GO 或发布操作推断。
 
 ### 已完成
 
@@ -39,33 +43,37 @@ Authoring、SDK、结构化 CLI 与 Web 共用通用边界；不改变 `World`�
 
 - 1,024/1,025 runtime 边界回归：`13 passed`；1,024 项投影保持可见，1,025 项在 player-safe
   view 输出前拒绝且不改变 state/event sequence。
-- 完整矩阵：`unittest` 为 `1566 OK (skipped=12)`；serial `pytest` 为 `1554 passed, 12 skipped`；
-  xdist `pytest` 为 `1554 passed, 12 skipped, 924 subtests passed`。
+- 发布前最终 Controller xdist 矩阵为 `1564 passed, 2 skipped, 927 subtests passed`；PyInstaller packaging 与
+  Windows symbolic-link 检查见下方发布验证记录。
 - `ruff check .`、Pyright `0 errors, 0 warnings`、compileall、公开 Demo validate、`pip check`、
-  history safety、fsck、工作树 diff 与基线范围 diff 检查均通过。12 个 skip 是本机缺少 PyInstaller
-  toolchain 及 Windows symlink 权限，不得误记为通过。
+  history safety、fsck、工作树 diff 与基线范围 diff 检查均通过。独立 reviewer 早期环境的工具缺口与其历史
+  skip 不得误记为当前失败。
 - 独立 TECH acceptance 在精确 `aa56770` 上复现 1,024 项 projection 成功、1,025 项以
   `CapabilityRuntimeError` 拒绝，确认 capability state 不变且 event sequence 为 `0`；独立聚焦矩阵为
-  `96 passed` 与 `58 passed` 两组，完整 unittest 为 `1566 OK (skipped=12)`，serial pytest 为
+  `96 passed` 与 `58 passed` 两组；该 reviewer 的完整 unittest/serial 记录分别为 `1566 OK (skipped=12)` 与
   `1554 passed, 12 skipped`。独立 reviewer 未安装 Ruff、Pyright、xdist，已明确记录为工具缺口；Controller
-  已在仓库外工具环境补跑这些门禁。
+  随后在仓库外工具环境补跑这些门禁。
 - 真实 `reference_counter` preview/simulate/replay/proof 以及 SDK/结构化 CLI 字节等价已覆盖；
   Web optional-host generic snapshot/action 与 V2-2 legacy compatibility 也已覆盖。
+- 发布前最终 xdist pytest 为 `1564 passed, 2 skipped, 927 subtests passed`；PyInstaller Windows packaging 聚焦矩阵为
+  `17 passed, 12 subtests passed`，手工 Windows symbolic-link 创建成功。对应精确 `26fe842` 的 GitHub Actions tests
+  runs `31156995926`、`31156931379` 与 quality runs `31156995982`、`31156931281` 全部为 `completed/success`；全量剩余
+  两个 skip 为 POSIX-only symlink 测试。
 
 ### 暂停与未完成
 
 - V2-3 技术候选已冻结于 `aa56770`，独立 TECH `GO` 与本 documentation-only seal 已完成；本 Goal 不再有
   产品实现工作。
-- PRODUCT PASS、SECURITY PASS、workstream push、`main` 移动/合并、release、preview/report 分发及 V2-4/V2-5
-  仍是后续独立授权，不得由本 seal 推断或自动执行。
+- workstream push 与 `main` 移动/合并已按用户授权完成；PRODUCT PASS、SECURITY PASS、release、preview/report 分发及
+  V2-4/V2-5 仍是后续独立授权，不得由本 seal 或发布操作推断或自动执行。
 
 ### 实时证据与风险
 
-- `git ls-remote` 仍会超时，不能把本地 `origin/*` 当实时证据；但本次 GitHub REST 已确认 live
-  `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95`，PR #1 仍为 draft 且 head 为
-  `c37969f6b6958e66474738f88a53b9d5c2f50d99`。未对远端执行任何写操作。
-- `aa56770` 候选提交与本 seal 提交后工作树必须干净；独立 TECH acceptance 已由新任务在精确 SHA 上完成，
-  P0-P3 全空 `GO` 是本次唯一 TECH verdict。
+- 发布前 live ref 核对确认 `main` 与 V2-3 workstream 均为
+  `26fe8428d39f366e068ba7986975322e72d0f355`，随后正常快进发布成功；GitHub Actions 对该精确 SHA 的 tests/quality
+  均为 `completed/success`。本提交是其后的 documentation-only publication record，父提交为 `26fe842`，不改变产品字节。
+- `aa56770` 候选及其技术封存仍是唯一 TECH verdict（P0-P3 全空 `GO`）；工作树在记录提交后应保持仅有本次四份文档的
+  预期变更，主工作树用户保留的未跟踪 `uv.lock` 不纳入任何提交。
 
 ### 关键路径
 
@@ -96,35 +104,38 @@ core, or private-material boundaries.
   the event sequence.
 - A fresh, non-implementing, read-only TECH reviewer inspected exact `aa56770`, independently reproduced the boundary,
   found P0-P3 empty, and returned `GO`. This documentation-only seal completes the V2-3 TECH handoff and permits Goal
-  completion; PRODUCT PASS, SECURITY PASS, push, `main` movement, release, and later milestones remain unauthorized.
+  completion. The product owner then explicitly authorized publication and `main` integration of the seal; PRODUCT PASS,
+  SECURITY PASS, release, and later milestones remain separate gates.
 
 ### Verified Checkpoint
 
 - The 1,024/1,025 runtime boundary regression passed `13` tests: a 1,024-item projection remains visible, while
   a 1,025-item projection rejects before player-safe view output without changing state or the event sequence.
-- Full matrix: `unittest` `1566 OK (skipped=12)`; serial pytest `1554 passed, 12 skipped`; xdist pytest
-  `1554 passed, 12 skipped, 924 subtests passed`.
+- Final pre-publication Controller xdist matrix: `1564 passed, 2 skipped, 927 subtests passed`; focused packaging and
+  Windows symbolic-link evidence are recorded below.
 - `ruff check .`, Pyright `0 errors, 0 warnings`, compileall, public Demo validation, `pip check`, history
-  safety, fsck, worktree diff, and baseline-range diff checks passed. The 12 skips are the local absence of the
-  PyInstaller toolchain and Windows symlink privilege; they are not reported as passes.
+  safety, fsck, worktree diff, and baseline-range diff checks passed. The earlier independent-review tool gaps are not
+  treated as current product failures.
 - Independent TECH acceptance on exact `aa56770` reproduced a successful 1,024-item projection and a 1,025-item
   `CapabilityRuntimeError` with unchanged capability state and event sequence `0`; its two focused groups passed `96`
-  and `58` tests, full unittest passed `1566` with 12 skips, and serial pytest passed `1554` with 12 skips. The
-  reviewer lacked Ruff, Pyright, and xdist; those tool gaps were recorded rather than treated as passes, while the
-  Controller ran them from repository-external tools.
+  and `58` tests, while its historical full unittest/serial records were `1566` with 12 skips and `1554` with 12 skips.
+  The reviewer lacked Ruff, Pyright, and xdist; those tool gaps were recorded rather than treated as passes, while the
+  Controller later ran them from repository-external tools.
 - Real `reference_counter` preview/simulate/replay/proof, SDK/structured-CLI byte parity, generic Web
   optional-host transport, and empty-requirement V2-2 compatibility are covered.
+- Before publication, final xdist pytest passed `1564` tests with `2` POSIX-only skips and `927` subtests; the focused
+  PyInstaller packaging matrix passed `17` tests and `12` subtests, and manual Windows symbolic-link creation succeeded.
+  Exact-head Actions tests `31156995926`/`31156931379` and quality `31156995982`/`31156931281` all completed successfully.
 
 ### Resume Gate, Risks, and Boundaries
 
 - V2-3 technical bytes are frozen at `aa56770`, and the fresh independent TECH verdict is `GO` with P0-P3 empty.
-  The documentation-only seal is complete; no further product implementation belongs to this Goal. Do not push,
-  move/merge `main`, release, or enter V2-4/V2-5.
-- `git ls-remote` still times out, so local `origin/*` is not live GitHub evidence. GitHub REST confirms
-  live `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95` and draft PR #1 head
-  `c37969f6b6958e66474738f88a53b9d5c2f50d99`; no remote write occurred.
-- The candidate and documentation-seal trees must be clean. The exact replacement SHA was independently reviewed by
-  a fresh task; its findings-first `GO` is the sole TECH verdict for V2-3.
+  The documentation-only seal was published and merged to `main` under explicit user authorization; no further product
+  implementation belongs to this Goal. PRODUCT PASS, SECURITY PASS, release, or V2-4/V2-5 work still require their own gates.
+- The live publication check found both remote refs at `26fe8428d39f366e068ba7986975322e72d0f355`; this post-publication
+  record is documentation-only and keeps `aa56770` as the product-byte identity.
+- The exact replacement SHA was independently reviewed by a fresh task; its findings-first `GO` remains the sole TECH verdict
+  for V2-3. The main checkout's untracked `uv.lock` remains user-owned and outside the change.
 
 ## 历史 V2-2 中文快照
 

@@ -6,7 +6,7 @@
 
 ### 唯一下一任务
 
-**等待独立 PRODUCT PASS、SECURITY PASS 或明确的 workstream 发布授权；在获得授权前不执行任何远端或后续里程碑操作。**
+**等待独立 PRODUCT PASS 与 SECURITY PASS，并在两者完成后等待明确 release 授权；V2-3 workstream 已发布并合并到 `main`，不再重复远端操作。**
 
 ### 当前依据
 
@@ -17,16 +17,22 @@
   documentation-only handoff seal 已记录该 verdict。
 - 授权基线：`c37969f6b6958e66474738f88a53b9d5c2f50d99`；本候选已完成 preview、
   mixed simulation/replay/checkpoint、proofing、SDK/CLI/Web 通用集成。
-- 当前修复验证：边界回归 `13 passed`；`unittest` `1566 OK (skipped=12)`；serial pytest
-  `1554 passed, 12 skipped`；xdist pytest `1554 passed, 12 skipped, 924 subtests passed`。
+- 当前修复验证：边界回归 `13 passed`；发布前最终 xdist pytest 为
+  `1564 passed, 2 skipped, 927 subtests passed`；PyInstaller packaging 聚焦矩阵为 `17 passed, 12 subtests passed`。
 - Ruff、Pyright、compileall、Demo validate、`pip check`、history safety、fsck 和两类 diff checks 均通过。
-  12 个 skip 是本机缺少 PyInstaller toolchain 及 Windows symlink 权限，验收报告必须准确保留为 skip。
-- `git ls-remote` 超时，但 GitHub REST 已确认 live `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95`，
-  PR #1 是 head `c37969f6b6958e66474738f88a53b9d5c2f50d99` 的 draft；没有 remote write。
+  独立 reviewer 的早期验收记录保留 12 个工具缺口 skip；最终全量剩余的 2 个 skip 是 POSIX-only symlink 测试。
+- 发布前 live ref 核对确认 `main` 与 V2-3 workstream 均为
+  `26fe8428d39f366e068ba7986975322e72d0f355`；该发布操作随后正常完成，旧 PR/旧 main 快照不再是当前状态依据。
+- 产品负责人于 2026-08-07 明确授权 push 与合并 `main`；documentation seal
+  `26fe8428d39f366e068ba7986975322e72d0f355` 已正常快进发布到
+  `origin/workstream/v2-3-capability-modules` 与 `origin/main`，发布操作完成时两个 ref 精确一致。
+- 对精确 `26fe842` 的 GitHub Actions tests `31156995926`、`31156931379` 与 quality `31156995982`、`31156931281`
+  均为 `completed/success`；发布前最终 xdist pytest 为 `1564 passed, 2 skipped, 927 subtests passed`，
+  PyInstaller packaging 为 `17 passed, 12 subtests passed`，Windows symbolic-link 手工检查成功。
 
 ### 当前边界
 
-- TECH `GO` 只封存 V2-3 技术候选，不等于 PRODUCT PASS、SECURITY PASS、workstream push、`main` 移动/合并或 release。
+- TECH `GO` 加上已完成的 workstream 发布与 `main` 合并，仍不等于 PRODUCT PASS、SECURITY PASS、release 或分发授权。
 - 不分发 unsealed preview/report，不访问私人材料，不进入 V2-4/V2-5；任何后续动作都必须等待对应明确授权。
 
 ### 已完成证据
@@ -41,19 +47,19 @@
 
 ### 暂停与边界
 
-- 本 Goal 的 V2-3 TECH 与 documentation-only seal 已完成；保持候选冻结，不自动执行任何后续授权门槛。
-- 不 push、不移动或合并 `main`、不 release、不分发 unsealed preview/report、不访问私人材料、不进入 V2-4/V2-5。
+- 本 Goal 的 V2-3 TECH、documentation-only seal、workstream 发布与 `main` 合并均已完成；保持产品候选冻结，
+  不自动执行后续授权门槛。
+- 不 release、不分发 unsealed preview/report、不访问私人材料、不进入 V2-4/V2-5；`uv.lock` 仍为主工作树用户保留文件。
 
 ### 后续队列
 
-1. 等待明确 PRODUCT PASS、SECURITY PASS 或 workstream 发布授权。
-2. 只有获得对应授权后，另行执行被授权的动作；不自动推进 `main` 或 release。
+1. 等待独立 PRODUCT PASS、SECURITY PASS 与明确 release 授权；在此之前不执行 release、分发或后续里程碑。
 
 ## English
 
 ### Single Next Task
 
-**Await explicit PRODUCT PASS, SECURITY PASS, or workstream-publication authorization; take no remote or later-milestone action before it arrives.**
+**Await independent PRODUCT PASS and SECURITY PASS, then explicit release authorization; the V2-3 workstream is already published and merged to `main`, so do not repeat remote operations.**
 
 ### Current Basis
 
@@ -64,19 +70,25 @@
   and returned `GO`; the local documentation-only handoff seal records it.
 - Authorized baseline: `c37969f6b6958e66474738f88a53b9d5c2f50d99`; this candidate includes
   preview, mixed simulation/replay/checkpoint, proofing, and generic SDK/CLI/Web integration complete.
-- Current repair verification: boundary regression `13 passed`; `unittest` `1566 OK (skipped=12)`;
-  serial pytest `1554 passed, 12 skipped`; xdist pytest `1554 passed, 12 skipped, 924 subtests passed`.
+- Current repair verification: boundary regression `13 passed`; final pre-publication xdist pytest was
+  `1564 passed, 2 skipped, 927 subtests passed`; focused PyInstaller packaging passed `17` tests and `12` subtests.
 - Ruff, Pyright, compileall, Demo validation, `pip check`, history safety, fsck, and both diff checks passed.
-  The 12 skips are the local absence of the PyInstaller toolchain and Windows symlink privilege, and the acceptance
-  report must preserve them as skips.
-- `git ls-remote` timed out, but GitHub REST confirmed live
-  `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95` and draft PR #1 head
-  `c37969f6b6958e66474738f88a53b9d5c2f50d99`; no remote write occurred.
+  The independent review's earlier 12 skips were tool-gap evidence; the two remaining full-suite skips are POSIX-only
+  symlink tests, and manual Windows symbolic-link creation succeeded.
+- The live pre-publication ref check found both `main` and the V2-3 workstream at
+  `26fe8428d39f366e068ba7986975322e72d0f355`; publication then completed normally, so the older draft-PR snapshot is
+  historical rather than current.
+- The product owner explicitly authorized push and `main` integration on 2026-08-07. Documentation seal
+  `26fe8428d39f366e068ba7986975322e72d0f355` was normally fast-forwarded to both
+  `origin/workstream/v2-3-capability-modules` and `origin/main`, which matched exactly when publication completed.
+- Exact-head Actions tests `31156995926`/`31156931379` and quality `31156995982`/`31156931281` all completed successfully;
+  the final pre-publication local xdist matrix was `1564 passed, 2 skipped, 927 subtests passed`, focused packaging was
+  `17 passed, 12 subtests passed`, and manual Windows symbolic-link creation succeeded.
 
 ### Current Boundaries
 
-- TECH `GO` freezes the V2-3 technical candidate only; it does not grant PRODUCT PASS, SECURITY PASS, workstream push,
-  `main` movement/merge, or release authority.
+- TECH `GO` plus completed workstream publication and `main` integration still does not grant PRODUCT PASS, SECURITY PASS,
+  release, or distribution authority.
 - Do not distribute unsealed preview/report artifacts, access private material, or enter V2-4/V2-5; every later action
   waits for its own explicit authorization.
 
@@ -93,12 +105,11 @@
 
 ### Pause and Boundaries
 
-- This Goal's V2-3 TECH acceptance and documentation-only seal are complete; keep the candidate frozen and take no
-  automatic action across later gates.
-- Do not push, move/merge `main`, release, distribute unsealed preview/report artifacts, access private material, or
-  enter V2-4/V2-5.
+- This Goal's V2-3 TECH acceptance, documentation-only seal, workstream publication, and `main` integration are complete;
+  keep the candidate frozen and take no automatic action across later gates.
+- Do not release, distribute unsealed preview/report artifacts, access private material, or enter V2-4/V2-5.
 
 ### Queue
 
-1. Await explicit PRODUCT PASS, SECURITY PASS, or workstream-publication authorization.
-2. Only after the corresponding authorization may a separately scoped action run; never infer `main` or release authority.
+1. Await independent PRODUCT PASS, SECURITY PASS, and explicit release authorization; before then, do not release, distribute,
+   or start a later milestone.
