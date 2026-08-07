@@ -6,15 +6,15 @@
 
 ### 唯一下一任务
 
-**在提交本修复后的替代候选后，对其精确 SHA 执行 fresh、read-only、未参与实现的 V2-3 TECH acceptance。**
+**等待独立 PRODUCT PASS、SECURITY PASS 或明确的 workstream 发布授权；在获得授权前不执行任何远端或后续里程碑操作。**
 
 ### 当前依据
 
-- 分支：`workstream/v2-3-capability-modules`；此前候选
-  `14954070238ec6e3f2255b1c18d31214b3172d49` 的独立 TECH verdict 是 `REVISE`。其唯一 P2 是
-  runtime 接受 1,025 个 `admissible_intents`，而公开 Schema 上限为 1,024；不得复用该 verdict 或 reviewer。
-- 修复后的替代候选必须以 `git rev-parse HEAD` 记录精确 SHA：generic runtime 在 player-safe view 输出前
-  拒绝超过 1,024 项的 capability projection，1,024/1,025 回归证明拒绝不改变 capability state 或 event sequence。
+- 分支：`workstream/v2-3-capability-modules`；精确技术候选为
+  `aa56770ccbefa77ab405ef5739dab769e6536592`，基线为
+  `c37969f6b6958e66474738f88a53b9d5c2f50d99`。
+- 全新只读 TECH acceptance 已在该 SHA 上独立复现 1,024/1,025 边界，P0-P3 全空并给出 `GO`；本地
+  documentation-only handoff seal 已记录该 verdict。
 - 授权基线：`c37969f6b6958e66474738f88a53b9d5c2f50d99`；本候选已完成 preview、
   mixed simulation/replay/checkpoint、proofing、SDK/CLI/Web 通用集成。
 - 当前修复验证：边界回归 `13 passed`；`unittest` `1566 OK (skipped=12)`；serial pytest
@@ -24,16 +24,12 @@
 - `git ls-remote` 超时，但 GitHub REST 已确认 live `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95`，
   PR #1 是 head `c37969f6b6958e66474738f88a53b9d5c2f50d99` 的 draft；没有 remote write。
 
-### 验收步骤
+### 当前边界
 
-1. 由一个不同于 `1495407` 旧验收者的新任务，从精确替代候选 `HEAD` 读取代码、基线 diff、文档和验证证据；不编辑、不提交、不移动 refs、
-   不查询或写入远端、不访问私有材料。
-2. 独立复现足以支撑 findings 的边界、兼容、运行时与测试证据；以 findings-first 形式输出
-   P0-P3，最后只给 `GO` 或 `REVISE`。
-3. 若 `REVISE`，将可复现 findings 交回实现工作树；若 `GO`，仅创建 documentation-only handoff
-   seal，仍不得 push、合并 `main`、release 或进入 V2-4/V2-5。
+- TECH `GO` 只封存 V2-3 技术候选，不等于 PRODUCT PASS、SECURITY PASS、workstream push、`main` 移动/合并或 release。
+- 不分发 unsealed preview/report，不访问私人材料，不进入 V2-4/V2-5；任何后续动作都必须等待对应明确授权。
 
-### 接受标准
+### 已完成证据
 
 - 空 `capability_requirement_ids` 的 V2-2 object type、canonical bytes、fingerprints、SDK/CLI
   envelopes 与 Web snapshots 保持 byte-for-byte 兼容。
@@ -41,34 +37,31 @@
   restore、replay、proofing、SDK/CLI/Web generic transport 均有可复现证据。
 - Schema/runtime 都对 `admissible_intents` 执行相同的 1,024 上限；1,025 项 projection 在 public output 前
   拒绝且保持 capability state/event sequence 不变。
-- 候选工作树干净；fresh TECH acceptance 给出 findings-first `GO` 或 `REVISE`。
+- `aa56770` 候选及本 seal 提交后工作树必须保持干净；独立 findings-first TECH verdict 为 P0-P3 全空 `GO`。
 
 ### 暂停与边界
 
-- 本候选提交后在独立 TECH 验收门槛暂停，不越过后续授权边界。
-- 不 push、不移动或合并 `main`、不 release、不分发 unsealed preview/report、不访问私人材料、
-  不进入 V2-4/V2-5。Goal 未完成，保持真实 `active`，不伪造 `blocked`/`complete`。
+- 本 Goal 的 V2-3 TECH 与 documentation-only seal 已完成；保持候选冻结，不自动执行任何后续授权门槛。
+- 不 push、不移动或合并 `main`、不 release、不分发 unsealed preview/report、不访问私人材料、不进入 V2-4/V2-5。
 
 ### 后续队列
 
-1. 候选提交后的 fresh read-only TECH acceptance。
-2. 仅在 `GO` 后创建 documentation-only handoff seal。
-3. 等待独立 PRODUCT/SECURITY/发布授权；不自动推进 main 或 release。
+1. 等待明确 PRODUCT PASS、SECURITY PASS 或 workstream 发布授权。
+2. 只有获得对应授权后，另行执行被授权的动作；不自动推进 `main` 或 release。
 
 ## English
 
 ### Single Next Task
 
-**After committing this repaired replacement candidate, perform fresh, read-only, non-implementing V2-3 TECH acceptance on its exact SHA.**
+**Await explicit PRODUCT PASS, SECURITY PASS, or workstream-publication authorization; take no remote or later-milestone action before it arrives.**
 
 ### Current Basis
 
-- Branch: `workstream/v2-3-capability-modules`; prior candidate
-  `14954070238ec6e3f2255b1c18d31214b3172d49` received independent TECH `REVISE`. Its sole P2 was that
-  runtime accepted 1,025 `admissible_intents` while the public Schema caps them at 1,024; do not reuse its verdict or reviewer.
-- Record the repaired replacement candidate's exact SHA with `git rev-parse HEAD`: the generic runtime rejects a
-  capability projection over 1,024 entries before player-safe view output, and 1,024/1,025 regression coverage
-  proves rejection does not alter capability state or the event sequence.
+- Branch: `workstream/v2-3-capability-modules`; exact technical candidate
+  `aa56770ccbefa77ab405ef5739dab769e6536592`, baseline
+  `c37969f6b6958e66474738f88a53b9d5c2f50d99`.
+- Fresh read-only TECH acceptance on that SHA independently reproduced the 1,024/1,025 boundary, found P0-P3 empty,
+  and returned `GO`; the local documentation-only handoff seal records it.
 - Authorized baseline: `c37969f6b6958e66474738f88a53b9d5c2f50d99`; this candidate includes
   preview, mixed simulation/replay/checkpoint, proofing, and generic SDK/CLI/Web integration complete.
 - Current repair verification: boundary regression `13 passed`; `unittest` `1566 OK (skipped=12)`;
@@ -80,17 +73,14 @@
   `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95` and draft PR #1 head
   `c37969f6b6958e66474738f88a53b9d5c2f50d99`; no remote write occurred.
 
-### Acceptance Steps
+### Current Boundaries
 
-1. A new task, different from the prior `1495407` reviewer, inspects the exact replacement candidate `HEAD`,
-   baseline diff, documents, and verification evidence; do not edit,
-   commit, move refs, query or write remotes, or access private material.
-2. Independently reproduce evidence sufficient for any findings, then report P0-P3 findings first and
-   end with exactly `GO` or `REVISE`.
-3. Return reproducible `REVISE` findings to the implementation worktree. After `GO`, create only a
-   documentation-only handoff seal; do not push, merge `main`, release, or enter V2-4/V2-5.
+- TECH `GO` freezes the V2-3 technical candidate only; it does not grant PRODUCT PASS, SECURITY PASS, workstream push,
+  `main` movement/merge, or release authority.
+- Do not distribute unsealed preview/report artifacts, access private material, or enter V2-4/V2-5; every later action
+  waits for its own explicit authorization.
 
-### Acceptance Criteria
+### Completed Evidence
 
 - Empty `capability_requirement_ids` keeps V2-2 object types, canonical bytes, fingerprints, SDK/CLI
   envelopes, and Web snapshots byte-for-byte compatible.
@@ -98,17 +88,17 @@
   generic SDK/CLI/Web transport have reproducible evidence.
 - Schema and runtime enforce the same 1,024-item `admissible_intents` limit; a 1,025-item projection rejects before
   public output while capability state and the event sequence remain unchanged.
-- The candidate tree is clean, and fresh TECH acceptance returns `GO` or `REVISE` after findings.
+- The `aa56770` candidate and documentation-only seal leave a clean tree; the independent findings-first TECH verdict is
+  P0-P3 empty `GO`.
 
 ### Pause and Boundaries
 
-- Pause at the fresh-TECH-acceptance gate after this candidate commit.
-- Do not push, move/merge `main`, release, distribute unsealed preview/report artifacts, access private
-  material, or enter V2-4/V2-5. The Goal is incomplete and remains truthfully `active`; do not fake
-  `blocked` or `complete`.
+- This Goal's V2-3 TECH acceptance and documentation-only seal are complete; keep the candidate frozen and take no
+  automatic action across later gates.
+- Do not push, move/merge `main`, release, distribute unsealed preview/report artifacts, access private material, or
+  enter V2-4/V2-5.
 
 ### Queue
 
-1. Fresh read-only TECH acceptance for the candidate commit.
-2. Documentation-only handoff seal only after `GO`.
-3. Await separate PRODUCT/SECURITY/publication authorization; never infer main or release authority.
+1. Await explicit PRODUCT PASS, SECURITY PASS, or workstream-publication authorization.
+2. Only after the corresponding authorization may a separately scoped action run; never infer `main` or release authority.

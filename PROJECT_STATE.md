@@ -13,12 +13,14 @@ Authoring、SDK、结构化 CLI 与 Web 共用通用边界；不改变 `World`�
 ### 当前状态
 
 - 工作树：`D:\MUD game kaifa\.codex-worktrees\v2-3-capability-modules-20260806`；分支
-  `workstream/v2-3-capability-modules`。此前候选 `14954070238ec6e3f2255b1c18d31214b3172d49`
-  收到独立 TECH `REVISE`：runtime 可投影 1,025 个 intent，但公开 Schema 上限为 1,024。
-- 授权基线：`c37969f6b6958e66474738f88a53b9d5c2f50d99`。本提交在通用 capability runtime 中执行
-  1,024 项上限，并为 1,024/1,025 边界添加回归；拒绝路径保持 capability state 与 event sequence 不变。
-- 当前替代候选字节已完成本地验证。提交后以 `git rev-parse HEAD` 记录精确 SHA，并只交给一个未参与
-  `1495407` 实现或旧验收的 fresh read-only TECH reviewer。Goal 保持真实 `active`，直到该验收给出 `GO`。
+  `workstream/v2-3-capability-modules`；替代候选精确 SHA 为
+  `aa56770ccbefa77ab405ef5739dab769e6536592`。此前候选 `14954070238ec6e3f2255b1c18d31214b3172d49`
+  收到独立 TECH `REVISE`，其唯一 P2 是 runtime 可投影 1,025 个 intent，而公开 Schema 上限为 1,024。
+- 授权基线：`c37969f6b6958e66474738f88a53b9d5c2f50d99`。替代候选在通用 capability runtime 中执行 1,024 项
+  上限，并为 1,024/1,025 边界添加回归；拒绝路径保持 capability state 与 event sequence 不变。
+- 全新、未参与旧实现或旧验收的 read-only TECH reviewer 已对精确 `aa56770` 给出 P0-P3 全空的 `GO`。
+  本 documentation-only seal 完成 V2-3 TECH handoff；Goal 可在该 seal 提交后完成。PRODUCT PASS、SECURITY PASS、
+  push、`main` 移动、release 与后续里程碑仍未授权。
 
 ### 已完成
 
@@ -42,22 +44,28 @@ Authoring、SDK、结构化 CLI 与 Web 共用通用边界；不改变 `World`�
 - `ruff check .`、Pyright `0 errors, 0 warnings`、compileall、公开 Demo validate、`pip check`、
   history safety、fsck、工作树 diff 与基线范围 diff 检查均通过。12 个 skip 是本机缺少 PyInstaller
   toolchain 及 Windows symlink 权限，不得误记为通过。
+- 独立 TECH acceptance 在精确 `aa56770` 上复现 1,024 项 projection 成功、1,025 项以
+  `CapabilityRuntimeError` 拒绝，确认 capability state 不变且 event sequence 为 `0`；独立聚焦矩阵为
+  `96 passed` 与 `58 passed` 两组，完整 unittest 为 `1566 OK (skipped=12)`，serial pytest 为
+  `1554 passed, 12 skipped`。独立 reviewer 未安装 Ruff、Pyright、xdist，已明确记录为工具缺口；Controller
+  已在仓库外工具环境补跑这些门禁。
 - 真实 `reference_counter` preview/simulate/replay/proof 以及 SDK/结构化 CLI 字节等价已覆盖；
   Web optional-host generic snapshot/action 与 V2-2 legacy compatibility 也已覆盖。
 
 ### 暂停与未完成
 
-- `1495407` 的旧验收 verdict 为 `REVISE`，不能用于替代候选；修复后的候选提交与 fresh read-only
-  TECH acceptance 尚未完成。
-- 当前暂停点：替代候选提交后的独立 TECH acceptance。不得 push、移动/合并 `main`、release 或进入 V2-4/V2-5。
+- V2-3 技术候选已冻结于 `aa56770`，独立 TECH `GO` 与本 documentation-only seal 已完成；本 Goal 不再有
+  产品实现工作。
+- PRODUCT PASS、SECURITY PASS、workstream push、`main` 移动/合并、release、preview/report 分发及 V2-4/V2-5
+  仍是后续独立授权，不得由本 seal 推断或自动执行。
 
 ### 实时证据与风险
 
 - `git ls-remote` 仍会超时，不能把本地 `origin/*` 当实时证据；但本次 GitHub REST 已确认 live
   `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95`，PR #1 仍为 draft 且 head 为
   `c37969f6b6958e66474738f88a53b9d5c2f50d99`。未对远端执行任何写操作。
-- 候选提交后工作树必须干净；独立 TECH acceptance 必须在精确替代候选 SHA 上由新任务执行，不能复用
-  旧的 `1495407` reviewer；当前 Controller 验证不是 acceptance verdict。
+- `aa56770` 候选提交与本 seal 提交后工作树必须干净；独立 TECH acceptance 已由新任务在精确 SHA 上完成，
+  P0-P3 全空 `GO` 是本次唯一 TECH verdict。
 
 ### 关键路径
 
@@ -79,14 +87,16 @@ core, or private-material boundaries.
 ### Current Status
 
 - Worktree: `D:\MUD game kaifa\.codex-worktrees\v2-3-capability-modules-20260806`; branch
-  `workstream/v2-3-capability-modules`. Prior candidate `14954070238ec6e3f2255b1c18d31214b3172d49`
-  received independent TECH `REVISE`: runtime could project 1,025 intents while the public Schema caps them at 1,024.
-- Authorized baseline: `c37969f6b6958e66474738f88a53b9d5c2f50d99`. This commit enforces the 1,024-item
-  limit in the generic capability runtime and adds 1,024/1,025 boundary regression coverage; rejection preserves
-  capability state and the event sequence.
-- The replacement-candidate bytes have current local verification. Record its exact SHA with `git rev-parse HEAD`
-  after committing, then submit it only to a fresh read-only TECH reviewer who did not implement or review `1495407`.
-  The Goal remains truthfully `active` until that review returns `GO`.
+  `workstream/v2-3-capability-modules`. The exact replacement candidate is
+  `aa56770ccbefa77ab405ef5739dab769e6536592`. Prior candidate
+  `14954070238ec6e3f2255b1c18d31214b3172d49` received independent TECH `REVISE`; its sole P2 was that runtime
+  could project 1,025 intents while the public Schema caps them at 1,024.
+- Authorized baseline: `c37969f6b6958e66474738f88a53b9d5c2f50d99`. The replacement enforces the 1,024-item limit
+  in generic capability runtime and adds 1,024/1,025 boundary coverage; rejection preserves capability state and
+  the event sequence.
+- A fresh, non-implementing, read-only TECH reviewer inspected exact `aa56770`, independently reproduced the boundary,
+  found P0-P3 empty, and returned `GO`. This documentation-only seal completes the V2-3 TECH handoff and permits Goal
+  completion; PRODUCT PASS, SECURITY PASS, push, `main` movement, release, and later milestones remain unauthorized.
 
 ### Verified Checkpoint
 
@@ -97,18 +107,24 @@ core, or private-material boundaries.
 - `ruff check .`, Pyright `0 errors, 0 warnings`, compileall, public Demo validation, `pip check`, history
   safety, fsck, worktree diff, and baseline-range diff checks passed. The 12 skips are the local absence of the
   PyInstaller toolchain and Windows symlink privilege; they are not reported as passes.
+- Independent TECH acceptance on exact `aa56770` reproduced a successful 1,024-item projection and a 1,025-item
+  `CapabilityRuntimeError` with unchanged capability state and event sequence `0`; its two focused groups passed `96`
+  and `58` tests, full unittest passed `1566` with 12 skips, and serial pytest passed `1554` with 12 skips. The
+  reviewer lacked Ruff, Pyright, and xdist; those tool gaps were recorded rather than treated as passes, while the
+  Controller ran them from repository-external tools.
 - Real `reference_counter` preview/simulate/replay/proof, SDK/structured-CLI byte parity, generic Web
   optional-host transport, and empty-requirement V2-2 compatibility are covered.
 
 ### Resume Gate, Risks, and Boundaries
 
-- `1495407` received `REVISE` and cannot approve its replacement. The repaired candidate commit and a fresh
-  read-only TECH acceptance are still pending. Do not push, move/merge `main`, release, or enter V2-4/V2-5.
+- V2-3 technical bytes are frozen at `aa56770`, and the fresh independent TECH verdict is `GO` with P0-P3 empty.
+  The documentation-only seal is complete; no further product implementation belongs to this Goal. Do not push,
+  move/merge `main`, release, or enter V2-4/V2-5.
 - `git ls-remote` still times out, so local `origin/*` is not live GitHub evidence. GitHub REST confirms
   live `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95` and draft PR #1 head
   `c37969f6b6958e66474738f88a53b9d5c2f50d99`; no remote write occurred.
-- The candidate tree must be clean after the commit. A new task must review the exact replacement SHA and must not
-  reuse the prior `1495407` reviewer; current Controller verification is not an independent acceptance verdict.
+- The candidate and documentation-seal trees must be clean. The exact replacement SHA was independently reviewed by
+  a fresh task; its findings-first `GO` is the sole TECH verdict for V2-3.
 
 ## 历史 V2-2 中文快照
 

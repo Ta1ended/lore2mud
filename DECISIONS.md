@@ -3375,3 +3375,32 @@
   scope、privacy、Git、compatibility 与 later-milestone 边界继续有效。 / Supersedes DEC-0114 only for its
   state routing that the next step was initial candidate creation and acceptance; DEC-0114's V2-3 scope, privacy,
   Git, compatibility, and later-milestone boundaries remain in force.
+
+## DEC-0116: 记录 V2-3 TECH GO 并封存文档 / Record V2-3 TECH GO and seal the handoff documentation
+
+- 日期 / Date: 2026-08-07
+- 状态 / Status: V2-3 exact candidate TECH `GO` complete; documentation-only handoff seal complete locally.
+  PRODUCT PASS、SECURITY PASS、workstream publication、`main` movement、release and later milestones remain pending
+  separate authorization. / V2-3 exact-candidate TECH `GO` is complete and this documentation-only handoff seal is
+  complete locally. PRODUCT PASS, SECURITY PASS, workstream publication, `main` movement, release, and later milestones
+  remain pending separate authorization.
+- 背景 / Context: Fresh, non-implementing, read-only acceptance reviewed
+  `aa56770ccbefa77ab405ef5739dab769e6536592` against authorized baseline
+  `c37969f6b6958e66474738f88a53b9d5c2f50d99`. It independently reproduced the repaired public boundary: 1,024 intents
+  project successfully, while 1,025 raises `CapabilityRuntimeError` with unchanged capability state and event sequence `0`.
+- 决定 / Decision: Freeze the V2-3 technical candidate at `aa56770`; record P0-P3 all empty and final `GO` in the
+  four bilingual handoff files; stop implementation and complete the active Goal after this documentation-only commit.
+  Do not add product bytes, rerun a replacement product review, push, move `main`, release, access private material,
+  or enter V2-4/V2-5. / Freeze the V2-3 technical candidate at `aa56770`; record P0-P3 empty and final `GO` in the four
+  bilingual handoff files; stop implementation and complete the active Goal after this documentation-only commit.
+  Do not add product bytes, rerun a replacement product review, push, move `main`, release, access private material,
+  or enter V2-4/V2-5.
+- 证据 / Evidence: The fresh reviewer reported P0/P1/P2/P3 all empty; focused groups passed `96` and `58` tests,
+  full unittest passed `1566` with `12` skips, and serial pytest passed `1554` with `12` skips. Public Demo validation,
+  compileall, repository-safety history scan, fsck, and baseline diff checks passed. The reviewer lacked Ruff, Pyright,
+  and xdist; those were recorded as tool gaps, while Controller reran them from repository-external tools. No protected
+  `World`, save-core, `pipeline/forge.py`, or private-material paths changed.
+- 后果 / Consequences: The V2-3 technical handoff is complete, but this is not a product, security, publication, main,
+  or release decision. The next task is to wait for explicit independent authorization; preserve the clean frozen tree.
+- 取代 / Supersedes: DEC-0115 only for its pending acceptance and state routing; DEC-0115's cardinality repair,
+  verification evidence, privacy boundary, and Git/later-milestone limits remain in force.

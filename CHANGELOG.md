@@ -28,6 +28,13 @@
 
 ### Changed
 
+- 记录 V2-3 替代候选 `aa56770ccbefa77ab405ef5739dab769e6536592` 的 fresh read-only TECH acceptance：独立 reviewer
+  复现了 1,024/1,025 intent 边界，P0-P3 全空并给出 `GO`。本 documentation-only seal 不改变产品候选字节，
+  也不授予 PRODUCT PASS、SECURITY PASS、push、`main` 移动、release 或后续里程碑权限。
+- Recorded fresh read-only TECH acceptance for V2-3 replacement candidate
+  `aa56770ccbefa77ab405ef5739dab769e6536592`: the independent reviewer reproduced the 1,024/1,025 intent
+  boundary, found P0-P3 empty, and returned `GO`. This documentation-only seal does not change product-candidate
+  bytes and grants no PRODUCT PASS, SECURITY PASS, push, `main` movement, release, or later-milestone authority.
 - Completed and published V2-1 on remote `workstream/v2-1-game-session` at exact
   product candidate `c8ee518ef39f938ece374cbd3f7c9bca06de2408`. Fresh independent
   TECH and SECURITY acceptance both returned `GO` with no P0-P3 findings, the product
