@@ -43,6 +43,7 @@ from lore2mud.authoring.anchors import (
 from lore2mud.authoring.contracts import (
     AuthoringStatus,
     ConditionOutcome,
+    CreatorDecision,
     PlayLength,
     PublicInputDescriptor,
     SimulationCondition,
@@ -50,6 +51,7 @@ from lore2mud.authoring.contracts import (
     SimulationOutcome,
     SimulationReport,
     SimulationRequest,
+    TraceRecord,
     WorkspaceMetadataEntry,
 )
 from lore2mud.authoring.packages import (
@@ -139,7 +141,20 @@ class V2_4Fixture(unittest.TestCase):
             raise AssertionError("public-safe simulation fixture must be replay-verifiable")
         cls._short_simulation_report = result.artifact
 
-    def project(self, project_id: str = "public_signal_project"):
+    def project(
+        self,
+        project_id: str = "public_signal_project",
+        *,
+        include_project_trace: bool = True,
+        trace_source_id: str = "source_public_arc",
+        trace_decision_id: str = "decision_public_arc",
+        trace_element_ids: tuple[str, ...] = (
+            "element_opening",
+            "element_signal",
+            "element_choice",
+            "element_resolution",
+        ),
+    ):
         blueprint = load_blueprint(BLUEPRINT)
         blueprint = replace(
             blueprint,
@@ -156,6 +171,33 @@ class V2_4Fixture(unittest.TestCase):
                     "application/json",
                     "Public synthetic story arc",
                 ),
+            ),
+            creator_decisions=(
+                (
+                    CreatorDecision(
+                        trace_decision_id,
+                        "Include the public synthetic arc.",
+                    ),
+                )
+                if include_project_trace
+                else ()
+            ),
+            trace_records=(
+                tuple(
+                    TraceRecord(
+                        f"trace_{suffix}",
+                        trace_source_id,
+                        element_id,
+                        trace_decision_id,
+                    )
+                    for suffix, element_id in zip(
+                        ("opening", "signal", "choice", "resolution"),
+                        trace_element_ids,
+                        strict=True,
+                    )
+                )
+                if include_project_trace
+                else ()
             ),
         )
 
@@ -273,6 +315,136 @@ class V2_4Fixture(unittest.TestCase):
             elements=elements,
             anchors=anchors,
             simulation_reports=(self._short_simulation_report,),
+            seal_mode=SealMode.INITIAL,
+        )
+
+    def private_alias_request(self) -> SealRequest:
+        """A public-safe synthetic private source whose internal IDs must not escape."""
+        marker = "unpublishedtitle"
+        base = self.request()
+        suffixes = ("opening", "signal", "choice", "resolution")
+        source_id = f"{marker}_source"
+        rights_id = f"{marker}_rights"
+        decision_id = f"{marker}_decision"
+        transformation_ids = {
+            f"transform_{suffix}": f"{marker}_transformation_{suffix}"
+            for suffix in suffixes
+        }
+        project_element_ids = {
+            f"element_{suffix}": f"{marker}_project_element_{suffix}"
+            for suffix in suffixes
+        }
+        binding_ids = {
+            f"binding_{suffix}": f"{marker}_binding_{suffix}" for suffix in suffixes
+        }
+        package_element_ids = {
+            f"package_{suffix}": f"{marker}_package_element_{suffix}"
+            for suffix in suffixes
+        }
+        provenance = replace(
+            base.provenance,
+            manifest_id=f"{marker}_manifest",
+            sources=(
+                replace(
+                    base.provenance.sources[0],
+                    source_id=source_id,
+                    visibility=SourceVisibility.AUTHORIZED_PRIVATE,
+                    public_label="Owner-controlled material",
+                ),
+            ),
+            rights_assertions=(
+                replace(
+                    base.provenance.rights_assertions[0],
+                    assertion_id=rights_id,
+                    source_id=source_id,
+                    scope=f"{marker} adaptation scope",
+                    authority=f"{marker} authorization record",
+                ),
+            ),
+            creator_decisions=(
+                replace(
+                    base.provenance.creator_decisions[0],
+                    decision_id=decision_id,
+                    rationale=f"{marker} creator rationale",
+                    source_ids=(source_id,),
+                    rights_assertion_ids=(rights_id,),
+                ),
+            ),
+            transformations=tuple(
+                replace(
+                    transformation,
+                    transformation_id=transformation_ids[transformation.transformation_id],
+                    source_ids=(source_id,),
+                    decision_ids=(decision_id,),
+                    output_project_element_ids=tuple(
+                        project_element_ids[item]
+                        for item in transformation.output_project_element_ids
+                    ),
+                    depends_on_transformation_ids=tuple(
+                        transformation_ids[item]
+                        for item in transformation.depends_on_transformation_ids
+                    ),
+                )
+                for transformation in base.provenance.transformations
+            ),
+            project_elements=tuple(
+                replace(element, element_id=project_element_ids[element.element_id])
+                for element in base.provenance.project_elements
+            ),
+            trace_bindings=tuple(
+                replace(
+                    binding,
+                    binding_id=binding_ids[binding.binding_id],
+                    source_id=source_id,
+                    rights_assertion_id=rights_id,
+                    decision_id=decision_id,
+                    transformation_id=transformation_ids[binding.transformation_id],
+                    project_element_id=project_element_ids[binding.project_element_id],
+                    package_element_id=package_element_ids[binding.package_element_id],
+                )
+                for binding in base.provenance.trace_bindings
+            ),
+        )
+        project = self.project(
+            trace_source_id=source_id,
+            trace_decision_id=decision_id,
+            trace_element_ids=tuple(
+                project_element_ids[f"element_{suffix}"] for suffix in suffixes
+            ),
+        )
+        simulation = AuthoringService().simulate(
+            project,
+            SimulationRequest(
+                format_version=1,
+                seed=20260807,
+                clock=1930,
+                player_name="Public Arc Player",
+                intents=(),
+                checkpoint_after_steps=(0,),
+            ),
+        )
+        if not simulation.ok or type(simulation.artifact) is not SimulationReport:
+            raise AssertionError("private alias fixture must be replay-verifiable")
+        return SealRequest(
+            project=project,
+            provenance=provenance,
+            elements=tuple(
+                replace(
+                    element,
+                    package_element_id=package_element_ids[element.package_element_id],
+                    project_element_id=project_element_ids[element.project_element_id],
+                )
+                for element in base.elements
+            ),
+            anchors=tuple(
+                replace(
+                    anchor,
+                    project_element_id=project_element_ids[anchor.project_element_id],
+                    package_element_id=package_element_ids[anchor.package_element_id],
+                )
+                for anchor in base.anchors
+            ),
+            simulation_reports=(simulation.artifact,),
             seal_mode=SealMode.INITIAL,
         )
 
@@ -503,6 +675,12 @@ class ProvenanceContractTests(V2_4Fixture):
             "mailto : public@example.test",
             "http : synthetic.example",
             "file : synthetic.txt",
+            "ssh\uff1aprivate",
+            "http\uff1aprivate",
+            "tel\uff1a+123",
+            "foo\uff0fbar.txt",
+            "foo\u2215bar.txt",
+            "\uff53\uff53\uff48:private",
             f"{'a' * 32}-{'b' * 32}",
         ):
             manifest_document = provenance_manifest_to_document(request.provenance)
@@ -887,6 +1065,15 @@ class ProvenanceContractTests(V2_4Fixture):
         traced = replace(prototype, mode=AdaptationMode.TRACED)
         with self.assertRaises(ProvenanceValidationError):
             load_provenance_manifest_document(provenance_manifest_to_document(traced))
+
+    def test_seal_rejects_provenance_not_bound_to_game_project_trace(self) -> None:
+        request = replace(
+            self.request(),
+            project=self.project(include_project_trace=False),
+        )
+        result = AuthoringService().seal(request)
+        self.assertFalse(result.ok)
+        self.assertEqual(result.diagnostics[0].code, "seal_provenance_invalid")
 
     def test_public_projection_anonymizes_authorized_private_records(self) -> None:
         private = replace(
@@ -1505,6 +1692,34 @@ class AnchorAndPackageTests(V2_4Fixture):
             first.artifact.evidence_manifest.manifest_sha256,
             reordered.artifact.evidence_manifest.manifest_sha256,
         )
+        direct = replace(
+            first.artifact.package,
+            capability_requirement_ids=("capability_alpha", "capability_zeta"),
+        )
+        direct_reordered = replace(
+            direct,
+            content_files=tuple(reversed(direct.content_files)),
+            capability_requirement_ids=tuple(reversed(direct.capability_requirement_ids)),
+            elements=tuple(reversed(direct.elements)),
+            anchors=tuple(reversed(direct.anchors)),
+        )
+        self.assertEqual(
+            canonical_game_package_bytes(direct),
+            canonical_game_package_bytes(direct_reordered),
+        )
+        self.assertEqual(game_package_sha256(direct), game_package_sha256(direct_reordered))
+        self.assertEqual(
+            game_package_candidate_id(direct), game_package_candidate_id(direct_reordered)
+        )
+        direct_evidence = first.artifact.evidence_manifest
+        direct_evidence_reordered = replace(
+            direct_evidence,
+            entries=tuple(reversed(direct_evidence.entries)),
+        )
+        self.assertEqual(
+            canonical_evidence_manifest_bytes(direct_evidence),
+            canonical_evidence_manifest_bytes(direct_evidence_reordered),
+        )
         self.assertEqual(
             second.artifact.evidence_manifest.presentation_metadata,
             metadata,
@@ -1953,6 +2168,12 @@ class AnchorAndPackageTests(V2_4Fixture):
             "ssh\t:private",
             "http : synthetic.example",
             "file : synthetic.txt",
+            "ssh\uff1aprivate",
+            "http\uff1aprivate",
+            "tel\uff1a+123",
+            "foo\uff0fbar.txt",
+            "foo\u2215bar.txt",
+            "\uff53\uff53\uff48:private",
             "ssh\x7f:private",
             "ssh\u200b:private",
             "ssh\u180e:synthetic",
@@ -2194,7 +2415,7 @@ class AnchorAndPackageTests(V2_4Fixture):
         self.assertTrue(report.replay_verified)
         self.assertEqual(
             report.fingerprint,
-            "71dea762d1930a9bba58efeafb7d1ed8edea1b50ba0bb06f89706edb92ad7b40",
+            "1ba93496cdf0244c60553d1a4f91d44dc3db899ef787cb133ffe9158b68c45f1",
         )
         self.assertEqual(
             tuple(item.after_step for item in report.checkpoints),
@@ -2326,6 +2547,107 @@ class TransportParityTests(V2_4Fixture):
         self.assertEqual(completed.returncode, 0, completed.stderr.decode("utf-8", "replace"))
         cli = json.loads(completed.stdout.decode("utf-8"))
         self.assertEqual(canonical_json_bytes(cli), expected)
+
+    def test_private_source_connected_ids_are_aliased_across_all_seal_transports(
+        self,
+    ) -> None:
+        marker = b"unpublishedtitle"
+        request = self.private_alias_request()
+        typed = AgentAuthoringSDK().seal(request)
+        self.assertTrue(typed.ok)
+        assert typed.artifact is not None
+        artifact = typed.artifact
+        expected = canonical_json_bytes(authoring_result_to_document(typed))
+        self.assertNotIn(marker, expected)
+        self.assertTrue(
+            all(
+                item.package_element_id.startswith("package_ref_")
+                and item.project_element_id.startswith("project_element_ref_")
+                for item in artifact.package.elements
+            )
+        )
+        self.assertTrue(
+            all(
+                item.project_element_id.startswith("project_element_ref_")
+                and item.package_element_id.startswith("package_ref_")
+                for item in artifact.package.anchors
+            )
+        )
+        assert artifact.provenance_manifest is not None
+        self.assertTrue(
+            all(
+                item.transformation_id.startswith("transformation_ref_")
+                for item in artifact.provenance_manifest.transformations
+            )
+        )
+        self.assertTrue(
+            all(
+                item.element_id.startswith("project_element_ref_")
+                for item in artifact.provenance_manifest.project_elements
+            )
+        )
+        self.assertTrue(
+            all(
+                item.binding_id.startswith("binding_ref_")
+                and item.package_element_id.startswith("package_ref_")
+                for item in artifact.provenance_manifest.trace_bindings
+            )
+        )
+
+        incremental = AgentAuthoringSDK().seal(
+            replace(
+                request,
+                seal_mode=SealMode.INCREMENTAL,
+                predecessor_package=artifact.package,
+            )
+        )
+        self.assertTrue(incremental.ok)
+        assert incremental.artifact is not None
+        self.assertEqual(incremental.artifact.package.anchors, artifact.package.anchors)
+        self.assertNotIn(
+            marker,
+            canonical_json_bytes(authoring_result_to_document(incremental)),
+        )
+
+        request_document = seal_request_to_document(request)
+        document_sdk = AgentAuthoringSDK().seal_document(request_document)
+        web = WebAuthoringTransport().dispatch(
+            {"operation": "seal", "request": request_document}
+        )
+        in_app_web = AuthoringWebTransport().dispatch(
+            {"operation": "seal", "request": request_document}
+        )
+        self.assertTrue(document_sdk.ok)
+        self.assertEqual(canonical_json_bytes(authoring_result_to_document(document_sdk)), expected)
+        self.assertEqual(canonical_json_bytes(web), expected)
+        self.assertEqual(in_app_web, web)
+        self.assertNotIn(marker, canonical_json_bytes(web))
+
+        with tempfile.TemporaryDirectory() as directory:
+            request_path = Path(directory) / "private_alias_seal_request.json"
+            request_path.write_bytes(canonical_json_bytes(request_document))
+            completed = subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "lore2mud",
+                    "author",
+                    "seal",
+                    "--request",
+                    str(request_path),
+                ],
+                cwd=ROOT,
+                env={
+                    **dict(PYTHONPATH=str(ROOT / "src")),
+                    **{"PYTHONIOENCODING": "utf-8"},
+                },
+                capture_output=True,
+                check=False,
+            )
+        self.assertEqual(completed.returncode, 0, completed.stderr.decode("utf-8", "replace"))
+        cli = json.loads(completed.stdout.decode("utf-8"))
+        self.assertEqual(canonical_json_bytes(cli), expected)
+        self.assertNotIn(marker, canonical_json_bytes(cli))
 
     def test_sdk_web_and_cli_share_private_text_rejection(self) -> None:
         private_value = "foo/bar.txt#secret"
@@ -2463,6 +2785,26 @@ class TransportParityTests(V2_4Fixture):
                 "spaced_file_scheme",
                 {"label": "file : marker.txt"},
                 "marker.txt",
+            ),
+            (
+                "fullwidth_colon_scheme",
+                {"label": "ssh\uff1aformat_fullwidth_colon_marker"},
+                "format_fullwidth_colon_marker",
+            ),
+            (
+                "fullwidth_slash_path",
+                {"label": "foo\uff0fblocked_fullwidth_path.txt"},
+                "blocked_fullwidth_path.txt",
+            ),
+            (
+                "division_slash_path",
+                {"label": "foo\u2215blocked_division_path.txt"},
+                "blocked_division_path.txt",
+            ),
+            (
+                "fullwidth_scheme_letters",
+                {"label": "\uff53\uff53\uff48:blocked_fullwidth_scheme"},
+                "blocked_fullwidth_scheme",
             ),
             (
                 "concatenated_python_module",

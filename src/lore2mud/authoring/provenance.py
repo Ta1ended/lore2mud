@@ -34,6 +34,11 @@ _FORBIDDEN_CONTROL_RE = re.compile(
     "\u200b-\u200f\u202a-\u202e\u2060-\u2064\u2066-\u206f\ufeff\ufff9-\ufffb"
     "]"
 )
+_CONFUSABLE_DELIMITER_NAME_RE = re.compile(r"(?:^|[ -])(?:COLON|SLASH|SOLIDUS)(?:$|[ -])")
+_FULLWIDTH_OR_PRESENTATION_ASCII_RANGES = (
+    range(0xFE10, 0xFE70),
+    range(0xFF01, 0xFF5F),
+)
 _KNOWN_URI_RE = re.compile(
     r"(?<![A-Za-z0-9])(?:file|data|mailto|javascript|urn|about|blob|"
     r"https?|ftp|ssh|tel)[\t ]*:[\t ]*",
@@ -175,6 +180,23 @@ class ProvenanceManifest:
     trace_bindings: tuple[TraceBinding, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class PublicProvenanceAliases:
+    """Deterministic public aliases for every private-source graph role."""
+
+    source_ids: dict[str, str]
+    assertion_ids: dict[str, str]
+    decision_ids: dict[str, str]
+    transformation_ids: dict[str, str]
+    project_element_ids: dict[str, str]
+    binding_ids: dict[str, str]
+    package_element_ids: dict[str, str]
+
+    @property
+    def has_private_components(self) -> bool:
+        return bool(self.source_ids)
+
+
 class ProvenanceValidationError(ValueError):
     """Raised when a provenance manifest is not structurally or semantically safe."""
 
@@ -263,55 +285,53 @@ def public_provenance_manifest_to_document(
 ) -> dict[str, object]:
     """Return an anonymized audit projection for public or authorized-private sources."""
     normalized = validate_provenance_manifest(manifest)
-    private_source_ids = {
-        source.source_id
-        for source in normalized.sources
-        if source.visibility is SourceVisibility.AUTHORIZED_PRIVATE
-    }
-    private_assertion_ids = {
-        assertion.assertion_id
-        for assertion in normalized.rights_assertions
-        if assertion.source_id in private_source_ids
-    }
-    private_decision_ids = {
-        decision.decision_id
-        for decision in normalized.creator_decisions
-        if any(source_id in private_source_ids for source_id in decision.source_ids)
-        or any(
-            assertion_id in private_assertion_ids for assertion_id in decision.rights_assertion_ids
-        )
-    }
-    source_aliases, assertion_aliases, decision_aliases = _private_alias_maps(normalized)
+    aliases = _build_public_provenance_aliases(normalized)
 
     def source_id(value: str) -> str:
-        return source_aliases.get(value, value)
+        return aliases.source_ids.get(value, value)
 
     def assertion_id(value: str) -> str:
-        return assertion_aliases.get(value, value)
+        return aliases.assertion_ids.get(value, value)
 
     def decision_id(value: str) -> str:
-        return decision_aliases.get(value, value)
+        return aliases.decision_ids.get(value, value)
+
+    def transformation_id(value: str) -> str:
+        return aliases.transformation_ids.get(value, value)
+
+    def project_element_id(value: str) -> str:
+        return aliases.project_element_ids.get(value, value)
+
+    def binding_id(value: str) -> str:
+        return aliases.binding_ids.get(value, value)
+
+    def package_element_id(value: str) -> str:
+        return aliases.package_element_ids.get(value, value)
 
     return {
         "format_version": normalized.format_version,
-        "manifest_id": normalized.manifest_id,
+        "manifest_id": (
+            "provenance_public_projection"
+            if aliases.has_private_components
+            else normalized.manifest_id
+        ),
         "mode": normalized.mode.value,
         "sources": [
             {
                 "source_id": source_id(value.source_id),
                 "source_kind": (
                     "authorized_source"
-                    if value.source_id in private_source_ids
+                    if value.source_id in aliases.source_ids
                     else value.source_kind
                 ),
                 "visibility": (
                     SourceVisibility.PUBLIC_SAFE.value
-                    if value.source_id in private_source_ids
+                    if value.source_id in aliases.source_ids
                     else value.visibility.value
                 ),
                 "public_label": (
                     "Authorized private source"
-                    if value.source_id in private_source_ids
+                    if value.source_id in aliases.source_ids
                     else value.public_label
                 ),
             }
@@ -324,12 +344,12 @@ def public_provenance_manifest_to_document(
                 "status": value.status.value,
                 "scope": (
                     "authorized adaptation scope"
-                    if value.source_id in private_source_ids
+                    if value.assertion_id in aliases.assertion_ids
                     else value.scope
                 ),
                 "authority": (
                     "owner authorization"
-                    if value.source_id in private_source_ids
+                    if value.assertion_id in aliases.assertion_ids
                     else value.authority
                 ),
             }
@@ -345,7 +365,7 @@ def public_provenance_manifest_to_document(
                 "approved": value.approved,
                 "rationale": (
                     "Creator-approved adaptation decision for an authorized source."
-                    if value.decision_id in private_decision_ids
+                    if value.decision_id in aliases.decision_ids
                     else value.rationale
                 ),
                 "source_ids": sorted(source_id(item) for item in value.source_ids),
@@ -359,31 +379,41 @@ def public_provenance_manifest_to_document(
         ],
         "transformations": [
             {
-                "transformation_id": value.transformation_id,
+                "transformation_id": transformation_id(value.transformation_id),
                 "kind": value.kind.value,
                 "source_ids": sorted(source_id(item) for item in value.source_ids),
                 "decision_ids": sorted(decision_id(item) for item in value.decision_ids),
-                "output_project_element_ids": list(value.output_project_element_ids),
-                "depends_on_transformation_ids": list(value.depends_on_transformation_ids),
+                "output_project_element_ids": sorted(
+                    project_element_id(item) for item in value.output_project_element_ids
+                ),
+                "depends_on_transformation_ids": sorted(
+                    transformation_id(item) for item in value.depends_on_transformation_ids
+                ),
                 "deterministic": value.deterministic,
             }
-            for value in sorted(normalized.transformations, key=lambda item: item.transformation_id)
+            for value in sorted(
+                normalized.transformations, key=lambda item: transformation_id(item.transformation_id)
+            )
         ],
         "project_elements": [
-            {"element_id": value.element_id, "element_kind": value.element_kind}
-            for value in sorted(normalized.project_elements, key=lambda item: item.element_id)
+            {"element_id": project_element_id(value.element_id), "element_kind": value.element_kind}
+            for value in sorted(
+                normalized.project_elements, key=lambda item: project_element_id(item.element_id)
+            )
         ],
         "trace_bindings": [
             {
-                "binding_id": value.binding_id,
+                "binding_id": binding_id(value.binding_id),
                 "source_id": source_id(value.source_id),
                 "rights_assertion_id": assertion_id(value.rights_assertion_id),
                 "decision_id": decision_id(value.decision_id),
-                "transformation_id": value.transformation_id,
-                "project_element_id": value.project_element_id,
-                "package_element_id": value.package_element_id,
+                "transformation_id": transformation_id(value.transformation_id),
+                "project_element_id": project_element_id(value.project_element_id),
+                "package_element_id": package_element_id(value.package_element_id),
             }
-            for value in sorted(normalized.trace_bindings, key=lambda item: item.binding_id)
+            for value in sorted(
+                normalized.trace_bindings, key=lambda item: binding_id(item.binding_id)
+            )
         ],
     }
 
@@ -393,7 +423,13 @@ def public_provenance_manifest(manifest: ProvenanceManifest) -> ProvenanceManife
     return load_provenance_manifest_document(public_provenance_manifest_to_document(manifest))
 
 
-def _aliases(prefix: str, private_ids: set[str], role_keys: dict[str, bytes], values: Iterable[object], identifier_attribute: str) -> dict[str, str]:
+def _aliases(
+    prefix: str,
+    private_ids: set[str],
+    role_keys: dict[str, bytes],
+    values: Iterable[object],
+    identifier_attribute: str,
+) -> dict[str, str]:
     if not private_ids:
         return {}
     used = {
@@ -416,158 +452,191 @@ def _aliases(prefix: str, private_ids: set[str], role_keys: dict[str, bytes], va
     return aliases
 
 
-def _private_alias_maps(
-    manifest: ProvenanceManifest,
-) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
-    """Build aliases from unique public graph roles, never private identifier spelling."""
-    normalized = validate_provenance_manifest(manifest)
-    private_source_ids = {
-        item.source_id
+def public_provenance_aliases(manifest: ProvenanceManifest) -> PublicProvenanceAliases:
+    """Return deterministic aliases for every role connected to a private source."""
+    return _build_public_provenance_aliases(validate_provenance_manifest(manifest))
+
+
+def _build_public_provenance_aliases(
+    normalized: ProvenanceManifest,
+) -> PublicProvenanceAliases:
+    private_source_nodes = {
+        ("source", item.source_id)
         for item in normalized.sources
         if item.visibility is SourceVisibility.AUTHORIZED_PRIVATE
     }
-    private_assertion_ids = {
-        item.assertion_id
-        for item in normalized.rights_assertions
-        if item.source_id in private_source_ids
-    }
-    private_decision_ids = {
-        item.decision_id
-        for item in normalized.creator_decisions
-        if any(source_id in private_source_ids for source_id in item.source_ids)
-        or any(assertion_id in private_assertion_ids for assertion_id in item.rights_assertion_ids)
-    }
-    if not private_source_ids:
-        return {}, {}, {}
+    if not private_source_nodes:
+        return PublicProvenanceAliases({}, {}, {}, {}, {}, {}, {})
 
-    bindings = normalized.trace_bindings
-    assertions = {item.assertion_id: item for item in normalized.rights_assertions}
-    decisions = {item.decision_id: item for item in normalized.creator_decisions}
-    source_assertions = {identifier: [] for identifier in private_source_ids}
-    source_decisions = {identifier: [] for identifier in private_source_ids}
-    assertion_decisions = {identifier: [] for identifier in private_assertion_ids}
-    source_transformations = {identifier: [] for identifier in private_source_ids}
-    decision_transformations = {identifier: [] for identifier in private_decision_ids}
-    source_bindings = {identifier: [] for identifier in private_source_ids}
-    assertion_bindings = {identifier: [] for identifier in private_assertion_ids}
-    decision_bindings = {identifier: [] for identifier in private_decision_ids}
-    for assertion_id in private_assertion_ids:
-        source_assertions[assertions[assertion_id].source_id].append(assertion_id)
-    for decision_id in private_decision_ids:
-        decision = decisions[decision_id]
+    source_by_id = {item.source_id: item for item in normalized.sources}
+    assertion_by_id = {item.assertion_id: item for item in normalized.rights_assertions}
+    decision_by_id = {item.decision_id: item for item in normalized.creator_decisions}
+    transformation_by_id = {
+        item.transformation_id: item for item in normalized.transformations
+    }
+    project_element_by_id = {item.element_id: item for item in normalized.project_elements}
+    binding_by_id = {item.binding_id: item for item in normalized.trace_bindings}
+    package_ids = {item.package_element_id for item in normalized.trace_bindings}
+    nodes = {
+        *( ("source", identifier) for identifier in source_by_id ),
+        *( ("assertion", identifier) for identifier in assertion_by_id ),
+        *( ("decision", identifier) for identifier in decision_by_id ),
+        *( ("transformation", identifier) for identifier in transformation_by_id ),
+        *( ("project_element", identifier) for identifier in project_element_by_id ),
+        *( ("binding", identifier) for identifier in binding_by_id ),
+        *( ("package_element", identifier) for identifier in package_ids ),
+    }
+    adjacency: dict[tuple[str, str], list[tuple[str, tuple[str, str]]]] = {
+        node: [] for node in nodes
+    }
+
+    def add_edge(
+        left: tuple[str, str],
+        right: tuple[str, str],
+        relationship: str,
+    ) -> None:
+        adjacency[left].append((f"{relationship}:out", right))
+        adjacency[right].append((f"{relationship}:in", left))
+
+    for assertion in normalized.rights_assertions:
+        add_edge(
+            ("assertion", assertion.assertion_id),
+            ("source", assertion.source_id),
+            "assertion_source",
+        )
+    for decision in normalized.creator_decisions:
+        decision_node = ("decision", decision.decision_id)
         for source_id in decision.source_ids:
-            if source_id in private_source_ids:
-                source_decisions[source_id].append(decision_id)
+            add_edge(decision_node, ("source", source_id), "decision_source")
         for assertion_id in decision.rights_assertion_ids:
-            if assertion_id in private_assertion_ids:
-                assertion_decisions[assertion_id].append(decision_id)
+            add_edge(decision_node, ("assertion", assertion_id), "decision_assertion")
     for transformation in normalized.transformations:
+        transformation_node = ("transformation", transformation.transformation_id)
         for source_id in transformation.source_ids:
-            if source_id in private_source_ids:
-                source_transformations[source_id].append(transformation.transformation_id)
+            add_edge(transformation_node, ("source", source_id), "transformation_source")
         for decision_id in transformation.decision_ids:
-            if decision_id in private_decision_ids:
-                decision_transformations[decision_id].append(
-                    transformation.transformation_id
-                )
-    for binding in bindings:
-        if binding.source_id in private_source_ids:
-            source_bindings[binding.source_id].append(binding.binding_id)
-        if binding.rights_assertion_id in private_assertion_ids:
-            assertion_bindings[binding.rights_assertion_id].append(binding.binding_id)
-        if binding.decision_id in private_decision_ids:
-            decision_bindings[binding.decision_id].append(binding.binding_id)
+            add_edge(
+                transformation_node,
+                ("decision", decision_id),
+                "transformation_decision",
+            )
+        for project_element_id in transformation.output_project_element_ids:
+            add_edge(
+                transformation_node,
+                ("project_element", project_element_id),
+                "transformation_output",
+            )
+        for dependency_id in transformation.depends_on_transformation_ids:
+            add_edge(
+                transformation_node,
+                ("transformation", dependency_id),
+                "transformation_dependency",
+            )
+    for binding in normalized.trace_bindings:
+        binding_node = ("binding", binding.binding_id)
+        add_edge(binding_node, ("source", binding.source_id), "binding_source")
+        add_edge(
+            binding_node,
+            ("assertion", binding.rights_assertion_id),
+            "binding_assertion",
+        )
+        add_edge(binding_node, ("decision", binding.decision_id), "binding_decision")
+        add_edge(
+            binding_node,
+            ("transformation", binding.transformation_id),
+            "binding_transformation",
+        )
+        add_edge(
+            binding_node,
+            ("project_element", binding.project_element_id),
+            "binding_project_element",
+        )
+        add_edge(
+            binding_node,
+            ("package_element", binding.package_element_id),
+            "binding_package_element",
+        )
 
-    def rank_roles(
-        signatures: dict[tuple[str, str], bytes],
-    ) -> dict[tuple[str, str], int]:
+    connected_nodes: set[tuple[str, str]] = set()
+    pending = sorted(private_source_nodes)
+    while pending:
+        node = pending.pop()
+        if node in connected_nodes:
+            continue
+        connected_nodes.add(node)
+        pending.extend(neighbor for _, neighbor in adjacency[node] if neighbor not in connected_nodes)
+
+    def static_signature(node: tuple[str, str]) -> dict[str, object]:
+        node_kind, identifier = node
+        if node_kind == "source":
+            return {
+                "node_kind": node_kind,
+                "source_kind": "authorized_source",
+                "visibility": SourceVisibility.PUBLIC_SAFE.value,
+                "public_label": "Authorized private source",
+            }
+        if node_kind == "assertion":
+            assertion = assertion_by_id[identifier]
+            return {
+                "node_kind": node_kind,
+                "status": assertion.status.value,
+                "scope": "authorized adaptation scope",
+                "authority": "owner authorization",
+            }
+        if node_kind == "decision":
+            decision = decision_by_id[identifier]
+            return {
+                "node_kind": node_kind,
+                "kind": decision.kind.value,
+                "approved": decision.approved,
+                "rationale": "Creator-approved adaptation decision for an authorized source.",
+            }
+        if node_kind == "transformation":
+            transformation = transformation_by_id[identifier]
+            return {
+                "node_kind": node_kind,
+                "kind": transformation.kind.value,
+                "deterministic": transformation.deterministic,
+            }
+        if node_kind == "project_element":
+            return {
+                "node_kind": node_kind,
+                "element_kind": project_element_by_id[identifier].element_kind,
+            }
+        return {"node_kind": node_kind}
+
+    def rank(signatures: dict[tuple[str, str], bytes]) -> dict[tuple[str, str], int]:
         ranks = {
-            signature: rank
-            for rank, signature in enumerate(sorted(set(signatures.values())))
+            signature: index
+            for index, signature in enumerate(sorted(set(signatures.values())))
         }
         return {node: ranks[signature] for node, signature in signatures.items()}
 
-    initial_signatures: dict[tuple[str, str], bytes] = {}
-    for source_id in private_source_ids:
-        initial_signatures[("source", source_id)] = canonical_json_bytes(
-            {"node_kind": "source"}
-        )
-    for assertion_id in private_assertion_ids:
-        initial_signatures[("assertion", assertion_id)] = canonical_json_bytes(
-            {
-                "node_kind": "assertion",
-                "status": assertions[assertion_id].status.value,
-            }
-        )
-    for decision_id in private_decision_ids:
-        decision = decisions[decision_id]
-        initial_signatures[("decision", decision_id)] = canonical_json_bytes(
-            {
-                "node_kind": "decision",
-                "kind": decision.kind.value,
-                "approved": decision.approved,
-            }
-        )
-    colors = rank_roles(initial_signatures)
-
-    def source_reference(source_id: str) -> str:
-        if source_id in private_source_ids:
-            return f"private:{colors[('source', source_id)]}"
-        return f"public:{source_id}"
-
-    def assertion_reference(assertion_id: str) -> str:
-        if assertion_id in private_assertion_ids:
-            return f"private:{colors[('assertion', assertion_id)]}"
-        return f"public:{assertion_id}"
-
+    colors = rank(
+        {
+            node: canonical_json_bytes(static_signature(node))
+            for node in connected_nodes
+        }
+    )
     for _ in range(_MAX_PRIVATE_ALIAS_REFINEMENT_ROUNDS):
-        signatures: dict[tuple[str, str], bytes] = {}
-        for source_id in private_source_ids:
-            signatures[("source", source_id)] = canonical_json_bytes(
-                {
-                    "node_kind": "source",
-                    "self": colors[("source", source_id)],
-                    "assertions": sorted(
-                        colors[("assertion", assertion_id)]
-                        for assertion_id in source_assertions[source_id]
-                    ),
-                    "decisions": sorted(
-                        colors[("decision", decision_id)]
-                        for decision_id in source_decisions[source_id]
-                    ),
-                    "transformations": sorted(source_transformations[source_id]),
-                    "bindings": sorted(source_bindings[source_id]),
-                }
-            )
-        for assertion_id in private_assertion_ids:
-            assertion = assertions[assertion_id]
-            signatures[("assertion", assertion_id)] = canonical_json_bytes(
-                {
-                    "node_kind": "assertion",
-                    "self": colors[("assertion", assertion_id)],
-                    "source": colors[("source", assertion.source_id)],
-                    "decisions": sorted(
-                        colors[("decision", decision_id)]
-                        for decision_id in assertion_decisions[assertion_id]
-                    ),
-                    "bindings": sorted(assertion_bindings[assertion_id]),
-                }
-            )
-        for decision_id in private_decision_ids:
-            decision = decisions[decision_id]
-            signatures[("decision", decision_id)] = canonical_json_bytes(
-                {
-                    "node_kind": "decision",
-                    "self": colors[("decision", decision_id)],
-                    "sources": sorted(source_reference(item) for item in decision.source_ids),
-                    "assertions": sorted(
-                        assertion_reference(item) for item in decision.rights_assertion_ids
-                    ),
-                    "transformations": sorted(decision_transformations[decision_id]),
-                    "bindings": sorted(decision_bindings[decision_id]),
-                }
-            )
-        refined = rank_roles(signatures)
+        refined = rank(
+            {
+                node: canonical_json_bytes(
+                    {
+                        "self": colors[node],
+                        "signature": static_signature(node),
+                        "neighbors": [
+                            {"relationship": relationship, "color": color}
+                            for relationship, color in sorted(
+                                (relationship, colors[neighbor])
+                                for relationship, neighbor in adjacency[node]
+                            )
+                        ],
+                    }
+                )
+                for node in connected_nodes
+            }
+        )
         if len(set(refined.values())) == len(set(colors.values())):
             colors = refined
             break
@@ -577,45 +646,76 @@ def _private_alias_maps(
             ("private provenance graph exceeds the public alias refinement limit",)
         )
 
-    for node_kind, identifiers in (
-        ("source", private_source_ids),
-        ("assertion", private_assertion_ids),
-        ("decision", private_decision_ids),
-    ):
-        role_colors = [colors[(node_kind, identifier)] for identifier in identifiers]
+    role_ids: dict[str, set[str]] = {
+        role: {identifier for node_role, identifier in connected_nodes if node_role == role}
+        for role in (
+            "source",
+            "assertion",
+            "decision",
+            "transformation",
+            "project_element",
+            "binding",
+            "package_element",
+        )
+    }
+    for role, identifiers in role_ids.items():
+        role_colors = [colors[(role, identifier)] for identifier in identifiers]
         if len(set(role_colors)) != len(role_colors):
             raise ProvenanceValidationError(
                 ("private provenance graph has ambiguous public aliases",)
             )
 
-    source_roles = {
-        identifier: canonical_json_bytes({"color": colors[("source", identifier)]})
-        for identifier in private_source_ids
-    }
-    assertion_roles = {
-        identifier: canonical_json_bytes({"color": colors[("assertion", identifier)]})
-        for identifier in private_assertion_ids
-    }
-    decision_roles = {
-        identifier: canonical_json_bytes({"color": colors[("decision", identifier)]})
-        for identifier in private_decision_ids
-    }
+    def role_keys(role: str) -> dict[str, bytes]:
+        return {
+            identifier: canonical_json_bytes({"color": colors[(role, identifier)]})
+            for identifier in role_ids[role]
+        }
 
-    return (
-        _aliases("source_ref", private_source_ids, source_roles, normalized.sources, "source_id"),
-        _aliases(
+    return PublicProvenanceAliases(
+        source_ids=_aliases(
+            "source_ref", role_ids["source"], role_keys("source"), normalized.sources, "source_id"
+        ),
+        assertion_ids=_aliases(
             "rights_ref",
-            private_assertion_ids,
-            assertion_roles,
+            role_ids["assertion"],
+            role_keys("assertion"),
             normalized.rights_assertions,
             "assertion_id",
         ),
-        _aliases(
+        decision_ids=_aliases(
             "decision_ref",
-            private_decision_ids,
-            decision_roles,
+            role_ids["decision"],
+            role_keys("decision"),
             normalized.creator_decisions,
             "decision_id",
+        ),
+        transformation_ids=_aliases(
+            "transformation_ref",
+            role_ids["transformation"],
+            role_keys("transformation"),
+            normalized.transformations,
+            "transformation_id",
+        ),
+        project_element_ids=_aliases(
+            "project_element_ref",
+            role_ids["project_element"],
+            role_keys("project_element"),
+            normalized.project_elements,
+            "element_id",
+        ),
+        binding_ids=_aliases(
+            "binding_ref",
+            role_ids["binding"],
+            role_keys("binding"),
+            normalized.trace_bindings,
+            "binding_id",
+        ),
+        package_element_ids=_aliases(
+            "package_ref",
+            role_ids["package_element"],
+            role_keys("package_element"),
+            normalized.trace_bindings,
+            "package_element_id",
         ),
     )
 
@@ -624,7 +724,7 @@ def public_provenance_decision_aliases(
     manifest: ProvenanceManifest,
 ) -> dict[str, str]:
     """Return the deterministic public aliases for private-source decisions."""
-    return _private_alias_maps(manifest)[2]
+    return public_provenance_aliases(manifest).decision_ids
 
 
 def provenance_manifest_bytes(manifest: ProvenanceManifest) -> bytes:
@@ -1208,6 +1308,8 @@ def is_public_safe_text(value: object) -> bool:
         unicodedata.category(character) in {"Cc", "Cf"} for character in value
     ):
         return False
+    if _contains_confusable_public_delimiter(value):
+        return False
     candidate = value.strip()
     if (
         not candidate
@@ -1222,6 +1324,27 @@ def is_public_safe_text(value: object) -> bool:
         return False
     return "/" not in candidate or (
         candidate == value and _PUBLIC_SAFE_SLASH_LABEL_RE.fullmatch(candidate) is not None
+    )
+
+
+def _contains_confusable_public_delimiter(value: str) -> bool:
+    for character in value:
+        if ord(character) <= 0x7F:
+            continue
+        normalized = unicodedata.normalize("NFKC", character)
+        if normalized in {":", "/", "\\"}:
+            return True
+        if _CONFUSABLE_DELIMITER_NAME_RE.search(unicodedata.name(character, "")):
+            return True
+    normalized_value = unicodedata.normalize("NFKC", value)
+    return any(
+        ord(character) in character_range
+        for character in value
+        for character_range in _FULLWIDTH_OR_PRESENTATION_ASCII_RANGES
+    ) and (
+        _KNOWN_URI_RE.search(normalized_value) is not None
+        or _URI_SCHEME_PAYLOAD_RE.search(normalized_value) is not None
+        or "\\" in normalized_value
     )
 
 

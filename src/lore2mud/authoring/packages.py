@@ -35,6 +35,7 @@ from lore2mud.authoring.contracts import (
 )
 from lore2mud.authoring.provenance import (
     AdaptationMode,
+    PublicProvenanceAliases,
     ProvenanceManifest,
     ProvenanceValidationError,
     is_opaque_public_id,
@@ -43,7 +44,7 @@ from lore2mud.authoring.provenance import (
     provenance_manifest_to_document,
     public_provenance_manifest_sha256,
     public_provenance_manifest,
-    public_provenance_decision_aliases,
+    public_provenance_aliases,
     public_provenance_manifest_to_document,
     validate_provenance_manifest,
 )
@@ -400,7 +401,10 @@ def evidence_manifest_semantic_to_document(
         "identity_scope": value.identity_scope,
         "candidate_input_sha256": value.candidate_input_sha256,
         "provenance_manifest_sha256": value.provenance_manifest_sha256,
-        "entries": [evidence_entry_to_document(item) for item in value.entries],
+        "entries": [
+            evidence_entry_to_document(item)
+            for item in sorted(value.entries, key=lambda item: item.evidence_id)
+        ],
     }
 
 
@@ -422,9 +426,18 @@ def package_input_to_document(value: GamePackageV2) -> dict[str, object]:
         "kind": value.kind,
         "project_id": value.project_id,
         "engine_version": value.engine_version,
-        "content_files": [canonical_content_file_to_document(item) for item in value.content_files],
-        "capability_requirement_ids": list(value.capability_requirement_ids),
-        "elements": [package_element_to_document(item) for item in value.elements],
+        "content_files": [
+            canonical_content_file_to_document(item)
+            for item in sorted(
+                value.content_files,
+                key=lambda item: (V1_CONTENT_FILE_ORDER.index(item.name), item.name),
+            )
+        ],
+        "capability_requirement_ids": sorted(value.capability_requirement_ids),
+        "elements": [
+            package_element_to_document(item)
+            for item in sorted(value.elements, key=lambda item: item.package_element_id)
+        ],
         "anchors": [
             {
                 "anchor_id": item.anchor_id,
@@ -432,7 +445,7 @@ def package_input_to_document(value: GamePackageV2) -> dict[str, object]:
                 "project_element_id": item.project_element_id,
                 "package_element_id": item.package_element_id,
             }
-            for item in value.anchors
+            for item in sorted(value.anchors, key=lambda item: item.anchor_id)
         ],
         "seal_mode": value.seal_mode.value,
         "predecessor_candidate_id": value.predecessor_candidate_id,
@@ -728,8 +741,15 @@ def seal_game_package(
         raise PackageValidationError(("engine_version is not supported",))
     normalized_elements = _validate_package_elements(elements)
     normalized_anchors = validate_anchor_set(anchors)
+    _validate_project_trace_bindings(normalized_project, normalized_provenance)
     _validate_element_bindings(normalized_provenance, normalized_elements)
     _validate_anchor_elements(normalized_anchors, normalized_elements)
+    aliases = public_provenance_aliases(normalized_provenance)
+    public_provenance = public_provenance_manifest(normalized_provenance)
+    public_elements = _public_package_elements(normalized_elements, aliases)
+    public_anchors = _public_anchor_set(normalized_anchors, aliases)
+    _validate_element_bindings(public_provenance, public_elements)
+    _validate_anchor_elements(public_anchors, public_elements)
     if type(seal_mode) is not SealMode:
         raise PackageValidationError(("seal mode is invalid",))
     normalized_predecessor: GamePackageV2 | None = None
@@ -759,15 +779,14 @@ def seal_game_package(
             )
         migration_report = validate_anchor_migrations(
             normalized_predecessor.anchors,
-            normalized_anchors,
+            public_anchors,
             anchor_migrations,
         )
         predecessor_candidate_id = normalized_predecessor.candidate_id
         predecessor_package_sha = normalized_predecessor.package_sha256
         predecessor_anchors_sha = story_anchor_set_sha256(normalized_predecessor.anchors)
     _validate_anchor_decisions(normalized_provenance, migration_report.migrations)
-    public_provenance = public_provenance_manifest(normalized_provenance)
-    decision_aliases = public_provenance_decision_aliases(normalized_provenance)
+    decision_aliases = aliases.decision_ids
     public_migration_report = replace(
         migration_report,
         migrations=tuple(
@@ -787,8 +806,8 @@ def seal_game_package(
         engine_version=engine_version,
         content_files=normalized_project.content_files,
         capability_requirement_ids=normalized_project.blueprint.capability_requirement_ids,
-        elements=normalized_elements,
-        anchors=normalized_anchors,
+        elements=public_elements,
+        anchors=public_anchors,
         seal_mode=seal_mode,
         predecessor_candidate_id=predecessor_candidate_id,
         predecessor_package_sha256=predecessor_package_sha,
@@ -1374,6 +1393,80 @@ def _validate_element_bindings(
             raise PackageValidationError(
                 ("package element project IDs must be opaque public-safe IDs",)
             )
+
+
+def _public_package_elements(
+    elements: Sequence[PackageElement],
+    aliases: PublicProvenanceAliases,
+) -> tuple[PackageElement, ...]:
+    """Project package references through the same aliases as public provenance."""
+    return _validate_package_elements(
+        tuple(
+            replace(
+                element,
+                package_element_id=aliases.package_element_ids.get(
+                    element.package_element_id,
+                    element.package_element_id,
+                ),
+                project_element_id=aliases.project_element_ids.get(
+                    element.project_element_id,
+                    element.project_element_id,
+                ),
+            )
+            for element in elements
+        )
+    )
+
+
+def _public_anchor_set(
+    anchors: Sequence[StoryAnchor],
+    aliases: PublicProvenanceAliases,
+) -> tuple[StoryAnchor, ...]:
+    """Keep opaque anchor identities stable while projecting their bindings."""
+    return validate_anchor_set(
+        tuple(
+            replace(
+                anchor,
+                project_element_id=aliases.project_element_ids.get(
+                    anchor.project_element_id,
+                    anchor.project_element_id,
+                ),
+                package_element_id=aliases.package_element_ids.get(
+                    anchor.package_element_id,
+                    anchor.package_element_id,
+                ),
+            )
+            for anchor in anchors
+        )
+    )
+
+
+def _validate_project_trace_bindings(
+    project: GameProject,
+    provenance: ProvenanceManifest,
+) -> None:
+    """Bind every sealed provenance edge to the immutable GameProject trace graph."""
+    provenance_decision_ids = {item.decision_id for item in provenance.creator_decisions}
+    project_decision_ids = {item.decision_id for item in project.creator_decisions}
+    if not provenance_decision_ids.issubset(project_decision_ids):
+        raise PackageValidationError(
+            ("GameProject creator decisions do not cover the provenance chain",)
+        )
+
+    expected_edges = {
+        (binding.source_id, binding.project_element_id, binding.decision_id)
+        for binding in provenance.trace_bindings
+    }
+    project_element_ids = {item.element_id for item in provenance.project_elements}
+    actual_edges = {
+        (record.source_artifact_id, record.target_artifact_id, record.decision_id)
+        for record in project.trace_records
+        if record.target_artifact_id in project_element_ids
+    }
+    if not expected_edges.issubset(actual_edges):
+        raise PackageValidationError(
+            ("GameProject trace records do not cover the provenance chain",)
+        )
 
 
 def _validate_anchor_elements(

@@ -126,6 +126,8 @@
       "type": "string",
       "allOf": [
         { "not": { "pattern": "\\\\" } },
+        { "not": { "pattern": "[\\u02D0-\\u02D1\\u02F8\\u0337-\\u0338\\u0703-\\u0709\\u1365-\\u1366\\u1804\\u2044\\u20A1\\u20E5\\u20EB\\u2215\\u2254-\\u2255\\u2298\\u233F\\u2341\\u2360\\u27C8-\\u27C9\\u2982\\u29B8\\u29C4-\\u29C5\\u29F5-\\u29F9\\u2A0F\\u2A74\\u2AEE\\u2AF6\\u2AFB\\u2AFD\\u2E4A\\u2F03\\uA6F4\\uA718\\uA789\\uFE13\\uFE55\\uFE68\\uFF0F\\uFF1A\\uFF3C]" } },
+        { "not": { "pattern": "[\\uFF21-\\uFF3A\\uFF41-\\uFF5A]+:[^\\s]" } },
         {
           "anyOf": [
             { "pattern": "^[^/]*$" },

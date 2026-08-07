@@ -56,9 +56,15 @@ and unapproved sealed inputs reject before a candidate is created.
 
 `provenance_manifest.schema.json` describes the typed manifest. The public audit
 projection preserves status, trace topology, and deterministic transformation facts,
-but anonymizes every `authorized_private` source and associated rights/decision IDs.
-It replaces private labels, source kinds, rights scope/authority, and decision
-rationale with generic public-safe values before serialization or hashing.
+but anonymizes the complete graph component reachable from every `authorized_private`
+source. It deterministically aliases source, rights assertion, creator decision,
+transformation, project-element, trace-binding, and package-element IDs. It also
+replaces component labels, source kinds, rights scope/authority, and decision rationale
+with generic public-safe values before serialization or hashing. The sealed package and
+its anchor bindings use those same projected project/package IDs; the opaque anchor ID
+itself stays stable. Incremental sealing compares these projected bindings, so a changed
+alias binding cannot silently preserve a resume anchor and instead requires the existing
+explicit migration contract.
 
 No free-text or package-data field accepts raw source text, excerpts, absolute or relative
 paths (including bare filenames, dotfiles, and dot segments), file or network URIs, or
@@ -67,8 +73,9 @@ the engine-owned V1 content-file allowlist. Slash punctuation is rejected unless
 value is one of the small, established public display labels (`fixture-extractor/v1`,
 `fixture-extractor / v1`, `story/scene`, `story / scene`, `hand/body`, or
 `hand / body`); this keeps legacy public labels compatible without admitting arbitrary
-path-like text. Backslashes, URI-like `scheme:payload` tokens, format/control
-characters, and percent escapes are rejected. Public diagnostics use stable codes and
+path-like text. Backslashes, URI-like `scheme:payload` tokens, Unicode compatibility
+or confusable delimiter characters, format/control characters, and percent escapes are
+rejected. Public diagnostics use stable codes and
 public artifact IDs only; they do not echo rejected input values.
 Validation results also return the public provenance projection, including through
 the SDK.
