@@ -18,6 +18,7 @@ from lore2mud.application import (
     TurnStatus,
 )
 from lore2mud.capabilities import (
+    CapabilityActionDescriptor,
     CapabilityCatalog,
     CapabilityDependencyDescriptor,
     CapabilityDescriptor,
@@ -90,6 +91,9 @@ _SEQUENCE_VIEW_SCHEMA = _object_schema(
         "event_sequence": {"type": "integer", "minimum": 0},
     }
 )
+_PROJECTION_INTENT_PARAMETER_SCHEMA = _object_schema(
+    {"index": {"type": "integer", "minimum": 0, "maximum": 1024}}
+)
 
 
 class _ObserverImplementation:
@@ -151,6 +155,49 @@ class _ObserverImplementation:
     def migrate(self, migration_id, state, context):
         del migration_id, state, context
         raise AssertionError("observer fixture declares no migrations")
+
+
+class _ProjectionIntentImplementation:
+    def __init__(self, capability_id: str, intent_count: int) -> None:
+        self.contract = CapabilityImplementationContract(
+            capability_id,
+            VERSION,
+            action_ids=("offer",),
+        )
+        self._capability_id = capability_id
+        self._intent_count = intent_count
+
+    def apply(self, intent, state, context):
+        del intent, state, context
+        raise AssertionError("projection fixture does not apply actions")
+
+    def observe(self, observation, state, context):
+        del observation, context
+        return CapabilityEffectResult(state.state)
+
+    def project(self, state, context):
+        del context
+        return CapabilityPlayerViewEntry(
+            self._capability_id,
+            VERSION,
+            state.state,
+            tuple(
+                CapabilityIntent(
+                    self._capability_id,
+                    "offer",
+                    canonical_json_object({"index": index}),
+                )
+                for index in range(self._intent_count)
+            ),
+        )
+
+    def evaluate_predicate(self, predicate_id, state, context):
+        del predicate_id, state, context
+        raise AssertionError("projection fixture declares no predicates")
+
+    def migrate(self, migration_id, state, context):
+        del migration_id, state, context
+        raise AssertionError("projection fixture declares no migrations")
 
 
 class _SpySaveService:
@@ -287,6 +334,21 @@ class CapabilityRuntimeTests(unittest.TestCase):
         )
         self.assertEqual([event.sequence for event in reset.events], [2])
         self.assertEqual(self._counter_value(host), 0)
+
+    def test_capability_projection_enforces_public_intent_cardinality_bound(self) -> None:
+        within_limit, _ = self._projection_intent_session(1024)
+
+        view = within_limit.view()
+
+        assert view.capabilities is not None
+        self.assertEqual(len(view.capabilities[0].admissible_intents), 1024)
+
+        above_limit, host = self._projection_intent_session(1025)
+        before_states = host.states
+        with self.assertRaisesRegex(CapabilityRuntimeError, "too many"):
+            above_limit.view()
+        self.assertEqual(host.states, before_states)
+        self.assertEqual(above_limit.event_sequence, 0)
 
     def test_capability_and_world_events_share_one_sequence(self) -> None:
         session, _ = self._reference_session()
@@ -607,6 +669,45 @@ class CapabilityRuntimeTests(unittest.TestCase):
             resolution.plan,
             CapabilityImplementationRegistry(bindings),
         )
+
+    def _projection_intent_session(
+        self,
+        intent_count: int,
+    ) -> tuple[GameSession, CapabilityRuntimeHost]:
+        capability_id = "projection_intent_bound"
+        descriptor = CapabilityDescriptor(
+            format_version=1,
+            capability_id=capability_id,
+            version=VERSION,
+            safety_level=CapabilitySafetyLevel.L1,
+            state_namespace=capability_id,
+            initial_state=canonical_json_object({"count": 0}),
+            state_schema=_OBSERVER_STATE_SCHEMA,
+            actions=(
+                CapabilityActionDescriptor(
+                    "offer",
+                    _PROJECTION_INTENT_PARAMETER_SCHEMA,
+                ),
+            ),
+            observers=(),
+            predicates=(),
+            effects=(),
+            events=(),
+            player_view_schema=_OBSERVER_STATE_SCHEMA,
+        )
+        binding = CapabilityImplementationBinding(
+            descriptor,
+            _ProjectionIntentImplementation(capability_id, intent_count),
+        )
+        catalog = CapabilityCatalog.from_bindings((binding,))
+        resolution = resolve_capabilities(catalog, (capability_id,))
+        self.assertTrue(resolution.ok)
+        assert resolution.plan is not None
+        host = CapabilityRuntimeHost(
+            resolution.plan,
+            CapabilityImplementationRegistry((binding,)),
+        )
+        return GameSession.from_content_pack(self.pack, capability_host=host), host
 
     @staticmethod
     def _observer_descriptor(

@@ -14,6 +14,13 @@
 
 ### Fixed
 
+- 修复独立 TECH 验收在 V2-3 候选 `1495407` 发现的 capability player-view 基数 P2：公开 Schema
+  将 `admissible_intents` 限制为最多 1,024 项，因此通用 runtime 现在在输出投影前拒绝超过该上限的
+  capability；新增 1,024/1,025 边界回归，并确认拒绝不改变 capability state 或 event sequence。
+- Repaired the capability player-view cardinality P2 found by independent TECH acceptance of V2-3 candidate
+  `1495407`: the public Schema caps `admissible_intents` at 1,024, so the generic runtime now rejects an
+  over-limit capability projection before output. New 1,024/1,025 boundary coverage also proves rejection
+  preserves capability state and the event sequence.
 - Moved simulation request resource rejection ahead of project validation and preview construction,
   and normalized capability checkpoint `SaveLoadError` into a structured simulation diagnostic.
 - Re-scoped the capability schema worktree guard to protect `World`, save core, and `pipeline/forge.py`

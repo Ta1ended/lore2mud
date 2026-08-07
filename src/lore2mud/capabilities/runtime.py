@@ -49,6 +49,7 @@ class CapabilityIntentInadmissibleError(CapabilityRuntimeError):
 
 
 _EventDraft = tuple[GameEventKind, GameEventPayload]
+_MAX_CAPABILITY_ADMISSIBLE_INTENTS = 1024
 
 
 @dataclass(frozen=True, slots=True)
@@ -481,6 +482,10 @@ class CapabilityRuntimeHost:
     ) -> tuple[CapabilityIntent, ...]:
         if type(intents) is not tuple:
             raise CapabilityRuntimeError("admissible capability intents must be a tuple")
+        if len(intents) > _MAX_CAPABILITY_ADMISSIBLE_INTENTS:
+            raise CapabilityRuntimeError(
+                "capability projection exposes too many admissible intents"
+            )
         actions = {item.action_id: item for item in binding.descriptor.actions}
         validated: list[CapabilityIntent] = []
         seen: set[tuple[str, bytes]] = set()

@@ -3334,3 +3334,44 @@
   candidate, and request fresh read-only TECH acceptance. No push, `main` movement, release,
   private-material access, or V2-4/V2-5 work is authorized by this checkpoint.
 - Supersedes: None.
+
+## DEC-0115: 修复 V2-3 capability player-view 基数边界 / Repair the V2-3 capability player-view cardinality boundary
+
+- 日期 / Date: 2026-08-07
+- 状态 / Status: `1495407` 的独立 TECH 验收结论为 `REVISE`；修复已本地验证，替代候选提交与新的独立 TECH
+  验收仍待完成。 / Independent TECH acceptance of `1495407` returned `REVISE`; the repair has local verification,
+  while the replacement candidate commit and a new independent TECH acceptance remain pending.
+- 背景 / Context: `CapabilityRuntimeHost._validate_admissible_intents()` 验证 identity、parameters、predicates
+  和 duplicate，但没有限制 player-view 的 intent 数量。公开
+  `schemas/capability_player_view_entry.schema.json` 将 `admissible_intents` 限为最多 1,024 项。独立验收
+  复现了 catalog-valid synthetic capability 投影 1,025 个各自有效的 intent：`GameSession.view()` 接受该输出，
+  但 Draft 2020-12 schema 拒绝序列化 entry。 / `CapabilityRuntimeHost._validate_admissible_intents()` checked
+  identity, parameters, predicates, and duplicates but did not cap the player-view intent count. Public
+  `schemas/capability_player_view_entry.schema.json` caps `admissible_intents` at 1,024. Independent acceptance
+  reproduced a catalog-valid synthetic capability with 1,025 individually valid intents: `GameSession.view()` accepted
+  the output while the Draft 2020-12 schema rejected the serialized entry.
+- 决定 / Decision: 在通用 runtime 的 public projection 验证阶段强制 1,024 项上限，并添加 1,024/1,025
+  边界回归。超过上限的 projection 在 public view 输出前以 `CapabilityRuntimeError` 拒绝；测试证明 capability
+  state 与 event sequence 不变。 / Enforce the 1,024-item limit in generic runtime public-projection validation
+  and add 1,024/1,025 boundary regression coverage. An over-limit projection raises `CapabilityRuntimeError` before
+  public view output; the test proves capability state and the event sequence remain unchanged.
+- 证据 / Evidence: 改动仅在 `src/lore2mud/capabilities/runtime.py` 与 `tests/test_capability_runtime.py`；修复
+  边界测试 `13 passed`。当前矩阵为 `unittest` `1566 OK (skipped=12)`、serial pytest
+  `1554 passed, 12 skipped`、xdist pytest `1554 passed, 12 skipped, 924 subtests passed`，并且 Ruff、Pyright、
+  compileall、公开 Demo validation、`pip check`、history safety、fsck 与 diff checks 均通过。12 个 skip 是本机
+  PyInstaller toolchain 和 Windows symlink 权限缺失。 / Only `src/lore2mud/capabilities/runtime.py` and
+  `tests/test_capability_runtime.py` change for the repair; the boundary test passed `13`. The current matrix is
+  `unittest` `1566 OK (skipped=12)`, serial pytest `1554 passed, 12 skipped`, and xdist pytest
+  `1554 passed, 12 skipped, 924 subtests passed`; Ruff, Pyright, compileall, public Demo validation, `pip check`,
+  history safety, fsck, and diff checks all pass. The 12 skips are local absence of the PyInstaller toolchain and
+  Windows symlink privilege.
+- 后果 / Consequences: 不改变 `World`、`src/lore2mud/engine/save.py` 或 `pipeline/forge.py`；旧候选的
+  `REVISE` 不得被视为替代候选的放行。修复必须创建新的精确候选 SHA，并仅由未参与旧实现或旧验收的新任务做
+  findings-first、read-only TECH acceptance。 / `World`, `src/lore2mud/engine/save.py`, and `pipeline/forge.py`
+  remain unchanged; the old candidate's `REVISE` cannot approve its replacement. The repair must become a new exact
+  candidate SHA and receive findings-first, read-only TECH acceptance from a new task that did not implement or
+  review the old candidate.
+- 取代 / Supersedes: 仅取代 DEC-0114 中“下一个步骤是创建候选并首次验收”的状态路由；DEC-0114 的 V2-3
+  scope、privacy、Git、compatibility 与 later-milestone 边界继续有效。 / Supersedes DEC-0114 only for its
+  state routing that the next step was initial candidate creation and acceptance; DEC-0114's V2-3 scope, privacy,
+  Git, compatibility, and later-milestone boundaries remain in force.

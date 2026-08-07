@@ -1,6 +1,6 @@
 # 项目状态 / Project State
 
-更新日期：2026-08-06
+更新日期：2026-08-07
 
 ## 当前 V2-3 检查点
 
@@ -13,11 +13,12 @@ Authoring、SDK、结构化 CLI 与 Web 共用通用边界；不改变 `World`�
 ### 当前状态
 
 - 工作树：`D:\MUD game kaifa\.codex-worktrees\v2-3-capability-modules-20260806`；分支
-  `workstream/v2-3-capability-modules`；候选提交创建后，以 `git rev-parse HEAD` 记录精确验收 SHA。
-- 授权基线：`c37969f6b6958e66474738f88a53b9d5c2f50d99`；候选包含 capability authoring/Web
-  适配、聚焦测试及四个 handoff 文件。
-- 完整 V2-3 验证矩阵已通过，单一候选提交已经建立；当前暂停于 fresh read-only TECH
-  acceptance 门槛。Goal 保持真实 `active`，因为该验收尚未完成。
+  `workstream/v2-3-capability-modules`。此前候选 `14954070238ec6e3f2255b1c18d31214b3172d49`
+  收到独立 TECH `REVISE`：runtime 可投影 1,025 个 intent，但公开 Schema 上限为 1,024。
+- 授权基线：`c37969f6b6958e66474738f88a53b9d5c2f50d99`。本提交在通用 capability runtime 中执行
+  1,024 项上限，并为 1,024/1,025 边界添加回归；拒绝路径保持 capability state 与 event sequence 不变。
+- 当前替代候选字节已完成本地验证。提交后以 `git rev-parse HEAD` 记录精确 SHA，并只交给一个未参与
+  `1495407` 实现或旧验收的 fresh read-only TECH reviewer。Goal 保持真实 `active`，直到该验收给出 `GO`。
 
 ### 已完成
 
@@ -34,27 +35,29 @@ Authoring、SDK、结构化 CLI 与 Web 共用通用边界；不改变 `World`�
 
 ### 已验证
 
-- Authoring/capability/Web 聚焦矩阵：`169 passed, 480 subtests passed`（2026-08-06）。
-- 完整矩阵：`unittest` 为 `1565 OK (skipped=11)`；serial 与 xdist `pytest` 均为
-  `1554 passed, 11 skipped, 927 subtests passed`；Windows PyInstaller smoke 随 unittest 通过。
+- 1,024/1,025 runtime 边界回归：`13 passed`；1,024 项投影保持可见，1,025 项在 player-safe
+  view 输出前拒绝且不改变 state/event sequence。
+- 完整矩阵：`unittest` 为 `1566 OK (skipped=12)`；serial `pytest` 为 `1554 passed, 12 skipped`；
+  xdist `pytest` 为 `1554 passed, 12 skipped, 924 subtests passed`。
 - `ruff check .`、Pyright `0 errors, 0 warnings`、compileall、公开 Demo validate、`pip check`、
-  history safety、fsck 与 diff 检查均通过。全量 Pyright 曾发现 12 个 union-narrowing errors，
-  已以不改变运行行为的分派收紧修复并复跑完整矩阵。
+  history safety、fsck、工作树 diff 与基线范围 diff 检查均通过。12 个 skip 是本机缺少 PyInstaller
+  toolchain 及 Windows symlink 权限，不得误记为通过。
 - 真实 `reference_counter` preview/simulate/replay/proof 以及 SDK/结构化 CLI 字节等价已覆盖；
   Web optional-host generic snapshot/action 与 V2-2 legacy compatibility 也已覆盖。
 
 ### 暂停与未完成
 
-- 候选提交已建立，fresh read-only TECH acceptance 尚未产生 verdict。
-- 当前暂停点：独立 TECH acceptance。不得 push、移动/合并 `main`、release 或进入 V2-4/V2-5。
+- `1495407` 的旧验收 verdict 为 `REVISE`，不能用于替代候选；修复后的候选提交与 fresh read-only
+  TECH acceptance 尚未完成。
+- 当前暂停点：替代候选提交后的独立 TECH acceptance。不得 push、移动/合并 `main`、release 或进入 V2-4/V2-5。
 
 ### 实时证据与风险
 
 - `git ls-remote` 仍会超时，不能把本地 `origin/*` 当实时证据；但本次 GitHub REST 已确认 live
   `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95`，PR #1 仍为 draft 且 head 为
   `c37969f6b6958e66474738f88a53b9d5c2f50d99`。未对远端执行任何写操作。
-- 候选提交后工作树必须干净；独立 TECH acceptance 必须在精确候选 SHA 上以 fresh read-only
-  任务执行，当前 Controller 结果不是 acceptance verdict。
+- 候选提交后工作树必须干净；独立 TECH acceptance 必须在精确替代候选 SHA 上由新任务执行，不能复用
+  旧的 `1495407` reviewer；当前 Controller 验证不是 acceptance verdict。
 
 ### 关键路径
 
@@ -76,36 +79,36 @@ core, or private-material boundaries.
 ### Current Status
 
 - Worktree: `D:\MUD game kaifa\.codex-worktrees\v2-3-capability-modules-20260806`; branch
-  `workstream/v2-3-capability-modules`; record the exact acceptance SHA with `git rev-parse HEAD`
-  after this candidate commit is created.
-- Authorized baseline: `c37969f6b6958e66474738f88a53b9d5c2f50d99`; the candidate contains the
-  capability authoring/Web adapters, focused tests, and four handoff files.
-- The full V2-3 validation matrix passed and a single candidate commit is established. Work is paused at
-  the fresh read-only TECH acceptance gate. The Goal remains truthfully `active` because that acceptance
-  is still pending.
+  `workstream/v2-3-capability-modules`. Prior candidate `14954070238ec6e3f2255b1c18d31214b3172d49`
+  received independent TECH `REVISE`: runtime could project 1,025 intents while the public Schema caps them at 1,024.
+- Authorized baseline: `c37969f6b6958e66474738f88a53b9d5c2f50d99`. This commit enforces the 1,024-item
+  limit in the generic capability runtime and adds 1,024/1,025 boundary regression coverage; rejection preserves
+  capability state and the event sequence.
+- The replacement-candidate bytes have current local verification. Record its exact SHA with `git rev-parse HEAD`
+  after committing, then submit it only to a fresh read-only TECH reviewer who did not implement or review `1495407`.
+  The Goal remains truthfully `active` until that review returns `GO`.
 
 ### Verified Checkpoint
 
-- Focused capability/authoring/Web matrix: `169 passed, 480 subtests passed` (2026-08-06).
-- Full matrix: `unittest` `1565 OK (skipped=11)`; serial and xdist pytest both
-  `1554 passed, 11 skipped, 927 subtests`; the Windows PyInstaller smoke passed with unittest.
-- `ruff check .`, Pyright `0 errors, 0 warnings`, compileall, public Demo validation, `pip check`,
-  history safety, fsck, and diff checks passed. A full Pyright run found 12 union-narrowing errors;
-  the dispatch-only repair preserves runtime behavior and passed the complete matrix again.
+- The 1,024/1,025 runtime boundary regression passed `13` tests: a 1,024-item projection remains visible, while
+  a 1,025-item projection rejects before player-safe view output without changing state or the event sequence.
+- Full matrix: `unittest` `1566 OK (skipped=12)`; serial pytest `1554 passed, 12 skipped`; xdist pytest
+  `1554 passed, 12 skipped, 924 subtests passed`.
+- `ruff check .`, Pyright `0 errors, 0 warnings`, compileall, public Demo validation, `pip check`, history
+  safety, fsck, worktree diff, and baseline-range diff checks passed. The 12 skips are the local absence of the
+  PyInstaller toolchain and Windows symlink privilege; they are not reported as passes.
 - Real `reference_counter` preview/simulate/replay/proof, SDK/structured-CLI byte parity, generic Web
   optional-host transport, and empty-requirement V2-2 compatibility are covered.
 
 ### Resume Gate, Risks, and Boundaries
 
-- The full unittest/pytest/static/security/packaging matrix passed. A full Pyright run exposed 12
-  union-narrowing errors; the dispatch-only repair now passes Pyright and the complete matrix again.
-  The candidate is ready for fresh read-only TECH acceptance. Do not push, move/merge `main`, release,
-  or enter V2-4/V2-5.
+- `1495407` received `REVISE` and cannot approve its replacement. The repaired candidate commit and a fresh
+  read-only TECH acceptance are still pending. Do not push, move/merge `main`, release, or enter V2-4/V2-5.
 - `git ls-remote` still times out, so local `origin/*` is not live GitHub evidence. GitHub REST confirms
   live `main=ba729be8d80dbcbefe90a1dc801003deec7c4c95` and draft PR #1 head
   `c37969f6b6958e66474738f88a53b9d5c2f50d99`; no remote write occurred.
-- The candidate tree must be clean after the commit; current Controller verification is not an independent
-  acceptance verdict.
+- The candidate tree must be clean after the commit. A new task must review the exact replacement SHA and must not
+  reuse the prior `1495407` reviewer; current Controller verification is not an independent acceptance verdict.
 
 ## 历史 V2-2 中文快照
 
