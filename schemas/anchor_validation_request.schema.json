@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/anchor_validation_request.schema.json",
+  "title": "Novel Adaptation Anchor Validation Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["previous_anchors", "current_anchors", "migrations"],
+  "properties": {
+    "previous_anchors": { "type": "array", "maxItems": 4096, "items": { "$ref": "https://github.com/lore2mud/lore2mud/schemas/story_anchor.schema.json" } },
+    "current_anchors": { "type": "array", "maxItems": 4096, "items": { "$ref": "https://github.com/lore2mud/lore2mud/schemas/story_anchor.schema.json" } },
+    "migrations": { "type": "array", "maxItems": 4096, "items": { "$ref": "https://github.com/lore2mud/lore2mud/schemas/anchor_migration.schema.json" } }
+  },
+  "$defs": {
+    "stable_id": { "type": "string", "pattern": "^(?!.*(?:private|novel|canon|chapter|excerpt|secret|diary|file_?path|source_?(?:hash|path)|raw_?text))[a-z][a-z0-9_]{0,63}$" }
+  }
+}

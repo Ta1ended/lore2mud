@@ -1,0 +1,73 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/seal_candidate.schema.json",
+  "title": "GamePackage v2 Seal Candidate v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "format_version",
+    "candidate_id",
+    "package",
+    "evidence_manifest",
+    "seal_input_sha256",
+    "provenance_manifest",
+    "anchor_migration_report",
+    "anchor_migration_sha256",
+    "predecessor_package"
+  ],
+  "properties": {
+    "format_version": { "const": 1 },
+    "candidate_id": { "type": "string", "pattern": "^package_[0-9a-f]{24}$" },
+    "package": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/game_package_v2.schema.json"
+    },
+    "evidence_manifest": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/evidence_manifest.schema.json"
+    },
+    "seal_input_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "provenance_manifest": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/provenance_manifest.schema.json"
+    },
+    "anchor_migration_report": {
+      "$ref": "https://github.com/lore2mud/lore2mud/schemas/anchor_migration_report.schema.json"
+    },
+    "anchor_migration_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "predecessor_package": {
+      "oneOf": [
+        { "type": "null" },
+        { "$ref": "https://github.com/lore2mud/lore2mud/schemas/game_package_v2.schema.json" }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "package": { "properties": { "seal_mode": { "const": "initial" } } }
+        }
+      },
+      "then": { "properties": { "predecessor_package": { "type": "null" } } }
+    },
+    {
+      "if": {
+        "properties": {
+          "package": { "properties": { "seal_mode": { "const": "incremental" } } }
+        }
+      },
+      "then": {
+        "properties": {
+          "predecessor_package": {
+            "type": "object",
+            "$ref": "https://github.com/lore2mud/lore2mud/schemas/game_package_v2.schema.json"
+          }
+        }
+      }
+    }
+  ]
+}

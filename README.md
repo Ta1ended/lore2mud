@@ -32,11 +32,17 @@ Lore2MUD 是一个**供开发 Agent 调用的小说转文字游戏引擎**。
 | V1 | 内容包、权威 `World`、CLI/Web、玩法与存档 | 公开可用 |
 | V2-1 | `GameIntent`、`GameSession`、事件、视图与回合结果 | 已验收 |
 | V2-2 | Blueprint、Project、preview、simulation、proofing、SDK/CLI | 已验收 |
-| V2-3 | capability catalog、版本与依赖解析 | 未开始 |
-| V2-4 / V2-5 | package 封存、证据身份与 Agent workbench | 规划中 |
+| V2-3 | capability catalog、版本与依赖解析 | 独立候选，未合并 |
+| V2-4A | provenance/rights、anchor migration、package/evidence identity | 本地候选，未验收、未发布 |
+| V2-5 | Agent workbench | 规划中 |
 
 当前 V2-2 实现位于 `workstream/v2-2-agent-authoring`。它尚未成为 release，preview 也不是
 可分发的 `GamePackage v2`。
+
+V2-4A is a local contract candidate only. A successful `author seal` result is sealed
+for deterministic identity and controlled runtime input, but remains
+`distributable=false` and `release_evidence=false`; it grants no product, security,
+rights, publication, or distribution approval.
 
 ### 已有能力
 
@@ -124,6 +130,9 @@ author preview          构造固定 profile 的不可分发 preview
 author simulate         运行隔离、确定性的模拟
 author replay           重放并验证 SimulationReport witness
 author proof            生成玩家安全的只读 proofing projection
+author validate-provenance  校验公开安全 provenance/rights manifest
+author validate-anchors     校验显式 story/scene/resume anchor migration
+author seal                 生成不可发布的 sealed GamePackage v2 candidate
 ```
 
 完整命令、SDK 和合同说明见

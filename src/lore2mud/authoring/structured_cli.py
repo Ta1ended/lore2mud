@@ -116,6 +116,30 @@ def add_author_parser(
     _add_output_argument(proof_parser)
     proof_parser.set_defaults(func=run_author_command)
 
+    provenance_parser = commands.add_parser(
+        "validate-provenance",
+        help="Validate a public-safe provenance and rights manifest",
+    )
+    provenance_parser.add_argument("--manifest", type=Path, required=True)
+    _add_output_argument(provenance_parser)
+    provenance_parser.set_defaults(func=run_author_command)
+
+    anchor_parser = commands.add_parser(
+        "validate-anchors",
+        help="Validate explicit incremental anchor migrations",
+    )
+    anchor_parser.add_argument("--request", type=Path, required=True)
+    _add_output_argument(anchor_parser)
+    anchor_parser.set_defaults(func=run_author_command)
+
+    seal_parser = commands.add_parser(
+        "seal",
+        help="Build one deterministic sealed GamePackage v2 candidate",
+    )
+    seal_parser.add_argument("--request", type=Path, required=True)
+    _add_output_argument(seal_parser)
+    seal_parser.set_defaults(func=run_author_command)
+
 
 def run_author_command(args: argparse.Namespace) -> int:
     """Execute one parsed authoring command and emit one canonical result."""
@@ -150,6 +174,18 @@ def run_author_command(args: argparse.Namespace) -> int:
     elif command == "proof":
         result = _proof(args)
         protected_inputs = (cast(Path, args.project),)
+        protected_directories = ()
+    elif command == "validate-provenance":
+        result = _validate_provenance(args)
+        protected_inputs = (cast(Path, args.manifest),)
+        protected_directories = ()
+    elif command == "validate-anchors":
+        result = _validate_anchors(args)
+        protected_inputs = (cast(Path, args.request),)
+        protected_directories = ()
+    elif command == "seal":
+        result = _seal(args)
+        protected_inputs = (cast(Path, args.request),)
         protected_directories = ()
     else:
         raise RuntimeError(f"unhandled authoring command: {command}")
@@ -313,6 +349,45 @@ def _proof(args: argparse.Namespace) -> CliAuthoringResult:
     return cast(CliAuthoringResult, sdk.proof(project))
 
 
+def _validate_provenance(args: argparse.Namespace) -> CliAuthoringResult:
+    document, rejected = _read_document(
+        cast(Path, args.manifest),
+        operation="validate_provenance",
+        artifact_id="provenance",
+        reject_duplicate_members=True,
+    )
+    if rejected is not None:
+        return rejected
+    return cast(CliAuthoringResult, AgentAuthoringSDK().validate_provenance_document(document))
+
+
+def _validate_anchors(args: argparse.Namespace) -> CliAuthoringResult:
+    document, rejected = _read_document(
+        cast(Path, args.request),
+        operation="validate_anchors",
+        artifact_id="anchors",
+        reject_duplicate_members=True,
+    )
+    if rejected is not None:
+        return rejected
+    return cast(
+        CliAuthoringResult,
+        AgentAuthoringSDK().validate_anchor_migrations_document(document),
+    )
+
+
+def _seal(args: argparse.Namespace) -> CliAuthoringResult:
+    document, rejected = _read_document(
+        cast(Path, args.request),
+        operation="seal",
+        artifact_id="seal_request",
+        reject_duplicate_members=True,
+    )
+    if rejected is not None:
+        return rejected
+    return cast(CliAuthoringResult, AgentAuthoringSDK().seal_document(document))
+
+
 def _load_project(
     path: Path,
     *,
@@ -332,9 +407,13 @@ def _load_project(
     sdk = AgentAuthoringSDK()
     result = sdk.validate_project_document(document)
     if not result.ok or result.artifact is None:
-        return None, None, _retag_rejection(
-            cast(AuthoringResult[object], result),
-            operation,
+        return (
+            None,
+            None,
+            _retag_rejection(
+                cast(AuthoringResult[object], result),
+                operation,
+            ),
         )
     return sdk, cast(GameProject, result.artifact), None
 
@@ -344,9 +423,17 @@ def _read_document(
     *,
     operation: str,
     artifact_id: str,
+    reject_duplicate_members: bool = False,
 ) -> tuple[object, AuthoringResult[object] | None]:
     try:
-        return read_bounded_json(path, DEFAULT_JSON_READ_LIMITS), None
+        return (
+            read_bounded_json(
+                path,
+                DEFAULT_JSON_READ_LIMITS,
+                reject_duplicate_members=reject_duplicate_members,
+            ),
+            None,
+        )
     except BoundedJsonError as exc:
         return None, _input_validation_rejection(
             operation,
@@ -358,9 +445,7 @@ def _read_document(
         )
 
 
-def _retag_rejection(
-    result: AuthoringResult[object], operation: str
-) -> AuthoringResult[object]:
+def _retag_rejection(result: AuthoringResult[object], operation: str) -> AuthoringResult[object]:
     if not result.ok:
         return AuthoringResult(
             format_version=result.format_version,
@@ -503,9 +588,7 @@ def _project_inputs_from_document(document: object) -> _ProjectInputs:
     return _ProjectInputs(
         public_inputs=tuple(
             _public_input_from_document(item, index)
-            for index, item in enumerate(
-                _transport_array(data["public_inputs"], "/public_inputs")
-            )
+            for index, item in enumerate(_transport_array(data["public_inputs"], "/public_inputs"))
         ),
         creator_decisions=tuple(
             _creator_decision_from_document(item, index)
@@ -536,9 +619,7 @@ def _project_inputs_from_document(document: object) -> _ProjectInputs:
     )
 
 
-def _public_input_from_document(
-    value: object, index: int
-) -> PublicInputDescriptor:
+def _public_input_from_document(value: object, index: int) -> PublicInputDescriptor:
     pointer = f"/public_inputs/{index}"
     data = _transport_object(
         value,
@@ -588,9 +669,7 @@ def _trace_record_from_document(value: object, index: int) -> TraceRecord:
     )
 
 
-def _workspace_metadata_from_document(
-    value: object, index: int
-) -> WorkspaceMetadataEntry:
+def _workspace_metadata_from_document(value: object, index: int) -> WorkspaceMetadataEntry:
     pointer = f"/workspace_metadata/{index}"
     data = _transport_object(value, {"key", "value"}, pointer)
     return WorkspaceMetadataEntry(

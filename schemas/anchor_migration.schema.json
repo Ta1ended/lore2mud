@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/anchor_migration.schema.json",
+  "title": "Novel Adaptation Anchor Migration v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["migration_id", "from_anchor_id", "to_anchor_ids", "decision_id"],
+  "properties": {
+    "migration_id": { "$ref": "#/$defs/stable_id" },
+    "from_anchor_id": { "$ref": "#/$defs/stable_id" },
+    "to_anchor_ids": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 4096,
+      "uniqueItems": true,
+      "items": { "$ref": "#/$defs/stable_id" }
+    },
+    "decision_id": { "$ref": "#/$defs/stable_id" }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^(?!.*(?:private|novel|canon|chapter|excerpt|secret|diary|file_?path|source_?(?:hash|path)|raw_?text))[a-z][a-z0-9_]{0,63}$"
+    }
+  }
+}

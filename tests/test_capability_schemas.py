@@ -90,6 +90,22 @@ NEW_SCHEMA_FILES = (
     "capability_authoring_result.schema.json",
 )
 
+# V2-4A extends the shared authoring envelope/schema vocabulary without changing
+# the V2-3 capability schemas or any runtime/content schema.
+V2_4_SHARED_SCHEMA_FILES = (
+    "authoring_diagnostic.schema.json",
+    "authoring_result.schema.json",
+    "provenance_manifest.schema.json",
+    "seal_request.schema.json",
+    "seal_candidate.schema.json",
+    "game_package_v2.schema.json",
+    "evidence_manifest.schema.json",
+    "story_anchor.schema.json",
+    "anchor_migration.schema.json",
+    "anchor_validation_request.schema.json",
+    "anchor_migration_report.schema.json",
+)
+
 INVALID_SEMVERS = (
     "1.2",
     "v1.2.3",
@@ -141,8 +157,7 @@ def _schema_registry() -> tuple[dict[str, Any], Registry]:
         if "$id" in document
     }
     registry = Registry().with_resources(
-        (uri, Resource.from_contents(document))
-        for uri, document in schemas.items()
+        (uri, Resource.from_contents(document)) for uri, document in schemas.items()
     )
     return schemas, registry
 
@@ -162,9 +177,7 @@ def _schema_name_for_fixture(name: str) -> str:
 def _typed_descriptor(
     *, format_version: int = 1, capability_id: str = "reference_counter"
 ) -> CapabilityDescriptor:
-    empty_schema = _canonical(
-        {"type": "object", "additionalProperties": False, "properties": {}}
-    )
+    empty_schema = _canonical({"type": "object", "additionalProperties": False, "properties": {}})
     counter_schema = _canonical(
         {
             "type": "object",
@@ -193,14 +206,10 @@ def _typed_descriptor(
         observers=(),
         predicates=(),
         effects=(
-            CapabilityEffectDescriptor(
-                effect_id="increment_count", payload_schema=empty_schema
-            ),
+            CapabilityEffectDescriptor(effect_id="increment_count", payload_schema=empty_schema),
         ),
         events=(
-            CapabilityEventDescriptor(
-                event_id="counter_incremented", payload_schema=empty_schema
-            ),
+            CapabilityEventDescriptor(event_id="counter_incremented", payload_schema=empty_schema),
         ),
         player_view_schema=counter_schema,
         dependencies=(),
@@ -332,9 +341,7 @@ class CapabilitySchemaRegistrationTests(unittest.TestCase):
     def test_all_new_schemas_are_registered_and_frozen(self) -> None:
         for name in NEW_SCHEMA_FILES:
             with self.subTest(schema=name):
-                schema = self.schemas[
-                    f"https://github.com/lore2mud/lore2mud/schemas/{name}"
-                ]
+                schema = self.schemas[f"https://github.com/lore2mud/lore2mud/schemas/{name}"]
                 Draft202012Validator.check_schema(schema)
                 self.assertEqual(
                     schema["$schema"],
@@ -381,9 +388,7 @@ class CapabilityFixtureValidationTests(unittest.TestCase):
             schema_name = _schema_name_for_fixture(fixture.name)
             with self.subTest(fixture=fixture.name):
                 validator = Draft202012Validator(
-                    self.schemas[
-                        f"https://github.com/lore2mud/lore2mud/schemas/{schema_name}"
-                    ],
+                    self.schemas[f"https://github.com/lore2mud/lore2mud/schemas/{schema_name}"],
                     registry=self.registry,
                 )
                 validator.validate(_load_fixture(fixture.name))
@@ -401,9 +406,7 @@ class CapabilityTypedSerializationTests(unittest.TestCase):
         cls.schemas, cls.registry = _schema_registry()
 
     def _validator(self, name: str) -> Draft202012Validator:
-        schema = self.schemas[
-            f"https://github.com/lore2mud/lore2mud/schemas/{name}"
-        ]
+        schema = self.schemas[f"https://github.com/lore2mud/lore2mud/schemas/{name}"]
         Draft202012Validator.check_schema(schema)
         return Draft202012Validator(schema, registry=self.registry)
 
@@ -444,9 +447,7 @@ class CapabilityTypedSerializationTests(unittest.TestCase):
                     event_sequence=2,
                     view_sha256=SHA256,
                     fingerprint=SHA256,
-                    rng_state=random_state_to_canonical_json(
-                        random.Random(7).getstate()
-                    ),
+                    rng_state=random_state_to_canonical_json(random.Random(7).getstate()),
                 ),
             ),
         )
@@ -575,9 +576,7 @@ class CapabilityNegativeTests(unittest.TestCase):
         cls.schemas, cls.registry = _schema_registry()
 
     def _validator(self, name: str) -> Draft202012Validator:
-        schema = self.schemas[
-            f"https://github.com/lore2mud/lore2mud/schemas/{name}"
-        ]
+        schema = self.schemas[f"https://github.com/lore2mud/lore2mud/schemas/{name}"]
         Draft202012Validator.check_schema(schema)
         return Draft202012Validator(schema, registry=self.registry)
 
@@ -641,11 +640,7 @@ class CapabilityNegativeTests(unittest.TestCase):
         descriptor = copy.deepcopy(_load_fixture("capability_descriptor.json"))
         descriptor["actions"] = [descriptor["actions"][0]] * 257
         self.assertTrue(
-            list(
-                self._validator("capability_descriptor.schema.json").iter_errors(
-                    descriptor
-                )
-            )
+            list(self._validator("capability_descriptor.schema.json").iter_errors(descriptor))
         )
 
         catalog = copy.deepcopy(_load_fixture("capability_catalog.json"))
@@ -657,40 +652,24 @@ class CapabilityNegativeTests(unittest.TestCase):
         plan = copy.deepcopy(_load_fixture("resolved_capability_plan.json"))
         plan["capabilities"] = plan["capabilities"] * 4097
         self.assertTrue(
-            list(
-                self._validator("resolved_capability_plan.schema.json").iter_errors(
-                    plan
-                )
-            )
+            list(self._validator("resolved_capability_plan.schema.json").iter_errors(plan))
         )
 
         request = copy.deepcopy(_load_fixture("capability_simulation_request.json"))
         request["steps"] = request["steps"] * 513
         self.assertTrue(
-            list(
-                self._validator(
-                    "capability_simulation_request.schema.json"
-                ).iter_errors(request)
-            )
+            list(self._validator("capability_simulation_request.schema.json").iter_errors(request))
         )
         request = copy.deepcopy(_load_fixture("capability_simulation_request.json"))
         request["player_name"] = "x" * 129
         self.assertTrue(
-            list(
-                self._validator(
-                    "capability_simulation_request.schema.json"
-                ).iter_errors(request)
-            )
+            list(self._validator("capability_simulation_request.schema.json").iter_errors(request))
         )
 
         checkpoint = copy.deepcopy(_load_fixture("capability_checkpoint.json"))
         checkpoint["event_sequence"] = -1
         self.assertTrue(
-            list(
-                self._validator("capability_checkpoint.schema.json").iter_errors(
-                    checkpoint
-                )
-            )
+            list(self._validator("capability_checkpoint.schema.json").iter_errors(checkpoint))
         )
 
     def test_int64_bounds_parity_with_canonical_serializer(self) -> None:
@@ -698,15 +677,13 @@ class CapabilityNegativeTests(unittest.TestCase):
             with self.subTest(value=str(value)):
                 with self.assertRaises(CapabilitySerializationError):
                     canonical_json_bytes({"seed": value})
-                request = copy.deepcopy(
-                    _load_fixture("capability_simulation_request.json")
-                )
+                request = copy.deepcopy(_load_fixture("capability_simulation_request.json"))
                 request["seed"] = value
                 self.assertTrue(
                     list(
-                        self._validator(
-                            "capability_simulation_request.schema.json"
-                        ).iter_errors(request)
+                        self._validator("capability_simulation_request.schema.json").iter_errors(
+                            request
+                        )
                     )
                 )
 
@@ -786,9 +763,7 @@ class CapabilityNegativeTests(unittest.TestCase):
             },
         ):
             with self.subTest(step=step):
-                document = copy.deepcopy(
-                    _load_fixture("capability_simulation_request.json")
-                )
+                document = copy.deepcopy(_load_fixture("capability_simulation_request.json"))
                 document["steps"] = [step]
                 self.assertTrue(list(validator.iter_errors(document)))
 
@@ -796,21 +771,13 @@ class CapabilityNegativeTests(unittest.TestCase):
         plan = copy.deepcopy(_load_fixture("resolved_capability_plan.json"))
         plan["requirement_ids"] = ["reference_counter", "reference_counter"]
         self.assertTrue(
-            list(
-                self._validator("resolved_capability_plan.schema.json").iter_errors(
-                    plan
-                )
-            )
+            list(self._validator("resolved_capability_plan.schema.json").iter_errors(plan))
         )
 
         request = copy.deepcopy(_load_fixture("capability_simulation_request.json"))
         request["checkpoint_after_steps"] = [2, 2]
         self.assertTrue(
-            list(
-                self._validator(
-                    "capability_simulation_request.schema.json"
-                ).iter_errors(request)
-            )
+            list(self._validator("capability_simulation_request.schema.json").iter_errors(request))
         )
 
     def test_descriptor_validation_parity_with_typed_core(self) -> None:
@@ -830,9 +797,7 @@ class CapabilityNegativeTests(unittest.TestCase):
         bad_id = copy.deepcopy(_load_fixture("capability_descriptor.json"))
         bad_id["capability_id"] = "bad-id"
         self.assertTrue(list(validator.iter_errors(bad_id)))
-        diagnostics = validate_capability_descriptor(
-            _typed_descriptor(capability_id="bad-id")
-        )
+        diagnostics = validate_capability_descriptor(_typed_descriptor(capability_id="bad-id"))
         self.assertTrue(diagnostics)
 
         duplicate_actions = replace(
@@ -843,9 +808,7 @@ class CapabilityNegativeTests(unittest.TestCase):
             ),
         )
         diagnostics = validate_capability_descriptor(duplicate_actions)
-        self.assertTrue(
-            any("duplicate action IDs" in item.message for item in diagnostics)
-        )
+        self.assertTrue(any("duplicate action IDs" in item.message for item in diagnostics))
 
 
 class CapabilitySchemaProtectionTests(unittest.TestCase):
@@ -853,7 +816,9 @@ class CapabilitySchemaProtectionTests(unittest.TestCase):
         legacy = sorted(
             name
             for name in os.listdir(SCHEMAS_DIR)
-            if name.endswith(".schema.json") and name not in NEW_SCHEMA_FILES
+            if name.endswith(".schema.json")
+            and name not in NEW_SCHEMA_FILES
+            and name not in V2_4_SHARED_SCHEMA_FILES
         )
         self.assertGreater(len(legacy), 0)
         for name in legacy:

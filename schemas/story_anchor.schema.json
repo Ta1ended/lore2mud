@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/lore2mud/lore2mud/schemas/story_anchor.schema.json",
+  "title": "Novel Adaptation Story Anchor v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["anchor_id", "kind", "project_element_id", "package_element_id"],
+  "properties": {
+    "anchor_id": { "$ref": "#/$defs/stable_id" },
+    "kind": { "enum": ["story", "scene", "resume"] },
+    "project_element_id": { "$ref": "#/$defs/stable_id" },
+    "package_element_id": { "$ref": "#/$defs/stable_id" }
+  },
+  "$defs": {
+    "stable_id": {
+      "type": "string",
+      "pattern": "^(?!.*(?:private|novel|canon|chapter|excerpt|secret|diary|file_?path|source_?(?:hash|path)|raw_?text))[a-z][a-z0-9_]{0,63}$"
+    }
+  }
+}

@@ -18,7 +18,18 @@
   "properties": {
     "format_version": { "const": 1 },
     "stage": {
-      "enum": ["blueprint", "project", "preview", "simulation", "proofing", "serialization"]
+      "enum": [
+        "blueprint",
+        "project",
+        "preview",
+        "simulation",
+        "proofing",
+        "serialization",
+        "provenance",
+        "anchor",
+        "package",
+        "seal"
+      ]
     },
     "code": {
       "type": "string",

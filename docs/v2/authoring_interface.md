@@ -1,7 +1,9 @@
-# V2-2 Agent Authoring Interface
+# V2 Authoring Interface
 
 V2-2 adds one public-safe, deterministic authoring path over the accepted V2-1
-runtime boundary:
+runtime boundary. V2-4A extends that same service boundary with public-safe
+provenance/rights validation, explicit anchor migrations, and sealed package-candidate
+identity:
 
 ```text
 approved GameBlueprint v1 + public-safe V1 content inputs
@@ -10,6 +12,8 @@ approved GameBlueprint v1 + public-safe V1 content inputs
   -> fixed-profile unsealed PreviewBuild v1
   -> isolated GameSession simulation
   -> SimulationReport v1 / ProofingProjection v1
+  -> provenance / anchor validation (V2-4A)
+  -> sealed, non-distributable GamePackage v2 candidate + evidence manifest
   -> Python SDK and structured CLI
 ```
 
@@ -212,6 +216,30 @@ or `report`; simulation request resource checks still run before project normali
 Raw decode, attribute, recursion, traversal, and bounded-reader failures are not public
 SDK results.
 
+## V2-4A Provenance, Anchors, And Sealing
+
+`AuthoringService` remains the only policy boundary for the Python SDK, structured CLI,
+and generic Web transport. It adds these operations without adding a second compiler,
+runtime, or `World` authority:
+
+- `validate_provenance_document(manifest)` validates opaque IDs, public-safe source
+  references, rights assertions, creator decisions, transformations, and the complete
+  source-to-project-to-package trace chain.
+- `validate_anchor_migrations_document(request)` validates opaque story, scene, and
+  resume anchors plus explicit migrations for incremental candidates.
+- `seal_document(request)` validates both contracts, replay-verified evidence, pure
+  data package elements, and canonical identities before producing one candidate.
+
+Successful sealing produces `sealed=true`, `distributable=false`, and
+`release_evidence=false`. It is immutable and suitable only for the controlled runtime
+input boundary. It does not grant PRODUCT approval, SECURITY approval, source-rights
+permission beyond the recorded assertion, distribution, publishing, or release.
+Presentation metadata is retained for the workspace but excluded from package and
+evidence identity bytes.
+
+The public synthetic 30-60 minute story-arc smoke and CLI/SDK/Web parity coverage live
+in `tests/test_v2_4_provenance_rights.py`; they use no private source material.
+
 ## Structured CLI
 
 The corresponding commands are:
@@ -223,6 +251,9 @@ python -m lore2mud author preview --project FILE [--output FILE]
 python -m lore2mud author simulate --project FILE --request FILE [--output FILE]
 python -m lore2mud author replay --project FILE --report FILE [--output FILE]
 python -m lore2mud author proof --project FILE [--output FILE]
+python -m lore2mud author validate-provenance --manifest FILE [--output FILE]
+python -m lore2mud author validate-anchors --request FILE [--output FILE]
+python -m lore2mud author seal --request FILE [--output FILE]
 ```
 
 Standard output is one canonical `AuthoringResult v1`. `--output` atomically writes
@@ -238,6 +269,9 @@ conditions. Runtime `campaign.json` remains an optional V1 content-pack input;
 `World` remains the gameplay authority, and simulation submits only typed intents
 through `GameSession`.
 
-V2-2 does not implement capability resolution (V2-3), sealed package/evidence identity
-(V2-4), a workbench or alternate editor/compiler/runtime (V2-5), MCP, dynamic plugins,
-runtime model adjudication, dependency changes, or release/publishing behavior.
+V2-2 compatibility remains unchanged for the empty capability-requirements lane.
+V2-4A adds only provenance/rights closure, anchor migration, canonical package/evidence
+identity, and a sealed non-distributable candidate. It does not implement capability
+resolution, a workbench or alternate editor/compiler/runtime (V2-5), MCP, dynamic
+plugins, runtime model adjudication, dependency changes, release evidence, or
+publishing behavior.

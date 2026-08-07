@@ -62,9 +62,9 @@ rewrite those V1 semantics merely to make every unsuccessful action a rejected i
 ### Preview Versus Sealed Package
 
 V2-2 preview builds are unsealed, non-distributable inputs for isolated validation and
-simulation. They are not release evidence and are not `GamePackage v2`. V2-4 owns
-canonical package identity, sealing, provenance/rights closure, and promotion to a
-distributable `GamePackage v2`.
+simulation. They are not release evidence and are not `GamePackage v2`. V2-4A owns
+canonical package identity, sealing, and provenance/rights closure for a
+non-distributable candidate; distribution and release require later external gates.
 
 Before V2-3, V2-2 preview builds use one engine-defined V1 compatibility profile backed
 by current `World` behavior. The profile is neither package-selectable nor a capability

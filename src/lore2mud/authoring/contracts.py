@@ -32,6 +32,10 @@ class AuthoringStage(str, Enum):
     SIMULATION = "simulation"
     PROOFING = "proofing"
     SERIALIZATION = "serialization"
+    PROVENANCE = "provenance"
+    ANCHOR = "anchor"
+    PACKAGE = "package"
+    SEAL = "seal"
 
 
 class DiagnosticSeverity(str, Enum):

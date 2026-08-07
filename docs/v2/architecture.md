@@ -27,8 +27,9 @@ package-bound runtime input + GameIntent
 The Authoring Plane may call deterministic tools and model-assisted developer Agents.
 It cannot write live game state. The Runtime Plane does not call a model to decide a
 turn and does not execute authored code. V2-2 preview builds are unsealed,
-non-distributable simulation inputs. V2-4 is responsible for sealing canonical bytes
-as a distributable `GamePackage v2`.
+non-distributable simulation inputs. V2-4A seals canonical bytes as a
+non-distributable `GamePackage v2` candidate for the controlled runtime boundary;
+release and distribution authorization remain later external gates.
 
 ## Authoring Contracts
 
@@ -163,6 +164,11 @@ explicit materializer may translate validated authoring artifacts into a
 V2-2 may derive an unsealed preview build from a project and run it only in an
 isolated session. V2-4 owns canonical package identity and promotion to a sealed
 `GamePackage v2`; a sealed build is never regenerated in place.
+
+The V2-4A contract candidate is documented in
+[Novel Adaptation Contracts](novel_adaptation_contracts.md). It keeps provenance,
+rights, package identity, evidence, and anchor migration in the authoring plane;
+only a validated pure-data `GamePackage v2` may cross toward the runtime plane.
 
 The current runtime `campaign.json` belongs to the V1 `ContentPack` contract. Similar
 names do not imply compatibility with the pipeline `CampaignSpec`.

@@ -761,6 +761,35 @@ def _artifact_to_document(value: object) -> object:
         return simulation_report_to_document(value)
     if isinstance(value, ProofingProjection):
         return proofing_to_document(value)
+    # V2-4 contracts live in their own ownership modules. Import lazily here so
+    # those modules can reuse the bounded canonical JSON helpers without a cycle.
+    from lore2mud.authoring.anchors import (
+        AnchorMigrationReport,
+        anchor_migration_report_to_document,
+    )
+    from lore2mud.authoring.packages import (
+        EvidenceManifest,
+        GamePackageV2,
+        SealCandidate,
+        evidence_manifest_to_document,
+        game_package_to_document,
+        seal_candidate_to_document,
+    )
+    from lore2mud.authoring.provenance import (
+        ProvenanceManifest,
+        public_provenance_manifest_to_document,
+    )
+
+    if isinstance(value, ProvenanceManifest):
+        return public_provenance_manifest_to_document(value)
+    if isinstance(value, AnchorMigrationReport):
+        return anchor_migration_report_to_document(value)
+    if isinstance(value, EvidenceManifest):
+        return evidence_manifest_to_document(value)
+    if isinstance(value, GamePackageV2):
+        return game_package_to_document(value)
+    if isinstance(value, SealCandidate):
+        return seal_candidate_to_document(value)
     return typed_value_to_document(value)
 
 

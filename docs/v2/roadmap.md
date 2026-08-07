@@ -176,8 +176,9 @@ identity, and incremental story content.
 - Reserve `GamePackage v2` for canonical sealed bytes. A sealed build is never
   regenerated or replaced in place; any change creates a new candidate identity.
 - Define canonical package identity and a separate canonical evidence-manifest identity
-  when sealing. V2-2 report fingerprints become release evidence only when V2-4 admits
-  and binds them through the sealed evidence manifest.
+  when sealing. V2-2 report fingerprints may be admitted as traceable evidence, but
+  neither they nor a V2-4A sealed candidate are release evidence or distribution
+  authorization; those gates remain external.
 - Use opaque stable story, scene, and resume anchors plus explicit anchor migration
   records for incremental content. Anchors must not expose private source paths or
   raw text.
@@ -206,6 +207,10 @@ identity, and incremental story content.
 
 **Exit:** one public-safe story arc yields a deterministic, traceable, sealed game with
 reviewable adaptation decisions and stable incremental anchors.
+
+The V2-4A local contract candidate is specified in
+[Novel Adaptation Contracts](novel_adaptation_contracts.md). It is not an exit claim,
+publication decision, or authorization to begin V2-5.
 
 ## V2-5 Alpha Workbench
 

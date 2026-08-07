@@ -19,8 +19,18 @@ from lore2mud.authoring.contracts import (
     TraceRecord,
     WorkspaceMetadataEntry,
 )
+from lore2mud.authoring.anchors import (
+    AnchorMigration,
+    AnchorMigrationReport,
+    StoryAnchor,
+)
+from lore2mud.authoring.packages import (
+    SealCandidate,
+    SealRequest,
+)
 from lore2mud.authoring.preview import PreviewResult
 from lore2mud.authoring.proofing import ProofingResult
+from lore2mud.authoring.provenance import ProvenanceManifest
 from lore2mud.authoring.service import AuthoringService
 from lore2mud.authoring.simulation import SimulationResult
 
@@ -71,6 +81,29 @@ class AuthoringServiceProtocol(Protocol):
     def proof(
         self, project: GameProject
     ) -> ProofingResult: ...
+
+    def validate_provenance_document(
+        self, document: object
+    ) -> AuthoringResult[ProvenanceManifest]: ...
+
+    def validate_provenance(
+        self, manifest: ProvenanceManifest
+    ) -> AuthoringResult[ProvenanceManifest]: ...
+
+    def validate_anchor_migrations(
+        self,
+        previous_anchors: tuple[StoryAnchor, ...],
+        current_anchors: tuple[StoryAnchor, ...],
+        migrations: tuple[AnchorMigration, ...],
+    ) -> AuthoringResult[AnchorMigrationReport]: ...
+
+    def validate_anchor_migrations_document(
+        self, document: object
+    ) -> AuthoringResult[AnchorMigrationReport]: ...
+
+    def seal(self, request: SealRequest) -> AuthoringResult[SealCandidate]: ...
+
+    def seal_document(self, document: object) -> AuthoringResult[SealCandidate]: ...
 
 
 class AgentAuthoringSDK:
@@ -138,6 +171,39 @@ class AgentAuthoringSDK:
         self, project: GameProject
     ) -> ProofingResult:
         return self._service.proof(project)
+
+    def validate_provenance_document(
+        self, document: object
+    ) -> AuthoringResult[ProvenanceManifest]:
+        return self._service.validate_provenance_document(document)
+
+    def validate_provenance(
+        self, manifest: ProvenanceManifest
+    ) -> AuthoringResult[ProvenanceManifest]:
+        return self._service.validate_provenance(manifest)
+
+    def validate_anchor_migrations(
+        self,
+        previous_anchors: tuple[StoryAnchor, ...],
+        current_anchors: tuple[StoryAnchor, ...],
+        migrations: tuple[AnchorMigration, ...],
+    ) -> AuthoringResult[AnchorMigrationReport]:
+        return self._service.validate_anchor_migrations(
+            previous_anchors,
+            current_anchors,
+            migrations,
+        )
+
+    def validate_anchor_migrations_document(
+        self, document: object
+    ) -> AuthoringResult[AnchorMigrationReport]:
+        return self._service.validate_anchor_migrations_document(document)
+
+    def seal(self, request: SealRequest) -> AuthoringResult[SealCandidate]:
+        return self._service.seal(request)
+
+    def seal_document(self, document: object) -> AuthoringResult[SealCandidate]:
+        return self._service.seal_document(document)
 
 
 def _default_service() -> AuthoringServiceProtocol:

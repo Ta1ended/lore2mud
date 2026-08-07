@@ -10,9 +10,7 @@ from pathlib import Path
 from typing import TypeAlias
 
 
-JsonValue: TypeAlias = (
-    str | int | float | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
-)
+JsonValue: TypeAlias = str | int | float | bool | None | list["JsonValue"] | dict[str, "JsonValue"]
 
 
 class JsonReadErrorCode(str, Enum):
@@ -56,7 +54,12 @@ DEFAULT_JSON_READ_LIMITS = JsonReadLimits(
 )
 
 
-def read_bounded_json(path: Path, limits: JsonReadLimits) -> JsonValue:
+def read_bounded_json(
+    path: Path,
+    limits: JsonReadLimits,
+    *,
+    reject_duplicate_members: bool = False,
+) -> JsonValue:
     """Read one regular JSON file without unbounded allocation or recursion."""
     try:
         with path.open("rb") as stream:
@@ -69,10 +72,19 @@ def read_bounded_json(path: Path, limits: JsonReadLimits) -> JsonValue:
             detail=str(exc),
         ) from exc
 
-    return parse_bounded_json(raw, limits)
+    return parse_bounded_json(
+        raw,
+        limits,
+        reject_duplicate_members=reject_duplicate_members,
+    )
 
 
-def parse_bounded_json(raw: bytes, limits: JsonReadLimits) -> JsonValue:
+def parse_bounded_json(
+    raw: bytes,
+    limits: JsonReadLimits,
+    *,
+    reject_duplicate_members: bool = False,
+) -> JsonValue:
     """Decode one in-memory UTF-8 JSON payload under the shared read limits."""
     if type(raw) is not bytes:
         raise BoundedJsonError(JsonReadErrorCode.INVALID_JSON)
@@ -93,11 +105,22 @@ def parse_bounded_json(raw: bytes, limits: JsonReadLimits) -> JsonValue:
     def reject_constant(value: str) -> None:
         raise ValueError(f"invalid JSON constant: {value}")
 
+    def unique_object_members(
+        pairs: list[tuple[str, object]],
+    ) -> dict[str, object]:
+        result: dict[str, object] = {}
+        for key, value in pairs:
+            if key in result:
+                raise ValueError("duplicate JSON object member")
+            result[key] = value
+        return result
+
     try:
         decoded: object = json.loads(
             text,
             parse_int=parse_int,
             parse_constant=reject_constant,
+            object_pairs_hook=(unique_object_members if reject_duplicate_members else dict),
         )
     except json.JSONDecodeError as exc:
         raise BoundedJsonError(

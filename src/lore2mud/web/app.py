@@ -56,6 +56,7 @@ from lore2mud.capabilities.serialization import (
     capability_value_to_document,
 )
 from lore2mud.capabilities.runtime import CapabilityRuntimeHost
+from lore2mud.authoring.web_transport import AuthoringWebTransport  # noqa: F401
 from lore2mud.content.models import ContentPack
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.save import SaveLoadService

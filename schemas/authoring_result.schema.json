@@ -23,7 +23,11 @@
         "build_preview",
         "simulate",
         "replay",
-        "proof"
+        "proof",
+        "validate_provenance",
+        "validate_anchors",
+        "seal",
+        "web_transport"
       ]
     },
     "status": { "enum": ["success", "rejected"] },
@@ -44,6 +48,15 @@
         },
         {
           "$ref": "https://github.com/lore2mud/lore2mud/schemas/proofing_projection.schema.json"
+        },
+        {
+          "$ref": "https://github.com/lore2mud/lore2mud/schemas/provenance_manifest.schema.json"
+        },
+        {
+          "$ref": "https://github.com/lore2mud/lore2mud/schemas/anchor_migration_report.schema.json"
+        },
+        {
+          "$ref": "https://github.com/lore2mud/lore2mud/schemas/seal_candidate.schema.json"
         }
       ]
     },
