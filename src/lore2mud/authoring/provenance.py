@@ -20,6 +20,7 @@ _STABLE_ID_RE = re.compile(r"^[a-z][a-z0-9_]{0,63}$")
 _MAX_COLLECTION = 4096
 _MAX_TEXT = 512
 _MAX_PRIVATE_ALIAS_REFINEMENT_ROUNDS = 64
+_PUBLIC_PRIVATE_ELEMENT_KIND = "authorized_adapted_element"
 _PRIVATE_ID_FRAGMENT_RE = re.compile(
     r"(?:private|novel|canon|chapter|excerpt|secret|diary|"
     r"file_?path|source_?(?:hash|path)|raw_?text)",
@@ -396,7 +397,14 @@ def public_provenance_manifest_to_document(
             )
         ],
         "project_elements": [
-            {"element_id": project_element_id(value.element_id), "element_kind": value.element_kind}
+            {
+                "element_id": project_element_id(value.element_id),
+                "element_kind": (
+                    _PUBLIC_PRIVATE_ELEMENT_KIND
+                    if value.element_id in aliases.project_element_ids
+                    else value.element_kind
+                ),
+            }
             for value in sorted(
                 normalized.project_elements, key=lambda item: project_element_id(item.element_id)
             )
@@ -601,7 +609,7 @@ def _build_public_provenance_aliases(
         if node_kind == "project_element":
             return {
                 "node_kind": node_kind,
-                "element_kind": project_element_by_id[identifier].element_kind,
+                "element_kind": _PUBLIC_PRIVATE_ELEMENT_KIND,
             }
         return {"node_kind": node_kind}
 

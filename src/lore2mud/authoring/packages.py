@@ -1412,6 +1412,11 @@ def _public_package_elements(
                     element.project_element_id,
                     element.project_element_id,
                 ),
+                element_kind=(
+                    "authorized_adapted_element"
+                    if element.project_element_id in aliases.project_element_ids
+                    else element.element_kind
+                ),
             )
             for element in elements
         )

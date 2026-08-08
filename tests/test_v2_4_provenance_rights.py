@@ -1116,6 +1116,57 @@ class ProvenanceContractTests(V2_4Fixture):
             "Authorized private source",
         )
 
+    def test_private_component_element_labels_are_anonymized_and_identity_stable(self) -> None:
+        marker = "unpublishedtitle"
+        base = self.private_alias_request()
+
+        def variant(element_kind: str) -> SealRequest:
+            provenance = replace(
+                base.provenance,
+                project_elements=tuple(
+                    replace(element, element_kind=element_kind)
+                    for element in base.provenance.project_elements
+                ),
+            )
+            return replace(
+                base,
+                provenance=provenance,
+                elements=tuple(
+                    replace(element, element_kind=element_kind) for element in base.elements
+                ),
+            )
+
+        first_request = variant(marker)
+        second_request = variant("another_private_label")
+        first_projection = public_provenance_manifest_to_document(first_request.provenance)
+        second_projection = public_provenance_manifest_to_document(second_request.provenance)
+        self.assertEqual(
+            canonical_json_bytes(first_projection),
+            canonical_json_bytes(second_projection),
+        )
+        self.assertNotIn(marker.encode("utf-8"), canonical_json_bytes(first_projection))
+        self.assertTrue(
+            all(
+                item["element_kind"] == "authorized_adapted_element"
+                for item in first_projection["project_elements"]
+            )
+        )
+
+        first = AgentAuthoringSDK().seal(first_request)
+        second = AgentAuthoringSDK().seal(second_request)
+        self.assertTrue(first.ok and second.ok)
+        assert first.artifact is not None and second.artifact is not None
+        first_bytes = canonical_json_bytes(authoring_result_to_document(first))
+        second_bytes = canonical_json_bytes(authoring_result_to_document(second))
+        self.assertEqual(first_bytes, second_bytes)
+        self.assertNotIn(marker.encode("utf-8"), first_bytes)
+        self.assertTrue(
+            all(
+                item.element_kind == "authorized_adapted_element"
+                for item in first.artifact.package.elements
+            )
+        )
+
     def test_private_projection_identity_ignores_opaque_id_spelling(self) -> None:
         base = self.provenance()
 
