@@ -3431,3 +3431,36 @@
   是独立 PRODUCT/SECURITY 决定及另行授权的 release 动作。
 - 取代 / Supersedes: DEC-0116 only for publication and `main` state routing. DEC-0116's TECH `GO`, product-byte freeze,
   privacy, compatibility, release, and later-milestone boundaries remain in force.
+
+## DEC-0118: 完成 V2-4A 本地验收并冻结候选 / Complete V2-4A local acceptance and freeze the candidate
+
+- 日期 / Date: 2026-08-08
+- 状态 / Status: V2-4A exact local product candidate has TECH `GO`, PRODUCT `PRODUCT PASS`, and SECURITY `GO`.
+  Publication, `main` movement, release, distribution, and later-milestone work remain unapproved. / 精确 V2-4A
+  本地产品候选已获得 TECH `GO`、PRODUCT `PRODUCT PASS` 和 SECURITY `GO`；发布、`main` 移动、release、分发和
+  后续里程碑仍未获授权。
+- 背景 / Context: The authorized V2-4A workstream began from `36ff77fb5daa3407a79b0b2359a03a49a63003a0` and produced
+  candidate `badc9a20816a9515b24c98199ca37323a02c1b00` on
+  `workstream/v2-4a-provenance-rights-20260807-r2`. It provides public-safe source/rights/decision/transformation
+  tracing, deterministic package and evidence identity, explicit anchor migration, and shared AuthoringService/SDK/CLI/Web
+  validation without changing `World`, save core, V1 content-pack contracts, or client game rules. The final privacy repair
+  anonymizes private-connected element labels as well as IDs before public sealing.
+- 决定 / Decision: Freeze `badc9a2` as the V2-4A local product candidate; record all three independent gate decisions
+  and update the bilingual handoffs. Preserve candidate bytes, keep `main` read-only, and stop this Goal after the
+  documentation-only local seal. Do not push, merge, release, distribute, access private material, reseal an existing
+  candidate in place, or enter V2-5. / 将 `badc9a2` 冻结为 V2-4A 本地产品候选；记录三项独立门禁并更新双语交接。
+  保持候选字节不变、`main` 只读，并在 documentation-only 本地封存后停止本 Goal。不得 push、合并、release、分发、
+  访问私人材料、原地重封已有候选或进入 V2-5。
+- 证据 / Evidence: Focused V2-4 contracts passed `56`; the public-safe 30–60 minute story-arc smoke passed `1`;
+  full pytest passed `1619` with `3` conditional skips and full unittest passed `1622` with `3` conditional skips.
+  Ruff, Pyright, compileall, public Demo validation, `pip check`, `git diff --check`, history safety, and
+  `git fsck --full --no-dangling` passed. Fresh TECH found P0-P3 empty and returned `GO`; fresh PRODUCT found P0-P3
+  empty and returned `PRODUCT PASS`; fresh SECURITY found P0-P3 empty and returned `GO`. Live `origin/main` and
+  `origin/workstream/v2-3-capability-modules` were both rechecked at `36ff77`; the main checkout's user-owned untracked
+  `uv.lock` stayed outside this candidate.
+- 后果 / Consequences: V2-4A contracts are locally accepted but not published. The next task must be selected by a new
+  product decision, rather than inferred from this candidate or any gate. The separate housekeeping branch remains
+  independent; no merge or scope transfer is implied. / V2-4A contracts 已在本地验收但尚未发布。下一任务必须由新的产品
+  决定选择，不能由本候选或任何门禁推断。独立 housekeeping 分支仍保持独立；本记录不暗示合并或范围转移。
+- 取代 / Supersedes: The V2-3 routing in DEC-0117 only as the current-task pointer. DEC-0117 remains the historical
+  record of V2-3 publication; its publication and release boundaries are unchanged.

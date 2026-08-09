@@ -24,25 +24,22 @@ Lore2MUD 是一个**供开发 Agent 调用的小说转文字游戏引擎**。
 
 ### 当前状态
 
-> 状态快照：2026-08-05。V2-2 已完成 TECH、PRODUCT 和 SECURITY 门禁，
-> 但这不等于 release、`main` 集成或 V2-3 授权。
+> 状态快照：2026-08-08。V2-3 已发布到 `main`；V2-4A 本地候选已完成独立 TECH、
+> PRODUCT 和 SECURITY 门禁，但仍未 push、合并或发布。
 
 | 里程碑 | 交付内容 | 状态 |
 |---|---|---|
 | V1 | 内容包、权威 `World`、CLI/Web、玩法与存档 | 公开可用 |
 | V2-1 | `GameIntent`、`GameSession`、事件、视图与回合结果 | 已验收 |
 | V2-2 | Blueprint、Project、preview、simulation、proofing、SDK/CLI | 已验收 |
-| V2-3 | capability catalog、版本与依赖解析 | 独立候选，未合并 |
-| V2-4A | provenance/rights、anchor migration、package/evidence identity | 本地候选，未验收、未发布 |
+| V2-3 | capability catalog、版本与依赖解析 | 已发布到 `main` |
+| V2-4A | provenance/rights、anchor migration、package/evidence identity | 本地验收完成，未发布 |
 | V2-5 | Agent workbench | 规划中 |
 
-当前 V2-2 实现位于 `workstream/v2-2-agent-authoring`。它尚未成为 release，preview 也不是
-可分发的 `GamePackage v2`。
-
-V2-4A is a local contract candidate only. A successful `author seal` result is sealed
-for deterministic identity and controlled runtime input, but remains
-`distributable=false` and `release_evidence=false`; it grants no product, security,
-rights, publication, or distribution approval.
+V2-4A 本地候选为 `badc9a20816a9515b24c98199ca37323a02c1b00`。它具有 TECH `GO`、
+PRODUCT `PRODUCT PASS` 与 SECURITY `GO`，但这些本地门禁不授权 push、`main` 合并、
+release、分发或进入 V2-5。`author seal` 的结果用于确定性身份与受控运行时输入，仍保持
+`distributable=false` 和 `release_evidence=false`；产品所有者继续负责实际来源权利与发布决定。
 
 ### 已有能力
 
@@ -62,6 +59,8 @@ rights, publication, or distribution approval.
 - 隔离 `GameSession` 模拟、witness replay 和 save/load checkpoint 等价性
 - `SimulationReport v1`、玩家安全的 admissible intents 和只读 proofing
 - 调用同一 `AuthoringService` 的 Python SDK 与 structured CLI
+- 公开安全 provenance/rights 图、创作者决定、转换记录与完整 trace binding
+- 确定性 `GamePackage v2` / evidence manifest 身份，以及显式 story/scene/resume anchor migration
 
 ### 架构
 
@@ -199,8 +198,8 @@ free-form model adjudication.
 
 ### Status
 
-As of August 5, 2026, V2-2 has completed TECH, PRODUCT, and SECURITY gates. This does not
-authorize release, `main` integration, or V2-3.
+As of August 8, 2026, V2-3 is published to `main`. The local V2-4A candidate has completed
+independent TECH, PRODUCT, and SECURITY gates, but it has not been pushed, merged, or released.
 
 The accepted V2-2 workstream provides:
 
@@ -209,6 +208,14 @@ The accepted V2-2 workstream provides:
 - isolated `GameSession` simulation and replayable `SimulationReport v1` evidence;
 - player-safe admissible intents and read-only proofing projections;
 - one shared implementation exposed through the Python SDK and structured CLI.
+- public-safe provenance/rights graphs, creator decisions, transformations, and complete trace bindings;
+- deterministic `GamePackage v2` and evidence-manifest identity with explicit story/scene/resume anchor migration.
+
+The V2-4A local candidate is `badc9a20816a9515b24c98199ca37323a02c1b00`. Its TECH `GO`,
+PRODUCT `PRODUCT PASS`, and SECURITY `GO` do not authorize push, `main` movement, release,
+distribution, or V2-5. An `author seal` result is for deterministic identity and controlled
+runtime input only; it remains `distributable=false` and `release_evidence=false`, while the
+product owner remains responsible for actual source rights and publication decisions.
 
 Try the public runtime:
 

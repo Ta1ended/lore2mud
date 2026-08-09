@@ -1,141 +1,115 @@
 # 项目状态 / Project State
 
-更新日期：2026-08-07
+更新日期：2026-08-08
 
-## 当前 V2-3 检查点
+## 当前 V2-4A 检查点
 
 ### 目标
 
-在隔离分支完成 Lore2MUD V2-3 Capability Module Architecture：以 engine-shipped
-catalog/resolver 驱动 capability preview、隔离 runtime、checkpoint/replay 证据，并让
-Authoring、SDK、结构化 CLI 与 Web 共用通用边界；不改变 `World`、save core 或私有材料边界。
+在独立 worktree 中交付 Novel Adaptation provenance/rights contracts：把公开安全或已授权的来源引用、
+rights assertion、创作者决定和转换记录连接到 `GameProject v1`、确定性 `GamePackage v2`、evidence
+manifest 与显式 story/scene/resume anchor migration；`World` 继续是 V1 兼容权威。
 
 ### 当前状态
 
-- 工作树：`D:\MUD game kaifa\.codex-worktrees\v2-3-capability-modules-20260806`；分支
-  `workstream/v2-3-capability-modules`；替代候选精确 SHA 为
-  `aa56770ccbefa77ab405ef5739dab769e6536592`。此前候选 `14954070238ec6e3f2255b1c18d31214b3172d49`
-  收到独立 TECH `REVISE`，其唯一 P2 是 runtime 可投影 1,025 个 intent，而公开 Schema 上限为 1,024。
-- 授权基线：`c37969f6b6958e66474738f88a53b9d5c2f50d99`。替代候选在通用 capability runtime 中执行 1,024 项
-  上限，并为 1,024/1,025 边界添加回归；拒绝路径保持 capability state 与 event sequence 不变。
-- 全新、未参与旧实现或旧验收的 read-only TECH reviewer 已对精确 `aa56770` 给出 P0-P3 全空的 `GO`。
-  本 documentation-only seal 完成 V2-3 TECH handoff；Goal 可在该 seal 提交后完成。
-- 产品负责人于 2026-08-07 明确授权 push 与合并 `main`；documentation seal
-  `26fe8428d39f366e068ba7986975322e72d0f355` 已正常快进发布到
-  `origin/workstream/v2-3-capability-modules` 和 `origin/main`。发布操作完成时两个远端 ref 均精确指向该 SHA；本次
-  追加的记录仍只改变文档。
-- PRODUCT PASS、SECURITY PASS、release、preview/report 分发与后续里程碑仍是独立门禁，不能由 TECH GO 或发布操作推断。
+- 产品候选：`badc9a20816a9515b24c98199ca37323a02c1b00`，分支
+  `workstream/v2-4a-provenance-rights-20260807-r2`；父基线为
+  `36ff77fb5daa3407a79b0b2359a03a49a63003a0`。
+- 全新只读 reviewer 对精确候选给出 TECH `GO`、PRODUCT `PRODUCT PASS`、SECURITY `GO`；三项
+  findings 均为 P0-P3 空。
+- 本地与 live `origin/main`、`origin/workstream/v2-3-capability-modules` 仍为 `36ff77`。没有 push、
+  merge、`main` 移动、release 或分发授权；本次交接记录不改变产品候选字节。
 
 ### 已完成
 
-- `src/lore2mud/capabilities/`：SemVer、catalog、resolver、reference capability、runtime
-  transaction 与 checkpoint persistence 已在此前 clean checkpoint 完成。
-- `src/lore2mud/authoring/preview.py`：空 requirements 保留 `PreviewBuild`，非空 requirements
-  返回解析后的 `CapabilityPreview` 并按当前 catalog 验证。
-- `src/lore2mud/authoring/simulation.py`：mixed intent、namespaced state/hash、event/view
-  evidence、checkpoint restore、replay 与 capability report 已接通；资源拒绝先于 project/preview。
-- `src/lore2mud/authoring/proofing.py`：capability host 只输出 `GameView` 中的 player-safe
-  capability views，并保留 base proofing projection。
-- `src/lore2mud/authoring/service.py`、`sdk.py`、`structured_cli.py` 与 `src/lore2mud/web/app.py`：
-  通用 wrapper 类型、SDK/CLI parity、可选 Web host 注入已接通；没有 capability-specific route。
+- `src/lore2mud/authoring/provenance.py`、`packages.py` 与 `anchors.py` 定义并验证稳定来源、rights、
+  决定、转换、trace binding、公共匿名投影、证据身份和 anchor migration contracts。
+- sealed provenance 强制每个 `GameProject v1` 元素拥有完整 trace；私有来源连通图的 ID 和 element label
+  投影为公开安全的确定性别名，不暴露路径、原文、来源哈希或私有标识。
+- `GamePackage v2` 与 evidence manifest 使用 canonical bytes、SHA-256 与候选 ID；presentation metadata
+  不影响语义身份，已封存 package 不能原地重封。
+- Python SDK、structured CLI 与通用 Web transport 委托同一 `AuthoringService`，保持成功/拒绝诊断和
+  字节结果一致；空 capability requirements 的 V2-2 lane 保持兼容。
 
 ### 已验证
 
-- 1,024/1,025 runtime 边界回归：`13 passed`；1,024 项投影保持可见，1,025 项在 player-safe
-  view 输出前拒绝且不改变 state/event sequence。
-- 发布前最终 Controller xdist 矩阵为 `1564 passed, 2 skipped, 927 subtests passed`；PyInstaller packaging 与
-  Windows symbolic-link 检查见下方发布验证记录。
-- `ruff check .`、Pyright `0 errors, 0 warnings`、compileall、公开 Demo validate、`pip check`、
-  history safety、fsck、工作树 diff 与基线范围 diff 检查均通过。独立 reviewer 早期环境的工具缺口与其历史
-  skip 不得误记为当前失败。
-- 独立 TECH acceptance 在精确 `aa56770` 上复现 1,024 项 projection 成功、1,025 项以
-  `CapabilityRuntimeError` 拒绝，确认 capability state 不变且 event sequence 为 `0`；独立聚焦矩阵为
-  `96 passed` 与 `58 passed` 两组；该 reviewer 的完整 unittest/serial 记录分别为 `1566 OK (skipped=12)` 与
-  `1554 passed, 12 skipped`。独立 reviewer 未安装 Ruff、Pyright、xdist，已明确记录为工具缺口；Controller
-  随后在仓库外工具环境补跑这些门禁。
-- 真实 `reference_counter` preview/simulate/replay/proof 以及 SDK/结构化 CLI 字节等价已覆盖；
-  Web optional-host generic snapshot/action 与 V2-2 legacy compatibility 也已覆盖。
-- 发布前最终 xdist pytest 为 `1564 passed, 2 skipped, 927 subtests passed`；PyInstaller Windows packaging 聚焦矩阵为
-  `17 passed, 12 subtests passed`，手工 Windows symbolic-link 创建成功。对应精确 `26fe842` 的 GitHub Actions tests
-  runs `31156995926`、`31156931379` 与 quality runs `31156995982`、`31156931281` 全部为 `completed/success`；全量剩余
-  两个 skip 为 POSIX-only symlink 测试。
+- focused V2-4 contract suite：`56 passed`；公开安全 30–60 分钟故事弧 smoke：`1 passed`。
+- 全量 pytest：`1619 passed, 3 skipped`；全量 unittest：`1622 tests OK, skipped=3`。跳过项仅为两个
+  Windows symlink 环境测试和未安装 PyInstaller 的 Windows toolchain 测试。
+- Ruff、Pyright、compileall、公开 Demo validation、`pip check`、`git diff --check`、
+  `check_repo_safety.py --history` 与 `git fsck --full --no-dangling` 均通过。
+- 主工作树用户保留的未跟踪 `uv.lock` 仍为 14,471 bytes，SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`，未纳入候选。
 
-### 暂停与未完成
+### 边界与下一门禁
 
-- V2-3 技术候选已冻结于 `aa56770`，独立 TECH `GO` 与本 documentation-only seal 已完成；本 Goal 不再有
-  产品实现工作。
-- workstream push 与 `main` 移动/合并已按用户授权完成；PRODUCT PASS、SECURITY PASS、release、preview/report 分发及
-  V2-4/V2-5 仍是后续独立授权，不得由本 seal 或发布操作推断或自动执行。
-
-### 实时证据与风险
-
-- 发布前 live ref 核对确认 `main` 与 V2-3 workstream 均为
-  `26fe8428d39f366e068ba7986975322e72d0f355`，随后正常快进发布成功；GitHub Actions 对该精确 SHA 的 tests/quality
-  均为 `completed/success`。本提交是其后的 documentation-only publication record，父提交为 `26fe842`，不改变产品字节。
-- `aa56770` 候选及其技术封存仍是唯一 TECH verdict（P0-P3 全空 `GO`）；工作树在记录提交后应保持仅有本次四份文档的
-  预期变更，主工作树用户保留的未跟踪 `uv.lock` 不纳入任何提交。
+- V2-4A 的本地实现与三项验收已经完成；交接文档只记录该事实。它不授权 push、`main` 合并、release、
+  分发、私人材料访问或重新封存现有 candidate。
+- 下一项工作必须由新的产品决定明确指定；不得由本 Goal 自动进入 V2-5、Workbench、动态插件、
+  多人运行或运行时模型裁决。
 
 ### 关键路径
 
-- `docs/v2/capability_modules.md`：V2-3 边界与数据流。
-- `src/lore2mud/capabilities/`：capability contracts/runtime/persistence。
-- `src/lore2mud/authoring/`：preview/simulation/proofing/service/SDK/CLI。
-- `src/lore2mud/web/app.py`：通用 Web transport 与可选 host 注入。
-- `tests/test_authoring_end_to_end.py`、`tests/test_v2_3_legacy_compatibility.py`：端到端与空 lane 证据。
+- `docs/v2/novel_adaptation_contracts.md`：V2-4A 数据流、边界与非目标。
+- `src/lore2mud/authoring/provenance.py`、`packages.py`、`anchors.py`：核心 contracts 与 identity。
+- `src/lore2mud/authoring/service.py`、`sdk.py`、`structured_cli.py`、`web_transport.py`：共用 transport 边界。
+- `tests/test_v2_4_provenance_rights.py`：trace、privacy、identity、anchor 与 parity 证据。
 
-## Current V2-3 Checkpoint (English)
+## Current V2-4A Checkpoint (English)
 
 ### Objective
 
-Complete Lore2MUD V2-3 Capability Module Architecture on the isolated branch: use the
-engine-shipped catalog/resolver for capability previews, isolated runtime, checkpoint/replay
-evidence, and shared Authoring/SDK/structured-CLI/Web boundaries without changing `World`, save
-core, or private-material boundaries.
+Deliver Novel Adaptation provenance/rights contracts in an isolated worktree: connect public-safe or
+authorized source references, rights assertions, creator decisions, and transformations to `GameProject v1`,
+deterministic `GamePackage v2`, evidence manifests, and explicit story/scene/resume anchor migration while
+`World` remains the V1 compatibility authority.
 
 ### Current Status
 
-- Worktree: `D:\MUD game kaifa\.codex-worktrees\v2-3-capability-modules-20260806`; branch
-  `workstream/v2-3-capability-modules`. The exact replacement candidate is
-  `aa56770ccbefa77ab405ef5739dab769e6536592`. Prior candidate
-  `14954070238ec6e3f2255b1c18d31214b3172d49` received independent TECH `REVISE`; its sole P2 was that runtime
-  could project 1,025 intents while the public Schema caps them at 1,024.
-- Authorized baseline: `c37969f6b6958e66474738f88a53b9d5c2f50d99`. The replacement enforces the 1,024-item limit
-  in generic capability runtime and adds 1,024/1,025 boundary coverage; rejection preserves capability state and
-  the event sequence.
-- A fresh, non-implementing, read-only TECH reviewer inspected exact `aa56770`, independently reproduced the boundary,
-  found P0-P3 empty, and returned `GO`. This documentation-only seal completes the V2-3 TECH handoff and permits Goal
-  completion. The product owner then explicitly authorized publication and `main` integration of the seal; PRODUCT PASS,
-  SECURITY PASS, release, and later milestones remain separate gates.
+- Product candidate: `badc9a20816a9515b24c98199ca37323a02c1b00` on
+  `workstream/v2-4a-provenance-rights-20260807-r2`, based on
+  `36ff77fb5daa3407a79b0b2359a03a49a63003a0`.
+- Fresh read-only reviewers returned TECH `GO`, PRODUCT `PRODUCT PASS`, and SECURITY `GO` for that exact
+  candidate, with P0-P3 empty in all three findings reports.
+- Local and live `origin/main` plus `origin/workstream/v2-3-capability-modules` remain at `36ff77`. No push,
+  merge, `main` movement, release, or distribution was authorized; this handoff record does not change product bytes.
 
-### Verified Checkpoint
+### Completed
 
-- The 1,024/1,025 runtime boundary regression passed `13` tests: a 1,024-item projection remains visible, while
-  a 1,025-item projection rejects before player-safe view output without changing state or the event sequence.
-- Final pre-publication Controller xdist matrix: `1564 passed, 2 skipped, 927 subtests passed`; focused packaging and
-  Windows symbolic-link evidence are recorded below.
-- `ruff check .`, Pyright `0 errors, 0 warnings`, compileall, public Demo validation, `pip check`, history
-  safety, fsck, worktree diff, and baseline-range diff checks passed. The earlier independent-review tool gaps are not
-  treated as current product failures.
-- Independent TECH acceptance on exact `aa56770` reproduced a successful 1,024-item projection and a 1,025-item
-  `CapabilityRuntimeError` with unchanged capability state and event sequence `0`; its two focused groups passed `96`
-  and `58` tests, while its historical full unittest/serial records were `1566` with 12 skips and `1554` with 12 skips.
-  The reviewer lacked Ruff, Pyright, and xdist; those tool gaps were recorded rather than treated as passes, while the
-  Controller later ran them from repository-external tools.
-- Real `reference_counter` preview/simulate/replay/proof, SDK/structured-CLI byte parity, generic Web
-  optional-host transport, and empty-requirement V2-2 compatibility are covered.
-- Before publication, final xdist pytest passed `1564` tests with `2` POSIX-only skips and `927` subtests; the focused
-  PyInstaller packaging matrix passed `17` tests and `12` subtests, and manual Windows symbolic-link creation succeeded.
-  Exact-head Actions tests `31156995926`/`31156931379` and quality `31156995982`/`31156931281` all completed successfully.
+- `src/lore2mud/authoring/provenance.py`, `packages.py`, and `anchors.py` define and validate stable source,
+  rights, decision, transformation, trace-binding, public-anonymization, evidence-identity, and anchor-migration
+  contracts.
+- Sealed provenance requires a complete trace for every `GameProject v1` element. Private-source components project
+  IDs and element labels to deterministic public-safe aliases without exposing paths, raw text, source hashes, or
+  private identifiers.
+- `GamePackage v2` and the evidence manifest use canonical bytes, SHA-256, and candidate IDs; presentation metadata
+  does not affect semantic identity, and sealed packages cannot be resealed in place.
+- The Python SDK, structured CLI, and generic Web transport delegate to one `AuthoringService`, preserving success and
+  rejection diagnostics plus byte results. The empty-capability-requirements V2-2 lane remains compatible.
 
-### Resume Gate, Risks, and Boundaries
+### Verified
 
-- V2-3 technical bytes are frozen at `aa56770`, and the fresh independent TECH verdict is `GO` with P0-P3 empty.
-  The documentation-only seal was published and merged to `main` under explicit user authorization; no further product
-  implementation belongs to this Goal. PRODUCT PASS, SECURITY PASS, release, or V2-4/V2-5 work still require their own gates.
-- The live publication check found both remote refs at `26fe8428d39f366e068ba7986975322e72d0f355`; this post-publication
-  record is documentation-only and keeps `aa56770` as the product-byte identity.
-- The exact replacement SHA was independently reviewed by a fresh task; its findings-first `GO` remains the sole TECH verdict
-  for V2-3. The main checkout's untracked `uv.lock` remains user-owned and outside the change.
+- Focused V2-4 contract suite: `56 passed`; public-safe 30–60 minute story-arc smoke: `1 passed`.
+- Full pytest: `1619 passed, 3 skipped`; full unittest: `1622 tests OK, skipped=3`. Skips are only two Windows
+  symlink environment tests and one Windows PyInstaller-toolchain test.
+- Ruff, Pyright, compileall, public Demo validation, `pip check`, `git diff --check`,
+  `check_repo_safety.py --history`, and `git fsck --full --no-dangling` passed.
+- The main checkout's user-owned untracked `uv.lock` remains 14,471 bytes with SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`, outside the candidate.
+
+### Boundaries And Next Gate
+
+- V2-4A local implementation and all three acceptance gates are complete. This handoff records that fact only; it
+  grants no push, `main` integration, release, distribution, private-material access, or resealing authority.
+- A new product decision must name the next task. This Goal must not automatically enter V2-5, Workbench, dynamic
+  plugins, multiplayer runtime, or runtime model adjudication.
+
+### Key Paths
+
+- `docs/v2/novel_adaptation_contracts.md`: V2-4A data flow, boundaries, and non-goals.
+- `src/lore2mud/authoring/provenance.py`, `packages.py`, `anchors.py`: core contracts and identity.
+- `src/lore2mud/authoring/service.py`, `sdk.py`, `structured_cli.py`, `web_transport.py`: shared transport boundary.
+- `tests/test_v2_4_provenance_rights.py`: trace, privacy, identity, anchor, and parity evidence.
 
 ## 历史 V2-2 中文快照
 

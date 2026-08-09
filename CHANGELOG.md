@@ -4,6 +4,15 @@
 
 ### Added
 
+- 新增 V2-4A Novel Adaptation provenance/rights contracts：公开安全的 source reference、rights assertion、
+  creator decision、transformation、完整 `GameProject v1` trace binding、确定性公共匿名投影，以及显式
+  story/scene/resume anchor migration。`GamePackage v2` 与 evidence manifest 现在具有 canonical bytes、
+  SHA-256 和候选 identity；Python SDK、structured CLI 与通用 Web transport 使用同一 AuthoringService 边界。
+- Added V2-4A Novel Adaptation provenance/rights contracts: public-safe source references, rights assertions,
+  creator decisions, transformations, complete `GameProject v1` trace bindings, deterministic public anonymization,
+  and explicit story/scene/resume anchor migration. `GamePackage v2` and the evidence manifest now have canonical
+  bytes, SHA-256, and candidate identity; the Python SDK, structured CLI, and generic Web transport share one
+  AuthoringService boundary.
 - Implemented the V2-3 capability authoring lane across `src/lore2mud/authoring/` and
   `src/lore2mud/web/app.py`: resolved `CapabilityPreview`, mixed `CapabilitySimulationReport`,
   player-safe `CapabilityProofingProjection`, shared SDK/structured-CLI envelopes, and optional
@@ -14,6 +23,13 @@
 
 ### Fixed
 
+- 修复私有来源连通图的 element label 泄露：public provenance 与 sealed package 现在把私有连接的
+  `element_kind` 规范化为公开安全值，且身份 alias refinement 不再依赖原始私有 label。回归证明私有 label 的
+  拼写变化不改变公开 projection 或 sealed candidate identity。
+- Fixed private-source-component element-label leakage: public provenance and sealed packages now normalize
+  private-connected `element_kind` values to a public-safe value, and alias refinement no longer depends on the
+  original private label. Regression coverage proves private-label spelling changes neither the public projection
+  nor sealed-candidate identity.
 - 修复独立 TECH 验收在 V2-3 候选 `1495407` 发现的 capability player-view 基数 P2：公开 Schema
   将 `admissible_intents` 限制为最多 1,024 项，因此通用 runtime 现在在输出投影前拒绝超过该上限的
   capability；新增 1,024/1,025 边界回归，并确认拒绝不改变 capability state 或 event sequence。
@@ -28,6 +44,12 @@
 
 ### Changed
 
+- 记录精确 V2-4A 本地候选 `badc9a20816a9515b24c98199ca37323a02c1b00` 的独立 TECH `GO`、
+  PRODUCT `PRODUCT PASS` 与 SECURITY `GO`，三项 P0-P3 均为空。该本地封存不授予 push、`main` 移动、
+  release、分发、私人材料访问或 V2-5 权限。
+- Recorded independent TECH `GO`, PRODUCT `PRODUCT PASS`, and SECURITY `GO` for exact V2-4A local candidate
+  `badc9a20816a9515b24c98199ca37323a02c1b00`, with P0-P3 empty in all three reports. This local seal grants no
+  push, `main` movement, release, distribution, private-material access, or V2-5 authority.
 - 记录 V2-3 替代候选 `aa56770ccbefa77ab405ef5739dab769e6536592` 的 fresh read-only TECH acceptance：独立 reviewer
   复现了 1,024/1,025 intent 边界，P0-P3 全空并给出 `GO`。本 documentation-only seal 不改变产品候选字节，
   也不授予 PRODUCT PASS、SECURITY PASS、push、`main` 移动、release 或后续里程碑权限。
