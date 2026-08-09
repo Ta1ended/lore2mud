@@ -3464,3 +3464,40 @@
   决定选择，不能由本候选或任何门禁推断。独立 housekeeping 分支仍保持独立；本记录不暗示合并或范围转移。
 - 取代 / Supersedes: The V2-3 routing in DEC-0117 only as the current-task pointer. DEC-0117 remains the historical
   record of V2-3 publication; its publication and release boundaries are unchanged.
+
+## DEC-0119: 发布 V2-4A 文档封存并纯快进整合 main / Publish the V2-4A documentation seal and fast-forward main
+
+- 日期 / Date: 2026-08-09
+- 状态 / Status: V2-4A documentation seal is published and fast-forward integrated into `main` under explicit
+  product-owner authorization. Release, content distribution, private-material access, and V2-5 remain separate,
+  unauthorized gates. / V2-4A documentation seal 已在产品所有者明确授权下发布并纯快进整合到 `main`；release、
+  内容分发、私人材料访问与 V2-5 仍是独立且未授权的门禁。
+- 背景 / Context: The frozen V2-4A product candidate is
+  `badc9a20816a9515b24c98199ca37323a02c1b00`; its documentation-only acceptance seal is
+  `c7e3280083ebc77a2b453f9bc057df302b00202a` on
+  `workstream/v2-4a-provenance-rights-20260807-r2`. The product owner explicitly authorized closing the private
+  playtest service and continuing V2-4 through normal push and `main` integration on August 9, 2026.
+- 决定 / Decision: Record the completed non-force publication of `c7e3280` to
+  `origin/workstream/v2-4a-provenance-rights-20260807-r2` and the pure fast-forward of `origin/main` from `36ff77f`
+  to the same SHA. At publication completion, a fresh `git ls-remote` showed both live refs exactly at `c7e3280`.
+  This follow-up commit changes only the five public handoff/decision documents and leaves product, Schema, source,
+  and test bytes unchanged. / 记录 `c7e3280` 已无强制推送地发布到工作分支，并将 `origin/main` 从 `36ff77f`
+  纯快进到同一 SHA；发布完成时实时远端查询确认两个 ref 均精确位于 `c7e3280`。本后续提交仅修改五份公共
+  交接/决策文档，不改变产品、Schema、源码或测试字节。
+- 证据 / Evidence: Before publication, full pytest passed `1619` with `3` conditional skips. A bare host
+  `python -m unittest discover` first imported the editable package from the main checkout and failed during candidate
+  test collection; after explicitly selecting the candidate `src`, the complete unittest matrix passed `1622` with
+  `3` conditional skips. Ruff, Pyright, compileall, public Demo validation, `pip check`, history safety,
+  `git fsck --full --no-dangling`, and range `git diff --check` passed. Both worktrees were clean except for the
+  preserved main-checkout `uv.lock` at 14,471 bytes and SHA-256
+  `3b47a6e779ce74c7b91e899c93f00f353d99986ee2168d5ab8f1275e35de73fc`.
+- 后果 / Consequences: V2-4A contracts are now available on public `main`, while frozen product identity remains
+  `badc9a2`. The next routed V2-4 work is a new public-safe V2-4B / PLAT-1 presentation slice that localizes stable
+  IDs before player display and projects an explicit completion/ending result in CLI/Web, using synthetic fixtures
+  rather than private story material. It requires its own implementation verification and fresh independent TECH
+  acceptance; no automatic push, `main` movement, release, distribution, or V2-5 follows. / V2-4A contracts 现已进入
+  公共 `main`，冻结产品身份仍为 `badc9a2`。下一项 V2-4 工作路由为新的公开安全 V2-4B / PLAT-1 表现层切片：
+  在玩家显示前本地化稳定 ID，并在 CLI/Web 投影明确的通关/结局结果；仅使用合成 fixture，不访问私有故事材料。
+  该切片需要自己的实现验证与全新独立 TECH 验收，不自动授权 push、`main` 移动、release、分发或 V2-5。
+- 取代 / Supersedes: DEC-0118 only for publication, `main`, and next-task routing. DEC-0118's exact product freeze,
+  TECH/PRODUCT/SECURITY decisions, privacy guarantees, compatibility boundaries, and release limits remain in force.

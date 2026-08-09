@@ -44,6 +44,22 @@
 
 ### Changed
 
+- 记录产品负责人于 2026-08-09 对 V2-4A documentation seal
+  `c7e3280083ebc77a2b453f9bc057df302b00202a` 的明确授权：已正常推送
+  `origin/workstream/v2-4a-provenance-rights-20260807-r2`，并将 `origin/main` 纯快进到同一 SHA；发布完成时
+  两个 live ref 均经 `git ls-remote` 精确确认。该发布不改变冻结产品候选 `badc9a2`，也不授权 release、
+  内容分发、私人材料访问或 V2-5。
+- Recorded the product owner's explicit August 9, 2026 authorization for V2-4A documentation seal
+  `c7e3280083ebc77a2b453f9bc057df302b00202a`: it was normally pushed to
+  `origin/workstream/v2-4a-provenance-rights-20260807-r2`, and `origin/main` was fast-forwarded to the same SHA;
+  `git ls-remote` confirmed both live refs exactly at publication completion. This publication leaves frozen product
+  candidate `badc9a2` unchanged and grants no release, content-distribution, private-material-access, or V2-5 authority.
+- 发布前复核通过全量 pytest `1619 passed, 3 skipped` 与显式绑定候选 `src` 的全量 unittest
+  `1622 tests OK, skipped=3`；Ruff、Pyright、compileall、公开 Demo validation、`pip check`、history safety、
+  `git fsck --full --no-dangling` 与 `git diff --check` 同样通过。
+- Before publication, full pytest passed `1619` with `3` skips and full unittest with the candidate `src` explicitly
+  selected passed `1622` with `3` skips. Ruff, Pyright, compileall, public Demo validation, `pip check`, history
+  safety, `git fsck --full --no-dangling`, and `git diff --check` also passed.
 - 记录精确 V2-4A 本地候选 `badc9a20816a9515b24c98199ca37323a02c1b00` 的独立 TECH `GO`、
   PRODUCT `PRODUCT PASS` 与 SECURITY `GO`，三项 P0-P3 均为空。该本地封存不授予 push、`main` 移动、
   release、分发、私人材料访问或 V2-5 权限。

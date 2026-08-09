@@ -24,8 +24,8 @@ Lore2MUD 是一个**供开发 Agent 调用的小说转文字游戏引擎**。
 
 ### 当前状态
 
-> 状态快照：2026-08-08。V2-3 已发布到 `main`；V2-4A 本地候选已完成独立 TECH、
-> PRODUCT 和 SECURITY 门禁，但仍未 push、合并或发布。
+> 状态快照：2026-08-09。V2-4A 已在产品所有者明确授权下正常推送，并纯快进整合到 `main`；
+> 冻结产品候选已完成独立 TECH、PRODUCT 和 SECURITY 门禁。
 
 | 里程碑 | 交付内容 | 状态 |
 |---|---|---|
@@ -33,13 +33,15 @@ Lore2MUD 是一个**供开发 Agent 调用的小说转文字游戏引擎**。
 | V2-1 | `GameIntent`、`GameSession`、事件、视图与回合结果 | 已验收 |
 | V2-2 | Blueprint、Project、preview、simulation、proofing、SDK/CLI | 已验收 |
 | V2-3 | capability catalog、版本与依赖解析 | 已发布到 `main` |
-| V2-4A | provenance/rights、anchor migration、package/evidence identity | 本地验收完成，未发布 |
+| V2-4A | provenance/rights、anchor migration、package/evidence identity | 已发布到 `main` |
 | V2-5 | Agent workbench | 规划中 |
 
-V2-4A 本地候选为 `badc9a20816a9515b24c98199ca37323a02c1b00`。它具有 TECH `GO`、
-PRODUCT `PRODUCT PASS` 与 SECURITY `GO`，但这些本地门禁不授权 push、`main` 合并、
-release、分发或进入 V2-5。`author seal` 的结果用于确定性身份与受控运行时输入，仍保持
-`distributable=false` 和 `release_evidence=false`；产品所有者继续负责实际来源权利与发布决定。
+V2-4A 冻结产品候选为 `badc9a20816a9515b24c98199ca37323a02c1b00`，documentation seal 为
+`c7e3280083ebc77a2b453f9bc057df302b00202a`。产品所有者于 2026-08-09 明确授权正常 push 与
+`main` 纯快进；发布没有改变产品字节。TECH `GO`、PRODUCT `PRODUCT PASS`、SECURITY `GO` 与本次
+Git 集成均不授权 release、内容分发、私人材料访问或进入 V2-5。`author seal` 的结果用于确定性身份与
+受控运行时输入，仍保持 `distributable=false` 和 `release_evidence=false`；产品所有者继续负责实际
+来源权利与发布决定。
 
 ### 已有能力
 
@@ -198,10 +200,11 @@ free-form model adjudication.
 
 ### Status
 
-As of August 8, 2026, V2-3 is published to `main`. The local V2-4A candidate has completed
-independent TECH, PRODUCT, and SECURITY gates, but it has not been pushed, merged, or released.
+As of August 9, 2026, V2-4A has been normally pushed and fast-forward integrated into `main`
+under explicit product-owner authorization. Its frozen product candidate has completed independent
+TECH, PRODUCT, and SECURITY gates.
 
-The accepted V2-2 workstream provides:
+The published V2 authoring stack provides:
 
 - typed `GameBlueprint v1`, `GameProject v1`, and stable diagnostics;
 - canonical JSON, deterministic fingerprints, and fixed-profile previews;
@@ -211,11 +214,14 @@ The accepted V2-2 workstream provides:
 - public-safe provenance/rights graphs, creator decisions, transformations, and complete trace bindings;
 - deterministic `GamePackage v2` and evidence-manifest identity with explicit story/scene/resume anchor migration.
 
-The V2-4A local candidate is `badc9a20816a9515b24c98199ca37323a02c1b00`. Its TECH `GO`,
-PRODUCT `PRODUCT PASS`, and SECURITY `GO` do not authorize push, `main` movement, release,
-distribution, or V2-5. An `author seal` result is for deterministic identity and controlled
-runtime input only; it remains `distributable=false` and `release_evidence=false`, while the
-product owner remains responsible for actual source rights and publication decisions.
+The frozen V2-4A product candidate is `badc9a20816a9515b24c98199ca37323a02c1b00`, with
+documentation seal `c7e3280083ebc77a2b453f9bc057df302b00202a`. On August 9, 2026, the product
+owner explicitly authorized a normal push and fast-forward `main` integration; publication did not
+change product bytes. TECH `GO`, PRODUCT `PRODUCT PASS`, SECURITY `GO`, and this Git integration do
+not authorize release, content distribution, private-material access, or V2-5. An `author seal`
+result is for deterministic identity and controlled runtime input only; it remains
+`distributable=false` and `release_evidence=false`, while the product owner remains responsible for
+actual source rights and publication decisions.
 
 Try the public runtime:
 

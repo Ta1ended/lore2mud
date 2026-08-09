@@ -1,53 +1,58 @@
 # 下一任务 / Next Task
 
-更新日期：2026-08-08
+更新日期：2026-08-09
 
 ## 中文
 
 ### 唯一下一任务
 
-**等待产品所有者给出新的、明确的产品决定，指定 V2-4A 之后要做什么。**
+**在新的独立公开 workstream 中实现 V2-4B / PLAT-1 通用玩家呈现修复：玩家日志不得直接暴露稳定 ID，
+满足终局条件时 CLI/Web 必须给出明确的通关与结局提示。**
 
 ### 当前依据
 
-- V2-4A 产品候选为 `badc9a20816a9515b24c98199ca37323a02c1b00`，分支为
-  `workstream/v2-4a-provenance-rights-20260807-r2`，基线为
-  `36ff77fb5daa3407a79b0b2359a03a49a63003a0`。
-- 全新只读 TECH reviewer 给出 `GO`，产品 reviewer 给出 `PRODUCT PASS`，独立 SECURITY reviewer
-  给出 `GO`；三份 findings 均为 P0-P3 空。
-- 最终矩阵包括 focused V2-4 `56 passed`、公开安全 30–60 分钟故事弧 smoke `1 passed`、全量 pytest
-  `1619 passed, 3 skipped`、全量 unittest `1622 tests OK, skipped=3`，以及 Ruff、Pyright、compileall、
-  Demo validation、`pip check`、history safety、fsck 和 diff checks 全部通过。
-- 当前 local `main`、live `origin/main` 与 `origin/workstream/v2-3-capability-modules` 均为
-  `36ff77fb5daa3407a79b0b2359a03a49a63003a0`。V2-4A 从未 push、合并或发布。
+- V2-4A 冻结产品候选为 `badc9a20816a9515b24c98199ca37323a02c1b00`，documentation seal 为
+  `c7e3280083ebc77a2b453f9bc057df302b00202a`。产品所有者已于 2026-08-09 授权正常 push 与
+  `main` 纯快进；发布完成时两个 live 远端 ref 均精确指向 `c7e3280`。
+- V2-4A 的 TECH `GO`、PRODUCT `PRODUCT PASS` 与 SECURITY `GO` 继续绑定冻结产品字节；本后续
+  documentation record 不改变源码、Schema 或测试。
+- 私有 PLAT-1 试玩反馈暴露了两个通用表现缺口：事件/状态稳定 ID 可进入玩家日志，以及终局条件成立后
+  缺少独立、醒目的通关/结局投影。私有故事内容、存档、日志和证据仍留在公共 Git 之外。
 
-### 不得自动执行
+### 范围与门禁
 
-- 不 push、不合并、不移动 `main`、不 release、不分发 sealed candidate，也不访问私人材料。
-- 不自动进入 V2-5、Workbench、动态插件、多人运行或运行时模型裁决。
-- 主工作树的未跟踪 `uv.lock` 是用户保留文件，不纳入候选或文档封存提交。
+- 只使用公开安全的合成 fixture 与现有 V2 application/Web 边界；不得把私有故事文本或专有 ID 写入仓库。
+- 保持 `World` 权威、CLI/Web 等价、玩家安全投影、确定性与 V1 兼容；不得借机启动 V2-5、Workbench、
+  动态插件、多人运行或运行时模型裁决。
+- 新 workstream 必须有聚焦与全量验证、真实 CLI/Web 流程及新的独立 TECH 验收；push、`main` 更新、
+  release 与分发仍是后续独立门禁。
+- 主工作树未跟踪的 `uv.lock` 是用户保留文件，不得纳入新 workstream 或提交。
 
 ## English
 
 ### Single Next Task
 
-**Await a new, explicit product-owner decision that names the work after V2-4A.**
+**Implement a generic V2-4B / PLAT-1 player-presentation repair in a new isolated public workstream: player logs
+must not expose stable IDs directly, and CLI/Web must show an explicit completion and ending result when terminal
+conditions are satisfied.**
 
 ### Current Basis
 
-- The V2-4A product candidate is `badc9a20816a9515b24c98199ca37323a02c1b00` on
-  `workstream/v2-4a-provenance-rights-20260807-r2`, based on
-  `36ff77fb5daa3407a79b0b2359a03a49a63003a0`.
-- A fresh read-only TECH reviewer returned `GO`, the product reviewer returned `PRODUCT PASS`, and an
-  independent SECURITY reviewer returned `GO`; all three findings reports are P0-P3 empty.
-- The final matrix includes focused V2-4 `56 passed`, public-safe 30–60 minute story-arc smoke `1 passed`, full
-  pytest `1619 passed, 3 skipped`, full unittest `1622 tests OK, skipped=3`, plus passing Ruff, Pyright,
-  compileall, Demo validation, `pip check`, history safety, fsck, and diff checks.
-- Local `main`, live `origin/main`, and `origin/workstream/v2-3-capability-modules` are all
-  `36ff77fb5daa3407a79b0b2359a03a49a63003a0`. V2-4A has never been pushed, merged, or released.
+- The frozen V2-4A product candidate is `badc9a20816a9515b24c98199ca37323a02c1b00`, with documentation seal
+  `c7e3280083ebc77a2b453f9bc057df302b00202a`. On August 9, 2026, the product owner authorized a normal push and
+  fast-forward `main` integration; both live remote refs pointed exactly to `c7e3280` when publication completed.
+- V2-4A TECH `GO`, PRODUCT `PRODUCT PASS`, and SECURITY `GO` remain bound to the frozen product bytes; this follow-up
+  documentation record changes no source, Schema, or test bytes.
+- Private PLAT-1 playtest feedback exposed two generic presentation gaps: event/state stable IDs can reach player logs,
+  and completed terminal conditions lack a separate, prominent completion/ending projection. Private story content,
+  saves, logs, and evidence remain outside public Git.
 
-### Do Not Execute Automatically
+### Scope And Gates
 
-- Do not push, merge, move `main`, release, distribute the sealed candidate, or access private material.
-- Do not automatically enter V2-5, Workbench, dynamic plugins, multiplayer runtime, or runtime model adjudication.
-- The main checkout's untracked `uv.lock` is user-owned and must not enter the candidate or handoff-seal commit.
+- Use only public-safe synthetic fixtures and the existing V2 application/Web boundaries; do not add private story
+  text or proprietary IDs to the repository.
+- Preserve authoritative `World`, CLI/Web equivalence, player-safe projection, determinism, and V1 compatibility. Do
+  not start V2-5, Workbench, dynamic plugins, multiplayer runtime, or runtime model adjudication.
+- The new workstream requires focused and full verification, real CLI/Web flows, and fresh independent TECH
+  acceptance. Push, `main` updates, release, and distribution remain separate later gates.
+- The main checkout's untracked `uv.lock` is user-owned and must not enter the new workstream or any commit.

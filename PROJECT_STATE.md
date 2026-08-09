@@ -1,6 +1,6 @@
 # 项目状态 / Project State
 
-更新日期：2026-08-08
+更新日期：2026-08-09
 
 ## 当前 V2-4A 检查点
 
@@ -12,13 +12,15 @@ manifest 与显式 story/scene/resume anchor migration；`World` 继续是 V1 �
 
 ### 当前状态
 
-- 产品候选：`badc9a20816a9515b24c98199ca37323a02c1b00`，分支
-  `workstream/v2-4a-provenance-rights-20260807-r2`；父基线为
+- 冻结产品候选：`badc9a20816a9515b24c98199ca37323a02c1b00`；documentation seal：
+  `c7e3280083ebc77a2b453f9bc057df302b00202a`；分支为
+  `workstream/v2-4a-provenance-rights-20260807-r2`，父基线为
   `36ff77fb5daa3407a79b0b2359a03a49a63003a0`。
 - 全新只读 reviewer 对精确候选给出 TECH `GO`、PRODUCT `PRODUCT PASS`、SECURITY `GO`；三项
   findings 均为 P0-P3 空。
-- 本地与 live `origin/main`、`origin/workstream/v2-3-capability-modules` 仍为 `36ff77`。没有 push、
-  merge、`main` 移动、release 或分发授权；本次交接记录不改变产品候选字节。
+- 产品所有者于 2026-08-09 明确授权正常 push 与 `main` 纯快进。发布完成时 live `origin/main` 与
+  `origin/workstream/v2-4a-provenance-rights-20260807-r2` 均精确指向 `c7e3280`；本后续记录只更新文档，
+  不改变产品或测试字节。
 
 ### 已完成
 
@@ -34,8 +36,9 @@ manifest 与显式 story/scene/resume anchor migration；`World` 继续是 V1 �
 ### 已验证
 
 - focused V2-4 contract suite：`56 passed`；公开安全 30–60 分钟故事弧 smoke：`1 passed`。
-- 全量 pytest：`1619 passed, 3 skipped`；全量 unittest：`1622 tests OK, skipped=3`。跳过项仅为两个
-  Windows symlink 环境测试和未安装 PyInstaller 的 Windows toolchain 测试。
+- 2026-08-09 发布前复核：全量 pytest `1619 passed, 3 skipped`；显式绑定候选 `src` 的全量 unittest
+  `1622 tests OK, skipped=3`。跳过项仅为两个 symlink 环境测试和未安装 PyInstaller 的 Windows
+  toolchain 测试。
 - Ruff、Pyright、compileall、公开 Demo validation、`pip check`、`git diff --check`、
   `check_repo_safety.py --history` 与 `git fsck --full --no-dangling` 均通过。
 - 主工作树用户保留的未跟踪 `uv.lock` 仍为 14,471 bytes，SHA-256
@@ -43,9 +46,9 @@ manifest 与显式 story/scene/resume anchor migration；`World` 继续是 V1 �
 
 ### 边界与下一门禁
 
-- V2-4A 的本地实现与三项验收已经完成；交接文档只记录该事实。它不授权 push、`main` 合并、release、
-  分发、私人材料访问或重新封存现有 candidate。
-- 下一项工作必须由新的产品决定明确指定；不得由本 Goal 自动进入 V2-5、Workbench、动态插件、
+- V2-4A 已正常发布并纯快进整合到 `main`；冻结产品字节仍为 `badc9a2`。Git 集成不授权 release、
+  内容分发、私人材料访问或重新封存现有 candidate。
+- 继续 V2-4 必须由新的公开安全 workstream 承载；不得由本记录自动进入 V2-5、Workbench、动态插件、
   多人运行或运行时模型裁决。
 
 ### 关键路径
@@ -66,13 +69,16 @@ deterministic `GamePackage v2`, evidence manifests, and explicit story/scene/res
 
 ### Current Status
 
-- Product candidate: `badc9a20816a9515b24c98199ca37323a02c1b00` on
+- Frozen product candidate: `badc9a20816a9515b24c98199ca37323a02c1b00`; documentation seal:
+  `c7e3280083ebc77a2b453f9bc057df302b00202a`; branch:
   `workstream/v2-4a-provenance-rights-20260807-r2`, based on
   `36ff77fb5daa3407a79b0b2359a03a49a63003a0`.
 - Fresh read-only reviewers returned TECH `GO`, PRODUCT `PRODUCT PASS`, and SECURITY `GO` for that exact
   candidate, with P0-P3 empty in all three findings reports.
-- Local and live `origin/main` plus `origin/workstream/v2-3-capability-modules` remain at `36ff77`. No push,
-  merge, `main` movement, release, or distribution was authorized; this handoff record does not change product bytes.
+- On August 9, 2026, the product owner explicitly authorized a normal push and fast-forward `main` integration.
+  At publication completion, live `origin/main` and
+  `origin/workstream/v2-4a-provenance-rights-20260807-r2` both pointed exactly to `c7e3280`; this follow-up changes
+  documentation only, not product or test bytes.
 
 ### Completed
 
@@ -90,8 +96,9 @@ deterministic `GamePackage v2`, evidence manifests, and explicit story/scene/res
 ### Verified
 
 - Focused V2-4 contract suite: `56 passed`; public-safe 30–60 minute story-arc smoke: `1 passed`.
-- Full pytest: `1619 passed, 3 skipped`; full unittest: `1622 tests OK, skipped=3`. Skips are only two Windows
-  symlink environment tests and one Windows PyInstaller-toolchain test.
+- August 9 publication recheck: full pytest `1619 passed, 3 skipped`; full unittest with the candidate `src`
+  explicitly selected `1622 tests OK, skipped=3`. Skips are only two symlink environment tests and one Windows
+  PyInstaller-toolchain test.
 - Ruff, Pyright, compileall, public Demo validation, `pip check`, `git diff --check`,
   `check_repo_safety.py --history`, and `git fsck --full --no-dangling` passed.
 - The main checkout's user-owned untracked `uv.lock` remains 14,471 bytes with SHA-256
@@ -99,10 +106,10 @@ deterministic `GamePackage v2`, evidence manifests, and explicit story/scene/res
 
 ### Boundaries And Next Gate
 
-- V2-4A local implementation and all three acceptance gates are complete. This handoff records that fact only; it
-  grants no push, `main` integration, release, distribution, private-material access, or resealing authority.
-- A new product decision must name the next task. This Goal must not automatically enter V2-5, Workbench, dynamic
-  plugins, multiplayer runtime, or runtime model adjudication.
+- V2-4A is normally published and fast-forward integrated into `main`; frozen product bytes remain at `badc9a2`.
+  Git integration grants no release, content-distribution, private-material-access, or resealing authority.
+- Any continued V2-4 work must use a new public-safe workstream. This record must not automatically enter V2-5,
+  Workbench, dynamic plugins, multiplayer runtime, or runtime model adjudication.
 
 ### Key Paths
 
