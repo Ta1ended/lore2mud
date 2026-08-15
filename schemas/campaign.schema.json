@@ -26,10 +26,7 @@
         "required": ["location_id", "descriptions", "exits"],
         "properties": {
           "location_id": {"$ref": "common.schema.json#/$defs/stable_id"},
-          "descriptions": {
-            "type": "array",
-            "items": {"$ref": "#/$defs/conditional_text"}
-          },
+          "descriptions": {"$ref": "#/$defs/optional_conditional_texts"},
           "exits": {
             "type": "array",
             "items": {
@@ -53,10 +50,7 @@
         "required": ["actor_id", "descriptions"],
         "properties": {
           "actor_id": {"$ref": "common.schema.json#/$defs/stable_id"},
-          "descriptions": {
-            "type": "array",
-            "items": {"$ref": "#/$defs/conditional_text"}
-          },
+          "descriptions": {"$ref": "#/$defs/optional_conditional_texts"},
           "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"}
         }
       }
@@ -78,11 +72,7 @@
               "required": ["node_id", "texts"],
               "properties": {
                 "node_id": {"$ref": "common.schema.json#/$defs/stable_id"},
-                "texts": {
-                  "type": "array",
-                  "minItems": 1,
-                  "items": {"$ref": "#/$defs/conditional_text"}
-                }
+                "texts": {"$ref": "#/$defs/conditional_texts"}
               }
             }
           }
@@ -124,6 +114,23 @@
         "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"}
       }
     },
+    "conditional_texts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/conditional_text"},
+      "contains": {
+        "type": "object",
+        "not": {"required": ["condition"]}
+      },
+      "minContains": 1,
+      "maxContains": 1
+    },
+    "optional_conditional_texts": {
+      "oneOf": [
+        {"type": "array", "maxItems": 0},
+        {"$ref": "#/$defs/conditional_texts"}
+      ]
+    },
     "scene": {
       "type": "object",
       "additionalProperties": false,
@@ -143,11 +150,7 @@
             "required": ["id", "descriptions", "interactable_ids"],
             "properties": {
               "id": {"$ref": "common.schema.json#/$defs/stable_id"},
-              "descriptions": {
-                "type": "array",
-                "minItems": 1,
-                "items": {"$ref": "#/$defs/conditional_text"}
-              },
+              "descriptions": {"$ref": "#/$defs/conditional_texts"},
               "interactable_ids": {
                 "type": "array",
                 "uniqueItems": true,
@@ -175,11 +178,7 @@
           "uniqueItems": true,
           "items": {"$ref": "common.schema.json#/$defs/stable_id"}
         },
-        "descriptions": {
-          "type": "array",
-          "minItems": 1,
-          "items": {"$ref": "#/$defs/conditional_text"}
-        },
+        "descriptions": {"$ref": "#/$defs/conditional_texts"},
         "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"}
       }
     },
@@ -251,11 +250,7 @@
         "id": {"$ref": "common.schema.json#/$defs/stable_id"},
         "category": {"enum": ["story", "objective", "knowledge"]},
         "title": {"type": "string", "minLength": 1},
-        "texts": {
-          "type": "array",
-          "minItems": 1,
-          "items": {"$ref": "#/$defs/conditional_text"}
-        },
+        "texts": {"$ref": "#/$defs/conditional_texts"},
         "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"},
         "terminal": {"type": "boolean"}
       },

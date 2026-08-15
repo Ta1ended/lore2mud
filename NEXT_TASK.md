@@ -12,8 +12,10 @@
 
 - 候选 worktree：`D:\MUD game kaifa\.codex-worktrees\v2-4b-player-experience-20260815`；基线为
   `7470c5b5344df9d184828d20e37032c5bc5f57bd`，候选 commit 已固定；精确 SHA 记录在私有验证矩阵与 handoff。
-- 全量 pytest 为 `1627 passed, 2 skipped, 1076 subtests passed`；显式绑定候选 `src` 的全量 unittest 为
+- 全量 pytest 为 `1627 passed, 2 skipped, 1078 subtests passed`；显式绑定候选 `src` 的全量 unittest 为
   `1629 tests OK, skipped=2`；Ruff、Pyright、compileall、`pip check` 和 `git diff --check` 已通过。
+- 上述全量数字来自 `D:\MUD game kaifa\lore2mud\.venv\Scripts\python.exe`（Python 3.13.14、
+  PyInstaller 6.21.0），并以覆盖式 `PYTHONPATH=<candidate>\src` 绑定候选源码。
 - 授权的外部私有内容候选、存档、截图、日志和报告均位于仓库外；其技术封存不可分发，且不等于 PRODUCT PASS、
   SECURITY PASS 或发布授权。私有矩阵与证据不进入公共 Git。
 
@@ -39,8 +41,10 @@
 
 - Candidate worktree: `D:\MUD game kaifa\.codex-worktrees\v2-4b-player-experience-20260815`; baseline
   `7470c5b5344df9d184828d20e37032c5bc5f57bd`; the candidate commit is fixed, with its exact SHA recorded in the private verification matrix and handoff.
-- Full pytest is `1627 passed, 2 skipped, 1076 subtests passed`; full unittest with the candidate `src`
+- Full pytest is `1627 passed, 2 skipped, 1078 subtests passed`; full unittest with the candidate `src`
   explicitly selected is `1629 tests OK, skipped=2`; Ruff, Pyright, compileall, `pip check`, and `git diff --check` pass.
+- Those full-suite numbers use `D:\MUD game kaifa\lore2mud\.venv\Scripts\python.exe` (Python 3.13.14,
+  PyInstaller 6.21.0) with `PYTHONPATH=<candidate>\src` replacing the package import path.
 - The authorized external private content candidate, saves, screenshots, logs, and reports remain outside the
   repository. Its technical seal is non-distributable and is not a PRODUCT PASS, SECURITY PASS, or release
   authorization. Private matrices and evidence stay out of public Git.

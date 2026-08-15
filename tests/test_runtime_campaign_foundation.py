@@ -258,29 +258,59 @@ class CampaignSchemaAndLoaderTests(unittest.TestCase):
                     load_content_pack(path)
 
     def test_terminal_log_requires_unconditional_text_fallback(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            path = Path(temp_dir) / "urban"
-            shutil.copytree(URBAN, path)
-            campaign_path = path / "campaign.json"
-            document = json.loads(campaign_path.read_text("utf-8"))
-            terminal = next(
-                entry for entry in document["log_entries"] if entry.get("terminal")
-            )
-            terminal["texts"] = [
-                {
-                    "condition": terminal["condition"],
-                    "text": "The condition-specific close text.",
-                }
-            ]
-            campaign_path.write_text(
-                json.dumps(document, indent=2), encoding="utf-8"
-            )
+        schema_documents = {
+            document["$id"]: document
+            for schema_path in (ROOT / "schemas").glob("*.schema.json")
+            for document in [json.loads(schema_path.read_text("utf-8"))]
+            if "$id" in document
+        }
+        validator = Draft202012Validator(
+            schema_documents["https://example.invalid/lore2mud/campaign.schema.json"],
+            registry=Registry().with_resources(
+                (uri, Resource.from_contents(document))
+                for uri, document in schema_documents.items()
+            ),
+        )
+        cases = (
+            (
+                "missing_fallback",
+                lambda terminal: [
+                    {
+                        "condition": terminal["condition"],
+                        "text": "The condition-specific close text.",
+                    }
+                ],
+            ),
+            (
+                "duplicate_fallback",
+                lambda _terminal: [
+                    {"text": "The first unconditional close text."},
+                    {"text": "The second unconditional close text."},
+                ],
+            ),
+        )
+        for label, texts in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as temp_dir:
+                path = Path(temp_dir) / "urban"
+                shutil.copytree(URBAN, path)
+                campaign_path = path / "campaign.json"
+                document = json.loads(campaign_path.read_text("utf-8"))
+                terminal = next(
+                    entry
+                    for entry in document["log_entries"]
+                    if entry.get("terminal")
+                )
+                terminal["texts"] = texts(terminal)
+                campaign_path.write_text(
+                    json.dumps(document, indent=2), encoding="utf-8"
+                )
 
-            with self.assertRaisesRegex(
-                ContentValidationError,
-                "terminal 必须包含无条件文本回退",
-            ):
-                load_content_pack(path)
+                self.assertTrue(list(validator.iter_errors(document)))
+                with self.assertRaisesRegex(
+                    ContentValidationError,
+                    "必须恰有一个无条件回退文本",
+                ):
+                    load_content_pack(path)
 
 
 class MagicCampaignRuntimeTests(unittest.TestCase):

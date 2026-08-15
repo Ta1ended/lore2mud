@@ -45,6 +45,11 @@
   通关块，并新增位置型终局回归覆盖。
 - Fixed CLI movement-triggered endings printing the persistent completion summary and first-completion notice twice;
   `go` now keeps one completion block per response, with regression coverage for location-based terminals.
+- 修复 `campaign.schema.json` 与 loader 对条件文本回退约束不等价的问题；公共 Draft 2020-12 Schema 现在对
+  非空条件文本数组强制恰好一个无条件回退，空的可选地点/角色描述仍保持兼容。
+- Fixed `campaign.schema.json`/loader parity for conditional-text fallbacks: the public Draft 2020-12 Schema now
+  requires exactly one unconditional fallback in every non-empty conditional-text array while preserving empty
+  optional location/actor descriptions.
 
 - 修复私有来源连通图的 element label 泄露：public provenance 与 sealed package 现在把私有连接的
   `element_kind` 规范化为公开安全值，且身份 alias refinement 不再依赖原始私有 label。回归证明私有 label 的
@@ -781,12 +786,12 @@
 
 ### Verified
 
-- V2-4B focused regressions `56 passed, 151 subtests passed`; full pytest `1627 passed, 2 skipped, 1076 subtests passed`;
+- V2-4B focused regressions `56 passed, 153 subtests passed`; full pytest `1627 passed, 2 skipped, 1078 subtests passed`;
   candidate-src full unittest `1629 tests OK, skipped=2`; Ruff, Pyright, compileall, `pip check`, and `git diff --check`
-  passed locally.
-- V2-4B focused regressions `56 passed, 151 subtests passed`; full pytest `1627 passed, 2 skipped, 1076 subtests passed`;
+  passed locally using Python 3.13.14 and PyInstaller 6.21.0 from the project `.venv`.
+- V2-4B focused regressions `56 passed, 153 subtests passed`; full pytest `1627 passed, 2 skipped, 1078 subtests passed`;
   full unittest with the candidate `src` selected passed `1629 tests`, with `2` skips; Ruff, Pyright, compileall,
-  `pip check`, and `git diff --check` passed locally.
+  `pip check`, and `git diff --check` passed locally using the project `.venv` and replacement candidate `PYTHONPATH`.
 
 - GPT-5.6-sol independently accepted five-domain integration candidate `a172a82`
   GO with no P0-P3 findings (DEC-0068). Linux Python 3.11/3.12 serial and 3.13

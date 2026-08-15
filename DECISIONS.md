@@ -3583,3 +3583,28 @@
 - 后果 / Consequences: The final candidate must receive another read-only TECH review bound to its exact commit. No
   PRODUCT PASS, SECURITY PASS, push, main movement, release, distribution, or V2-5 follows automatically. / 后续必须针对精确
   commit 再次进行只读 TECH 审查；不会自动获得 PRODUCT PASS、SECURITY PASS、push、main 移动、release、分发或 V2-5 授权。
+
+## DEC-0123: 对齐条件文本 Schema 与 loader 并固定验证环境 / Align conditional-text Schema and loader and pin verification environment
+
+- 日期 / Date: 2026-08-15
+- 状态 / Status: The exact `6aee26e` TECH review returned `REVISE` with one P2 Schema/loader parity gap and one P3
+  evidence-environment ambiguity. Both are repaired locally and require another exact-commit TECH decision. / 精确
+  `6aee26e` 的 TECH 审查以一个 P2 Schema/loader 等价缺口和一个 P3 验证环境歧义给出 `REVISE`；两项均已在本地修复，
+  仍需针对新精确 commit 再次验收。
+- 决定 / Decision: Add reusable required and optional conditional-text array definitions to
+  `campaign.schema.json`. Every non-empty array must contain exactly one item without `condition`; optional location
+  and actor descriptions may remain empty. Record the full-suite executable, Python version, PyInstaller version,
+  and replacement candidate `PYTHONPATH` alongside all counts. / 决定在 `campaign.schema.json` 增加可复用的必需/可选
+  条件文本数组定义：每个非空数组必须恰有一项不含 `condition`，地点与角色的可选描述仍可为空；同时把全量矩阵的
+  可执行文件、Python、PyInstaller 与覆盖式候选 `PYTHONPATH` 和计数一并记录。
+- 证据 / Evidence: Missing and duplicate fallback cases are now rejected by both Draft 2020-12 validation and the
+  loader. Focused V2-4B tests pass `56` plus `153` subtests; V2-3/V2-4 schema and compatibility tests pass `81` plus
+  `382` subtests. The project `.venv` (Python 3.13.14, PyInstaller 6.21.0) with replacement candidate `PYTHONPATH`
+  passes full pytest `1627 passed, 2 skipped, 1078 subtests passed` and full unittest `1629 OK, skipped=2`. / 缺少与
+  重复回退的反例现均被 Draft 2020-12 校验和 loader 拒绝；V2-4B 聚焦矩阵为 `56` 项加 `153` 子测试，V2-3/V2-4
+  Schema/兼容矩阵为 `81` 项加 `382` 子测试。项目 `.venv`（Python 3.13.14、PyInstaller 6.21.0）配合覆盖式候选
+  `PYTHONPATH` 后，全量 pytest 为 `1627 passed, 2 skipped, 1078 subtests passed`，全量 unittest 为
+  `1629 OK, skipped=2`。
+- 后果 / Consequences: The final follow-up candidate must be frozen, mirrored into the private matrix and handoff,
+  and receive a fresh findings-first read-only TECH review. No later gate is implied. / 后续必须冻结新的精确候选、同步私有
+  矩阵与 handoff，并重新进行 findings-first 只读 TECH 验收；不自动推进任何后续门禁。
