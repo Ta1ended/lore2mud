@@ -218,9 +218,10 @@ class AvailableCampaignAction:
 class JournalEntry:
     id: str
     category: Literal["story", "objective", "knowledge"]
-    title: str
+    title: str | None
     text: str
     status: str | None = None
+    terminal: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -901,8 +902,9 @@ class World:
                 JournalEntry(
                     id=entry.id,
                     category=entry.category,
-                    title=entry.id,
+                    title=entry.title,
                     text=self._project_text(entry.texts, ""),
+                    terminal=entry.terminal,
                 )
             )
         for objective_id, definition in sorted(self.campaign.objectives.items()):

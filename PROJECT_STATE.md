@@ -1,8 +1,116 @@
 # 项目状态 / Project State
 
-更新日期：2026-08-09
+更新日期：2026-08-15
 
-## 当前 V2-4A 检查点
+## 当前 V2-4B 检查点
+
+### 目标
+
+在新的隔离公开 workstream 中完成 V2-4B / PLAT-1 玩家呈现修复，并用仓库外的授权外部私有内容候选
+验证确定性试玩：日志不泄露稳定 ID，CLI/Web 在终局时显示明确的通关与结局，保存/加载后完成态保持。
+
+### 当前状态
+
+- worktree：`D:\MUD game kaifa\.codex-worktrees\v2-4b-player-experience-20260815`；分支：
+  `workstream/v2-4b-player-experience-20260815`；基线：`7470c5b5344df9d184828d20e37032c5bc5f57bd`；
+  本地候选 commit 已固定，精确 SHA 记录在私有验证矩阵与 handoff。
+- 公共改动集中在 `schemas/campaign.schema.json`、`src/lore2mud/application/`、
+  `src/lore2mud/content/`、`src/lore2mud/engine/world.py`、`src/lore2mud/engine/commands.py`、
+  `src/lore2mud/web/`、对应 V2-4B 合成 fixture/测试及两份技术文档；私有故事、存档、截图、日志、报告和
+  handoff 均在仓库外，不进入 Git。
+- 外部私有内容候选保持 `capability_requirement_ids=[]`，技术封存不可分发且不构成发布授权；其身份、哈希、
+  矩阵与证据仅记录在私有目录。
+
+### 已完成
+
+- `LogEntryDefinition` 支持作者标题和终局标记；共享玩家投影提供中文类别/状态标签，不把稳定 ID当标题。
+- `CampaignCompletionView`、`EndingView` 与 false-to-true `newly_completed_endings` 已接入 GameSession、CLI、
+  Web transport 和静态客户端；通关面板在读取完成存档后常驻，首次完成另有明显提示。
+- 公共 urban synthetic fixture、Schema/loader 约束、session/save-load、CLI/Web 等价和 V2-3 指纹基线均已更新。
+- 外部私有内容候选的两条主路径、负向拒绝、顺序门禁、重复保护、恢复平衡和 Web/CLI 流程均有
+  replay-verified 证据，且证据留在私有目录。
+
+### 已验证
+
+- 聚焦回归：`54 passed`；全量 pytest：`1624 passed, 3 skipped`；显式绑定候选 `src` 的全量 unittest：
+  `1627 tests OK, skipped=2`。跳过项为 Windows 环境下的 POSIX symlink 两项。
+- Ruff `All checks passed`、Pyright `0 errors`、compileall、`pip check` 与 `git diff --check` 通过；私有
+  `lore2mud validate`、author validate/preview/proof/provenance/replay/seal、真实 CLI/Web 存档恢复和结局持久化均通过。
+- 独立只读 TECH、扩写版真人 PRODUCT PASS、SECURITY PASS、push、`main` 快进、release 与分发均尚未发生。
+
+### 边界与下一门禁
+
+- 只提交通用引擎/合成 fixture/公开文档；私有包仍是仓库外技术候选，不是发布授权或法律判断。
+- 下一步只请求一名未参与编写的只读 TECH reviewer，针对本地候选精确 commit 输出 findings-first P0–P3 和唯一
+  `GO`/`REVISE`；TECH 之后停止，等待新的真人 PRODUCT PASS，不自动 push 或进入 V2-5。
+
+### 关键路径
+
+- `src/lore2mud/application/contracts.py`、`projection.py`、`session.py`：完成态与玩家安全投影。
+- `src/lore2mud/content/models.py`、`loader.py`、`schemas/campaign.schema.json`：作者标题/终局契约。
+- `src/lore2mud/engine/commands.py`、`src/lore2mud/web/`：CLI/Web 通知和常驻通关面板。
+- `tests/test_game_session.py`、`tests/test_runtime_campaign_foundation.py`、`tests/test_transport_equivalence.py`、
+  `tests/test_web_server.py`：V2-4B 合成回归。
+- 私有矩阵与证据：保存在仓库外的授权私有目录，不进入公共 Git。
+
+## Current V2-4B Checkpoint (English)
+
+### Objective
+
+Complete the isolated V2-4B / PLAT-1 player-presentation repair and validate an authorized external private
+content candidate as a deterministic playthrough: logs must not expose stable IDs, CLI/Web must show an explicit
+completion and ending, and completed state must survive save/load.
+
+### Current Status
+
+- Worktree: `D:\MUD game kaifa\.codex-worktrees\v2-4b-player-experience-20260815`; branch:
+  `workstream/v2-4b-player-experience-20260815`; baseline:
+  `7470c5b5344df9d184828d20e37032c5bc5f57bd`; the local candidate commit is fixed, with its exact SHA recorded in the private verification matrix and handoff.
+- Public changes are limited to `schemas/campaign.schema.json`, the application/content/runtime/Web paths,
+  the V2-4B synthetic fixtures/tests, and two technical documents. Private story text, saves, screenshots, logs,
+  reports, and handoff artifacts remain outside Git.
+- The external private candidate keeps `capability_requirement_ids=[]`; its technical seal is non-distributable
+  and its identity, hashes, matrices, and evidence remain in the private workspace.
+
+### Completed
+
+- `LogEntryDefinition` accepts authored titles and terminal markers; the shared player projection localizes
+  category/status labels and never uses a stable ID as a player title.
+- `CampaignCompletionView`, `EndingView`, and false-to-true `newly_completed_endings` now flow through
+  `GameSession`, CLI, Web transport, and the static client. The completion panel remains after loading a
+  completed save, while the first completion also receives a prominent notice.
+- The public urban synthetic fixture, Schema/loader constraints, session/save-load, CLI/Web equivalence,
+  and V2-3 fingerprint baselines are updated.
+- The external private candidate's main paths, negative rejection, ordering gates, repeat protection, recovery
+  balance, and CLI/Web save/ending evidence are replay-verified outside Git.
+
+### Verified
+
+- Focused regressions: `54 passed`; full pytest: `1624 passed, 3 skipped`; full unittest with the candidate
+  `src` explicitly selected: `1627 tests OK, skipped=2`. Skips are two POSIX symlink tests on Windows.
+- Ruff `All checks passed`, Pyright `0 errors`, compileall, `pip check`, and `git diff --check` pass. Private
+  content validation, author validate/preview/proof/provenance/replay/seal, and real CLI/Web save/ending
+  persistence also pass.
+- Independent read-only TECH, fresh human PRODUCT PASS for the expanded build, SECURITY PASS, push, fast-forward
+  `main`, release, and distribution have not occurred.
+
+### Boundaries And Next Gate
+
+- Only generic engine/fixtures/public documentation may be committed; the private pack is an external technical
+  candidate, not release authorization or a legal rights judgment.
+- The next and only gate is a fresh read-only TECH review of the exact local candidate commit, findings-first with
+  P0–P3 and one final `GO`/`REVISE`. Stop after TECH and wait for a new human PRODUCT PASS; do not push or enter V2-5.
+
+### Key Paths
+
+- `src/lore2mud/application/contracts.py`, `projection.py`, `session.py`: completion and player-safe projection.
+- `src/lore2mud/content/models.py`, `loader.py`, `schemas/campaign.schema.json`: authored title/terminal contract.
+- `src/lore2mud/engine/commands.py`, `src/lore2mud/web/`: CLI/Web notice and persistent completion panel.
+- `tests/test_game_session.py`, `tests/test_runtime_campaign_foundation.py`, `tests/test_transport_equivalence.py`,
+  `tests/test_web_server.py`: V2-4B synthetic regressions.
+- Private matrix/evidence: stored in the authorized external private workspace, outside public Git.
+
+## 已完成 V2-4A 检查点
 
 ### 目标
 
@@ -58,7 +166,7 @@ manifest 与显式 story/scene/resume anchor migration；`World` 继续是 V1 �
 - `src/lore2mud/authoring/service.py`、`sdk.py`、`structured_cli.py`、`web_transport.py`：共用 transport 边界。
 - `tests/test_v2_4_provenance_rights.py`：trace、privacy、identity、anchor 与 parity 证据。
 
-## Current V2-4A Checkpoint (English)
+## Completed V2-4A Checkpoint (English)
 
 ### Objective
 

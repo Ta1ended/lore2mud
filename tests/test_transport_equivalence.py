@@ -18,6 +18,7 @@ from lore2mud.web.app import JsonValue, PlayerSession
 ROOT = Path(__file__).resolve().parents[1]
 DEMO = ROOT / "examples" / "original_demo"
 MAGIC = ROOT / "tests" / "fixtures" / "campaign_magic"
+URBAN = ROOT / "tests" / "fixtures" / "campaign_urban"
 
 
 def _world_bytes(world: World) -> bytes:
@@ -105,6 +106,41 @@ class TransportEquivalenceTests(unittest.TestCase):
                 web_service.slot_path("ward").read_bytes(),
             )
 
+    def test_terminal_completion_and_save_load_are_equivalent(self) -> None:
+        pack = load_content_pack(URBAN)
+        context = DeterminismContext(seed=71, clock=43)
+        with tempfile.TemporaryDirectory() as cli_dir, tempfile.TemporaryDirectory() as web_dir:
+            cli_service = SaveLoadService(pack, Path(cli_dir))
+            web_service = SaveLoadService(pack, Path(web_dir))
+            commands = CommandProcessor.from_session(
+                GameSession.from_content_pack(pack, cli_service, determinism=context)
+            )
+            web = PlayerSession(pack, web_service, determinism=context)
+
+            steps: tuple[tuple[str, dict[str, object]], ...] = (
+                (
+                    "act action_check_timestamp",
+                    {"type": "campaign_action", "action_id": "action_check_timestamp"},
+                ),
+                (
+                    "act action_correct_vendor_record",
+                    {
+                        "type": "campaign_action",
+                        "action_id": "action_correct_vendor_record",
+                    },
+                ),
+                ("save resolved", {"type": "save", "slot": "resolved"}),
+                ("load resolved", {"type": "load", "slot": "resolved"}),
+            )
+            for command, action in steps:
+                with self.subTest(command=command):
+                    self._assert_turn_equivalent(commands, web, command, action)
+
+            self.assertEqual(
+                cli_service.slot_path("resolved").read_bytes(),
+                web_service.slot_path("resolved").read_bytes(),
+            )
+
     def _assert_turn_equivalent(
         self,
         commands: CommandProcessor,
@@ -126,6 +162,10 @@ class TransportEquivalenceTests(unittest.TestCase):
         self.assertEqual(
             web_response["events"],
             [PlayerSession._event_json(event) for event in cli_turn.events],
+        )
+        self.assertEqual(
+            web_response["newly_completed_endings"],
+            PlayerSession._json_value(cli_turn.newly_completed_endings),
         )
         self.assertEqual(
             web_response["view"],

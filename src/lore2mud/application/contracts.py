@@ -657,6 +657,25 @@ class JournalEntryView:
     title: str
     text: str
     status: ObjectiveStatus | KnowledgeStatus | None = None
+    category_label: str = ""
+    status_label: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class EndingView:
+    """One explicitly authored terminal story result visible to the player."""
+
+    id: str
+    title: str
+    text: str
+
+
+@dataclass(frozen=True, slots=True)
+class CampaignCompletionView:
+    """Derived player-safe completion state for the current campaign."""
+
+    completed: bool
+    endings: tuple[EndingView, ...]
 
 
 @dataclass(frozen=True, slots=True)
@@ -667,6 +686,7 @@ class CampaignView:
     objectives: tuple[JournalEntryView, ...]
     knowledge: tuple[JournalEntryView, ...]
     journal: tuple[JournalEntryView, ...]
+    completion: CampaignCompletionView
 
 
 @dataclass(frozen=True, slots=True)
@@ -759,3 +779,4 @@ class TurnResult:
     events: tuple[GameEvent, ...]
     view: GameView
     rejection: RejectionDiagnostic | None = None
+    newly_completed_endings: tuple[EndingView, ...] = ()

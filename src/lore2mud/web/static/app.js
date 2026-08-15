@@ -9,6 +9,7 @@ const ui = {
   coinValue: byId("coin-value"), inventoryCount: byId("inventory-count"),
   equipmentList: byId("equipment-list"), inventoryList: byId("inventory-list"),
   exitList: byId("exit-list"), encounterList: byId("encounter-list"),
+  completionPanel: byId("completion-panel"), completionTitle: byId("completion-title"), completionList: byId("completion-list"),
   campaignPanel: byId("campaign-panel"), campaignList: byId("campaign-list"),
   recoveryPanel: byId("recovery-panel"), recoverButton: byId("recover-button"),
   questCount: byId("quest-count"), questList: byId("quest-list"),
@@ -61,7 +62,14 @@ async function sendAction(action) {
     const result = await response.json();
     snapshot = result.snapshot || snapshot;
     recordEvent(result.event);
-    showToast(result.event.message, !result.ok);
+    const endings = result.newly_completed_endings || [];
+    if (endings.length) {
+      const titles = endings.map((ending) => ending.title).join("、");
+      recordEvent({type: "completion", message: `通关：${titles}`});
+      showToast(`通关：${titles}`, false);
+    } else {
+      showToast(result.event.message, !result.ok);
+    }
   } catch (error) {
     recordEvent({type: "error", message: error.message});
     showToast(error.message, true);
@@ -95,11 +103,26 @@ function render() {
   renderEquipment();
   renderInventory();
   renderQuests();
+  renderCompletion();
   renderCampaign();
   renderDialogue();
   renderShop();
   renderEvents();
   drawRouteMap();
+}
+
+function renderCompletion() {
+  const completion = snapshot.campaign.completion;
+  const endings = completion ? completion.endings : [];
+  ui.completionPanel.hidden = !completion || !completion.completed;
+  if (!completion || !completion.completed) return;
+  ui.completionTitle.textContent = endings.length > 1 ? "通关结局" : "通关";
+  ui.completionList.replaceChildren();
+  endings.forEach((ending) => {
+    const entry = element("div", "completion-entry");
+    entry.append(element("strong", "", ending.title), element("p", "", ending.text));
+    ui.completionList.append(entry);
+  });
 }
 
 function renderStatus() {
@@ -242,7 +265,7 @@ function renderCampaign() {
     row.append(
       element("strong", "", objective.title),
       element("p", "", objective.text),
-      element("span", "item-meta", objective.status),
+      element("span", "item-meta", objective.status_label),
     );
     ui.objectiveList.append(row);
   });
@@ -255,7 +278,7 @@ function renderCampaign() {
     row.append(
       element("strong", "", knowledge.title),
       element("p", "", knowledge.text),
-      element("span", "item-meta", knowledge.status),
+      element("span", "item-meta", knowledge.status_label),
     );
     ui.knowledgeList.append(row);
   });

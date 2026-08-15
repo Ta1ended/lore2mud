@@ -119,12 +119,17 @@ input {
 .key-current, .key-locked { display: inline-block; width: 8px; height: 8px; margin: 0 4px 0 8px; }
 .key-current { background: var(--cyan); }
 .key-locked { border: 1px solid var(--red); }
-.room-heading, .room-description, .action-section, .dialogue-panel, .shop-panel { margin-left: 28px; margin-right: 28px; }
+.room-heading, .room-description, .completion-panel, .action-section, .dialogue-panel, .shop-panel { margin-left: 28px; margin-right: 28px; }
 .room-heading { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-top: 22px; }
 .room-heading > div { min-width: 0; }
 .room-heading .eyebrow { overflow-wrap: anywhere; }
 .room-heading h2 { font-size: 1.45rem; }
 .room-description { max-width: 760px; margin-top: 10px; margin-bottom: 22px; color: #cfcdc6; line-height: 1.7; }
+.completion-panel { margin-bottom: 20px; padding: 14px 16px; border: 1px solid var(--green); border-left-width: 4px; background: #16251e; }
+.completion-panel h3 { margin: 0 0 8px; color: #b8e6c8; }
+.completion-entry + .completion-entry { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+.completion-entry strong { display: block; color: var(--ink); }
+.completion-entry p { margin: 5px 0 0; color: var(--muted); line-height: 1.6; }
 .alive-state { flex: 0 0 auto; border: 1px solid #3f7042; padding: 4px 8px; color: var(--green); font-size: 0.72rem; text-transform: uppercase; }
 .alive-state.dead { border-color: #80403d; color: var(--red); }
 .action-section { padding: 18px 0; border-top: 1px solid var(--line); }
@@ -210,7 +215,7 @@ input {
   .inventory-rail { order: 2; border-top: 1px solid var(--line); border-right: 0; }
   .journal-rail { order: 3; }
   #route-map { height: 178px; }
-  .room-heading, .room-description, .action-section, .dialogue-panel, .shop-panel { margin-left: 16px; margin-right: 16px; }
+  .room-heading, .room-description, .completion-panel, .action-section, .dialogue-panel, .shop-panel { margin-left: 16px; margin-right: 16px; }
   .recovery-panel { margin-left: 16px; margin-right: 16px; }
   .room-heading h2 { font-size: 1.25rem; }
   .entity-row { grid-template-columns: 1fr; }

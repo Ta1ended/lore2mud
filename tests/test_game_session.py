@@ -15,6 +15,7 @@ import lore2mud.application.contracts as contracts
 from lore2mud._bounded_json import DEFAULT_JSON_READ_LIMITS
 from lore2mud.application import (
     AttackIntent,
+    CampaignActionIntent,
     DeterminismContext,
     GameSession,
     LoadIntent,
@@ -36,6 +37,7 @@ from lore2mud.engine.world import World, WorldRuleError
 ROOT = Path(__file__).resolve().parents[1]
 DEMO = ROOT / "examples" / "original_demo"
 MAGIC = ROOT / "tests" / "fixtures" / "campaign_magic"
+URBAN = ROOT / "tests" / "fixtures" / "campaign_urban"
 
 
 def _world_bytes(world: World) -> bytes:
@@ -167,6 +169,49 @@ class GameSessionContractTests(unittest.TestCase):
         self.assertEqual([event.sequence for event in second.events], [2])
         with self.assertRaises(FrozenInstanceError):
             first.events[0].sequence = 99  # type: ignore[misc]
+
+    def test_terminal_completion_transitions_once_and_persists_through_save_load(
+        self,
+    ) -> None:
+        pack = load_content_pack(URBAN)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            session = GameSession.from_content_pack(
+                pack,
+                SaveLoadService(pack, Path(temp_dir)),
+                determinism=DeterminismContext(seed=75, clock=31),
+            )
+            camera = session.submit(CampaignActionIntent("action_check_timestamp"))
+            self.assertEqual(camera.status, TurnStatus.ACCEPTED)
+            self.assertEqual(camera.newly_completed_endings, ())
+
+            completed = session.submit(
+                CampaignActionIntent("action_correct_vendor_record")
+            )
+            self.assertEqual(completed.status, TurnStatus.ACCEPTED)
+            self.assertEqual(
+                [ending.id for ending in completed.newly_completed_endings],
+                ["log_case_closed"],
+            )
+            self.assertTrue(completed.view.campaign.completion.completed)
+
+            saved = session.submit(SaveIntent("resolved"))
+            self.assertEqual(saved.status, TurnStatus.ACCEPTED)
+            self.assertEqual(saved.newly_completed_endings, ())
+            loaded = session.submit(LoadIntent("resolved"))
+            self.assertEqual(loaded.status, TurnStatus.ACCEPTED)
+            self.assertEqual(loaded.newly_completed_endings, ())
+            self.assertTrue(loaded.view.campaign.completion.completed)
+            self.assertEqual(
+                [ending.id for ending in loaded.view.campaign.completion.endings],
+                ["log_case_closed"],
+            )
+
+            rejected = self._assert_rejected_unchanged(
+                session,
+                CampaignActionIntent("action_correct_vendor_record"),
+                RejectionCode.INADMISSIBLE_INTENT,
+            )
+            self.assertEqual(rejected.newly_completed_endings, ())
 
     def test_malformed_intent_rejection_preserves_all_session_state(self) -> None:
         session = GameSession.from_content_pack(

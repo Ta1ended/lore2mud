@@ -149,8 +149,13 @@ content_pack/
 - `knowledge` 初始可为 `unknown`、`heard`、`suspected`、`confirmed`、`retracted` 或
   `corrected`，并为每个可见状态提供玩家文本。`unknown` 永不进入玩家日志；揭示只可向前，
   撤回和修正必须从允许的既有状态发生。
-- `log_entries` 是条件故事/目标/知识文本。`World.available_log_entries()` 还合并当前可见目标
+- `log_entries` 是条件故事/目标/知识文本。可选 `title` 是作者提供的玩家标题；省略时共享投影
+  只显示本地化类别名，绝不把稳定 ID 当作玩家标题。`World.available_log_entries()` 还合并当前可见目标
   与知识，Web 和 CLI 不从客观 canon 或隐藏定义自行推导日志。
+- 仅故事日志可标记 `terminal: true`。终局日志必须同时声明 `title`、可验证的 `condition` 和一条
+  无条件文本回退；当前可见的终局日志由 `World` 投影为通关与结局。客户端不得根据最后一个目标、
+  房间拓扑或事件文本自行猜测通关；读取存档后的已完成终局保持可见，但只在一次非存读档操作首次
+  达成时提示。
 
 带 campaign 的内容包必须使用 save v9；v8 缺少角色、场景、目标和知识运行态，因此明确拒绝。
 读取存档只恢复已验证状态，不重放 action effects，不推进阶段，也不再次揭示知识。

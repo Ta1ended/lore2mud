@@ -54,7 +54,7 @@ EXPECTED_ARTIFACT_SHA256 = {
     "project": "2456b589cd6bc4fc8840cb1f654c729aeac30e38bb6ecbcedc551bff82535d2f",
     "project_semantic": "36576478fcbd1363ce60a664965737be484380f8701d062f4bafbfb75a33a8a8",
     "preview": "6167502a03657c0552c7b2b88d9b5cb7ca12e2e62f8f33a2d4c90c17027f3147",
-    "report": "6edbac0c5ac5cc853bdef06722239b4574c53776c85de8317cbe9a2a0db21dcd",
+    "report": "a199912669312bc7624a0073928150beda281959691eaa08656801ca6050f0a7",
     "proofing": "8ca23a49dd891646ec3286fdfcd2755e7ef142ef1e55f7f7ff74f04238b8bb05",
 }
 
@@ -62,17 +62,17 @@ EXPECTED_RESULT_SHA256 = {
     "create_project": "0b5f91dbd1acd0c99655c300af97fa4bd346e6b16bf409692a251c30ab04f55e",
     "validate_project": "a55ab13d8bce390d82e01b326115802462a3da7b041eedeea1dc50bc415c226f",
     "build_preview": "dcb436fd4fc883c808d791ad14c4bce47401c5616fb5ba4c2f6570e40cbbd7f4",
-    "simulate": "8f236d6cc09223077cc72af79cae79f700881f433ddd694ab15f028db2740f25",
-    "replay": "d2bd074e2a4de5195d327c3ca8ae80c6b276a9bf15455f82d9d3d23678a6ea48",
+    "simulate": "1fcc9d3b976be63e6f5c7a9d4a56a761461eedfeb46b50dd8ae6c9cdf84b11a3",
+    "replay": "de64930052836ceaeb8e5d5281d036d1f055b82cb356b5ba6a01e4e98d706592",
     "proof": "22fd33e057a0fca6040b8c04dc1dccecde0d125e1191bd74ef37aa9a8a34fbca",
 }
 
 EXPECTED_RUNTIME_SHA256 = {
-    "initial_view": "10229fd82cd6dc2763d0d3246b16917fb5b7ffad2d6147b3ac287773dce7360e",
-    "turn_trace": "8983ccd102deacd6badd7c7009ff42596ba971f0ce19e298e00682ad0b794017",
+    "initial_view": "01811fe484cf1822a53d4386a10da2ba380795cb1787158947822e2d03eff84d",
+    "turn_trace": "265d24a4d1e83f214c955695378be491e6d93b3394646222aec15484bde239f8",
     "save_v9": "19df21f81127c99b05ff35fce074e066e5da4a4bbd585c0c75cd50e2c8e02c56",
-    "web_snapshot": "e62483aad9d282f2699d8c540cc0b8df8f56adc56dd3e545ca0fbaa05f085861",
-    "web_trace": "363c3d688655998f53968dcf8028aeb440e5f0a2fb766733f45f904361424f8c",
+    "web_snapshot": "4dbd7b5fbb5a1529a428c6c4937e8b6b9330a94d832b9d59140f3994884bf4ea",
+    "web_trace": "827c9f46f58a6d2d17dab43177fba3a733e40eef95fa6093e24017117ba4f6f6",
 }
 
 

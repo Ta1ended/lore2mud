@@ -27,6 +27,7 @@ from lore2mud.application.contracts import (
     DialogueEventData,
     DialogueOptionEvent,
     DropIntent,
+    EndingView,
     EndDialogueIntent,
     EquipIntent,
     EquipmentSlot,
@@ -470,6 +471,11 @@ class GameSession:
                     capability_events = ()
                     final_sequence = sequence + (1 if draft is not None else 0)
                 events = self._build_events(draft, capability_events, view, sequence)
+                newly_completed_endings = _newly_completed_endings(
+                    before_view,
+                    view,
+                    intent,
+                )
 
                 # Persistence is the final fallible operation. Everything after this
                 # point is an assignment into already validated prepared state.
@@ -483,7 +489,12 @@ class GameSession:
                 if self._capability_host is not None:
                     self._capability_host.commit(prepared)
                 self._event_sequence = final_sequence
-                return TurnResult(TurnStatus.ACCEPTED, events, view)
+                return TurnResult(
+                    TurnStatus.ACCEPTED,
+                    events,
+                    view,
+                    newly_completed_endings=newly_completed_endings,
+                )
             except WorldRuleError as exc:
                 try:
                     message = str(exc)
@@ -1031,6 +1042,24 @@ def _campaign_action_event(outcome: CampaignActionOutcome) -> CampaignActionEven
         outcome.label,
         outcome.result_text,
         (),
+    )
+
+
+def _newly_completed_endings(
+    before_view: GameView,
+    after_view: GameView,
+    intent: GameIntent | CapabilityIntent,
+) -> tuple[EndingView, ...]:
+    """Report only a newly reached terminal state, never a restored save."""
+    if isinstance(intent, (LoadIntent, SaveIntent, ViewIntent)):
+        return ()
+    before_ids = {
+        ending.id for ending in before_view.campaign.completion.endings
+    }
+    return tuple(
+        ending
+        for ending in after_view.campaign.completion.endings
+        if ending.id not in before_ids
     )
 
 

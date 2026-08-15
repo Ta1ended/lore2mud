@@ -2466,7 +2466,7 @@ class AnchorAndPackageTests(V2_4Fixture):
         self.assertTrue(report.replay_verified)
         self.assertEqual(
             report.fingerprint,
-            "1ba93496cdf0244c60553d1a4f91d44dc3db899ef787cb133ffe9158b68c45f1",
+            "8daafa0216dcb6591d9819f4c8b4fc24bce787dfe94dae5730424c6f316ca05e",
         )
         self.assertEqual(
             tuple(item.after_step for item in report.checkpoints),

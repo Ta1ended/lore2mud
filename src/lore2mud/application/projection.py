@@ -11,6 +11,7 @@ from lore2mud.application.contracts import (
     BuyIntent,
     CampaignActionIntent,
     CampaignActionView,
+    CampaignCompletionView,
     CampaignView,
     CharacterFocusView,
     CharacterView,
@@ -19,6 +20,7 @@ from lore2mud.application.contracts import (
     DialogueOptionView,
     DialogueView,
     DropIntent,
+    EndingView,
     EndDialogueIntent,
     EquipIntent,
     EquipmentSlot,
@@ -65,7 +67,7 @@ from lore2mud.content.models import (
     ReachRoomQuestDefinition,
     SceneDefinition,
 )
-from lore2mud.engine.world import World, WorldRuleError
+from lore2mud.engine.world import JournalEntry, World, WorldRuleError
 
 
 _IntentT = TypeVar("_IntentT", bound=GameIntent)
@@ -409,15 +411,16 @@ def _campaign_view(world: World) -> CampaignView:
         for interactable in interactables
         for action in interactable.actions
     )
-    journal = tuple(
-        JournalEntryView(
+    log_entries = world.available_log_entries()
+    journal = tuple(_journal_entry_view(entry) for entry in log_entries)
+    endings = tuple(
+        EndingView(
             id=entry.id,
-            category=JournalCategory(entry.category),
-            title=entry.title,
+            title=entry.title or _journal_category_label(entry.category),
             text=entry.text,
-            status=_journal_status(entry.category, entry.status),
         )
-        for entry in world.available_log_entries()
+        for entry in log_entries
+        if entry.terminal
     )
     return CampaignView(
         scenes=scenes,
@@ -430,6 +433,7 @@ def _campaign_view(world: World) -> CampaignView:
             entry for entry in journal if entry.category is JournalCategory.KNOWLEDGE
         ),
         journal=journal,
+        completion=CampaignCompletionView(bool(endings), endings),
     )
 
 
@@ -557,3 +561,51 @@ def _journal_status(
     if category == JournalCategory.KNOWLEDGE.value:
         return KnowledgeStatus(status)
     raise AssertionError("story journal entries cannot carry a status")
+
+
+def _journal_entry_view(entry: JournalEntry) -> JournalEntryView:
+    """Keep all player-facing journal labels in the shared projection."""
+    category = JournalCategory(entry.category)
+    status = _journal_status(entry.category, entry.status)
+    return JournalEntryView(
+        id=entry.id,
+        category=category,
+        title=entry.title or _journal_category_label(entry.category),
+        text=entry.text,
+        status=status,
+        category_label=_journal_category_label(entry.category),
+        status_label=_journal_status_label(status),
+    )
+
+
+def _journal_category_label(category: str) -> str:
+    labels = {
+        JournalCategory.STORY.value: "故事",
+        JournalCategory.OBJECTIVE.value: "目标",
+        JournalCategory.KNOWLEDGE.value: "知识",
+    }
+    try:
+        return labels[category]
+    except KeyError as exc:
+        raise AssertionError(f"未知日志类别：{category}") from exc
+
+
+def _journal_status_label(
+    status: ObjectiveStatus | KnowledgeStatus | None,
+) -> str | None:
+    if status is None:
+        return None
+    labels: dict[ObjectiveStatus | KnowledgeStatus, str] = {
+        ObjectiveStatus.INACTIVE: "未启用",
+        ObjectiveStatus.ACTIVE: "进行中",
+        ObjectiveStatus.IN_PROGRESS: "推进中",
+        ObjectiveStatus.COMPLETED: "已完成",
+        ObjectiveStatus.FAILED: "已失败",
+        KnowledgeStatus.UNKNOWN: "未知",
+        KnowledgeStatus.HEARD: "已听闻",
+        KnowledgeStatus.SUSPECTED: "存疑",
+        KnowledgeStatus.CONFIRMED: "已证实",
+        KnowledgeStatus.RETRACTED: "已撤回",
+        KnowledgeStatus.CORRECTED: "已修正",
+    }
+    return labels[status]

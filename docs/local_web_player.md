@@ -40,7 +40,10 @@ controls so their success or failure never depends on parsing rendered Chinese t
 visible room entities, inventory, equipment, accepted quests, active dialogue,
 current shop, flags, and a `campaign` object. That object contains active scenes,
 visible interactables, currently executable stable actions, non-inactive objectives,
-non-unknown player knowledge, and the merged journal.
+non-unknown player knowledge, the merged journal, and an authoritative
+`completion` projection. `completion` contains `completed` plus explicitly authored
+`endings` with player-facing `title` and `text`; the browser never infers completion
+from an objective, map route, or event message.
 
 `POST /api/action` accepts an `application/json` object. Representative actions:
 
@@ -57,10 +60,12 @@ non-unknown player knowledge, and the merged journal.
 {"type":"command","command":"look"}
 ```
 
-Success responses contain `ok=true`, a typed `event`, and the post-action
-`snapshot`. Validation and world-rule failures return HTTP 422 with `ok=false`, an
-error event, and an authoritative unchanged snapshot. Malformed HTTP requests return
-4xx JSON without reaching the World.
+Success responses contain `ok=true`, a typed `event`, the post-action `snapshot`, and
+`newly_completed_endings`. The latter is non-empty only on a false-to-true terminal
+transition caused by the current non-save/load action; the persistent completion panel
+comes from the snapshot. Validation and world-rule failures return HTTP 422 with
+`ok=false`, an error event, and an authoritative unchanged snapshot. Malformed HTTP
+requests return 4xx JSON without reaching the World.
 
 ## Local security boundary
 

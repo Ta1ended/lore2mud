@@ -90,8 +90,9 @@ NEW_SCHEMA_FILES = (
     "capability_authoring_result.schema.json",
 )
 
-# V2-4A extends the shared authoring envelope/schema vocabulary without changing
-# the V2-3 capability schemas or any runtime/content schema.
+# V2-4A extends the shared authoring envelope/schema vocabulary. V2-4B adds the
+# additive campaign completion/title vocabulary while keeping capability schemas
+# unchanged.
 V2_4_SHARED_SCHEMA_FILES = (
     "authoring_diagnostic.schema.json",
     "authoring_result.schema.json",
@@ -104,7 +105,12 @@ V2_4_SHARED_SCHEMA_FILES = (
     "anchor_migration.schema.json",
     "anchor_validation_request.schema.json",
     "anchor_migration_report.schema.json",
+    "campaign.schema.json",
 )
+
+V2_4B_ALLOWED_RUNTIME_CORE_PATHS = {
+    "src/lore2mud/engine/world.py",
+}
 
 INVALID_SEMVERS = (
     "1.2",
@@ -845,6 +851,7 @@ class CapabilitySchemaProtectionTests(unittest.TestCase):
             "src/lore2mud/engine/save.py",
             "pipeline/forge.py",
         }
+        protected_paths -= V2_4B_ALLOWED_RUNTIME_CORE_PATHS
         for line in result.stdout.splitlines():
             path = line[3:].strip()
             self.assertNotIn(

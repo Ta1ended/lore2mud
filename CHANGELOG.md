@@ -4,6 +4,16 @@
 
 ### Added
 
+- 新增 V2-4B 玩家呈现 contract：作者可为故事日志声明玩家标题与 `terminal` 终局标记；共享
+  `CampaignCompletionView`/`EndingView` 投影通关与结局，`TurnResult` 只在首次非存读档操作达成终局时给出
+  `newly_completed_endings`。
+- Added the V2-4B player-presentation contract: authored player titles and `terminal` story-log markers,
+  shared `CampaignCompletionView`/`EndingView` completion projections, and `newly_completed_endings` only for
+  a first terminal transition caused by a non-save/load action.
+- 新增 V2-4B 合成 campaign fixture 与 session/save-load、CLI/Web 等价、Schema/loader、完成面板回归覆盖。
+- Added V2-4B synthetic campaign coverage for session/save-load, CLI/Web equivalence, Schema/loader validation,
+  and the persistent completion panel.
+
 - 新增 V2-4A Novel Adaptation provenance/rights contracts：公开安全的 source reference、rights assertion、
   creator decision、transformation、完整 `GameProject v1` trace binding、确定性公共匿名投影，以及显式
   story/scene/resume anchor migration。`GamePackage v2` 与 evidence manifest 现在具有 canonical bytes、
@@ -22,6 +32,10 @@
   compatibility.
 
 ### Fixed
+
+- 修复玩家日志将稳定 entry ID 当作标题、将原始状态枚举直接显示给玩家的问题；CLI/Web 现在使用共享中文类别与状态标签。
+- Fixed player logs exposing stable entry IDs as titles and raw status enums; CLI/Web now use shared localized
+  category and status labels.
 
 - 修复私有来源连通图的 element label 泄露：public provenance 与 sealed package 现在把私有连接的
   `element_kind` 规范化为公开安全值，且身份 alias refinement 不再依赖原始私有 label。回归证明私有 label 的
@@ -43,6 +57,14 @@
   while allowing the authorized V2-3 authoring/Web integration paths.
 
 ### Changed
+
+- CLI 在首次完成时输出明确的 `=== 通关 ===` 与结局标题；Web 同时显示首次 toast 和读取后仍存在的通关面板。
+- CLI now prints an explicit `=== 通关 ===` marker and ending title on first completion; Web shows both a first
+  completion toast and a panel that remains after loading a completed save.
+- V2-4B 更新了既有 V2-3 空 capability 字节基线，并保持 V1 save/content compatibility contract；未增加能力需求、
+  依赖或 save-version bump。
+- V2-4B updates the existing V2-3 empty-capability byte baselines while preserving the V1 save/content compatibility
+  contract; no capability requirement, dependency, or save-version bump was added.
 
 - 记录产品负责人于 2026-08-09 对 V2-4A documentation seal
   `c7e3280083ebc77a2b453f9bc057df302b00202a` 的明确授权：已正常推送
@@ -749,6 +771,12 @@
   metadata fields, strict decoding, and source reconstruction.
 
 ### Verified
+
+- V2-4B focused regressions `54 passed`; full pytest `1624 passed, 3 skipped`; candidate-src full unittest
+  `1627 tests OK, skipped=3`; Ruff, Pyright, compileall, `pip check`, and `git diff --check` passed locally.
+- V2-4B focused regressions `54 passed`; full pytest `1624 passed, 3 skipped`; full unittest with the candidate
+  `src` selected passed `1627 tests`, with `3` skips; Ruff, Pyright, compileall, `pip check`, and `git diff --check`
+  passed locally.
 
 - GPT-5.6-sol independently accepted five-domain integration candidate `a172a82`
   GO with no P0-P3 findings (DEC-0068). Linux Python 3.11/3.12 serial and 3.13

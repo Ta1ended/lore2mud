@@ -198,6 +198,90 @@ class CampaignSchemaAndLoaderTests(unittest.TestCase):
                 "knowledge[0].initial_status " + "是必填字段", message
             )
 
+    def test_terminal_logs_require_story_title_and_condition(self) -> None:
+        schema_documents = {
+            document["$id"]: document
+            for schema_path in (ROOT / "schemas").glob("*.schema.json")
+            for document in [json.loads(schema_path.read_text("utf-8"))]
+            if "$id" in document
+        }
+        validator = Draft202012Validator(
+            schema_documents["https://example.invalid/lore2mud/campaign.schema.json"],
+            registry=Registry().with_resources(
+                (uri, Resource.from_contents(document))
+                for uri, document in schema_documents.items()
+            ),
+        )
+        cases = (
+            (
+                "missing_title",
+                lambda entry: entry.pop("title"),
+                "terminal 必须声明 title",
+            ),
+            (
+                "missing_condition",
+                lambda entry: entry.pop("condition"),
+                "terminal 必须声明 condition",
+            ),
+            (
+                "non_story",
+                lambda entry: entry.__setitem__("category", "objective"),
+                "terminal 仅允许 story 日志",
+            ),
+        )
+        for label, mutate, expected in cases:
+            with self.subTest(label=label), tempfile.TemporaryDirectory() as temp_dir:
+                path = Path(temp_dir) / "urban"
+                shutil.copytree(URBAN, path)
+                campaign_path = path / "campaign.json"
+                document = json.loads(campaign_path.read_text("utf-8"))
+                entry = {
+                    "id": "log_invalid_terminal",
+                    "category": "story",
+                    "title": "Closure",
+                    "terminal": True,
+                    "condition": {
+                        "kind": "state_equals",
+                        "state_id": "state_camera_checked",
+                        "value": True,
+                    },
+                    "texts": [{"text": "The case is closed."}],
+                }
+                mutate(entry)
+                document["log_entries"].append(entry)
+                campaign_path.write_text(
+                    json.dumps(document, indent=2), encoding="utf-8"
+                )
+
+                self.assertTrue(list(validator.iter_errors(document)))
+                with self.assertRaisesRegex(ContentValidationError, expected):
+                    load_content_pack(path)
+
+    def test_terminal_log_requires_unconditional_text_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "urban"
+            shutil.copytree(URBAN, path)
+            campaign_path = path / "campaign.json"
+            document = json.loads(campaign_path.read_text("utf-8"))
+            terminal = next(
+                entry for entry in document["log_entries"] if entry.get("terminal")
+            )
+            terminal["texts"] = [
+                {
+                    "condition": terminal["condition"],
+                    "text": "The condition-specific close text.",
+                }
+            ]
+            campaign_path.write_text(
+                json.dumps(document, indent=2), encoding="utf-8"
+            )
+
+            with self.assertRaisesRegex(
+                ContentValidationError,
+                "terminal 必须包含无条件文本回退",
+            ):
+                load_content_pack(path)
+
 
 class MagicCampaignRuntimeTests(unittest.TestCase):
     def setUp(self) -> None:
@@ -440,6 +524,60 @@ class UrbanKnowledgeRuntimeTests(unittest.TestCase):
                 {"action_accuse_vendor", "action_correct_vendor_record"},
             )
 
+    def test_terminal_completion_is_visible_once_to_cli_and_web(self) -> None:
+        commands = CommandProcessor(self.world)
+        self.assertNotIn(
+            "=== 通关 ===", commands.execute("act action_check_timestamp").text
+        )
+        completed = commands.execute("act action_correct_vendor_record")
+        self.assertIn("=== 通关 ===", completed.text)
+        self.assertIn("结局：Case record resolved", completed.text)
+        self.assertIn(
+            "The station closes the case with the verified record.", completed.text
+        )
+        self.assertIn("=== 通关 ===", commands.execute("journal").text)
+
+        pack = load_content_pack(URBAN)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            session = PlayerSession(pack, SaveLoadService(pack, Path(temp_dir)))
+            initial = session.snapshot()
+            self.assertFalse(initial["campaign"]["completion"]["completed"])
+            camera = session.dispatch(
+                {"type": "campaign_action", "action_id": "action_check_timestamp"}
+            )
+            self.assertEqual(camera["newly_completed_endings"], [])
+            completed = session.dispatch(
+                {
+                    "type": "campaign_action",
+                    "action_id": "action_correct_vendor_record",
+                }
+            )
+            self.assertEqual(
+                completed["newly_completed_endings"],
+                [
+                    {
+                        "id": "log_case_closed",
+                        "title": "Case record resolved",
+                        "text": "The station closes the case with the verified record.",
+                    }
+                ],
+            )
+            self.assertTrue(completed["snapshot"]["campaign"]["completion"]["completed"])
+            self.assertEqual(
+                completed["snapshot"]["campaign"]["completion"]["endings"],
+                completed["newly_completed_endings"],
+            )
+            before_retry = deepcopy(completed["snapshot"])
+            retry = session.dispatch(
+                {
+                    "type": "campaign_action",
+                    "action_id": "action_correct_vendor_record",
+                }
+            )
+            self.assertFalse(retry["ok"])
+            self.assertEqual(retry["newly_completed_endings"], [])
+            self.assertEqual(retry["snapshot"], before_retry)
+
     def test_cli_journal_commands_and_help_are_authoritative(self) -> None:
         commands = CommandProcessor(self.world)
         self.assertIn("action_check_timestamp", commands.execute("actions").text)
@@ -448,8 +586,12 @@ class UrbanKnowledgeRuntimeTests(unittest.TestCase):
         self.assertIn(
             "Check the platform camera", commands.execute("objectives").text
         )
+        self.assertIn("[进行中]", commands.execute("objectives").text)
         self.assertIn("Vendor access", commands.execute("knowledge").text)
-        self.assertIn("log_camera_result", commands.execute("journal").text)
+        journal = commands.execute("journal").text
+        self.assertIn("[故事] 故事", journal)
+        self.assertIn("[知识] Vendor access", journal)
+        self.assertNotIn("log_camera_result", journal)
 
     def test_active_dialogue_must_remain_player_visible_on_save_and_load(
         self,

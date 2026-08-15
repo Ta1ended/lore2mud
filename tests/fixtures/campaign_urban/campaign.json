@@ -59,8 +59,10 @@
       "result_text": "The accusation is entered despite the timestamp.",
       "effects": [
         {"kind": "advance_objective", "objective_id": "objective_accuse_vendor", "transition": "activate"},
-        {"kind": "reveal_knowledge", "knowledge_id": "knowledge_vendor_access", "status": "confirmed"}
-      ]
+        {"kind": "reveal_knowledge", "knowledge_id": "knowledge_vendor_access", "status": "confirmed"},
+        {"kind": "set_narrative_state", "state_id": "state_case_closed", "value": true}
+      ],
+      "condition": {"kind": "state_equals", "state_id": "state_case_closed", "value": false}
     },
     {
       "id": "action_correct_vendor_record",
@@ -69,8 +71,10 @@
       "effects": [
         {"kind": "advance_objective", "objective_id": "objective_clear_vendor", "transition": "activate"},
         {"kind": "retract_knowledge", "knowledge_id": "knowledge_vendor_access"},
-        {"kind": "correct_knowledge", "knowledge_id": "knowledge_vendor_access"}
-      ]
+        {"kind": "correct_knowledge", "knowledge_id": "knowledge_vendor_access"},
+        {"kind": "set_narrative_state", "state_id": "state_case_closed", "value": true}
+      ],
+      "condition": {"kind": "state_equals", "state_id": "state_case_closed", "value": false}
     }
   ],
   "objectives": [
@@ -123,6 +127,16 @@
           "condition": {"kind": "state_equals", "state_id": "state_camera_checked", "value": true}
         },
         {"text": "The final camera timestamp has not been checked."}
+      ]
+    },
+    {
+      "id": "log_case_closed",
+      "category": "story",
+      "title": "Case record resolved",
+      "terminal": true,
+      "condition": {"kind": "state_equals", "state_id": "state_case_closed", "value": true},
+      "texts": [
+        {"text": "The station closes the case with the verified record."}
       ]
     }
   ]

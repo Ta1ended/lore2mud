@@ -362,6 +362,9 @@ class PlayerSession:
             "ok": result.status is TurnStatus.ACCEPTED,
             "status": result.status.value,
             "events": [PlayerSession._event_json(event) for event in result.events],
+            "newly_completed_endings": PlayerSession._json_value(
+                result.newly_completed_endings
+            ),
             "view": PlayerSession._json_value(result.view),
             "diagnostics": diagnostics,
             "event": {

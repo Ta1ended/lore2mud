@@ -250,13 +250,29 @@
       "properties": {
         "id": {"$ref": "common.schema.json#/$defs/stable_id"},
         "category": {"enum": ["story", "objective", "knowledge"]},
+        "title": {"type": "string", "minLength": 1},
         "texts": {
           "type": "array",
           "minItems": 1,
           "items": {"$ref": "#/$defs/conditional_text"}
         },
-        "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"}
-      }
+        "condition": {"$ref": "dialogue.schema.json#/$defs/narrative_condition"},
+        "terminal": {"type": "boolean"}
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {"terminal": {"const": true}},
+            "required": ["terminal"]
+          },
+          "then": {
+            "required": ["title", "condition"],
+            "properties": {
+              "category": {"const": "story"}
+            }
+          }
+        }
+      ]
     },
     "campaign_effect": {
       "oneOf": [

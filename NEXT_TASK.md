@@ -1,58 +1,59 @@
 # 下一任务 / Next Task
 
-更新日期：2026-08-09
+更新日期：2026-08-15
 
 ## 中文
 
 ### 唯一下一任务
 
-**在新的独立公开 workstream 中实现 V2-4B / PLAT-1 通用玩家呈现修复：玩家日志不得直接暴露稳定 ID，
-满足终局条件时 CLI/Web 必须给出明确的通关与结局提示。**
+**请求一名未参与编写的只读 TECH reviewer，审查本地 V2-4B 候选的精确 commit；要求 findings-first，按 P0–P3 输出，最终只能是 `GO` 或 `REVISE`。**
 
 ### 当前依据
 
-- V2-4A 冻结产品候选为 `badc9a20816a9515b24c98199ca37323a02c1b00`，documentation seal 为
-  `c7e3280083ebc77a2b453f9bc057df302b00202a`。产品所有者已于 2026-08-09 授权正常 push 与
-  `main` 纯快进；发布完成时两个 live 远端 ref 均精确指向 `c7e3280`。
-- V2-4A 的 TECH `GO`、PRODUCT `PRODUCT PASS` 与 SECURITY `GO` 继续绑定冻结产品字节；本后续
-  documentation record 不改变源码、Schema 或测试。
-- 私有 PLAT-1 试玩反馈暴露了两个通用表现缺口：事件/状态稳定 ID 可进入玩家日志，以及终局条件成立后
-  缺少独立、醒目的通关/结局投影。私有故事内容、存档、日志和证据仍留在公共 Git 之外。
+- 候选 worktree：`D:\MUD game kaifa\.codex-worktrees\v2-4b-player-experience-20260815`；基线为
+  `7470c5b5344df9d184828d20e37032c5bc5f57bd`，候选 commit 已固定；精确 SHA 记录在私有验证矩阵与 handoff。
+- 全量 pytest 为 `1624 passed, 3 skipped`；显式绑定候选 `src` 的全量 unittest 为
+  `1627 tests OK, skipped=2`；Ruff、Pyright、compileall、`pip check` 和 `git diff --check` 已通过。
+- 授权的外部私有内容候选、存档、截图、日志和报告均位于仓库外；其技术封存不可分发，且不等于 PRODUCT PASS、
+  SECURITY PASS 或发布授权。私有矩阵与证据不进入公共 Git。
 
-### 范围与门禁
+### 审查边界
 
-- 只使用公开安全的合成 fixture 与现有 V2 application/Web 边界；不得把私有故事文本或专有 ID 写入仓库。
-- 保持 `World` 权威、CLI/Web 等价、玩家安全投影、确定性与 V1 兼容；不得借机启动 V2-5、Workbench、
-  动态插件、多人运行或运行时模型裁决。
-- 新 workstream 必须有聚焦与全量验证、真实 CLI/Web 流程及新的独立 TECH 验收；push、`main` 更新、
-  release 与分发仍是后续独立门禁。
-- 主工作树未跟踪的 `uv.lock` 是用户保留文件，不得纳入新 workstream 或提交。
+- reviewer 只读访问本候选 worktree、选定引擎 checkout 和允许的私有内容目录；不得编辑、移动 ref、push、merge、
+  查询远端、重封包或启动 V2-5。
+- 验收必须绑定最终候选 commit，优先检查 Schema/loader/runtime/CLI/Web 等价、完成态持久化、玩家安全投影、
+  V1 兼容、测试证据与 Git 私有边界；发现问题按 P0–P3 列出，末尾只给 `GO` 或 `REVISE`。
+
+### 后续队列
+
+- TECH `GO` 后停止，等待产品负责人对扩写版重新真人试玩并给出新的 `PRODUCT PASS`。
+- `SECURITY PASS`、push、`main` 快进、release、分发和 V2-5 均是独立后续门禁。
 
 ## English
 
 ### Single Next Task
 
-**Implement a generic V2-4B / PLAT-1 player-presentation repair in a new isolated public workstream: player logs
-must not expose stable IDs directly, and CLI/Web must show an explicit completion and ending result when terminal
-conditions are satisfied.**
+**Request a fresh read-only TECH reviewer who did not write the change to inspect the exact local V2-4B candidate commit; require findings-first P0–P3 findings and exactly one final `GO` or `REVISE`.**
 
 ### Current Basis
 
-- The frozen V2-4A product candidate is `badc9a20816a9515b24c98199ca37323a02c1b00`, with documentation seal
-  `c7e3280083ebc77a2b453f9bc057df302b00202a`. On August 9, 2026, the product owner authorized a normal push and
-  fast-forward `main` integration; both live remote refs pointed exactly to `c7e3280` when publication completed.
-- V2-4A TECH `GO`, PRODUCT `PRODUCT PASS`, and SECURITY `GO` remain bound to the frozen product bytes; this follow-up
-  documentation record changes no source, Schema, or test bytes.
-- Private PLAT-1 playtest feedback exposed two generic presentation gaps: event/state stable IDs can reach player logs,
-  and completed terminal conditions lack a separate, prominent completion/ending projection. Private story content,
-  saves, logs, and evidence remain outside public Git.
+- Candidate worktree: `D:\MUD game kaifa\.codex-worktrees\v2-4b-player-experience-20260815`; baseline
+  `7470c5b5344df9d184828d20e37032c5bc5f57bd`; the candidate commit is fixed, with its exact SHA recorded in the private verification matrix and handoff.
+- Full pytest is `1624 passed, 3 skipped`; full unittest with the candidate `src` explicitly selected is
+  `1627 tests OK, skipped=2`; Ruff, Pyright, compileall, `pip check`, and `git diff --check` pass.
+- The authorized external private content candidate, saves, screenshots, logs, and reports remain outside the
+  repository. Its technical seal is non-distributable and is not a PRODUCT PASS, SECURITY PASS, or release
+  authorization. Private matrices and evidence stay out of public Git.
 
-### Scope And Gates
+### Review Boundary
 
-- Use only public-safe synthetic fixtures and the existing V2 application/Web boundaries; do not add private story
-  text or proprietary IDs to the repository.
-- Preserve authoritative `World`, CLI/Web equivalence, player-safe projection, determinism, and V1 compatibility. Do
-  not start V2-5, Workbench, dynamic plugins, multiplayer runtime, or runtime model adjudication.
-- The new workstream requires focused and full verification, real CLI/Web flows, and fresh independent TECH
-  acceptance. Push, `main` updates, release, and distribution remain separate later gates.
-- The main checkout's untracked `uv.lock` is user-owned and must not enter the new workstream or any commit.
+- The reviewer is read-only and may access only this candidate worktree, the selected engine checkout, and the
+  explicitly permitted private content directory; no edits, ref movement, push, merge, remote query, resealing, or V2-5.
+- Acceptance must bind to the final candidate commit and focus on Schema/loader/runtime/CLI/Web equivalence,
+  completion persistence, player-safe projection, V1 compatibility, test evidence, and the Git/private boundary.
+  Findings are P0–P3 first, ending with only `GO` or `REVISE`.
+
+### Queue After The Gate
+
+- After TECH `GO`, stop and wait for the product owner to replay the expanded build and issue a fresh `PRODUCT PASS`.
+- `SECURITY PASS`, push, fast-forward `main`, release, distribution, and V2-5 remain separate later gates.

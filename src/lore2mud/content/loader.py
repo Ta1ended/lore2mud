@@ -1419,7 +1419,11 @@ def _load_campaign_definition(
     ):
         location = f"{CAMPAIGN_FILE}.log_entries[{index}]"
         obj = validator.object(raw_log, location)
-        validator.keys(obj, {"id", "category", "texts", "condition"}, location)
+        validator.keys(
+            obj,
+            {"id", "category", "title", "texts", "condition", "terminal"},
+            location,
+        )
         log_id = validator.stable_id(
             validator.text(obj, "id", location), f"{location}.id"
         )
@@ -1429,18 +1433,47 @@ def _load_campaign_definition(
                 f"{location}.category 必须是 story、objective 或 knowledge"
             )
             category = "story"
+        title = (
+            validator.text(obj, "title", location)
+            if "title" in obj
+            else None
+        )
+        log_texts = _conditional_texts(
+            obj.get("texts"),
+            f"{location}.texts",
+            validator,
+            required=True,
+            **condition_args,
+        )
+        condition = _optional_campaign_condition(
+            obj,
+            location,
+            validator,
+            **condition_args,
+        )
+        terminal = obj.get("terminal", False)
+        if type(terminal) is not bool:
+            validator.issues.append(f"{location}.terminal 必须是布尔值")
+            terminal = False
+        if terminal:
+            if category != "story":
+                validator.issues.append(f"{location}.terminal 仅允许 story 日志")
+            if title is None:
+                validator.issues.append(f"{location}.terminal 必须声明 title")
+            if condition is None:
+                validator.issues.append(f"{location}.terminal 必须声明 condition")
+            if not any(text.condition is None for text in log_texts):
+                validator.issues.append(
+                    f"{location}.terminal 必须包含无条件文本回退"
+                )
         log_values.append(
             LogEntryDefinition(
                 log_id,
                 category,
-                _conditional_texts(
-                    obj.get("texts"),
-                    f"{location}.texts",
-                    validator,
-                    required=True,
-                    **condition_args,
-                ),
-                _optional_campaign_condition(obj, location, validator, **condition_args),
+                log_texts,
+                condition,
+                title,
+                terminal,
             )
         )
     log_entries = _unique_map(log_values, CAMPAIGN_FILE, validator)

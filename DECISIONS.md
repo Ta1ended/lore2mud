@@ -3501,3 +3501,37 @@
   该切片需要自己的实现验证与全新独立 TECH 验收，不自动授权 push、`main` 移动、release、分发或 V2-5。
 - 取代 / Supersedes: DEC-0118 only for publication, `main`, and next-task routing. DEC-0118's exact product freeze,
   TECH/PRODUCT/SECURITY decisions, privacy guarantees, compatibility boundaries, and release limits remain in force.
+
+## DEC-0120: 完成 V2-4B 玩家呈现实现并路由独立 TECH 门禁 / Complete V2-4B player presentation and route the independent TECH gate
+
+- 日期 / Date: 2026-08-15
+- 状态 / Status: V2-4B implementation and local verification are complete in an isolated worktree; the exact
+  candidate commit, fresh independent TECH decision, expanded-build PRODUCT PASS, SECURITY PASS, publication, and
+  release remain pending. / V2-4B 实现与本地验证已在隔离 worktree 完成；精确候选 commit、全新独立 TECH 决定、扩写版
+  PRODUCT PASS、SECURITY PASS、发布与 release 仍待完成。
+- 背景 / Context: The V2-4A public baseline is `7470c5b5344df9d184828d20e37032c5bc5f57bd`. The authorized
+  V2-4B slice repairs player-facing log labels and adds an authored terminal/completion projection without adding
+  capabilities, changing save version, or putting private story material in Git. / V2-4A 公共基线为
+  `7470c5b5344df9d184828d20e37032c5bc5f57bd`。获授权的 V2-4B 切片修复玩家日志标签并增加作者声明的终局/通关
+  投影，不新增 capability、不改变存档版本，也不把私有故事材料写入 Git。
+- 决定 / Decision: Keep `World` authoritative, add the presentation fields additively, localize labels in the
+  shared projection, emit a first-transition-only completion notice, and keep the persistent completion panel in
+  the snapshot. Update synthetic fixture baselines and route the next task to a fresh read-only TECH review of the
+  exact local commit. Do not self-approve, push, move `main`, distribute private content, or enter V2-5. /
+  决定保持 `World` 权威，以 additive 方式增加表现字段，在共享投影中本地化标签，仅在首次终局跃迁时发出通关提示，
+  并让常驻通关面板来自 snapshot；同步更新合成 fixture 基线，下一任务路由为针对精确本地 commit 的全新只读 TECH
+  审查。不得自我批准、push、移动 `main`、分发私有内容或进入 V2-5。
+- 证据 / Evidence: Focused regressions passed `54`; full pytest passed `1624` with `3` skips; candidate-src
+  full unittest passed `1627` with `3` skips; Ruff, Pyright, compileall, `pip check`, and `git diff --check` passed.
+  The external private candidate remains sealed/non-distributable with `capability_requirement_ids=[]`; its CLI/Web,
+  save/load, negative-rejection, replay, and technical-seal evidence is recorded outside Git. / 聚焦回归 `54` 项通过；
+  全量 pytest `1624` 通过、`3` 跳过；显式候选 src 的全量 unittest `1627` 通过、`3` 跳过；Ruff、Pyright、compileall、
+  `pip check` 与 `git diff --check` 通过。仓库外私有候选保持 sealed/不可分发且 `capability_requirement_ids=[]`；
+  CLI/Web、存档、负向拒绝、replay 与技术封存证据均在 Git 外记录。
+- 后果 / Consequences: This is an implementation checkpoint, not a TECH, product, security, publication, or release
+  decision. After the fresh TECH verdict, stop and wait for the product owner's new human PRODUCT PASS for the expanded
+  sample. / 这是实现检查点，不是 TECH、产品、安全、发布或 release 决定。全新 TECH 结论后停止，等待产品负责人对扩写样例
+  给出新的真人 PRODUCT PASS。
+- 取代 / Supersedes: DEC-0119 only for the current-task routing from V2-4A to the V2-4B implementation checkpoint;
+  its publication, main, privacy, and later-milestone boundaries remain in force. / 仅取代 DEC-0119 从 V2-4A 到 V2-4B
+  实现检查点的当前任务路由；其发布、main、隐私与后续里程碑边界继续有效。

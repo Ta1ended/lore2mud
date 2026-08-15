@@ -380,6 +380,8 @@ class LogEntryDefinition:
     category: Literal["story", "objective", "knowledge"]
     texts: tuple[ConditionalText, ...]
     condition: NarrativeCondition | None = None
+    title: str | None = None
+    terminal: bool = False
 
 
 @dataclass(frozen=True, slots=True)

@@ -20,6 +20,7 @@ from lore2mud.application.contracts import (
     DialogueEventData,
     DialogueView,
     DropIntent,
+    EndingView,
     EndDialogueIntent,
     EquipIntent,
     EquipmentEventData,
@@ -393,7 +394,7 @@ class CommandProcessor:
 
         if len(parts) == 1 and _BARE_SELECTION.fullmatch(parts[0]):
             if view.dialogue is not None:
-                return self._select_option(int(parts[0]))
+                return self._with_completion_notice(self._select_option(int(parts[0])))
             return self._error(f"未知指令：{parts[0]}。使用 help 查看帮助。")
 
         if command == "bye" and view.dialogue is None:
@@ -403,7 +404,7 @@ class CommandProcessor:
         if spec is None or spec.handler_name is None:
             return self._error(f"未知指令：{parts[0]}。使用 help 查看帮助。")
         handler = getattr(self, spec.handler_name)
-        return handler(arguments)
+        return self._with_completion_notice(handler(arguments))
 
     def _submit(self, intent: GameIntent) -> TurnResult:
         result = self._session.submit(intent)
@@ -427,6 +428,31 @@ class CommandProcessor:
             f"{prefix}{result.rejection.message}",
             turn_result=result,
         )
+
+    @staticmethod
+    def _with_completion_notice(result: CommandResult) -> CommandResult:
+        turn = result.turn_result
+        if turn is None or not turn.newly_completed_endings:
+            return result
+        return CommandResult(
+            f"{result.text}\n\n{CommandProcessor._completion_block(turn.newly_completed_endings)}",
+            should_quit=result.should_quit,
+            turn_result=turn,
+        )
+
+    @staticmethod
+    def _completion_block(endings: tuple[EndingView, ...]) -> str:
+        lines = ["=== 通关 ==="]
+        for ending in endings:
+            lines.extend((f"结局：{ending.title}", ending.text))
+        return "\n".join(lines)
+
+    @staticmethod
+    def _completion_summary(view: GameView) -> str:
+        completion = view.campaign.completion
+        if not completion.completed:
+            return ""
+        return CommandProcessor._completion_block(completion.endings)
 
     def _command_look(self, arguments: list[str]) -> CommandResult:
         if arguments:
@@ -483,6 +509,9 @@ class CommandProcessor:
             )
 
         lines.extend(room.quest_hints)
+        completion = CommandProcessor._completion_summary(view)
+        if completion:
+            lines.append(completion)
         return "\n".join(lines)
 
     @staticmethod
@@ -707,7 +736,7 @@ class CommandProcessor:
             return CommandResult("尚无可见目标。", turn_result=result)
         return CommandResult(
             "\n".join(
-                f"[{entry.status.value if entry.status is not None else ''}] "
+                f"[{entry.status_label or ''}] "
                 f"{entry.title}\n  {entry.text}"
                 for entry in entries
             ),
@@ -723,7 +752,7 @@ class CommandProcessor:
             return CommandResult("尚无已知条目。", turn_result=result)
         return CommandResult(
             "\n".join(
-                f"[{entry.status.value if entry.status is not None else ''}] "
+                f"[{entry.status_label or ''}] "
                 f"{entry.title}\n  {entry.text}"
                 for entry in entries
             ),
@@ -737,15 +766,16 @@ class CommandProcessor:
         entries = result.view.campaign.journal
         if not entries:
             return CommandResult("叙事日志为空。", turn_result=result)
-        return CommandResult(
-            "\n".join(
-                f"[{entry.category.value}] {entry.title}"
-                + (f" ({entry.status.value})" if entry.status else "")
-                + f"\n  {entry.text}"
-                for entry in entries
-            ),
-            turn_result=result,
-        )
+        lines = [
+            f"[{entry.category_label}] {entry.title}"
+            + (f" ({entry.status_label})" if entry.status_label else "")
+            + f"\n  {entry.text}"
+            for entry in entries
+        ]
+        completion = self._completion_summary(result.view)
+        if completion:
+            lines.append(completion)
+        return CommandResult("\n".join(lines), turn_result=result)
 
     @staticmethod
     def _quests(view: GameView) -> str:

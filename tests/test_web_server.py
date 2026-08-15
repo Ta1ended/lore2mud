@@ -464,11 +464,16 @@ class StaticPackageResourceTests(unittest.TestCase):
 
         self.assertIn('id="recovery-panel"', index)
         self.assertIn('id="recover-button"', index)
+        self.assertIn('id="completion-panel"', index)
+        self.assertIn('id="completion-list"', index)
         self.assertIn("sendAction(snapshot.player.recover)", script)
         self.assertIn("ui.recoveryPanel.hidden = !snapshot.player.recover", script)
+        self.assertIn("function renderCompletion()", script)
+        self.assertIn("ui.completionPanel.hidden = !completion || !completion.completed", script)
         self.assertIn(".room-heading > div { min-width: 0; }", styles)
         self.assertIn(".room-heading .eyebrow { overflow-wrap: anywhere; }", styles)
         self.assertIn(".room-heading { flex-wrap: wrap; gap: 10px; }", styles)
+        self.assertIn(".completion-panel {", styles)
 
     def test_actual_web_package_resources_load_from_zipimport(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
