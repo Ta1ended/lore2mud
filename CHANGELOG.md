@@ -36,6 +36,11 @@
 - 修复玩家日志将稳定 entry ID 当作标题、将原始状态枚举直接显示给玩家的问题；CLI/Web 现在使用共享中文类别与状态标签。
 - Fixed player logs exposing stable entry IDs as titles and raw status enums; CLI/Web now use shared localized
   category and status labels.
+- 修复终局提示仅按当前视图差集去重的问题；同一 `GameSession` 会记录已观察的终局 ID，瞬时条件在离开后
+  再次满足也不会重复提示，且拒绝与存档失败仍保持原子回滚。
+- Fixed terminal notices being deduplicated only against the current view; one `GameSession` now remembers
+  observed terminal IDs, so a transient condition does not re-notify after leaving and returning, while rejection
+  and save-failure rollback remain atomic.
 
 - 修复私有来源连通图的 element label 泄露：public provenance 与 sealed package 现在把私有连接的
   `element_kind` 规范化为公开安全值，且身份 alias refinement 不再依赖原始私有 label。回归证明私有 label 的

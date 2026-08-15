@@ -3535,3 +3535,27 @@
 - 取代 / Supersedes: DEC-0119 only for the current-task routing from V2-4A to the V2-4B implementation checkpoint;
   its publication, main, privacy, and later-milestone boundaries remain in force. / 仅取代 DEC-0119 从 V2-4A 到 V2-4B
   实现检查点的当前任务路由；其发布、main、隐私与后续里程碑边界继续有效。
+
+## DEC-0121: 修复 V2-4B 瞬时终局条件的重复首达提示 / Close the V2-4B transient-terminal replay gap
+
+- 日期 / Date: 2026-08-15
+- 状态 / Status: An independent TECH review found a P2 contract gap in the prior local candidate; the fix is
+  implemented in a follow-up local commit and requires a fresh TECH decision. / 独立 TECH 审查在此前本地候选中发现
+  P2 契约缺口；修复已在后续本地 commit 实现，仍需全新 TECH 决定。
+- 背景 / Context: The previous difference between the before/after visible ending sets could re-emit a first
+  completion notice when a legal terminal condition included a transient predicate such as location and later became
+  true again. The private candidate used persistent state and did not expose the bug. / 先前仅比较前后可见终局集合，
+  当合法终局条件含位置等瞬时谓词、离开后再次满足时，会重复发出首达提示；私有候选使用持久状态，因此试玩未暴露该问题。
+- 决定 / Decision: `GameSession` now transactionally remembers terminal IDs already observed in that session. It
+  filters `newly_completed_endings` against that set, records accepted before/after observations only after all
+  fallible work succeeds, and leaves the set unchanged on rejection or persistence failure. Save v9, `World`,
+  capability requirements, and the public runtime boundary remain unchanged. / 决定由 `GameSession` 事务性记录本会话
+  已观察的终局 ID；只有所有可能失败的操作成功后才提交前后观察结果，拒绝或存档失败不改变该集合。save v9、`World`、
+  capability 需求和公共 runtime 边界保持不变。
+- 证据 / Evidence: A synthetic regression covers a state-plus-location terminal condition, leave/return, save/load,
+  and a fresh session loading the completed save. Focused application/CLI/Web regressions pass after the fix. / 合成回归覆盖
+  状态加位置终局条件、离开/返回、存档/读档和新会话加载已完成存档；修复后聚焦 application/CLI/Web 回归通过。
+- 后果 / Consequences: The final candidate is the follow-up commit and must receive a fresh read-only TECH review;
+  no PRODUCT PASS, SECURITY PASS, push, main movement, release, distribution, or V2-5 follows automatically. /
+  最终候选为后续修复 commit，必须重新进行只读 TECH 审查；不会自动获得 PRODUCT PASS、SECURITY PASS、push、main 移动、
+  release、分发或 V2-5 授权。

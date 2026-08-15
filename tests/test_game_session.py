@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from dataclasses import FrozenInstanceError, asdict, dataclass, is_dataclass
+from dataclasses import FrozenInstanceError, asdict, dataclass, is_dataclass, replace
 import hashlib
 import json
 from pathlib import Path
@@ -32,6 +32,7 @@ from lore2mud.content.loader import load_content_pack
 from lore2mud.engine.commands import CommandProcessor
 from lore2mud.engine.save import SaveLoadError, SaveLoadService, _serialize_world
 from lore2mud.engine.world import World, WorldRuleError
+from lore2mud.narrative.models import AllCondition, AtLocationCondition, StateEqualsCondition
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -212,6 +213,59 @@ class GameSessionContractTests(unittest.TestCase):
                 RejectionCode.INADMISSIBLE_INTENT,
             )
             self.assertEqual(rejected.newly_completed_endings, ())
+
+    def test_terminal_completion_notice_is_not_repeated_when_condition_reappears(
+        self,
+    ) -> None:
+        pack = load_content_pack(URBAN)
+        assert pack.campaign is not None
+        terminal = pack.campaign.log_entries["log_case_closed"]
+        log_entries = dict(pack.campaign.log_entries)
+        log_entries["log_case_closed"] = replace(
+            terminal,
+            condition=AllCondition(
+                (
+                    StateEqualsCondition("state_case_closed", True),
+                    AtLocationCondition("room_transit_office"),
+                )
+            ),
+        )
+        pack = replace(
+            pack,
+            campaign=replace(pack.campaign, log_entries=log_entries),
+        )
+
+        with tempfile.TemporaryDirectory() as temp_dir:
+            save_service = SaveLoadService(pack, Path(temp_dir))
+            session = GameSession.from_content_pack(pack, save_service)
+            session.submit(CampaignActionIntent("action_check_timestamp"))
+            first = session.submit(
+                CampaignActionIntent("action_correct_vendor_record")
+            )
+            self.assertEqual(
+                [ending.id for ending in first.newly_completed_endings],
+                ["log_case_closed"],
+            )
+
+            away = session.submit(MoveIntent("south"))
+            self.assertFalse(away.view.campaign.completion.completed)
+            back = session.submit(MoveIntent("north"))
+            self.assertEqual(back.newly_completed_endings, ())
+            self.assertTrue(back.view.campaign.completion.completed)
+
+            session.submit(SaveIntent("transient_terminal"))
+            loaded = session.submit(LoadIntent("transient_terminal"))
+            self.assertEqual(loaded.newly_completed_endings, ())
+            session.submit(MoveIntent("south"))
+            returned = session.submit(MoveIntent("north"))
+            self.assertEqual(returned.newly_completed_endings, ())
+
+            fresh = GameSession.from_content_pack(pack, save_service)
+            fresh_loaded = fresh.submit(LoadIntent("transient_terminal"))
+            self.assertEqual(fresh_loaded.newly_completed_endings, ())
+            fresh.submit(MoveIntent("south"))
+            fresh_returned = fresh.submit(MoveIntent("north"))
+            self.assertEqual(fresh_returned.newly_completed_endings, ())
 
     def test_malformed_intent_rejection_preserves_all_session_state(self) -> None:
         session = GameSession.from_content_pack(
@@ -502,6 +556,9 @@ class GameSessionContractTests(unittest.TestCase):
         before_determinism = (before_context.seed, before_context.clock)
         before_rng = session._rng.getstate()  # noqa: SLF001 - contract invariant probe
         before_sequence = session.event_sequence
+        before_announced = set(
+            session._announced_terminal_ids  # noqa: SLF001 - contract invariant probe
+        )
 
         result = session.submit(intent)
 
@@ -520,6 +577,10 @@ class GameSessionContractTests(unittest.TestCase):
         )
         self.assertEqual(session._rng.getstate(), before_rng)  # noqa: SLF001
         self.assertEqual(session.event_sequence, before_sequence)
+        self.assertEqual(
+            session._announced_terminal_ids,  # noqa: SLF001 - contract invariant probe
+            before_announced,
+        )
         return result
 
 

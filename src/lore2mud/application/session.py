@@ -321,6 +321,7 @@ class GameSession:
         self._determinism = context
         self._rng = Random(self._determinism.seed)
         self._event_sequence = 0
+        self._announced_terminal_ids: set[str] = set()
         self._capability_host = capability_host
         self._lock = RLock()
 
@@ -420,6 +421,7 @@ class GameSession:
             determinism = self._determinism
             determinism_state = (determinism.seed, determinism.clock)
             sequence = self._event_sequence
+            announced_terminal_ids = set(self._announced_terminal_ids)
             capability_snapshot: object = _MISSING
             save_file_snapshot: _SaveFileSnapshot | None = None
             try:
@@ -430,6 +432,9 @@ class GameSession:
                     capability_host=self._capability_host,
                     capability_determinism=determinism,
                     capability_event_sequence=sequence,
+                )
+                announced_terminal_ids.update(
+                    ending.id for ending in before_view.campaign.completion.endings
                 )
                 turn_world = original_world
                 if isinstance(intent, LoadIntent):
@@ -475,6 +480,7 @@ class GameSession:
                     before_view,
                     view,
                     intent,
+                    announced_terminal_ids,
                 )
 
                 # Persistence is the final fallible operation. Everything after this
@@ -489,6 +495,10 @@ class GameSession:
                 if self._capability_host is not None:
                     self._capability_host.commit(prepared)
                 self._event_sequence = final_sequence
+                self._announced_terminal_ids.update(announced_terminal_ids)
+                self._announced_terminal_ids.update(
+                    ending.id for ending in view.campaign.completion.endings
+                )
                 return TurnResult(
                     TurnStatus.ACCEPTED,
                     events,
@@ -1049,8 +1059,9 @@ def _newly_completed_endings(
     before_view: GameView,
     after_view: GameView,
     intent: GameIntent | CapabilityIntent,
+    announced_terminal_ids: set[str],
 ) -> tuple[EndingView, ...]:
-    """Report only a newly reached terminal state, never a restored save."""
+    """Report only a terminal state first observed by this session."""
     if isinstance(intent, (LoadIntent, SaveIntent, ViewIntent)):
         return ()
     before_ids = {
@@ -1059,7 +1070,7 @@ def _newly_completed_endings(
     return tuple(
         ending
         for ending in after_view.campaign.completion.endings
-        if ending.id not in before_ids
+        if ending.id not in before_ids and ending.id not in announced_terminal_ids
     )
 
 

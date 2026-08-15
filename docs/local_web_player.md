@@ -61,9 +61,9 @@ from an objective, map route, or event message.
 ```
 
 Success responses contain `ok=true`, a typed `event`, the post-action `snapshot`, and
-`newly_completed_endings`. The latter is non-empty only on a false-to-true terminal
-transition caused by the current non-save/load action; the persistent completion panel
-comes from the snapshot. Validation and world-rule failures return HTTP 422 with
+`newly_completed_endings`. The latter is non-empty only when the current non-save/load
+action is the first observation of a terminal ID in this `GameSession`; the persistent
+completion panel comes from the snapshot. Validation and world-rule failures return HTTP 422 with
 `ok=false`, an error event, and an authoritative unchanged snapshot. Malformed HTTP
 requests return 4xx JSON without reaching the World.
 
