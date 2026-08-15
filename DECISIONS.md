@@ -3576,10 +3576,10 @@
 - 证据 / Evidence: The new synthetic regression changes the urban terminal to require both `state_case_closed=true`
   and `room_night_platform`, verifies `go south` emits exactly one `=== 通关 ===` block, and the final local matrix is
   `56` focused tests with `151` subtests, full pytest `1627 passed, 2 skipped, 1076 subtests passed`, and full
-  candidate-src unittest `1628 OK, skipped=2`. / 新增合成回归将 urban 终局改为同时要求
+  candidate-src unittest `1629 OK, skipped=2`. / 新增合成回归将 urban 终局改为同时要求
   `state_case_closed=true` 与 `room_night_platform`，断言 `go south` 恰好输出一个 `=== 通关 ===` 块；最终本地矩阵为聚焦
   `56` 项与 `151` 子测试，全量 pytest `1627 passed, 2 skipped, 1076 subtests passed`，以及显式候选 src 的
-  unittest `1628 OK, skipped=2`。
+  unittest `1629 OK, skipped=2`。
 - 后果 / Consequences: The final candidate must receive another read-only TECH review bound to its exact commit. No
   PRODUCT PASS, SECURITY PASS, push, main movement, release, distribution, or V2-5 follows automatically. / 后续必须针对精确
   commit 再次进行只读 TECH 审查；不会自动获得 PRODUCT PASS、SECURITY PASS、push、main 移动、release、分发或 V2-5 授权。

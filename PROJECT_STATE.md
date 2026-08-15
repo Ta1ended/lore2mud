@@ -33,7 +33,7 @@
 ### 已验证
 
 - 聚焦回归：`56 passed, 151 subtests passed`；全量 pytest：`1627 passed, 2 skipped, 1076 subtests passed`；
-  显式绑定候选 `src` 的全量 unittest：`1628 tests OK, skipped=2`。跳过项为 Windows 环境下的 POSIX symlink 两项。
+  显式绑定候选 `src` 的全量 unittest：`1629 tests OK, skipped=2`。跳过项为 Windows 环境下的 POSIX symlink 两项。
 - Ruff `All checks passed`、Pyright `0 errors`、compileall、`pip check` 与 `git diff --check` 通过；私有
   `lore2mud validate`、author validate/preview/proof/provenance/replay/seal、真实 CLI/Web 存档恢复和结局持久化均通过。
 - 独立只读 TECH、扩写版真人 PRODUCT PASS、SECURITY PASS、push、`main` 快进、release 与分发均尚未发生。
@@ -87,7 +87,7 @@ completion and ending, and completed state must survive save/load.
 ### Verified
 
 - Focused regressions: `56 passed, 151 subtests passed`; full pytest: `1627 passed, 2 skipped, 1076 subtests passed`;
-  full unittest with the candidate `src` explicitly selected: `1628 tests OK, skipped=2`. Skips are two POSIX symlink tests on Windows.
+  full unittest with the candidate `src` explicitly selected: `1629 tests OK, skipped=2`. Skips are two POSIX symlink tests on Windows.
 - Ruff `All checks passed`, Pyright `0 errors`, compileall, `pip check`, and `git diff --check` pass. Private
   content validation, author validate/preview/proof/provenance/replay/seal, and real CLI/Web save/ending
   persistence also pass.

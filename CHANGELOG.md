@@ -782,10 +782,10 @@
 ### Verified
 
 - V2-4B focused regressions `56 passed, 151 subtests passed`; full pytest `1627 passed, 2 skipped, 1076 subtests passed`;
-  candidate-src full unittest `1628 tests OK, skipped=2`; Ruff, Pyright, compileall, `pip check`, and `git diff --check`
+  candidate-src full unittest `1629 tests OK, skipped=2`; Ruff, Pyright, compileall, `pip check`, and `git diff --check`
   passed locally.
 - V2-4B focused regressions `56 passed, 151 subtests passed`; full pytest `1627 passed, 2 skipped, 1076 subtests passed`;
-  full unittest with the candidate `src` selected passed `1628 tests`, with `2` skips; Ruff, Pyright, compileall,
+  full unittest with the candidate `src` selected passed `1629 tests`, with `2` skips; Ruff, Pyright, compileall,
   `pip check`, and `git diff --check` passed locally.
 
 - GPT-5.6-sol independently accepted five-domain integration candidate `a172a82`
