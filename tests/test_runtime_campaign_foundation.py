@@ -578,6 +578,49 @@ class UrbanKnowledgeRuntimeTests(unittest.TestCase):
             self.assertEqual(retry["newly_completed_endings"], [])
             self.assertEqual(retry["snapshot"], before_retry)
 
+    def test_location_terminal_move_renders_one_cli_completion_block(self) -> None:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / "urban"
+            shutil.copytree(URBAN, path)
+            campaign_path = path / "campaign.json"
+            document = json.loads(campaign_path.read_text("utf-8"))
+            terminal = next(
+                entry
+                for entry in document["log_entries"]
+                if entry["id"] == "log_case_closed"
+            )
+            terminal["condition"] = {
+                "kind": "all",
+                "conditions": [
+                    {
+                        "kind": "state_equals",
+                        "state_id": "state_case_closed",
+                        "value": True,
+                    },
+                    {
+                        "kind": "at_location",
+                        "location_id": "room_night_platform",
+                    },
+                ],
+            }
+            campaign_path.write_text(json.dumps(document, indent=2), encoding="utf-8")
+
+            commands = CommandProcessor(_world(path))
+            commands.execute("act action_check_timestamp")
+            closed = commands.execute("act action_correct_vendor_record")
+            self.assertNotIn("=== 通关 ===", closed.text)
+
+            completed = commands.execute("go south")
+
+        self.assertEqual(completed.text.count("=== 通关 ==="), 1)
+        self.assertEqual(completed.text.count("结局：Case record resolved"), 1)
+        self.assertIn("Night Platform", completed.text)
+        assert completed.turn_result is not None
+        self.assertEqual(
+            [ending.id for ending in completed.turn_result.newly_completed_endings],
+            ["log_case_closed"],
+        )
+
     def test_cli_journal_commands_and_help_are_authoritative(self) -> None:
         commands = CommandProcessor(self.world)
         self.assertIn("action_check_timestamp", commands.execute("actions").text)

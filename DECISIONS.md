@@ -3559,3 +3559,27 @@
   no PRODUCT PASS, SECURITY PASS, push, main movement, release, distribution, or V2-5 follows automatically. /
   最终候选为后续修复 commit，必须重新进行只读 TECH 审查；不会自动获得 PRODUCT PASS、SECURITY PASS、push、main 移动、
   release、分发或 V2-5 授权。
+
+## DEC-0122: 修复移动触发终局的重复通关块 / Deduplicate movement-triggered completion blocks
+
+- 日期 / Date: 2026-08-15
+- 状态 / Status: A fresh TECH recheck found a P2 in the follow-up candidate: a location-based terminal reached by
+  `go` rendered the persistent completion summary inside `look` and the first-completion notice a second time. The
+  presentation fix and regression are implemented locally; a fresh TECH decision is still required. / 全新 TECH 复核在后续
+  候选发现 P2：`go` 触发位置型终局时，`look` 内的常驻通关摘要与首次通关提示重复显示。表现层修复与回归已在本地实现，
+  仍需全新 TECH 决定。
+- 决定 / Decision: Keep the persistent completion summary for ordinary `look`, load, and already-completed movement,
+  but suppress it inside the `go` rendering path when `newly_completed_endings` is non-empty; the centralized first
+  notice then supplies the single block for that response. No World rule, save format, capability, or Web contract changes.
+  / 决定普通 `look`、读档和已完成后的移动继续显示常驻通关摘要；当 `go` 的 `newly_completed_endings` 非空时，移动内嵌
+  `look` 暂不重复渲染摘要，由统一首次提示提供该响应唯一通关块。不改变 World 规则、存档格式、capability 或 Web 契约。
+- 证据 / Evidence: The new synthetic regression changes the urban terminal to require both `state_case_closed=true`
+  and `room_night_platform`, verifies `go south` emits exactly one `=== 通关 ===` block, and the final local matrix is
+  `56` focused tests with `151` subtests, full pytest `1627 passed, 2 skipped, 1076 subtests passed`, and full
+  candidate-src unittest `1628 OK, skipped=2`. / 新增合成回归将 urban 终局改为同时要求
+  `state_case_closed=true` 与 `room_night_platform`，断言 `go south` 恰好输出一个 `=== 通关 ===` 块；最终本地矩阵为聚焦
+  `56` 项与 `151` 子测试，全量 pytest `1627 passed, 2 skipped, 1076 subtests passed`，以及显式候选 src 的
+  unittest `1628 OK, skipped=2`。
+- 后果 / Consequences: The final candidate must receive another read-only TECH review bound to its exact commit. No
+  PRODUCT PASS, SECURITY PASS, push, main movement, release, distribution, or V2-5 follows automatically. / 后续必须针对精确
+  commit 再次进行只读 TECH 审查；不会自动获得 PRODUCT PASS、SECURITY PASS、push、main 移动、release、分发或 V2-5 授权。

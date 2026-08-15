@@ -41,6 +41,10 @@
 - Fixed terminal notices being deduplicated only against the current view; one `GameSession` now remembers
   observed terminal IDs, so a transient condition does not re-notify after leaving and returning, while rejection
   and save-failure rollback remain atomic.
+- 修复移动触发终局时 CLI 将常驻通关摘要与首次通关提示重复打印的问题；`go` 现在在同一响应中只保留一个
+  通关块，并新增位置型终局回归覆盖。
+- Fixed CLI movement-triggered endings printing the persistent completion summary and first-completion notice twice;
+  `go` now keeps one completion block per response, with regression coverage for location-based terminals.
 
 - 修复私有来源连通图的 element label 泄露：public provenance 与 sealed package 现在把私有连接的
   `element_kind` 规范化为公开安全值，且身份 alias refinement 不再依赖原始私有 label。回归证明私有 label 的
@@ -777,11 +781,12 @@
 
 ### Verified
 
-- V2-4B focused regressions `54 passed`; full pytest `1624 passed, 3 skipped`; candidate-src full unittest
-  `1627 tests OK, skipped=3`; Ruff, Pyright, compileall, `pip check`, and `git diff --check` passed locally.
-- V2-4B focused regressions `54 passed`; full pytest `1624 passed, 3 skipped`; full unittest with the candidate
-  `src` selected passed `1627 tests`, with `3` skips; Ruff, Pyright, compileall, `pip check`, and `git diff --check`
+- V2-4B focused regressions `56 passed, 151 subtests passed`; full pytest `1627 passed, 2 skipped, 1076 subtests passed`;
+  candidate-src full unittest `1628 tests OK, skipped=2`; Ruff, Pyright, compileall, `pip check`, and `git diff --check`
   passed locally.
+- V2-4B focused regressions `56 passed, 151 subtests passed`; full pytest `1627 passed, 2 skipped, 1076 subtests passed`;
+  full unittest with the candidate `src` selected passed `1628 tests`, with `2` skips; Ruff, Pyright, compileall,
+  `pip check`, and `git diff --check` passed locally.
 
 - GPT-5.6-sol independently accepted five-domain integration candidate `a172a82`
   GO with no P0-P3 findings (DEC-0068). Linux Python 3.11/3.12 serial and 3.13

@@ -461,7 +461,7 @@ class CommandProcessor:
         return CommandResult(self._look(result.view), turn_result=result)
 
     @staticmethod
-    def _look(view: GameView) -> str:
+    def _look(view: GameView, *, include_completion: bool = True) -> str:
         room = view.room
         lines = [f"{room.name} [{room.id}]", room.description]
         exits = "、".join(
@@ -509,9 +509,10 @@ class CommandProcessor:
             )
 
         lines.extend(room.quest_hints)
-        completion = CommandProcessor._completion_summary(view)
-        if completion:
-            lines.append(completion)
+        if include_completion:
+            completion = CommandProcessor._completion_summary(view)
+            if completion:
+                lines.append(completion)
         return "\n".join(lines)
 
     @staticmethod
@@ -534,7 +535,12 @@ class CommandProcessor:
         assert isinstance(payload, MoveEventData)
         lines = [f"你来到 {payload.room_name}。"]
         lines.extend(self._render_quest_outcomes(payload.quest_outcomes))
-        lines.append(self._look(result.view))
+        lines.append(
+            self._look(
+                result.view,
+                include_completion=not bool(result.newly_completed_endings),
+            )
+        )
         return CommandResult("\n".join(lines), turn_result=result)
 
     def _take(self, arguments: list[str]) -> CommandResult:
