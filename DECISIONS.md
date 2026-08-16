@@ -3586,7 +3586,7 @@
 
 ## DEC-0123: 对齐条件文本 Schema 与 loader 并固定验证环境 / Align conditional-text Schema and loader and pin verification environment
 
-- 日期 / Date: 2026-08-15
+- 日期 / Date: 2026-08-16
 - 状态 / Status: The exact `6aee26e` TECH review returned `REVISE` with one P2 Schema/loader parity gap and one P3
   evidence-environment ambiguity. Both are repaired locally and require another exact-commit TECH decision. / 精确
   `6aee26e` 的 TECH 审查以一个 P2 Schema/loader 等价缺口和一个 P3 验证环境歧义给出 `REVISE`；两项均已在本地修复，
@@ -3608,3 +3608,26 @@
 - 后果 / Consequences: The final follow-up candidate must be frozen, mirrored into the private matrix and handoff,
   and receive a fresh findings-first read-only TECH review. No later gate is implied. / 后续必须冻结新的精确候选、同步私有
   矩阵与 handoff，并重新进行 findings-first 只读 TECH 验收；不自动推进任何后续门禁。
+
+## DEC-0124: 重新签署精确候选验证日期 / Re-attest the exact-candidate verification date
+
+- 日期 / Date: 2026-08-16
+- 状态 / Status: The exact `0a1b94a` TECH review found no runtime, static, compatibility, privacy, or hash defect,
+  but returned `REVISE` because the private matrix declared August 15 verification for a candidate created on
+  August 16. This documentation-only correction requires one final exact-commit TECH decision. / 精确 `0a1b94a` 的 TECH
+  审查未发现运行时、静态、兼容、隐私或哈希缺陷，但因私有矩阵把 8 月 16 日创建的候选声明为 8 月 15 日验证而给出
+  `REVISE`；本次仅文档修正仍需最后一次精确 commit TECH 决定。
+- 决定 / Decision: Set the live project-state, private `verified_on`, handoff verification date, and private SHA
+  manifest generation date to August 16, 2026. Bind the matrix only after the documentation commit exists, then
+  re-attest that exact commit without rewriting prior Git history. / 决定把当前项目状态、私有 `verified_on`、handoff
+  验证日期与私有 SHA 清单生成日期统一为 2026-08-16；先生成文档提交，再绑定矩阵并重新签署该精确 commit，不改写既有 Git 历史。
+- 证据 / Evidence: The independently reproduced exact-candidate matrix is otherwise clean: focused `81 passed,
+  401 subtests`, full pytest `1627 passed, 2 skipped, 1078 subtests passed`, full unittest `1629 OK, skipped=2`,
+  Ruff, Pyright, compileall, pip check, Schema/loader counterexamples, CLI/Web/save-load, 74/74 private hashes,
+  history safety, fsck, and diff check all pass. / 独立复现的精确候选矩阵除此日期问题外全部通过：聚焦 `81 passed,
+  401 subtests`，全量 pytest `1627 passed, 2 skipped, 1078 subtests passed`，全量 unittest `1629 OK, skipped=2`，
+  以及 Ruff、Pyright、compileall、pip check、Schema/loader 反例、CLI/Web/save-load、74/74 私有哈希、history safety、
+  fsck 与 diff check。
+- 后果 / Consequences: Freeze the documentation-only successor, update the private bindings to its exact SHA, and
+  request a final read-only TECH verdict. No PRODUCT, SECURITY, publication, or later-milestone gate follows automatically.
+  / 冻结仅文档后续候选，把私有绑定更新到其精确 SHA，并请求最终只读 TECH 结论；不自动推进 PRODUCT、SECURITY、发布或后续里程碑。
