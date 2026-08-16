@@ -3631,3 +3631,37 @@
 - 后果 / Consequences: Freeze the documentation-only successor, update the private bindings to its exact SHA, and
   request a final read-only TECH verdict. No PRODUCT, SECURITY, publication, or later-milestone gate follows automatically.
   / 冻结仅文档后续候选，把私有绑定更新到其精确 SHA，并请求最终只读 TECH 结论；不自动推进 PRODUCT、SECURITY、发布或后续里程碑。
+
+## DEC-0125: 接受并公开整合 V2-4B / Accept and publicly integrate V2-4B
+
+- 日期 / Date: 2026-08-16
+- 状态 / Status: Frozen product candidate `8cad411be74b6c8261b0be6b363a304c249bc92e` has completed all required
+  local gates, and the product owner explicitly authorized a normal workstream push plus fast-forward `main`. The
+  candidate branch and `main` were first advanced to the frozen product candidate after successful GitHub Actions;
+  this follow-up records publication only. / 冻结产品候选 `8cad411be74b6c8261b0be6b363a304c249bc92e`
+  已完成全部必需本地门禁，产品负责人明确授权正常 push 工作分支并将 `main` 纯快进。候选通过 GitHub Actions 后，
+  远端分支与 `main` 已首先推进到冻结产品候选；本 follow-up 只记录发布状态。
+- 决定 / Decision: Preserve `8cad411` as the product identity. Publish only the generic engine, synthetic fixture,
+  tests, and public documentation; keep the private content, saves, screenshots, logs, matrices, hashes, and gate
+  records outside public Git. Add one documentation-only publication record, require its own CI, and leave the
+  workstream branch and `main` at the same final head. / 决定保持 `8cad411` 为产品身份，只发布通用引擎、合成 fixture、
+  测试和公开文档；私有内容、存档、截图、日志、矩阵、哈希与门禁记录继续留在公共 Git 外。增加一个仅文档的发布记录，
+  要求其自身通过 CI，并让工作分支与 `main` 最终停在同一提交。
+- 证据 / Evidence: Final read-only TECH returned `GO` with no P0–P3 findings. The product owner's human replay
+  returned `PRODUCT PASS`, retaining narrow gameplay and a 5–10 minute observed duration as non-blocking feedback.
+  Independent security review returned `SECURITY PASS` with no P0–P2 findings and one non-blocking P3 field-name
+  ambiguity; the private manifest remained 74/74. Candidate-branch `tests` run `31956521183` and `quality` run
+  `31956521181` both succeeded. Live `git ls-remote` then confirmed the workstream branch and `main` at `8cad411`;
+  the main checkout's pre-existing untracked `uv.lock` was preserved. / 最终独立只读 TECH 以 P0–P3 全空给出 `GO`；
+  产品负责人真人试玩给出 `PRODUCT PASS`，并把玩法较单一及约 5–10 分钟实际时长保留为非阻塞反馈。独立安全审查
+  以 P0–P2 全空和一个非阻塞 P3 字段命名歧义给出 `SECURITY PASS`，私有清单仍为 74/74。候选分支 `tests`
+  run `31956521183` 与 `quality` run `31956521181` 均成功；随后 live `git ls-remote` 确认工作分支与 `main`
+  均位于 `8cad411`，主 checkout 既有未跟踪 `uv.lock` 保持不变。
+- 后果 / Consequences: After the documentation-only head passes CI and both remote refs are verified equal,
+  V2-4B public integration is complete. This does not authorize release, private-content distribution, access to
+  other private material, or V2-5; those require a new product-owner decision. / 仅文档封存头通过 CI 且两个远端
+  ref 经验证一致后，V2-4B 公共整合完成。本决定不授权 release、私有内容分发、访问其他私人材料或 V2-5；
+  这些事项需要产品负责人的新决定。
+- 取代 / Supersedes: DEC-0124 only for gate status, publication, and next-task routing. DEC-0124's frozen-candidate
+  identity, exact verification-date correction, compatibility evidence, and privacy boundaries remain in force. /
+  仅在门禁状态、发布与下一任务路由上取代 DEC-0124；DEC-0124 的冻结候选身份、精确验证日期修正、兼容证据与隐私边界继续有效。

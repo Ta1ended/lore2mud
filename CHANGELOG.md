@@ -72,6 +72,18 @@
 
 ### Changed
 
+- 记录冻结 V2-4B 产品候选 `8cad411be74b6c8261b0be6b363a304c249bc92e` 已取得独立 TECH `GO`、
+  真人 `PRODUCT PASS` 与独立 `SECURITY PASS`。安全审查仅保留一个非阻塞 P3 证据字段命名问题；实际私有
+  技术清单仍为 74/74，无泄漏或完整性缺口。产品负责人于 2026-08-16 明确授权正常 push 工作分支并将
+  `main` 纯快进；候选分支 `tests` run `31956521183` 与 `quality` run `31956521181` 均成功，随后远端分支
+  与 `main` 已首先快进到该冻结候选。本发布记录不授权 release、私有内容分发或 V2-5。
+- Recorded independent TECH `GO`, human `PRODUCT PASS`, and independent `SECURITY PASS` for frozen V2-4B product
+  candidate `8cad411be74b6c8261b0be6b363a304c249bc92e`. Security retained one non-blocking P3 evidence-field naming
+  issue; the actual private technical manifest remains 74/74 with no disclosure or integrity gap. On August 16,
+  2026, the product owner explicitly authorized a normal workstream push and fast-forward `main`; candidate-branch
+  `tests` run `31956521183` and `quality` run `31956521181` both succeeded, after which the remote branch and `main`
+  were first fast-forwarded to the frozen candidate. This publication record does not authorize release, private-
+  content distribution, or V2-5.
 - CLI 在首次完成时输出明确的 `=== 通关 ===` 与结局标题；Web 同时显示首次 toast 和读取后仍存在的通关面板。
 - CLI now prints an explicit `=== 通关 ===` marker and ending title on first completion; Web shows both a first
   completion toast and a panel that remains after loading a completed save.

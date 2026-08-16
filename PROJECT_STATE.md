@@ -13,7 +13,7 @@
 
 - worktree：`D:\MUD game kaifa\.codex-worktrees\v2-4b-player-experience-20260815`；分支：
   `workstream/v2-4b-player-experience-20260815`；基线：`7470c5b5344df9d184828d20e37032c5bc5f57bd`；
-  本地候选 commit 已固定，精确 SHA 记录在私有验证矩阵与 handoff。
+  冻结产品候选为 `8cad411be74b6c8261b0be6b363a304c249bc92e`，当前 follow-up 仅记录公开发布状态。
 - 公共改动集中在 `schemas/campaign.schema.json`、`src/lore2mud/application/`、
   `src/lore2mud/content/`、`src/lore2mud/engine/world.py`、`src/lore2mud/engine/commands.py`、
   `src/lore2mud/web/`、对应 V2-4B 合成 fixture/测试及两份技术文档；私有故事、存档、截图、日志、报告和
@@ -38,13 +38,18 @@
   与覆盖式 `PYTHONPATH=<candidate>\src`；因此记录不依赖未安装 PyInstaller 的宿主 Python。
 - Ruff `All checks passed`、Pyright `0 errors`、compileall、`pip check` 与 `git diff --check` 通过；私有
   `lore2mud validate`、author validate/preview/proof/provenance/replay/seal、真实 CLI/Web 存档恢复和结局持久化均通过。
-- 独立只读 TECH、扩写版真人 PRODUCT PASS、SECURITY PASS、push、`main` 快进、release 与分发均尚未发生。
+- 独立只读 TECH 对精确候选给出 `GO`，P0–P3 均无发现；产品负责人真人试玩给出 `PRODUCT PASS`，同时把
+  玩法较单一和约 5–10 分钟实际时长记录为非阻塞后续反馈。
+- 独立安全审查给出 `SECURITY PASS`：P0–P2 无发现，唯一 P3 为私有矩阵字段命名与实际 74/74 清单范围不一致，
+  但不存在未封存文件、泄漏或完整性缺口。
+- 产品负责人于 2026-08-16 明确授权正常 push 工作分支并将 `main` 纯快进。候选分支 GitHub Actions
+  `tests` run `31956521183` 与 `quality` run `31956521181` 均成功，远端分支与 `main` 已首先快进到 `8cad411`。
 
 ### 边界与下一门禁
 
 - 只提交通用引擎/合成 fixture/公开文档；私有包仍是仓库外技术候选，不是发布授权或法律判断。
-- 下一步只请求一名未参与编写的只读 TECH reviewer，针对本地候选精确 commit 输出 findings-first P0–P3 和唯一
-  `GO`/`REVISE`；TECH 之后停止，等待新的真人 PRODUCT PASS，不自动 push 或进入 V2-5。
+- 当前 publication record 只更新四份公开状态文档；其自身通过 CI 并使远端工作分支与 `main` 指向同一
+  docs-only 封存头后，V2-4B 公共整合即关闭。release、私有内容分发和 V2-5 仍需新的产品决定。
 
 ### 关键路径
 
@@ -67,7 +72,8 @@ completion and ending, and completed state must survive save/load.
 
 - Worktree: `D:\MUD game kaifa\.codex-worktrees\v2-4b-player-experience-20260815`; branch:
   `workstream/v2-4b-player-experience-20260815`; baseline:
-  `7470c5b5344df9d184828d20e37032c5bc5f57bd`; the local candidate commit is fixed, with its exact SHA recorded in the private verification matrix and handoff.
+  `7470c5b5344df9d184828d20e37032c5bc5f57bd`; frozen product candidate:
+  `8cad411be74b6c8261b0be6b363a304c249bc92e`. The current follow-up records public publication status only.
 - Public changes are limited to `schemas/campaign.schema.json`, the application/content/runtime/Web paths,
   the V2-4B synthetic fixtures/tests, and two technical documents. Private story text, saves, screenshots, logs,
   reports, and handoff artifacts remain outside Git.
@@ -95,15 +101,20 @@ completion and ending, and completed state must survive save/load.
 - Ruff `All checks passed`, Pyright `0 errors`, compileall, `pip check`, and `git diff --check` pass. Private
   content validation, author validate/preview/proof/provenance/replay/seal, and real CLI/Web save/ending
   persistence also pass.
-- Independent read-only TECH, fresh human PRODUCT PASS for the expanded build, SECURITY PASS, push, fast-forward
-  `main`, release, and distribution have not occurred.
+- Independent read-only TECH returned `GO` for the exact candidate with no P0–P3 findings. The product owner's human
+  replay returned `PRODUCT PASS`, with narrow gameplay and an observed 5–10 minute duration retained as non-blocking follow-up feedback.
+- Independent security review returned `SECURITY PASS`: no P0–P2 findings and one P3 where a private-matrix field
+  name disagrees with the actual 74/74 manifest scope, without any unsealed file, disclosure, or integrity gap.
+- On August 16, 2026, the product owner explicitly authorized a normal branch push and fast-forward `main`.
+  Candidate-branch GitHub Actions `tests` run `31956521183` and `quality` run `31956521181` succeeded, and the remote branch and `main` were first fast-forwarded to `8cad411`.
 
 ### Boundaries And Next Gate
 
 - Only generic engine/fixtures/public documentation may be committed; the private pack is an external technical
   candidate, not release authorization or a legal rights judgment.
-- The next and only gate is a fresh read-only TECH review of the exact local candidate commit, findings-first with
-  P0–P3 and one final `GO`/`REVISE`. Stop after TECH and wait for a new human PRODUCT PASS; do not push or enter V2-5.
+- The current publication record changes only four public status documents. Once its own CI passes and the remote
+  workstream branch and `main` point to the same docs-only seal head, V2-4B public integration is closed. Release,
+  private-content distribution, and V2-5 still require a new product decision.
 
 ### Key Paths
 
